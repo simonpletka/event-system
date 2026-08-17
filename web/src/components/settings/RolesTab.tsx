@@ -17,6 +17,7 @@ import {
   EXPENSES_ACCESS_OPTIONS,
   SETTINGS_ACCESS_OPTIONS,
 } from "@/lib/access-levels";
+import { useConfirmDialog } from "@/components/ui/ConfirmDialogProvider";
 import type { EventsAccess, FinanceAccess, ExpensesAccess, SettingsAccess } from "@/generated/prisma/enums";
 
 export type CustomRoleRow = {
@@ -69,6 +70,7 @@ export function RolesTab({ roles }: { roles: CustomRoleRow[] }) {
 function RoleRow({ role }: { role: CustomRoleRow }) {
   const [editing, setEditing] = useState(false);
   const [deleteState, deleteAction, deletePending] = useActionState(deleteCustomRoleAction, initialState);
+  const { confirm } = useConfirmDialog();
 
   if (editing) return <RoleForm existing={role} onDone={() => setEditing(false)} />;
 
@@ -89,8 +91,9 @@ function RoleRow({ role }: { role: CustomRoleRow }) {
           type="button"
           disabled={deletePending}
           className="placeholder-text hover:text-accent"
-          onClick={() => {
-            if (!confirm(`Delete the role "${role.name}"? This can't be undone.`)) return;
+          onClick={async () => {
+            const ok = await confirm(`Delete the role "${role.name}"? This can't be undone.`, { confirmLabel: "Delete" });
+            if (!ok) return;
             const formData = new FormData();
             formData.set("id", role.id);
             deleteAction(formData);

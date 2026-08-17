@@ -48,6 +48,7 @@ export default async function EventDetailLayout({
               eventId={event.id}
               eventTitle={event.title}
               expenseCount={event.expenses.length}
+              invoiceCount={event.invoices.length}
             />
           )}
         </div>

@@ -102,22 +102,27 @@ export async function updateEventAction(_prev: EventFormState, formData: FormDat
  * relations (members, venues, milestones, time entries, quotes+items,
  * invoices+items/payments/history) — see CLAUDE.md for the full list.
  *
- * Refuses to delete an event that has any expenses recorded against it —
- * those need to be reassigned or removed first rather than silently wiped
- * out along with everything else. The primary gate is client-side
- * (DeleteEventButton shows a popup explaining why and never submits in that
- * case); this check is defense in depth against a stale page or a direct
- * spoofed request, so it silently no-ops rather than throwing (matches the
- * isAdmin check just above it). Since expenses always block the delete,
- * there's never a receipt file left to clean up here.
+ * Refuses to delete an event that has any expenses or invoices recorded
+ * against it — those need to be reassigned or removed first rather than
+ * silently wiped out along with everything else. The primary gate is
+ * client-side (DeleteEventButton shows a popup explaining why and never
+ * submits in that case); this check is defense in depth against a stale
+ * page or a direct spoofed request, so it silently no-ops rather than
+ * throwing (matches the isAdmin check just above it). Quotes aren't part of
+ * this gate — an accepted-but-not-yet-invoiced quote is still safe to lose
+ * along with the event, same as a draft. Since expenses always block the
+ * delete, there's never a receipt file left to clean up here.
  */
 export async function deleteEventAction(formData: FormData) {
   const user = await requireUser();
   if (!isAdmin(user)) return;
 
   const id = String(formData.get("id"));
-  const expenseCount = await prisma.expense.count({ where: { eventId: id } });
-  if (expenseCount > 0) return;
+  const [expenseCount, invoiceCount] = await Promise.all([
+    prisma.expense.count({ where: { eventId: id } }),
+    prisma.invoice.count({ where: { eventId: id } }),
+  ]);
+  if (expenseCount > 0 || invoiceCount > 0) return;
 
   await prisma.event.delete({ where: { id } });
 

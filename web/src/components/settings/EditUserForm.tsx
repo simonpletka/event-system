@@ -9,6 +9,7 @@ import {
   type SettingsFormState,
 } from "@/lib/actions/settings";
 import { CancelLink } from "@/components/ui/CancelLink";
+import { useConfirmDialog } from "@/components/ui/ConfirmDialogProvider";
 import { RoleSelect } from "./RoleSelect";
 
 const initialState: SettingsFormState = {};
@@ -102,6 +103,7 @@ function ResetPasswordButton({ id }: { id: string }) {
 // rather than <form action> + onSubmit-preventDefault (that pattern raced).
 function DeactivateButton({ id }: { id: string }) {
   const [pending, startTransition] = useTransition();
+  const { confirm } = useConfirmDialog();
 
   return (
     <div>
@@ -112,10 +114,12 @@ function DeactivateButton({ id }: { id: string }) {
         type="button"
         disabled={pending}
         className="btno !border-accent text-accent"
-        onClick={() => {
-          if (!confirm("Deactivate this account? They won't be able to log in — including ending any session they have open right now — but their past records stay intact.")) {
-            return;
-          }
+        onClick={async () => {
+          const ok = await confirm(
+            "Deactivate this account? They won't be able to log in — including ending any session they have open right now — but their past records stay intact.",
+            { confirmLabel: "Deactivate" }
+          );
+          if (!ok) return;
           const formData = new FormData();
           formData.set("id", id);
           startTransition(() => {
