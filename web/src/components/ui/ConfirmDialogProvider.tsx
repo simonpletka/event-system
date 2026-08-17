@@ -86,7 +86,7 @@ export function ConfirmDialogProvider({ children }: { children: React.ReactNode 
               </div>
             ) : (
               <div className="flex justify-end mt-5">
-                <button type="button" className="btno" autoFocus onClick={() => close(false)}>
+                <button type="button" className="btn" autoFocus onClick={() => close(false)}>
                   {state.options.dismissLabel ?? "OK"}
                 </button>
               </div>
