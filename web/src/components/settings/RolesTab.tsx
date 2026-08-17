@@ -85,17 +85,19 @@ function RoleRow({ role }: { role: CustomRoleRow }) {
         <button type="button" onClick={() => setEditing(true)} className="placeholder-text hover:text-ink">
           Edit
         </button>
-        <form
-          action={deleteAction}
-          onSubmit={(e) => {
-            if (!confirm(`Delete the role "${role.name}"? This can't be undone.`)) e.preventDefault();
+        <button
+          type="button"
+          disabled={deletePending}
+          className="placeholder-text hover:text-accent"
+          onClick={() => {
+            if (!confirm(`Delete the role "${role.name}"? This can't be undone.`)) return;
+            const formData = new FormData();
+            formData.set("id", role.id);
+            deleteAction(formData);
           }}
         >
-          <input type="hidden" name="id" value={role.id} />
-          <button type="submit" disabled={deletePending} className="placeholder-text hover:text-accent">
-            Delete
-          </button>
-        </form>
+          Delete
+        </button>
       </div>
       {deleteState.error && <div className="col-span-6 text-[11px] text-accent mt-1">{deleteState.error}</div>}
     </div>

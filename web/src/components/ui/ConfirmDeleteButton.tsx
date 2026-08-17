@@ -1,31 +1,47 @@
 "use client";
 
+import { useTransition } from "react";
+
+/**
+ * Deliberately NOT a <form action={fn}> + onSubmit-preventDefault gate — that
+ * pattern raced in practice (React 19's own form-action dispatch could win
+ * against the onSubmit handler's preventDefault(), so the delete fired even
+ * when the user cancelled the dialog). confirm() now runs first in a plain
+ * onClick, and the action is only ever invoked programmatically after the
+ * user approves — there's no submit event for anything to race against.
+ */
 export function ConfirmDeleteButton({
   action,
   fields,
   confirmMessage,
   label = "Delete",
+  pendingLabel,
   className = "btno !border-accent text-accent",
 }: {
-  action: (formData: FormData) => void;
+  action: (formData: FormData) => void | Promise<void>;
   fields: Record<string, string>;
   confirmMessage: string;
   label?: string;
+  pendingLabel?: string;
   className?: string;
 }) {
+  const [pending, startTransition] = useTransition();
+
   return (
-    <form
-      action={action}
-      onSubmit={(e) => {
-        if (!confirm(confirmMessage)) e.preventDefault();
+    <button
+      type="button"
+      disabled={pending}
+      className={className}
+      onClick={() => {
+        if (!confirm(confirmMessage)) return;
+        const formData = new FormData();
+        for (const [name, value] of Object.entries(fields)) formData.set(name, value);
+        startTransition(() => {
+          action(formData);
+        });
       }}
     >
-      {Object.entries(fields).map(([name, value]) => (
-        <input key={name} type="hidden" name={name} value={value} />
-      ))}
-      <button type="submit" className={className}>
-        {label}
-      </button>
-    </form>
+      {pending ? (pendingLabel ?? "Deleting…") : label}
+    </button>
   );
 }

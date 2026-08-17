@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useTransition } from "react";
 import {
   updateUserInfoAction,
   deactivateUserAction,
@@ -98,24 +98,34 @@ function ResetPasswordButton({ id }: { id: string }) {
   );
 }
 
+// See ConfirmDeleteButton.tsx for why this is onClick + a direct action call
+// rather than <form action> + onSubmit-preventDefault (that pattern raced).
 function DeactivateButton({ id }: { id: string }) {
+  const [pending, startTransition] = useTransition();
+
   return (
-    <form
-      action={deactivateUserAction}
-      onSubmit={(e) => {
-        if (!confirm("Deactivate this account? They won't be able to log in — including ending any session they have open right now — but their past records stay intact.")) {
-          e.preventDefault();
-        }
-      }}
-    >
-      <input type="hidden" name="id" value={id} />
+    <div>
       <p className="text-[10px] placeholder-text mb-2 max-w-xs">
         They&apos;ll be signed out and won&apos;t be able to log back in. Past expenses, payments and time entries stay attributed to them.
       </p>
-      <button type="submit" className="btno !border-accent text-accent">
-        Deactivate account
+      <button
+        type="button"
+        disabled={pending}
+        className="btno !border-accent text-accent"
+        onClick={() => {
+          if (!confirm("Deactivate this account? They won't be able to log in — including ending any session they have open right now — but their past records stay intact.")) {
+            return;
+          }
+          const formData = new FormData();
+          formData.set("id", id);
+          startTransition(() => {
+            deactivateUserAction(formData);
+          });
+        }}
+      >
+        {pending ? "Deactivating…" : "Deactivate account"}
       </button>
-    </form>
+    </div>
   );
 }
 
