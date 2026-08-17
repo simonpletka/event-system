@@ -24,7 +24,7 @@ export function TimerWidget({ running }: { running: { eventTitle: string; starte
   if (!running) {
     return (
       <div>
-        <div className="heading-label mb-1.5">My timer</div>
+        <div className="heading-label mb-1.5">My tracker</div>
         <div className="text-sm placeholder-text">No timer running</div>
         <NextLink
           href="/time-tracker"
@@ -40,7 +40,7 @@ export function TimerWidget({ running }: { running: { eventTitle: string; starte
 
   return (
     <div>
-      <div className="heading-label mb-1.5">My timer</div>
+      <div className="heading-label mb-1.5">My tracker</div>
       <div className="text-base font-semibold tabular-nums">{formatElapsed(elapsed)}</div>
       <div className="label truncate">{running.eventTitle}</div>
       <form action={stopTimerAction}>
