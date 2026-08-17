@@ -2,9 +2,9 @@ import Link from "next/link";
 import { requireUser } from "@/lib/authz";
 import { getMyTimeTrackerData } from "@/lib/queries/timetracker";
 import { formatDate, formatMinutes } from "@/lib/format";
-import { deleteTimeEntryAction } from "@/lib/actions/timetracker";
 import { ManualEntryForm } from "@/components/timetracker/ManualEntryForm";
 import { RunningTimerBox } from "@/components/timetracker/RunningTimerBox";
+import { DeleteEntryButton } from "@/components/timetracker/DeleteEntryButton";
 
 function isoWeek(d: Date) {
   const date = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
@@ -74,12 +74,7 @@ export default async function TrackingPage({
                 <Link href={`/time-tracker/entries/${e.id}/edit`} className="hover:text-ink placeholder-text">
                   Edit
                 </Link>
-                <form action={deleteTimeEntryAction}>
-                  <input type="hidden" name="id" value={e.id} />
-                  <button type="submit" className="placeholder-text hover:text-accent">
-                    Delete
-                  </button>
-                </form>
+                <DeleteEntryButton id={e.id} />
               </div>
             </div>
           ))}
