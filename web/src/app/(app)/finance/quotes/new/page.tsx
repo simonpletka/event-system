@@ -16,7 +16,7 @@ export default async function NewQuotePage() {
 
   const events = await prisma.event.findMany({
     where: eventWhereForUser(user),
-    select: { id: true, title: true, companyName: true },
+    select: { id: true, title: true, companyName: true, startDate: true },
     orderBy: { title: "asc" },
   });
 

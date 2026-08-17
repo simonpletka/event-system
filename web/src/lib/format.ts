@@ -1,5 +1,17 @@
-export function formatCurrency(amount: number) {
-  return new Intl.NumberFormat("cs-CZ", { maximumFractionDigits: 0 }).format(amount);
+export type CurrencyCode = "CZK" | "EUR" | "USD";
+
+const CURRENCY_LOCALE: Record<CurrencyCode, string> = { CZK: "cs-CZ", EUR: "de-DE", USD: "en-US" };
+
+// Defaults to CZK so every pre-existing call site (event/expense/report
+// amounts, none of which carry a currency of their own — see CLAUDE.md's
+// "no FX conversion, stats stay CZK" decision) keeps working unchanged.
+// Only quote/invoice line items and totals pass an explicit currency.
+export function formatCurrency(amount: number, currency: CurrencyCode = "CZK") {
+  return new Intl.NumberFormat(CURRENCY_LOCALE[currency], {
+    style: "currency",
+    currency,
+    maximumFractionDigits: 0,
+  }).format(amount);
 }
 
 export function formatDate(date: Date, opts: Intl.DateTimeFormatOptions = { day: "numeric", month: "short" }) {

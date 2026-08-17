@@ -11,6 +11,7 @@ export function EventPicker({
   defaultValue,
   required,
   extraOption,
+  onSelect,
 }: {
   name: string;
   initialEvents: PickableEvent[];
@@ -18,17 +19,24 @@ export function EventPicker({
   required?: boolean;
   /** e.g. Expenses' "Company overhead — not tied to an event" option, shown above the event list. */
   extraOption?: { value: string; label: string };
+  /** Fired whenever the selected event id changes (incl. right after a quick-create). */
+  onSelect?: (eventId: string) => void;
 }) {
   const [events, setEvents] = useState(initialEvents);
   const [selected, setSelected] = useState(defaultValue ?? "");
   const [modalOpen, setModalOpen] = useState(false);
+
+  function select(id: string) {
+    setSelected(id);
+    onSelect?.(id);
+  }
 
   return (
     <div className="flex gap-1.5">
       <select
         name={name}
         value={selected}
-        onChange={(e) => setSelected(e.target.value)}
+        onChange={(e) => select(e.target.value)}
         required={required}
         className="input flex-1"
       >
@@ -52,7 +60,7 @@ export function EventPicker({
           onClose={() => setModalOpen(false)}
           onCreated={(event) => {
             setEvents((prev) => [...prev, event]);
-            setSelected(event.id);
+            select(event.id);
             setModalOpen(false);
           }}
         />

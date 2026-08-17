@@ -3,6 +3,7 @@
 import { useActionState, useState } from "react";
 import { updateCompanySettingsAction, type SettingsFormState } from "@/lib/actions/settings";
 import { useAresLookup } from "@/hooks/useAresLookup";
+import { AddressAutocompleteInput } from "@/components/ui/AddressAutocompleteInput";
 
 const initialState: SettingsFormState = {};
 
@@ -61,7 +62,12 @@ export function CompanySettingsForm({ defaults }: { defaults: Company | null }) 
         </div>
         {ares.error && <p className="text-[11px] text-accent -mt-1">{ares.error}</p>}
         <input name="name" placeholder="Company name" value={fields.name} onChange={(e) => set("name", e.target.value)} required className="input" />
-        <input name="address" placeholder="Address" value={fields.address} onChange={(e) => set("address", e.target.value)} className="input" />
+        <AddressAutocompleteInput
+          name="address"
+          placeholder="Address"
+          value={fields.address}
+          onChange={(v) => set("address", v)}
+        />
         <div className="flex gap-1.5 items-center">
           <input name="dic" placeholder="DIČ" value={fields.dic} onChange={(e) => set("dic", e.target.value)} className="input flex-1" />
           <label className="flex items-center gap-1.5 text-[11px] whitespace-nowrap">

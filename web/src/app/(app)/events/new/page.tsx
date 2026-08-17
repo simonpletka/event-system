@@ -1,9 +1,11 @@
 import { requireUser, canCreateEvent } from "@/lib/authz";
+import { getClientOptions } from "@/lib/queries/clients";
 import { EventForm } from "@/components/EventForm";
 
 export default async function NewEventPage() {
   const user = await requireUser();
   const now = new Date();
+  const clients = canCreateEvent(user) ? await getClientOptions() : [];
 
   return (
     <div>
@@ -12,9 +14,11 @@ export default async function NewEventPage() {
         <p className="text-sm placeholder-text">You don&apos;t have permission to create events.</p>
       ) : (
         <EventForm
+          clients={clients}
           defaults={{
             title: "",
             brief: "",
+            clientId: null,
             clientName: "",
             clientPhone: "",
             clientEmail: "",

@@ -6,7 +6,7 @@ import { prisma } from "@/lib/prisma";
 import { requireUser, canManageFinance, canAddExpense, canPickOtherPayer, eventWhereForUser, isAdmin } from "@/lib/authz";
 import { nextQuoteNumber, nextInvoiceNumber, variableSymbolFor } from "@/lib/document-number";
 import { saveReceipt, deleteReceipt } from "@/lib/uploads";
-import type { ExpenseCategory, QuoteStatus } from "@/generated/prisma/enums";
+import type { ExpenseCategory, QuoteStatus, Currency } from "@/generated/prisma/enums";
 
 export type FinanceFormState = { error?: string; success?: boolean };
 
@@ -42,6 +42,7 @@ export async function createQuoteAction(_prev: FinanceFormState, formData: FormD
   const eventId = String(formData.get("eventId") ?? "");
   const validUntil = String(formData.get("validUntil") ?? "");
   const status = (formData.get("status") as QuoteStatus) || "DRAFT";
+  const currency = (formData.get("currency") as Currency) || "CZK";
   const items = parseItems(formData);
 
   if (!eventId || !validUntil || items.length === 0) {
@@ -49,11 +50,12 @@ export async function createQuoteAction(_prev: FinanceFormState, formData: FormD
   }
 
   const number = await nextQuoteNumber();
-  await prisma.quote.create({
+  const quote = await prisma.quote.create({
     data: {
       eventId,
       number,
       status,
+      currency,
       validUntil: new Date(validUntil),
       total: itemsTotal(items),
       items: { create: items.map((i, idx) => ({ ...i, sortOrder: idx })) },
@@ -62,7 +64,7 @@ export async function createQuoteAction(_prev: FinanceFormState, formData: FormD
 
   revalidatePath("/finance/quotes");
   revalidatePath(`/events/${eventId}`);
-  redirect(`/finance/quotes`);
+  redirect(`/finance/quotes/${quote.id}`);
 }
 
 export async function updateQuoteAction(_prev: FinanceFormState, formData: FormData): Promise<FinanceFormState> {
@@ -76,6 +78,7 @@ export async function updateQuoteAction(_prev: FinanceFormState, formData: FormD
 
   const validUntil = String(formData.get("validUntil") ?? "");
   const status = (formData.get("status") as QuoteStatus) || "DRAFT";
+  const currency = (formData.get("currency") as Currency) || "CZK";
   const items = parseItems(formData);
   if (!validUntil || items.length === 0) return { error: "Valid-until date and at least one line item are required." };
 
@@ -85,6 +88,7 @@ export async function updateQuoteAction(_prev: FinanceFormState, formData: FormD
       where: { id },
       data: {
         status,
+        currency,
         validUntil: new Date(validUntil),
         total: itemsTotal(items),
         items: { create: items.map((i, idx) => ({ ...i, sortOrder: idx })) },
@@ -93,7 +97,7 @@ export async function updateQuoteAction(_prev: FinanceFormState, formData: FormD
   ]);
 
   revalidatePath("/finance/quotes");
-  redirect("/finance/quotes");
+  redirect(`/finance/quotes/${id}`);
 }
 
 /** Admin-only, irreversible. If already converted, the invoice stays — only its quoteId link is cleared (schema's ON DELETE SET NULL). */
@@ -109,6 +113,7 @@ export async function deleteQuoteAction(formData: FormData) {
 
   revalidatePath("/finance/quotes");
   revalidatePath(`/events/${quote.eventId}`);
+  redirect("/finance/quotes");
 }
 
 export async function convertQuoteToInvoiceAction(formData: FormData) {
@@ -135,6 +140,7 @@ export async function convertQuoteToInvoiceAction(formData: FormData) {
       number,
       variableSymbol: variableSymbolFor(number),
       total: quote.total,
+      currency: quote.currency,
       dueDate,
       status: "ISSUED",
       items: {
@@ -169,6 +175,7 @@ export async function createInvoiceAction(_prev: FinanceFormState, formData: For
 
   const eventId = String(formData.get("eventId") ?? "");
   const dueDate = String(formData.get("dueDate") ?? "");
+  const currency = (formData.get("currency") as Currency) || "CZK";
   const items = parseItems(formData);
   if (!eventId || !dueDate || items.length === 0) {
     return { error: "Event, due date and at least one line item are required." };
@@ -181,6 +188,7 @@ export async function createInvoiceAction(_prev: FinanceFormState, formData: For
       number,
       variableSymbol: variableSymbolFor(number),
       total: itemsTotal(items),
+      currency,
       dueDate: new Date(dueDate),
       status: "ISSUED",
       items: { create: items.map((i, idx) => ({ ...i, sortOrder: idx })) },

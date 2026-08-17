@@ -27,7 +27,9 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
   const logoDataUrl = company?.logoPath ? await readLogoAsDataUrl(company.logoPath) : null;
 
   let qrDataUrl: string | null = null;
-  if (supplier.bankAccount) {
+  // Czech "QR Platba" is a CZK-domestic payment standard — generating one
+  // for a foreign-currency invoice would be misleading, not just unhelpful.
+  if (supplier.bankAccount && invoice.currency === "CZK") {
     const spd = buildQrPaymentString({
       iban: supplier.bankAccount,
       amount: invoice.total - invoice.amountPaid,
@@ -43,6 +45,7 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
       variableSymbol={invoice.variableSymbol || variableSymbolFor(invoice.number)}
       issuedAt={invoice.issuedAt}
       dueDate={invoice.dueDate}
+      currency={invoice.currency}
       supplier={supplier}
       customer={{
         name: invoice.event.companyName,

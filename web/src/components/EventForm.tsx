@@ -4,6 +4,8 @@ import { useActionState, useState } from "react";
 import { createEventAction, updateEventAction, type EventFormState } from "@/lib/actions/events";
 import { toDateTimeLocal } from "@/lib/format";
 import { CancelLink } from "@/components/ui/CancelLink";
+import { AddressAutocompleteInput } from "@/components/ui/AddressAutocompleteInput";
+import { ClientPicker, type PickableClient } from "@/components/ClientPicker";
 import { useAresLookup } from "@/hooks/useAresLookup";
 import type { EventStatus } from "@/generated/prisma/enums";
 
@@ -23,6 +25,7 @@ export type EventFormDefaults = {
   id?: string;
   title: string;
   brief: string;
+  clientId: string | null;
   clientName: string;
   clientPhone: string;
   clientEmail: string;
@@ -41,7 +44,7 @@ export type EventFormDefaults = {
 
 const initialState: EventFormState = {};
 
-export function EventForm({ defaults }: { defaults: EventFormDefaults }) {
+export function EventForm({ defaults, clients }: { defaults: EventFormDefaults; clients: PickableClient[] }) {
   const isEdit = Boolean(defaults.id);
   const action = isEdit ? updateEventAction : createEventAction;
   const [state, formAction, pending] = useActionState(action, initialState);
@@ -52,6 +55,33 @@ export function EventForm({ defaults }: { defaults: EventFormDefaults }) {
   const [companyAddress, setCompanyAddress] = useState(defaults.companyAddress);
   const [companyDic, setCompanyDic] = useState(defaults.companyDic);
   const ares = useAresLookup();
+
+  const [startDate, setStartDate] = useState(toDateTimeLocal(defaults.startDate));
+  const [endDate, setEndDate] = useState(toDateTimeLocal(defaults.endDate));
+
+  // Moving the start date always pulls the end date onto the same day (a
+  // multi-day span has to be re-picked deliberately, not left stale). If
+  // the end's existing time-of-day still lands after the new start on that
+  // day, keep it as-is; otherwise the event would run backwards, so fall
+  // back to preserving the original duration instead (a 2h event stays 2h).
+  function handleStartChange(value: string) {
+    setStartDate(value);
+    const newStart = new Date(value);
+    if (Number.isNaN(newStart.getTime())) return;
+
+    const oldStart = new Date(startDate);
+    const oldEnd = new Date(endDate);
+    const durationMs =
+      !Number.isNaN(oldStart.getTime()) && !Number.isNaN(oldEnd.getTime()) && oldEnd.getTime() > oldStart.getTime()
+        ? oldEnd.getTime() - oldStart.getTime()
+        : 2 * 60 * 60 * 1000;
+
+    const sameDayEnd = new Date(newStart);
+    if (!Number.isNaN(oldEnd.getTime())) sameDayEnd.setHours(oldEnd.getHours(), oldEnd.getMinutes(), 0, 0);
+
+    const finalEnd = sameDayEnd.getTime() > newStart.getTime() ? sameDayEnd : new Date(newStart.getTime() + durationMs);
+    setEndDate(toDateTimeLocal(finalEnd));
+  }
 
   async function loadFromAres() {
     const company = await ares.lookup(companyIco);
@@ -98,10 +128,24 @@ export function EventForm({ defaults }: { defaults: EventFormDefaults }) {
           <input name="strikeDate" type="datetime-local" defaultValue={toDateTimeLocal(defaults.strikeDate)} className="input" />
         </Field>
         <Field label="Event start">
-          <input name="startDate" type="datetime-local" required defaultValue={toDateTimeLocal(defaults.startDate)} className="input" />
+          <input
+            name="startDate"
+            type="datetime-local"
+            required
+            value={startDate}
+            onChange={(e) => handleStartChange(e.target.value)}
+            className="input"
+          />
         </Field>
         <Field label="Event end">
-          <input name="endDate" type="datetime-local" required defaultValue={toDateTimeLocal(defaults.endDate)} className="input" />
+          <input
+            name="endDate"
+            type="datetime-local"
+            required
+            value={endDate}
+            onChange={(e) => setEndDate(e.target.value)}
+            className="input"
+          />
         </Field>
       </div>
 
@@ -138,6 +182,19 @@ export function EventForm({ defaults }: { defaults: EventFormDefaults }) {
       </div>
 
       <div className="heading-label">Client</div>
+      <Field label="Linked client (optional — powers the Clients section's event/revenue rollup)">
+        <ClientPicker
+          initialClients={clients}
+          defaultValue={defaults.clientId ?? ""}
+          onSelect={(client) => {
+            if (!client) return;
+            setCompanyName(client.name);
+            setCompanyAddress(client.address ?? "");
+            setCompanyIco(client.ico ?? "");
+            setCompanyDic(client.dic ?? "");
+          }}
+        />
+      </Field>
       <div className="grid grid-cols-2 gap-3">
         <Field label="Contact name">
           <input name="clientName" defaultValue={defaults.clientName} required className="input" />
@@ -174,12 +231,7 @@ export function EventForm({ defaults }: { defaults: EventFormDefaults }) {
           />
         </Field>
         <Field label="Company address">
-          <input
-            name="companyAddress"
-            value={companyAddress}
-            onChange={(e) => setCompanyAddress(e.target.value)}
-            className="input"
-          />
+          <AddressAutocompleteInput name="companyAddress" value={companyAddress} onChange={setCompanyAddress} />
         </Field>
       </div>
       {ares.error && <p className="text-[11px] text-accent -mt-3">{ares.error}</p>}

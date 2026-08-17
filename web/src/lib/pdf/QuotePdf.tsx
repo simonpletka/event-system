@@ -2,33 +2,29 @@ import { Document, Page, Text, View, Image } from "@react-pdf/renderer";
 import type { CurrencyCode } from "@/lib/format";
 import { DEFAULT_ACCENT, sharedStyles as styles, money, pdfDate as date } from "./shared";
 
-export type InvoicePdfProps = {
-  invoiceNumber: string;
-  variableSymbol: string;
+export type QuotePdfProps = {
+  quoteNumber: string;
   issuedAt: Date;
-  dueDate: Date;
+  validUntil: Date;
   currency: CurrencyCode;
-  supplier: { name: string; address: string; ico: string; dic: string; bankAccount: string; isVatPayer: boolean };
+  supplier: { name: string; address: string; ico: string; dic: string; isVatPayer: boolean };
   customer: { name: string; address: string; ico: string; dic: string };
   items: { description: string; quantity: number; unitPrice: number; vatRate: number }[];
-  qrDataUrl: string | null;
   logoDataUrl: string | null;
   accentColor: string;
 };
 
-export function InvoicePdf({
-  invoiceNumber,
-  variableSymbol,
+export function QuotePdf({
+  quoteNumber,
   issuedAt,
-  dueDate,
+  validUntil,
   currency,
   supplier,
   customer,
   items,
-  qrDataUrl,
   logoDataUrl,
   accentColor,
-}: InvoicePdfProps) {
+}: QuotePdfProps) {
   const base = items.reduce((s, i) => s + i.quantity * i.unitPrice, 0);
   const vat = items.reduce((s, i) => s + i.quantity * i.unitPrice * (i.vatRate / 100), 0);
   const total = base + vat;
@@ -44,8 +40,8 @@ export function InvoicePdf({
             <Text style={styles.companyName}>{supplier.name}</Text>
           </View>
           <View>
-            <Text style={styles.docLabel}>Invoice</Text>
-            <Text style={styles.docNumber}>{invoiceNumber}</Text>
+            <Text style={styles.docLabel}>Quote</Text>
+            <Text style={styles.docNumber}>{quoteNumber}</Text>
           </View>
         </View>
         <View style={styles.rule} />
@@ -58,7 +54,6 @@ export function InvoicePdf({
             <Text style={styles.partyLine}>
               IČO {supplier.ico} · DIČ {supplier.dic}
             </Text>
-            {supplier.bankAccount ? <Text style={styles.partyLine}>{supplier.bankAccount}</Text> : null}
             {!supplier.isVatPayer && <Text style={styles.partyLine}>Not a VAT payer</Text>}
           </View>
           <View style={styles.partyBlock}>
@@ -69,7 +64,7 @@ export function InvoicePdf({
               IČO {customer.ico || "—"} · DIČ {customer.dic || "—"}
             </Text>
             <Text style={[styles.partyLine, { marginTop: 6 }]}>Issued {date(issuedAt)}</Text>
-            <Text style={styles.partyLine}>Due {date(dueDate)}</Text>
+            <Text style={styles.partyLine}>Valid until {date(validUntil)}</Text>
           </View>
         </View>
 
@@ -102,22 +97,13 @@ export function InvoicePdf({
             <Text style={styles.summaryValue}>{money(vat, currency)}</Text>
           </View>
           <View style={styles.summaryBlock}>
-            <Text style={styles.label}>To pay</Text>
+            <Text style={styles.label}>Total</Text>
             <Text style={[styles.toPayValue, { color: accent }]}>{money(total, currency)}</Text>
           </View>
         </View>
 
         <View style={styles.footerRow}>
-          <Text style={styles.footerText}>
-            Variable symbol {variableSymbol}
-            {qrDataUrl
-              ? " · scan to pay by QR"
-              : currency !== "CZK"
-                ? " · QR Platba is a CZK-only payment standard, not available for this invoice's currency"
-                : " · no bank account on file, QR payment unavailable"}
-          </Text>
-          {/* eslint-disable-next-line jsx-a11y/alt-text -- @react-pdf/renderer's Image has no alt prop; this renders to PDF, not the DOM */}
-          {qrDataUrl ? <Image src={qrDataUrl} style={styles.qrImage} /> : null}
+          <Text style={styles.footerText}>This quote is valid until {date(validUntil)}.</Text>
         </View>
       </Page>
     </Document>

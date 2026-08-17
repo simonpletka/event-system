@@ -29,6 +29,7 @@ export default async function EditQuotePage({ params }: { params: Promise<{ id: 
           id: quote.id,
           eventId: quote.eventId,
           status: quote.status,
+          currency: quote.currency,
           validUntil: quote.validUntil,
           items: quote.items.map((i) => ({
             description: i.description,

@@ -24,9 +24,11 @@ function parseVenues(formData: FormData) {
 function eventDataFromForm(formData: FormData) {
   const buildDate = formData.get("buildDate") as string;
   const strikeDate = formData.get("strikeDate") as string;
+  const clientId = String(formData.get("clientId") ?? "").trim();
   return {
     title: String(formData.get("title") ?? "").trim(),
     brief: String(formData.get("brief") ?? "").trim(),
+    clientId: clientId || null,
     clientName: String(formData.get("clientName") ?? "").trim(),
     clientPhone: String(formData.get("clientPhone") ?? "").trim(),
     clientEmail: String(formData.get("clientEmail") ?? "").trim(),

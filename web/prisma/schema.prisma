@@ -111,6 +111,18 @@ enum InvoiceEventType {
   MARKED_PAID
 }
 
+// Per-document currency (brief: default CZK, switchable when creating a
+// quote; an invoice created from that quote inherits it). Deliberately no
+// exchange-rate conversion anywhere — aggregate stats (Reports, Dashboard,
+// event budget-vs-actual) keep summing the raw Int amounts as before and
+// are documented as CZK-only, so a stray EUR/USD document will skew them.
+// That's an accepted simplification, not a bug — see CLAUDE.md.
+enum Currency {
+  CZK
+  EUR
+  USD
+}
+
 model User {
   id           String    @id @default(cuid())
   name         String
@@ -145,6 +157,14 @@ model Event {
   companyIco     String      @default("")
   companyDic     String      @default("")
   status         EventStatus @default(INQUIRY)
+
+  // Added going forward — see the Client model's own comment for why old
+  // events aren't auto-migrated onto this. Event's own embedded
+  // client/company fields above are untouched and still what every other
+  // screen (PDFs, event detail, quotes/invoices) reads from; clientId only
+  // powers the Clients section's per-client event/revenue rollup.
+  clientId String?
+  client   Client? @relation(fields: [clientId], references: [id])
 
   buildDate  DateTime?
   startDate  DateTime
@@ -256,6 +276,7 @@ model Quote {
   event      Event       @relation(fields: [eventId], references: [id], onDelete: Cascade)
   number     String
   total      Int
+  currency   Currency    @default(CZK)
   status     QuoteStatus @default(DRAFT)
   validUntil DateTime
   issuedAt   DateTime    @default(now())
@@ -284,6 +305,7 @@ model Invoice {
   number         String
   variableSymbol String
   total          Int
+  currency       Currency      @default(CZK)
   amountPaid     Int           @default(0)
   status         InvoiceStatus @default(ISSUED)
   dueDate        DateTime
@@ -349,4 +371,36 @@ model CompanySettings {
   defaultDueDays Int     @default(14)
   logoPath       String? // filename under uploads/logos/, served through an authenticated route like receipts
   accentColor    String  @default("#ec3013") // hex; used for the invoice PDF's accent instead of the fixed app-theme constant
+}
+
+// A real client company. Added going forward, not backfilled from existing
+// Event.companyName/companyIco free-text fields — auto-matching those by
+// name/IČO would be fragile (typos, "Kobra a.s." vs "Kobra, a.s." etc.) and
+// silently merging the wrong events under one client is worse than just
+// leaving old events unlinked. New events can pick or quick-create a
+// Client; the Clients section's event list/total-charged figure is only
+// ever as complete as which events actually got linked.
+model Client {
+  id        String   @id @default(cuid())
+  name      String
+  address   String   @default("")
+  ico       String   @default("")
+  dic       String   @default("")
+  note      String   @default("")
+  createdAt DateTime @default(now())
+
+  contacts ClientContact[]
+  events   Event[]
+
+  @@index([name])
+}
+
+model ClientContact {
+  id       String @id @default(cuid())
+  clientId String
+  client   Client @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  name     String
+  role     String @default("")
+  phone    String @default("")
+  email    String @default("")
 }

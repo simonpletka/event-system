@@ -20,6 +20,10 @@
 body {
   background: var(--color-bg);
   color: var(--color-ink);
+  /* Without this, native controls (date/time picker popups, number input
+     spin arrows) render with the browser's light-mode chrome regardless of
+     our own dark theme — this is what makes them use dark chrome instead. */
+  color-scheme: dark;
 }
 
 /* Wireframe vocabulary, ported 1:1 so screens match the approved mocks. */

@@ -97,23 +97,24 @@ export default async function InvoiceDetailPage({ params }: { params: Promise<{ 
             <div key={item.id} className="grid grid-cols-[2fr_.5fr_.7fr_.5fr_.9fr] gap-2 py-1 text-[11px]">
               <span>{item.description}</span>
               <span className="placeholder-text">{item.quantity}</span>
-              <span className="placeholder-text">{formatCurrency(item.unitPrice)}</span>
+              <span className="placeholder-text">{formatCurrency(item.unitPrice, invoice.currency)}</span>
               <span className="placeholder-text">{item.vatRate}%</span>
-              <span className="text-right">{formatCurrency(item.quantity * item.unitPrice)}</span>
+              <span className="text-right">{formatCurrency(item.quantity * item.unitPrice, invoice.currency)}</span>
             </div>
           ))}
-          <div className="flex justify-end gap-6 mt-2 text-[12px]">
+          <div className="flex justify-end items-center gap-6 mt-2 text-[12px]">
             <div>
               <span className="label mr-2">Base</span>
-              {formatCurrency(base)}
+              {formatCurrency(base, invoice.currency)}
             </div>
             <div>
               <span className="label mr-2">VAT</span>
-              {formatCurrency(vat)}
+              {formatCurrency(vat, invoice.currency)}
             </div>
-            <div className="font-semibold">
-              <span className="label mr-2">To pay</span>
-              {formatCurrency(base + vat)}
+            <div className="flex items-center gap-1.5">
+              <span className="label mr-1">To pay</span>
+              <span className="font-semibold text-base">{formatCurrency(base + vat, invoice.currency)}</span>
+              <span className="pill !border-accent text-accent">{invoice.currency}</span>
             </div>
           </div>
           <div className="placeholder-text text-[9px] mt-auto pt-2">
@@ -129,7 +130,7 @@ export default async function InvoiceDetailPage({ params }: { params: Promise<{ 
               {invoice.status === "PAID" ? "Paid" : invoice.status === "PARTLY_PAID" ? "Partly paid" : overdue ? "Overdue" : "Issued"}
             </div>
             <div className="placeholder-text text-[9px]">
-              {formatCurrency(invoice.amountPaid)} of {formatCurrency(invoice.total)}
+              {formatCurrency(invoice.amountPaid, invoice.currency)} of {formatCurrency(invoice.total, invoice.currency)}
               {invoice.paidAt ? ` received ${formatDate(invoice.paidAt)}` : ""}
             </div>
             <div className="h-1.5 bg-ink/12 mt-1.5">
@@ -166,7 +167,7 @@ export default async function InvoiceDetailPage({ params }: { params: Promise<{ 
           </div>
           {invoice.quote && (
             <div className="py-1.5 text-[13px]">
-              <Link href={`/finance/quotes`} className="hover:text-accent">
+              <Link href={`/finance/quotes/${invoice.quote.id}`} className="hover:text-accent">
                 Quote {invoice.quote.number} →
               </Link>
             </div>

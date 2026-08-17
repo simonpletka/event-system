@@ -104,7 +104,10 @@ export default async function InvoicesPage({
           <div className="placeholder-text">{inv.event.companyName}</div>
           <div className="placeholder-text">{formatDate(inv.issuedAt)}</div>
           <div className="placeholder-text">{formatDate(inv.dueDate)}</div>
-          <div>{formatCurrency(inv.total)}</div>
+          <div>
+            {formatCurrency(inv.total, inv.currency)}
+            {inv.currency !== "CZK" && <span className="pill ml-1 !border-accent text-accent">{inv.currency}</span>}
+          </div>
           <div>
             <InvoiceStatusPill status={inv.status} dueDate={inv.dueDate} paidAt={inv.paidAt} />
           </div>

@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation";
 import { requireUser, canEditEvent } from "@/lib/authz";
 import { getEventDetail } from "@/lib/queries/events";
+import { getClientOptions } from "@/lib/queries/clients";
 import { EventForm } from "@/components/EventForm";
 
 export default async function EditEventPage({ params }: { params: Promise<{ id: string }> }) {
@@ -10,6 +11,7 @@ export default async function EditEventPage({ params }: { params: Promise<{ id: 
   if (!event) notFound();
 
   const editable = canEditEvent(user, { ownerId: event.ownerId, memberIds: event.members.map((m) => m.userId) });
+  const clients = editable ? await getClientOptions() : [];
 
   return (
     <div>
@@ -18,10 +20,12 @@ export default async function EditEventPage({ params }: { params: Promise<{ id: 
         <p className="text-sm placeholder-text">You don&apos;t have permission to edit this event.</p>
       ) : (
         <EventForm
+          clients={clients}
           defaults={{
             id: event.id,
             title: event.title,
             brief: event.brief,
+            clientId: event.clientId,
             clientName: event.clientName,
             clientPhone: event.clientPhone,
             clientEmail: event.clientEmail,

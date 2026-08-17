@@ -88,14 +88,19 @@ export default async function QuotesPage({
           key={q.id}
           className="grid grid-cols-[.8fr_1.3fr_1fr_.7fr_.7fr_.8fr_.9fr_1fr] gap-2.5 items-center py-2.5 border-b border-ink/13 text-[13px]"
         >
-          <div>{q.number}</div>
+          <Link href={`/finance/quotes/${q.id}`} className="hover:text-accent">
+            {q.number}
+          </Link>
           <Link href={`/events/${q.eventId}`} className="hover:text-accent">
             {q.event.title}
           </Link>
           <div className="placeholder-text">{q.event.companyName}</div>
           <div className="placeholder-text">{formatDate(q.issuedAt)}</div>
           <div className="placeholder-text">{formatDate(q.validUntil)}</div>
-          <div>{formatCurrency(q.total)}</div>
+          <div>
+            {formatCurrency(q.total, q.currency)}
+            {q.currency !== "CZK" && <span className="pill ml-1 !border-accent text-accent">{q.currency}</span>}
+          </div>
           <div>
             <QuoteStatusPill status={q.status} />
           </div>

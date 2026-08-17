@@ -153,6 +153,16 @@ export function canManageCompanySettings(user: SessionUser) {
   return resolvePermissions(user).settings !== "NONE";
 }
 
+// --- Clients (new — not in the brief's own RBAC table, since the section
+// itself is new). Deliberately reuses the same two roles who already touch
+// a client's company data day to day — Producer via creating/editing
+// events, Accountant/Admin via Finance — rather than inventing a fifth
+// permission dimension for one screen. Member gets neither, same as
+// Finance. Viewing and managing aren't split into separate tiers here. ---
+export function canManageClients(user: SessionUser) {
+  return canManageFinance(user) || canCreateEvent(user);
+}
+
 // --- Deletion (events, quotes, invoices, expenses) ---
 
 /**
