@@ -1,0 +1,189 @@
+// Event system — Phase 1 schema (Dashboard, Events; Finance/Time-tracker tables
+// are minimal stubs so relation counts on the event detail page are real).
+// See /CLAUDE.md and docs/system_info/event-system-zadani.pdf for background.
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "sqlite"
+}
+
+enum Role {
+  ADMIN
+  ACCOUNTANT
+  PRODUCER
+  MEMBER
+}
+
+enum EventStatus {
+  INQUIRY // Poptávka
+  QUOTE_SENT // Nabídka odeslána
+  CONFIRMED // Potvrzeno
+  IN_PROGRESS // V realizaci
+  TO_INVOICE // Proběhlo — k vyfakturování
+  CLOSED // Uzavřeno
+  CANCELLED // Zrušeno — added beyond the brief's 4.3 table, which invites it
+}
+
+enum ExpenseCategory {
+  FOOD
+  GROCERY
+  TRAVEL_GAS
+  TRAVEL_CAR
+  TRAVEL_FLIGHT
+  TRAVEL_TAXI
+  TRAVEL_PARKING
+  TRAVEL_PUBLIC_TRANSPORT
+  TRAVEL_OTHER
+  GEAR
+  GENERIC
+}
+
+enum QuoteStatus {
+  DRAFT
+  SENT
+  ACCEPTED
+  DECLINED
+}
+
+enum InvoiceStatus {
+  ISSUED
+  PARTLY_PAID
+  PAID
+  OVERDUE
+}
+
+model User {
+  id           String   @id @default(cuid())
+  name         String
+  email        String   @unique
+  passwordHash String
+  role         Role
+  isCardHolder Boolean  @default(false)
+  createdAt    DateTime @default(now())
+
+  ownedEvents    Event[]       @relation("EventOwner")
+  assignments    EventMember[]
+  expenses       Expense[]
+  timeEntries    TimeEntry[]
+}
+
+model Event {
+  id          String      @id @default(cuid())
+  title       String
+  brief       String      @default("")
+  clientName  String // contact person
+  clientPhone String      @default("")
+  clientEmail String      @default("")
+  companyName String
+  companyAddress String   @default("")
+  companyIco  String      @default("")
+  companyDic  String      @default("")
+  status      EventStatus @default(INQUIRY)
+
+  buildDate  DateTime?
+  startDate  DateTime
+  endDate    DateTime
+  strikeDate DateTime?
+
+  quotedValue Int @default(0) // minor currency units avoided; brief uses whole CZK
+
+  ownerId String
+  owner   User   @relation("EventOwner", fields: [ownerId], references: [id])
+
+  venues     Venue[]
+  milestones Milestone[]
+  members    EventMember[]
+  expenses   Expense[]
+  timeEntries TimeEntry[]
+  quotes     Quote[]
+  invoices   Invoice[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([startDate])
+  @@index([status])
+}
+
+// Producer/Member assignment to an event — drives §2.2 visibility rules.
+model EventMember {
+  id      String @id @default(cuid())
+  eventId String
+  userId  String
+  event   Event  @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  user    User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([eventId, userId])
+}
+
+model Venue {
+  id      String  @id @default(cuid())
+  eventId String
+  event   Event   @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  name    String
+  address String
+  note    String  @default("")
+}
+
+model Milestone {
+  id                    String    @id @default(cuid())
+  eventId               String
+  event                 Event     @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  date                  DateTime
+  title                 String
+  googleCalendarEventId String? // populated once Calendar sync (later phase) is wired
+
+  @@index([eventId, date])
+}
+
+// --- Minimal stubs for later phases; kept here so the event detail's
+// counts/sums (expenses, time, quotes & invoices) are real data now. ---
+
+model Expense {
+  id          String          @id @default(cuid())
+  eventId     String
+  event       Event           @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  paidById    String
+  paidBy      User            @relation(fields: [paidById], references: [id])
+  amount      Int
+  date        DateTime
+  category    ExpenseCategory
+  note        String          @default("")
+  createdAt   DateTime        @default(now())
+}
+
+model TimeEntry {
+  id          String   @id @default(cuid())
+  eventId     String
+  event       Event    @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  userId      String
+  user        User     @relation(fields: [userId], references: [id])
+  minutes     Int
+  date        DateTime
+  description String   @default("")
+}
+
+model Quote {
+  id        String      @id @default(cuid())
+  eventId   String
+  event     Event       @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  number    String
+  total     Int
+  status    QuoteStatus @default(DRAFT)
+  issuedAt  DateTime    @default(now())
+}
+
+model Invoice {
+  id        String        @id @default(cuid())
+  eventId   String
+  event     Event         @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  number    String
+  total     Int
+  status    InvoiceStatus @default(ISSUED)
+  dueDate   DateTime
+  issuedAt  DateTime      @default(now())
+}
