@@ -8,6 +8,7 @@ import { BackLink } from "@/components/BackLink";
 import { ConfirmDeleteButton } from "@/components/ui/ConfirmDeleteButton";
 import { QuoteStatusPill } from "@/components/StatusPill";
 import { DownloadPdfButton } from "@/components/finance/DownloadPdfButton";
+import { groupItemsByCategory, categoryTotal } from "@/lib/line-items";
 
 export default async function QuoteDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const user = await requireUser();
@@ -20,6 +21,7 @@ export default async function QuoteDetailPage({ params }: { params: Promise<{ id
   const vat = quote.items.reduce((s, i) => s + i.quantity * i.unitPrice * (i.vatRate / 100), 0);
   const expired = quote.status !== "ACCEPTED" && quote.status !== "DECLINED" && quote.validUntil < new Date();
   const alreadyInvoiced = quote.invoices.length > 0;
+  const groups = groupItemsByCategory(quote.items);
 
   return (
     <div>
@@ -83,20 +85,38 @@ export default async function QuoteDetailPage({ params }: { params: Promise<{ id
             </div>
           </div>
 
-          <div className="grid grid-cols-[2fr_.5fr_.7fr_.5fr_.9fr] gap-2 border-b-2 border-ink pb-1 text-[10px] mt-2">
-            <span className="heading-label">Item</span>
-            <span className="heading-label">Qty</span>
-            <span className="heading-label">Unit</span>
-            <span className="heading-label">VAT</span>
-            <span className="heading-label text-right">Total</span>
-          </div>
-          {quote.items.map((item) => (
-            <div key={item.id} className="grid grid-cols-[2fr_.5fr_.7fr_.5fr_.9fr] gap-2 py-1 text-[11px]">
-              <span>{item.description}</span>
-              <span className="placeholder-text">{item.quantity}</span>
-              <span className="placeholder-text">{formatCurrency(item.unitPrice, quote.currency)}</span>
-              <span className="placeholder-text">{item.vatRate}%</span>
-              <span className="text-right">{formatCurrency(item.quantity * item.unitPrice, quote.currency)}</span>
+          {!quote.hideItemPrices && (
+            <div className="grid grid-cols-[2fr_.5fr_.7fr_.5fr_.9fr] gap-2 border-b-2 border-ink pb-1 text-[10px] mt-2">
+              <span className="heading-label">Item</span>
+              <span className="heading-label">Qty</span>
+              <span className="heading-label">Unit</span>
+              <span className="heading-label">VAT</span>
+              <span className="heading-label text-right">Total</span>
+            </div>
+          )}
+          {groups.map((g) => (
+            <div key={g.category || "—"}>
+              {g.category && <div className="label mt-2 mb-0.5">{g.category}</div>}
+              {g.items.map((item) =>
+                quote.hideItemPrices ? (
+                  <div key={item.id} className="py-1 text-[11px]">
+                    {item.description}
+                  </div>
+                ) : (
+                  <div key={item.id} className="grid grid-cols-[2fr_.5fr_.7fr_.5fr_.9fr] gap-2 py-1 text-[11px]">
+                    <span>{item.description}</span>
+                    <span className="placeholder-text">{item.quantity}</span>
+                    <span className="placeholder-text">{formatCurrency(item.unitPrice, quote.currency)}</span>
+                    <span className="placeholder-text">{item.vatRate}%</span>
+                    <span className="text-right">{formatCurrency(item.quantity * item.unitPrice, quote.currency)}</span>
+                  </div>
+                )
+              )}
+              {quote.hideItemPrices && g.category && (
+                <div className="flex justify-end text-[11px] font-semibold py-0.5">
+                  {formatCurrency(categoryTotal(g.items), quote.currency)}
+                </div>
+              )}
             </div>
           ))}
           <div className="flex justify-end items-center gap-6 mt-2 text-[12px]">

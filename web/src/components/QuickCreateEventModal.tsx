@@ -11,7 +11,7 @@ export function QuickCreateEventModal({
   onCreated,
 }: {
   onClose: () => void;
-  onCreated: (event: { id: string; title: string; companyName: string }) => void;
+  onCreated: (event: { id: string; title: string; companyName: string; quotedValue: number }) => void;
 }) {
   const [state, formAction, pending] = useActionState(quickCreateEventAction, initialState);
 

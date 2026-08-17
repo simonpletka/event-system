@@ -29,7 +29,9 @@ export default async function EventDetailLayout({
       <BackLink href="/events">Events</BackLink>
       <div className="flex justify-between items-end border-b-2 border-ink pb-2 flex-wrap gap-2">
         <div>
-          <div className="text-xl font-semibold">{event.title}</div>
+          <div className="text-xl font-semibold">
+            <span className="placeholder-text font-normal">{event.number}</span> {event.title}
+          </div>
           <div className="placeholder-text text-[11px] mt-0.5">
             {event.companyName} · {formatDateRange(event.startDate, event.endDate)}
             {event.venues[0] ? ` · ${event.venues[0].name}` : ""}

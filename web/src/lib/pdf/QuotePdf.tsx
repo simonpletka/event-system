@@ -2,6 +2,7 @@ import { Document, Page, Text, View, Image } from "@react-pdf/renderer";
 import type { CurrencyCode } from "@/lib/format";
 import { DEFAULT_ACCENT, sharedStyles as styles, money, pdfDate as date, registerAppFont } from "./shared";
 import { pdfLabels, type PdfLang } from "./i18n";
+import { groupItemsByCategory, categoryTotal } from "@/lib/line-items";
 
 export type QuotePdfProps = {
   quoteNumber: string;
@@ -9,9 +10,10 @@ export type QuotePdfProps = {
   validUntil: Date;
   currency: CurrencyCode;
   lang: PdfLang;
+  hideItemPrices: boolean;
   supplier: { name: string; address: string; ico: string; dic: string; isVatPayer: boolean };
   customer: { name: string; address: string; ico: string; dic: string };
-  items: { description: string; quantity: number; unitPrice: number; vatRate: number }[];
+  items: { description: string; quantity: number; unitPrice: number; vatRate: number; category: string }[];
   logoDataUrl: string | null;
   accentColor: string;
 };
@@ -22,6 +24,7 @@ export function QuotePdf({
   validUntil,
   currency,
   lang,
+  hideItemPrices,
   supplier,
   customer,
   items,
@@ -34,6 +37,7 @@ export function QuotePdf({
   const vat = items.reduce((s, i) => s + i.quantity * i.unitPrice * (i.vatRate / 100), 0);
   const total = base + vat;
   const accent = accentColor || DEFAULT_ACCENT;
+  const groups = groupItemsByCategory(items);
 
   return (
     <Document>
@@ -78,20 +82,38 @@ export function QuotePdf({
         </View>
 
         <View style={styles.table}>
-          <View style={styles.tableHeaderRow}>
-            <Text style={[styles.th, styles.colDesc]}>{t.item}</Text>
-            <Text style={[styles.th, styles.colQty]}>{t.qty}</Text>
-            <Text style={[styles.th, styles.colUnit]}>{t.unit}</Text>
-            <Text style={[styles.th, styles.colVat]}>{t.vat}</Text>
-            <Text style={[styles.th, styles.colTotal]}>{t.total}</Text>
-          </View>
-          {items.map((item, i) => (
-            <View key={i} style={styles.tableRow}>
-              <Text style={styles.colDesc}>{item.description}</Text>
-              <Text style={styles.colQty}>{item.quantity}</Text>
-              <Text style={styles.colUnit}>{money(item.unitPrice, currency)}</Text>
-              <Text style={styles.colVat}>{item.vatRate}%</Text>
-              <Text style={styles.colTotal}>{money(item.quantity * item.unitPrice, currency)}</Text>
+          {!hideItemPrices && (
+            <View style={styles.tableHeaderRow}>
+              <Text style={[styles.th, styles.colDesc]}>{t.item}</Text>
+              <Text style={[styles.th, styles.colQty]}>{t.qty}</Text>
+              <Text style={[styles.th, styles.colUnit]}>{t.unit}</Text>
+              <Text style={[styles.th, styles.colVat]}>{t.vat}</Text>
+              <Text style={[styles.th, styles.colTotal]}>{t.total}</Text>
+            </View>
+          )}
+          {groups.map((g, gi) => (
+            <View key={gi}>
+              {g.category ? <Text style={[styles.label, { marginTop: 6 }]}>{g.category}</Text> : null}
+              {g.items.map((item, i) =>
+                hideItemPrices ? (
+                  <Text key={i} style={[styles.tableRow, { paddingVertical: 3 }]}>
+                    {item.description}
+                  </Text>
+                ) : (
+                  <View key={i} style={styles.tableRow}>
+                    <Text style={styles.colDesc}>{item.description}</Text>
+                    <Text style={styles.colQty}>{item.quantity}</Text>
+                    <Text style={styles.colUnit}>{money(item.unitPrice, currency)}</Text>
+                    <Text style={styles.colVat}>{item.vatRate}%</Text>
+                    <Text style={styles.colTotal}>{money(item.quantity * item.unitPrice, currency)}</Text>
+                  </View>
+                )
+              )}
+              {hideItemPrices && g.category ? (
+                <Text style={{ fontSize: 9, fontWeight: 700, textAlign: "right" }}>
+                  {money(categoryTotal(g.items), currency)}
+                </Text>
+              ) : null}
             </View>
           ))}
         </View>

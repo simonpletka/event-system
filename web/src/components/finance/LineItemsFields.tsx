@@ -1,26 +1,54 @@
 "use client";
 
-import { useState } from "react";
 import { formatCurrency, type CurrencyCode } from "@/lib/format";
 
-export type LineItem = { description: string; quantity: number; unitPrice: number; vatRate: number };
+export type LineItem = { description: string; quantity: number; unitPrice: number; vatRate: number; category: string };
 
-export function LineItemsFields({ initial, currency = "CZK" }: { initial: LineItem[]; currency?: CurrencyCode }) {
-  const [items, setItems] = useState<LineItem[]>(
-    initial.length ? initial : [{ description: "", quantity: 1, unitPrice: 0, vatRate: 21 }]
-  );
+export const BLANK_ITEM: LineItem = { description: "", quantity: 1, unitPrice: 0, vatRate: 21, category: "" };
 
+/**
+ * Controlled by the parent form (QuoteForm/InvoiceForm) rather than owning
+ * its own state — InvoiceForm needs to auto-fill a single item from the
+ * selected event's title/quoted value, which isn't possible if the items
+ * array is private state inside this component.
+ */
+export function LineItemsFields({
+  items,
+  onChange,
+  currency = "CZK",
+  categories,
+}: {
+  items: LineItem[];
+  onChange: (items: LineItem[]) => void;
+  currency?: CurrencyCode;
+  categories: string[];
+}) {
   const base = items.reduce((s, i) => s + i.quantity * i.unitPrice, 0);
   const vat = items.reduce((s, i) => s + i.quantity * i.unitPrice * (i.vatRate / 100), 0);
 
   function update(i: number, patch: Partial<LineItem>) {
-    setItems((prev) => prev.map((item, idx) => (idx === i ? { ...item, ...patch } : item)));
+    onChange(items.map((item, idx) => (idx === i ? { ...item, ...patch } : item)));
+  }
+
+  function move(i: number, dir: -1 | 1) {
+    const j = i + dir;
+    if (j < 0 || j >= items.length) return;
+    const next = [...items];
+    [next[i], next[j]] = [next[j], next[i]];
+    onChange(next);
   }
 
   return (
     <div>
-      <div className="grid grid-cols-[1fr_70px_110px_70px_auto] gap-2 mb-1.5">
+      <datalist id="line-item-categories">
+        {categories.map((c) => (
+          <option key={c} value={c} />
+        ))}
+      </datalist>
+      <div className="grid grid-cols-[24px_1fr_110px_70px_110px_70px_auto] gap-2 mb-1.5">
+        <span></span>
         <span className="heading-label pl-2.5">Description</span>
+        <span className="heading-label pl-2.5">Category</span>
         <span className="heading-label pl-2.5">Qty</span>
         <span className="heading-label pl-2.5">Unit price</span>
         <span className="heading-label pl-2.5">VAT %</span>
@@ -28,13 +56,41 @@ export function LineItemsFields({ initial, currency = "CZK" }: { initial: LineIt
       </div>
       <div className="flex flex-col gap-2">
         {items.map((item, i) => (
-          <div key={i} className="grid grid-cols-[1fr_70px_110px_70px_auto] gap-2 items-center">
+          <div key={i} className="grid grid-cols-[24px_1fr_110px_70px_110px_70px_auto] gap-2 items-center">
+            <div className="flex flex-col">
+              <button
+                type="button"
+                onClick={() => move(i, -1)}
+                disabled={i === 0}
+                className="text-[9px] leading-none disabled:opacity-20"
+                title="Move up"
+              >
+                ▲
+              </button>
+              <button
+                type="button"
+                onClick={() => move(i, 1)}
+                disabled={i === items.length - 1}
+                className="text-[9px] leading-none disabled:opacity-20"
+                title="Move down"
+              >
+                ▼
+              </button>
+            </div>
             <input
               name="itemDescription"
               value={item.description}
               onChange={(e) => update(i, { description: e.target.value })}
               className="input"
               required
+            />
+            <input
+              name="itemCategory"
+              list="line-item-categories"
+              placeholder="—"
+              value={item.category}
+              onChange={(e) => update(i, { category: e.target.value })}
+              className="input"
             />
             <input
               name="itemQuantity"
@@ -66,7 +122,7 @@ export function LineItemsFields({ initial, currency = "CZK" }: { initial: LineIt
             />
             <button
               type="button"
-              onClick={() => setItems((prev) => prev.filter((_, idx) => idx !== i))}
+              onClick={() => onChange(items.filter((_, idx) => idx !== i))}
               className="btno px-2 py-2 text-[9px]"
             >
               Remove
@@ -74,11 +130,7 @@ export function LineItemsFields({ initial, currency = "CZK" }: { initial: LineIt
           </div>
         ))}
       </div>
-      <button
-        type="button"
-        onClick={() => setItems((prev) => [...prev, { description: "", quantity: 1, unitPrice: 0, vatRate: 21 }])}
-        className="btno mt-2 text-[9px]"
-      >
+      <button type="button" onClick={() => onChange([...items, { ...BLANK_ITEM }])} className="btno mt-2 text-[9px]">
         Add item
       </button>
 

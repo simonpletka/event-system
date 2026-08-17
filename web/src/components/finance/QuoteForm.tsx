@@ -4,7 +4,7 @@ import { useMemo, useState } from "react";
 import { useActionState } from "react";
 import { createQuoteAction, updateQuoteAction, type FinanceFormState } from "@/lib/actions/finance";
 import { toDateTimeLocal, formatDate } from "@/lib/format";
-import { LineItemsFields, type LineItem } from "./LineItemsFields";
+import { LineItemsFields, BLANK_ITEM, type LineItem } from "./LineItemsFields";
 import { EventPicker } from "@/components/EventPicker";
 import { CancelLink } from "@/components/ui/CancelLink";
 import type { QuoteStatus, Currency } from "@/generated/prisma/enums";
@@ -21,16 +21,19 @@ function isoDateInput(d: Date) {
 
 export function QuoteForm({
   events,
+  categories,
   defaults,
   initialEventId,
 }: {
   events: { id: string; title: string; companyName: string; startDate: Date }[];
+  categories: string[];
   defaults?: {
     id: string;
     eventId: string;
     status: QuoteStatus;
     currency: Currency;
     validUntil: Date;
+    hideItemPrices: boolean;
     items: LineItem[];
   };
   /** Pre-selects the event when arriving via an event's own "New quote" shortcut. */
@@ -42,6 +45,8 @@ export function QuoteForm({
 
   const [eventId, setEventId] = useState(defaults?.eventId ?? initialEventId ?? "");
   const [currency, setCurrency] = useState<Currency>(defaults?.currency ?? "CZK");
+  const [items, setItems] = useState<LineItem[]>(defaults?.items.length ? defaults.items : [{ ...BLANK_ITEM }]);
+  const [hideItemPrices, setHideItemPrices] = useState(defaults?.hideItemPrices ?? true);
   const [validUntil, setValidUntil] = useState(
     defaults ? toDateTimeLocal(defaults.validUntil).slice(0, 10) : isoDateInput(new Date(new Date().getTime() + TWO_WEEKS_MS))
   );
@@ -56,7 +61,7 @@ export function QuoteForm({
   }, [eventId, validUntil, events]);
 
   return (
-    <form action={formAction} className="max-w-2xl flex flex-col gap-4">
+    <form action={formAction} className="max-w-3xl flex flex-col gap-4">
       {isEdit && <input type="hidden" name="id" value={defaults!.id} />}
 
       {!isEdit && (
@@ -103,7 +108,17 @@ export function QuoteForm({
         </label>
       </div>
 
-      <LineItemsFields initial={defaults?.items ?? []} currency={currency} />
+      <LineItemsFields items={items} onChange={setItems} currency={currency} categories={categories} />
+
+      <label className="flex items-center gap-1.5 text-[11px]">
+        <input
+          type="checkbox"
+          name="hideItemPrices"
+          checked={hideItemPrices}
+          onChange={(e) => setHideItemPrices(e.target.checked)}
+        />
+        Hide individual item prices on the PDF — show only each category&apos;s subtotal and the grand total
+      </label>
 
       {state.error && <p className="text-sm text-accent">{state.error}</p>}
 

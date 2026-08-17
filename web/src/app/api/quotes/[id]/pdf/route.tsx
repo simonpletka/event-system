@@ -24,6 +24,7 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
       validUntil={quote.validUntil}
       currency={quote.currency}
       lang={lang}
+      hideItemPrices={quote.hideItemPrices}
       supplier={supplier}
       customer={{
         name: quote.event.companyName,
@@ -36,6 +37,7 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
         quantity: i.quantity,
         unitPrice: i.unitPrice,
         vatRate: i.vatRate,
+        category: i.category,
       }))}
       logoDataUrl={logoDataUrl}
       accentColor={company?.accentColor || "#ec3013"}

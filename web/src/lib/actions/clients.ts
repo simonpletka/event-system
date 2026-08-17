@@ -14,6 +14,7 @@ function clientDataFromForm(formData: FormData) {
     ico: String(formData.get("ico") ?? "").trim(),
     dic: String(formData.get("dic") ?? "").trim(),
     note: String(formData.get("note") ?? "").trim(),
+    invoicingEmail: String(formData.get("invoicingEmail") ?? "").trim(),
   };
 }
 
@@ -68,6 +69,46 @@ export async function resolveClientId(
     data: { name: company.name, address: company.address, ico: company.ico, dic: company.dic },
   });
   return created.id;
+}
+
+/**
+ * Called alongside resolveClientId from createEventAction/updateEventAction:
+ * copies every contact person entered on the event onto the resolved
+ * Client's own contact list, and — per user request — fills in the
+ * client's invoicingEmail from the first contact that has one, but only if
+ * it's still blank (never overwrites a value someone set deliberately).
+ * Dedupes on email first (the more reliable match), falling back to an
+ * exact name match, so re-saving the same event repeatedly doesn't spawn
+ * duplicate ClientContact rows. These are independent copies, not linked
+ * back to the EventContact they came from — deleting one from the Client
+ * page never touches the event's own contact list.
+ */
+export async function syncClientContacts(
+  clientId: string | null,
+  contacts: { name: string; phone: string; email: string }[]
+) {
+  if (!clientId || contacts.length === 0) return;
+
+  const existing = await prisma.clientContact.findMany({ where: { clientId } });
+  const existingEmails = new Set(existing.map((c) => c.email.toLowerCase()).filter(Boolean));
+  const existingNames = new Set(existing.map((c) => c.name.toLowerCase()));
+
+  const toCreate = contacts.filter((c) => {
+    if (c.email && existingEmails.has(c.email.toLowerCase())) return false;
+    if (!c.email && existingNames.has(c.name.toLowerCase())) return false;
+    return true;
+  });
+  if (toCreate.length > 0) {
+    await prisma.clientContact.createMany({
+      data: toCreate.map((c) => ({ clientId, name: c.name, phone: c.phone, email: c.email })),
+    });
+  }
+
+  const client = await prisma.client.findUnique({ where: { id: clientId }, select: { invoicingEmail: true } });
+  if (!client?.invoicingEmail) {
+    const firstEmail = contacts.find((c) => c.email)?.email;
+    if (firstEmail) await prisma.client.update({ where: { id: clientId }, data: { invoicingEmail: firstEmail } });
+  }
 }
 
 /** Admin-only, irreversible. Events linked to this client just lose the link (clientId set null via cascade-less optional FK — Prisma requires the relation be nullable, which it is). */

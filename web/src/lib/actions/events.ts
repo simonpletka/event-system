@@ -4,7 +4,8 @@ import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
 import { requireUser, canEditEvent, canCreateEvent, isAdmin } from "@/lib/authz";
-import { resolveClientId } from "@/lib/actions/clients";
+import { resolveClientId, syncClientContacts } from "@/lib/actions/clients";
+import { nextEventNumber } from "@/lib/document-number";
 import type { EventStatus } from "@/generated/prisma/enums";
 
 export type EventFormState = { error?: string };
@@ -22,6 +23,19 @@ function parseVenues(formData: FormData) {
   return venues;
 }
 
+function parseContacts(formData: FormData) {
+  const names = formData.getAll("contactName") as string[];
+  const phones = formData.getAll("contactPhone") as string[];
+  const emails = formData.getAll("contactEmail") as string[];
+  const contacts: { name: string; phone: string; email: string }[] = [];
+  for (let i = 0; i < names.length; i++) {
+    if (names[i]?.trim()) {
+      contacts.push({ name: names[i].trim(), phone: (phones[i] ?? "").trim(), email: (emails[i] ?? "").trim() });
+    }
+  }
+  return contacts;
+}
+
 function eventDataFromForm(formData: FormData) {
   const buildDate = formData.get("buildDate") as string;
   const strikeDate = formData.get("strikeDate") as string;
@@ -30,9 +44,6 @@ function eventDataFromForm(formData: FormData) {
     title: String(formData.get("title") ?? "").trim(),
     brief: String(formData.get("brief") ?? "").trim(),
     clientId: clientId || null,
-    clientName: String(formData.get("clientName") ?? "").trim(),
-    clientPhone: String(formData.get("clientPhone") ?? "").trim(),
-    clientEmail: String(formData.get("clientEmail") ?? "").trim(),
     companyName: String(formData.get("companyName") ?? "").trim(),
     companyAddress: String(formData.get("companyAddress") ?? "").trim(),
     companyIco: String(formData.get("companyIco") ?? "").trim(),
@@ -53,8 +64,9 @@ export async function createEventAction(_prev: EventFormState, formData: FormDat
   }
 
   const data = eventDataFromForm(formData);
-  if (!data.title || !data.companyName || !data.clientName) {
-    return { error: "Title, client contact and client company are required." };
+  const contacts = parseContacts(formData);
+  if (!data.title || !data.companyName || contacts.length === 0) {
+    return { error: "Title, client company and at least one contact person are required." };
   }
   data.clientId = await resolveClientId(data.clientId, {
     name: data.companyName,
@@ -62,12 +74,16 @@ export async function createEventAction(_prev: EventFormState, formData: FormDat
     ico: data.companyIco,
     dic: data.companyDic,
   });
+  await syncClientContacts(data.clientId, contacts);
 
+  const number = await nextEventNumber();
   const event = await prisma.event.create({
     data: {
       ...data,
+      number,
       ownerId: user.id,
       venues: { create: parseVenues(formData) },
+      contacts: { create: contacts.map((c, idx) => ({ ...c, sortOrder: idx })) },
       members: { create: [{ userId: user.id }] },
     },
   });
@@ -88,8 +104,9 @@ export async function updateEventAction(_prev: EventFormState, formData: FormDat
   }
 
   const data = eventDataFromForm(formData);
-  if (!data.title || !data.companyName || !data.clientName) {
-    return { error: "Title, client contact and client company are required." };
+  const contacts = parseContacts(formData);
+  if (!data.title || !data.companyName || contacts.length === 0) {
+    return { error: "Title, client company and at least one contact person are required." };
   }
   data.clientId = await resolveClientId(data.clientId, {
     name: data.companyName,
@@ -97,12 +114,18 @@ export async function updateEventAction(_prev: EventFormState, formData: FormDat
     ico: data.companyIco,
     dic: data.companyDic,
   });
+  await syncClientContacts(data.clientId, contacts);
 
   await prisma.$transaction([
     prisma.venue.deleteMany({ where: { eventId: id } }),
+    prisma.eventContact.deleteMany({ where: { eventId: id } }),
     prisma.event.update({
       where: { id },
-      data: { ...data, venues: { create: parseVenues(formData) } },
+      data: {
+        ...data,
+        venues: { create: parseVenues(formData) },
+        contacts: { create: contacts.map((c, idx) => ({ ...c, sortOrder: idx })) },
+      },
     }),
   ]);
 
@@ -149,7 +172,10 @@ export async function deleteEventAction(formData: FormData) {
   redirect("/events");
 }
 
-export type QuickEventState = { error?: string; event?: { id: string; title: string; companyName: string } };
+export type QuickEventState = {
+  error?: string;
+  event?: { id: string; title: string; companyName: string; quotedValue: number };
+};
 
 /**
  * Minimal event creation used from the "+ New event" modal on the Quote/
@@ -171,21 +197,23 @@ export async function quickCreateEventAction(_prev: QuickEventState, formData: F
     return { error: "All fields are required." };
   }
 
+  const number = await nextEventNumber();
   const event = await prisma.event.create({
     data: {
       title,
-      clientName,
+      number,
       companyName,
       startDate: new Date(startDate),
       endDate: new Date(endDate),
       ownerId: user.id,
+      contacts: { create: [{ name: clientName }] },
       members: { create: [{ userId: user.id }] },
     },
   });
 
   revalidatePath("/events");
   revalidatePath("/dashboard");
-  return { event: { id: event.id, title: event.title, companyName: event.companyName } };
+  return { event: { id: event.id, title: event.title, companyName: event.companyName, quotedValue: event.quotedValue } };
 }
 
 export async function addMilestoneAction(formData: FormData) {

@@ -49,6 +49,9 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
       dueDate={invoice.dueDate}
       currency={invoice.currency}
       lang={lang}
+      hideItemPrices={invoice.hideItemPrices}
+      discountType={invoice.discountType}
+      total={invoice.total}
       supplier={supplier}
       customer={{
         name: invoice.event.companyName,
@@ -61,6 +64,7 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
         quantity: i.quantity,
         unitPrice: i.unitPrice,
         vatRate: i.vatRate,
+        category: i.category,
       }))}
       qrDataUrl={qrDataUrl}
       logoDataUrl={logoDataUrl}

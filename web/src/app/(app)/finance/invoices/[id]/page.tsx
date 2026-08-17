@@ -3,10 +3,11 @@ import { notFound } from "next/navigation";
 import { requireUser, canManageFinance, isAdmin } from "@/lib/authz";
 import { getInvoiceDetail, getCompanySettings } from "@/lib/queries/finance";
 import { formatCurrency, formatDate, formatDateTime } from "@/lib/format";
-import { recordPaymentAction, markInvoicePaidAction, deleteInvoiceAction } from "@/lib/actions/finance";
+import { recordPaymentAction, markInvoicePaidAction, revertInvoicePaidAction, deleteInvoiceAction } from "@/lib/actions/finance";
 import { BackLink } from "@/components/BackLink";
 import { ConfirmDeleteButton } from "@/components/ui/ConfirmDeleteButton";
 import { DownloadPdfButton } from "@/components/finance/DownloadPdfButton";
+import { groupItemsByCategory, categoryTotal } from "@/lib/line-items";
 
 export default async function InvoiceDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const user = await requireUser();
@@ -20,6 +21,12 @@ export default async function InvoiceDetailPage({ params }: { params: Promise<{ 
   const remaining = invoice.total - invoice.amountPaid;
   const overdue = invoice.status !== "PAID" && invoice.dueDate < new Date();
   const progress = invoice.total > 0 ? Math.min(100, Math.round((invoice.amountPaid / invoice.total) * 100)) : 0;
+  const groups = groupItemsByCategory(invoice.items);
+  // Rounded before comparing — base+vat is floating-point (vat sums
+  // fractional per-item amounts) while invoice.total is a stored, already-
+  // rounded Int, so an un-rounded diff is spuriously nonzero even with no
+  // discount applied (e.g. 0.34) and would otherwise show a "-0 Kč" row.
+  const discountAmount = Math.round(base + vat) - invoice.total;
 
   return (
     <div>
@@ -42,6 +49,14 @@ export default async function InvoiceDetailPage({ params }: { params: Promise<{ 
               <input type="hidden" name="invoiceId" value={invoice.id} />
               <button type="submit" className="btn">
                 Mark as paid
+              </button>
+            </form>
+          )}
+          {canManage && invoice.status === "PAID" && (
+            <form action={revertInvoicePaidAction}>
+              <input type="hidden" name="invoiceId" value={invoice.id} />
+              <button type="submit" className="btno">
+                Undo mark as paid
               </button>
             </form>
           )}
@@ -85,20 +100,38 @@ export default async function InvoiceDetailPage({ params }: { params: Promise<{ 
             </div>
           </div>
 
-          <div className="grid grid-cols-[2fr_.5fr_.7fr_.5fr_.9fr] gap-2 border-b-2 border-ink pb-1 text-[10px] mt-2">
-            <span className="heading-label">Item</span>
-            <span className="heading-label">Qty</span>
-            <span className="heading-label">Unit</span>
-            <span className="heading-label">VAT</span>
-            <span className="heading-label text-right">Total</span>
-          </div>
-          {invoice.items.map((item) => (
-            <div key={item.id} className="grid grid-cols-[2fr_.5fr_.7fr_.5fr_.9fr] gap-2 py-1 text-[11px]">
-              <span>{item.description}</span>
-              <span className="placeholder-text">{item.quantity}</span>
-              <span className="placeholder-text">{formatCurrency(item.unitPrice, invoice.currency)}</span>
-              <span className="placeholder-text">{item.vatRate}%</span>
-              <span className="text-right">{formatCurrency(item.quantity * item.unitPrice, invoice.currency)}</span>
+          {!invoice.hideItemPrices && (
+            <div className="grid grid-cols-[2fr_.5fr_.7fr_.5fr_.9fr] gap-2 border-b-2 border-ink pb-1 text-[10px] mt-2">
+              <span className="heading-label">Item</span>
+              <span className="heading-label">Qty</span>
+              <span className="heading-label">Unit</span>
+              <span className="heading-label">VAT</span>
+              <span className="heading-label text-right">Total</span>
+            </div>
+          )}
+          {groups.map((g) => (
+            <div key={g.category || "—"}>
+              {g.category && <div className="label mt-2 mb-0.5">{g.category}</div>}
+              {g.items.map((item) =>
+                invoice.hideItemPrices ? (
+                  <div key={item.id} className="py-1 text-[11px]">
+                    {item.description}
+                  </div>
+                ) : (
+                  <div key={item.id} className="grid grid-cols-[2fr_.5fr_.7fr_.5fr_.9fr] gap-2 py-1 text-[11px]">
+                    <span>{item.description}</span>
+                    <span className="placeholder-text">{item.quantity}</span>
+                    <span className="placeholder-text">{formatCurrency(item.unitPrice, invoice.currency)}</span>
+                    <span className="placeholder-text">{item.vatRate}%</span>
+                    <span className="text-right">{formatCurrency(item.quantity * item.unitPrice, invoice.currency)}</span>
+                  </div>
+                )
+              )}
+              {invoice.hideItemPrices && g.category && (
+                <div className="flex justify-end text-[11px] font-semibold py-0.5">
+                  {formatCurrency(categoryTotal(g.items), invoice.currency)}
+                </div>
+              )}
             </div>
           ))}
           <div className="flex justify-end items-center gap-6 mt-2 text-[12px]">
@@ -110,9 +143,14 @@ export default async function InvoiceDetailPage({ params }: { params: Promise<{ 
               <span className="label mr-2">VAT</span>
               {formatCurrency(vat, invoice.currency)}
             </div>
+            {discountAmount > 0 && (
+              <div>
+                <span className="label mr-2">Discount</span>-{formatCurrency(discountAmount, invoice.currency)}
+              </div>
+            )}
             <div className="flex items-center gap-1.5">
               <span className="label mr-1">To pay</span>
-              <span className="font-semibold text-base">{formatCurrency(base + vat, invoice.currency)}</span>
+              <span className="font-semibold text-base">{formatCurrency(invoice.total, invoice.currency)}</span>
               <span className="pill !border-accent text-accent">{invoice.currency}</span>
             </div>
           </div>

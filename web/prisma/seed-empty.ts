@@ -10,6 +10,8 @@ const prisma = new PrismaClient({ adapter });
 const ADMIN_EMAIL = "admin@eventsystem.cz";
 const ADMIN_PASSWORD = "changeme123";
 
+const DEFAULT_CATEGORIES = ["Video", "Audio", "Rigging", "People", "Other"];
+
 /**
  * Blank-slate seed for testing against real data — wipes every table the
  * same way prisma/seed.ts does (plus CustomRole, which that script never
@@ -17,6 +19,9 @@ const ADMIN_PASSWORD = "changeme123";
  * quotes, invoices, expenses, time entries or company settings. Everything
  * from here on is entered through the app itself — Settings > Company for
  * the real company profile, Settings > Users for real accounts, etc.
+ * Default line-item categories ARE seeded here (Video/Audio/Rigging/People/
+ * Other) since those are app configuration, not demo data — Settings >
+ * Categories lets them be renamed/added/deleted afterward.
  */
 async function main() {
   await prisma.invoiceEvent.deleteMany();
@@ -30,16 +35,21 @@ async function main() {
   await prisma.milestone.deleteMany();
   await prisma.venue.deleteMany();
   await prisma.eventMember.deleteMany();
+  await prisma.eventContact.deleteMany();
   await prisma.event.deleteMany();
   await prisma.clientContact.deleteMany();
   await prisma.client.deleteMany();
   await prisma.user.deleteMany();
   await prisma.customRole.deleteMany();
   await prisma.companySettings.deleteMany();
+  await prisma.itemCategory.deleteMany();
 
   const passwordHash = await bcrypt.hash(ADMIN_PASSWORD, 10);
   await prisma.user.create({
     data: { name: "Admin", email: ADMIN_EMAIL, passwordHash, role: "ADMIN" },
+  });
+  await prisma.itemCategory.createMany({
+    data: DEFAULT_CATEGORIES.map((name, sortOrder) => ({ name, sortOrder })),
   });
 
   console.log("Seeded an empty database — no events, quotes, invoices, expenses, time entries or company settings.");

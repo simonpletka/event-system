@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { QuickCreateEventModal } from "@/components/QuickCreateEventModal";
 
-export type PickableEvent = { id: string; title: string; companyName: string };
+export type PickableEvent = { id: string; title: string; companyName: string; quotedValue?: number };
 
 export function EventPicker({
   name,

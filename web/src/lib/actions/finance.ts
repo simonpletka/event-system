@@ -6,7 +6,7 @@ import { prisma } from "@/lib/prisma";
 import { requireUser, canManageFinance, canAddExpense, canPickOtherPayer, eventWhereForUser, isAdmin } from "@/lib/authz";
 import { nextQuoteNumber, nextInvoiceNumber, variableSymbolFor } from "@/lib/document-number";
 import { saveReceipt, deleteReceipt } from "@/lib/uploads";
-import type { ExpenseCategory, QuoteStatus, Currency } from "@/generated/prisma/enums";
+import type { ExpenseCategory, QuoteStatus, Currency, DiscountType } from "@/generated/prisma/enums";
 
 export type FinanceFormState = { error?: string; success?: boolean };
 
@@ -15,8 +15,9 @@ function parseItems(formData: FormData) {
   const quantities = formData.getAll("itemQuantity") as string[];
   const unitPrices = formData.getAll("itemUnitPrice") as string[];
   const vatRates = formData.getAll("itemVatRate") as string[];
+  const categories = formData.getAll("itemCategory") as string[];
 
-  const items: { description: string; quantity: number; unitPrice: number; vatRate: number }[] = [];
+  const items: { description: string; quantity: number; unitPrice: number; vatRate: number; category: string }[] = [];
   for (let i = 0; i < descriptions.length; i++) {
     if (!descriptions[i]?.trim()) continue;
     items.push({
@@ -24,6 +25,7 @@ function parseItems(formData: FormData) {
       quantity: Math.max(1, Number(quantities[i]) || 1),
       unitPrice: Math.max(0, Number(unitPrices[i]) || 0),
       vatRate: Number(vatRates[i] ?? 21) || 0,
+      category: (categories[i] ?? "").trim(),
     });
   }
   return items;
@@ -31,6 +33,30 @@ function parseItems(formData: FormData) {
 
 function itemsTotal(items: { quantity: number; unitPrice: number; vatRate: number }[]) {
   return Math.round(items.reduce((sum, i) => sum + i.quantity * i.unitPrice * (1 + i.vatRate / 100), 0));
+}
+
+/**
+ * Discount is applied to the pre-VAT base, then VAT is recomputed on the
+ * discounted base — not a flat cut off the final total. That's both the
+ * legally correct way to handle a discounted invoice (VAT is owed on what
+ * was actually charged) and the more common real-world behavior.
+ */
+function applyDiscount(
+  items: { quantity: number; unitPrice: number; vatRate: number }[],
+  discountType: DiscountType,
+  discountValue: number
+) {
+  const base = items.reduce((sum, i) => sum + i.quantity * i.unitPrice, 0);
+  const vat = items.reduce((sum, i) => sum + i.quantity * i.unitPrice * (i.vatRate / 100), 0);
+  if (discountType === "NONE" || discountValue <= 0) {
+    return { total: Math.round(base + vat), discountAmount: 0 };
+  }
+  const avgVatRate = base > 0 ? vat / base : 0;
+  const discountAmount =
+    discountType === "PERCENT" ? Math.round(base * (Math.min(100, discountValue) / 100)) : Math.min(base, discountValue);
+  const discountedBase = base - discountAmount;
+  const discountedVat = discountedBase * avgVatRate;
+  return { total: Math.round(discountedBase + discountedVat), discountAmount };
 }
 
 // --- Quotes ---
@@ -43,19 +69,24 @@ export async function createQuoteAction(_prev: FinanceFormState, formData: FormD
   const validUntil = String(formData.get("validUntil") ?? "");
   const status = (formData.get("status") as QuoteStatus) || "DRAFT";
   const currency = (formData.get("currency") as Currency) || "CZK";
+  const hideItemPrices = formData.get("hideItemPrices") === "on";
   const items = parseItems(formData);
 
   if (!eventId || !validUntil || items.length === 0) {
     return { error: "Event, valid-until date and at least one line item are required." };
   }
 
-  const number = await nextQuoteNumber();
+  const event = await prisma.event.findUnique({ where: { id: eventId }, select: { number: true } });
+  if (!event) return { error: "Event not found." };
+
+  const number = await nextQuoteNumber(eventId, event.number);
   const quote = await prisma.quote.create({
     data: {
       eventId,
       number,
       status,
       currency,
+      hideItemPrices,
       validUntil: new Date(validUntil),
       total: itemsTotal(items),
       items: { create: items.map((i, idx) => ({ ...i, sortOrder: idx })) },
@@ -79,6 +110,7 @@ export async function updateQuoteAction(_prev: FinanceFormState, formData: FormD
   const validUntil = String(formData.get("validUntil") ?? "");
   const status = (formData.get("status") as QuoteStatus) || "DRAFT";
   const currency = (formData.get("currency") as Currency) || "CZK";
+  const hideItemPrices = formData.get("hideItemPrices") === "on";
   const items = parseItems(formData);
   if (!validUntil || items.length === 0) return { error: "Valid-until date and at least one line item are required." };
 
@@ -89,6 +121,7 @@ export async function updateQuoteAction(_prev: FinanceFormState, formData: FormD
       data: {
         status,
         currency,
+        hideItemPrices,
         validUntil: new Date(validUntil),
         total: itemsTotal(items),
         items: { create: items.map((i, idx) => ({ ...i, sortOrder: idx })) },
@@ -123,14 +156,14 @@ export async function convertQuoteToInvoiceAction(formData: FormData) {
   const quoteId = String(formData.get("quoteId"));
   const quote = await prisma.quote.findUnique({
     where: { id: quoteId },
-    include: { items: true, invoices: true },
+    include: { items: true, invoices: true, event: { select: { number: true } } },
   });
   if (!quote || quote.status !== "ACCEPTED" || quote.invoices.length > 0) return;
 
   const company = await prisma.companySettings.findUnique({ where: { id: "singleton" } });
   const dueDays = company?.defaultDueDays ?? 14;
 
-  const number = await nextInvoiceNumber();
+  const number = await nextInvoiceNumber(quote.eventId, quote.event.number);
   const dueDate = new Date(Date.now() + dueDays * 86400000);
 
   const invoice = await prisma.invoice.create({
@@ -141,6 +174,7 @@ export async function convertQuoteToInvoiceAction(formData: FormData) {
       variableSymbol: variableSymbolFor(number),
       total: quote.total,
       currency: quote.currency,
+      hideItemPrices: quote.hideItemPrices,
       dueDate,
       status: "ISSUED",
       items: {
@@ -149,6 +183,7 @@ export async function convertQuoteToInvoiceAction(formData: FormData) {
           quantity: i.quantity,
           unitPrice: i.unitPrice,
           vatRate: i.vatRate,
+          category: i.category,
           sortOrder: i.sortOrder,
         })),
       },
@@ -176,26 +211,43 @@ export async function createInvoiceAction(_prev: FinanceFormState, formData: For
   const eventId = String(formData.get("eventId") ?? "");
   const dueDate = String(formData.get("dueDate") ?? "");
   const currency = (formData.get("currency") as Currency) || "CZK";
+  const hideItemPrices = formData.get("hideItemPrices") === "on";
+  const discountType = (formData.get("discountType") as DiscountType) || "NONE";
+  const discountValue = Math.max(0, Number(formData.get("discountValue")) || 0);
   const items = parseItems(formData);
   if (!eventId || !dueDate || items.length === 0) {
     return { error: "Event, due date and at least one line item are required." };
   }
 
-  const number = await nextInvoiceNumber();
+  const event = await prisma.event.findUnique({ where: { id: eventId }, select: { number: true } });
+  if (!event) return { error: "Event not found." };
+
+  const { total, discountAmount } = applyDiscount(items, discountType, discountValue);
+  const number = await nextInvoiceNumber(eventId, event.number);
   const invoice = await prisma.invoice.create({
     data: {
       eventId,
       number,
       variableSymbol: variableSymbolFor(number),
-      total: itemsTotal(items),
+      total,
       currency,
+      hideItemPrices,
+      discountType,
+      discountValue,
       dueDate: new Date(dueDate),
       status: "ISSUED",
       items: { create: items.map((i, idx) => ({ ...i, sortOrder: idx })) },
       history: {
         create: [
           { type: "CREATED", message: "Invoice created", userId: user.id },
-          { type: "ISSUED", message: `Issued and sent — ${user.name}`, userId: user.id },
+          {
+            type: "ISSUED",
+            message:
+              discountAmount > 0
+                ? `Issued and sent — ${user.name} (discount applied: ${discountAmount})`
+                : `Issued and sent — ${user.name}`,
+            userId: user.id,
+          },
         ],
       },
     },
@@ -266,6 +318,39 @@ export async function markInvoicePaidAction(formData: FormData) {
     }),
     prisma.invoiceEvent.create({
       data: { invoiceId, type: "MARKED_PAID", message: `Marked as paid — ${user.name}`, userId: user.id },
+    }),
+  ]);
+
+  revalidatePath(`/finance/invoices/${invoiceId}`);
+  revalidatePath("/finance/invoices");
+}
+
+/**
+ * Undoes "Mark as paid". Recomputes amountPaid from the sum of actually
+ * recorded Payment rows (not the total value markInvoicePaidAction stuffs
+ * in), so a real payment recorded independently is never lost — only the
+ * artificial "mark as fully paid" bookkeeping gets undone. Status/paidAt
+ * are re-derived from that recomputed amount, same rule used everywhere
+ * else (>= total → PAID, > 0 → PARTLY_PAID, 0 → ISSUED).
+ */
+export async function revertInvoicePaidAction(formData: FormData) {
+  const user = await requireUser();
+  if (!canManageFinance(user)) return;
+
+  const invoiceId = String(formData.get("invoiceId"));
+  const invoice = await prisma.invoice.findUnique({ where: { id: invoiceId }, include: { payments: true } });
+  if (!invoice || invoice.status !== "PAID") return;
+
+  const realAmountPaid = invoice.payments.reduce((s, p) => s + p.amount, 0);
+  const status = realAmountPaid >= invoice.total ? "PAID" : realAmountPaid > 0 ? "PARTLY_PAID" : "ISSUED";
+
+  await prisma.$transaction([
+    prisma.invoice.update({
+      where: { id: invoiceId },
+      data: { amountPaid: realAmountPaid, status, paidAt: status === "PAID" ? invoice.paidAt : null },
+    }),
+    prisma.invoiceEvent.create({
+      data: { invoiceId, type: "PAID_REVERTED", message: `Undid "mark as paid" — ${user.name}`, userId: user.id },
     }),
   ]);
 

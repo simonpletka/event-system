@@ -13,7 +13,7 @@ function d(iso: string) {
   return new Date(iso);
 }
 
-type ItemInput = { description: string; quantity?: number; unitPrice: number; vatRate?: number };
+type ItemInput = { description: string; quantity?: number; unitPrice: number; vatRate?: number; category?: string };
 
 function withTotal(items: ItemInput[]) {
   const total = Math.round(
@@ -27,6 +27,7 @@ function withTotal(items: ItemInput[]) {
         quantity: i.quantity ?? 1,
         unitPrice: i.unitPrice,
         vatRate: i.vatRate ?? 21,
+        category: i.category ?? "",
         sortOrder: idx,
       })),
     },
@@ -49,11 +50,17 @@ async function main() {
   await prisma.milestone.deleteMany();
   await prisma.venue.deleteMany();
   await prisma.eventMember.deleteMany();
+  await prisma.eventContact.deleteMany();
   await prisma.event.deleteMany();
   await prisma.clientContact.deleteMany();
   await prisma.client.deleteMany();
   await prisma.user.deleteMany();
   await prisma.companySettings.deleteMany();
+  await prisma.itemCategory.deleteMany();
+
+  await prisma.itemCategory.createMany({
+    data: ["Video", "Audio", "Rigging", "People", "Other"].map((name, sortOrder) => ({ name, sortOrder })),
+  });
 
   await prisma.companySettings.create({
     data: {
@@ -109,12 +116,11 @@ async function main() {
   // --- Autumn Conference — confirmed, upcoming, fully fleshed out ---
   await prisma.event.create({
     data: {
+      number: "26-001",
       title: "Autumn Conference 2026",
       brief:
         "Two-day corporate conference for Kobra a.s. — keynote, breakout tracks, evening reception on the boat.",
-      clientName: "Petra Válková",
-      clientPhone: "+420 771 220 118",
-      clientEmail: "valkova@kobra.cz",
+      contacts: { create: [{ name: "Petra Válková", phone: "+420 771 220 118", email: "valkova@kobra.cz" }] },
       companyName: "Kobra a.s.",
       companyAddress: "Vinohradská 12, Praha 2",
       companyIco: "27182904",
@@ -158,14 +164,15 @@ async function main() {
       quotes: {
         create: [
           {
-            number: "2026-Q31",
+            number: "26-001",
             status: "ACCEPTED",
             validUntil: d("2026-08-15"),
             issuedAt: d("2026-07-28"),
+            hideItemPrices: false,
             ...withTotal([
-              { description: "Production management — Autumn Conference", unitPrice: 250000 },
-              { description: "Stage & light rental", unitPrice: 60000 },
-              { description: "Crew — build day", quantity: 6, unitPrice: 5000 },
+              { description: "Production management — Autumn Conference", unitPrice: 250000, category: "People" },
+              { description: "Stage & light rental", unitPrice: 60000, category: "Rigging" },
+              { description: "Crew — build day", quantity: 6, unitPrice: 5000, category: "People" },
             ]),
           },
         ],
@@ -176,17 +183,18 @@ async function main() {
   const autumn = await prisma.event.findFirstOrThrow({ where: { title: "Autumn Conference 2026" } });
   const autumnQuote = await prisma.quote.findFirstOrThrow({ where: { eventId: autumn.id } });
   const autumnInvoiceData = withTotal([
-    { description: "Production management — Autumn Conference", unitPrice: 250000 },
-    { description: "Stage & light rental", unitPrice: 60000 },
-    { description: "Crew — build day", quantity: 6, unitPrice: 5000 },
+    { description: "Production management — Autumn Conference", unitPrice: 250000, category: "People" },
+    { description: "Stage & light rental", unitPrice: 60000, category: "Rigging" },
+    { description: "Crew — build day", quantity: 6, unitPrice: 5000, category: "People" },
   ]);
   await prisma.invoice.create({
     data: {
       eventId: autumn.id,
       quoteId: autumnQuote.id,
-      number: "2026-0141",
-      variableSymbol: variableSymbol("2026-0141"),
+      number: "26-001",
+      variableSymbol: variableSymbol("26-001"),
       status: "PARTLY_PAID",
+      hideItemPrices: false,
       dueDate: d("2026-09-20"),
       issuedAt: d("2026-08-05"),
       amountPaid: Math.round(autumnInvoiceData.total / 2),
@@ -203,7 +211,7 @@ async function main() {
       },
       history: {
         create: [
-          { type: "CREATED", message: "Created from quote 2026-Q31", createdAt: d("2026-08-04"), userId: producer.id },
+          { type: "CREATED", message: "Created from quote 26-001", createdAt: d("2026-08-04"), userId: producer.id },
           { type: "ISSUED", message: "Issued and sent — J. Novák", createdAt: d("2026-08-05"), userId: producer.id },
           {
             type: "PAYMENT_RECORDED",
@@ -219,11 +227,10 @@ async function main() {
   // --- Product launch — quote sent, waiting on client ---
   await prisma.event.create({
     data: {
+      number: "26-002",
       title: "Product launch",
       brief: "Nordika's autumn product launch — press + partner event.",
-      clientName: "Tomáš Beneš",
-      clientPhone: "+420 602 118 400",
-      clientEmail: "benes@nordika.cz",
+      contacts: { create: [{ name: "Tomáš Beneš", phone: "+420 602 118 400", email: "benes@nordika.cz" }] },
       companyName: "Nordika",
       companyAddress: "Lidická 20, Brno",
       companyIco: "05512244",
@@ -238,7 +245,7 @@ async function main() {
       quotes: {
         create: [
           {
-            number: "2026-Q34",
+            number: "26-002",
             status: "SENT",
             validUntil: d("2026-08-31"),
             issuedAt: d("2026-08-14"),
@@ -255,11 +262,10 @@ async function main() {
   // --- Team offsite — in progress, member is assigned; deposit paid, balance due soon ---
   await prisma.event.create({
     data: {
+      number: "26-003",
       title: "Team offsite",
       brief: "Vela's internal team offsite — workshops + outdoor activities.",
-      clientName: "Lucie Marešová",
-      clientPhone: "+420 733 900 210",
-      clientEmail: "maresova@vela.cz",
+      contacts: { create: [{ name: "Lucie Marešová", phone: "+420 733 900 210", email: "maresova@vela.cz" }] },
       companyName: "Vela s.r.o.",
       companyAddress: "Náměstí Míru 5, Praha 2",
       companyIco: "09984411",
@@ -276,7 +282,7 @@ async function main() {
       quotes: {
         create: [
           {
-            number: "2026-Q35",
+            number: "26-003",
             status: "ACCEPTED",
             validUntil: d("2026-08-10"),
             issuedAt: d("2026-07-25"),
@@ -294,8 +300,8 @@ async function main() {
     data: {
       eventId: offsite.id,
       quoteId: offsiteQuote.id,
-      number: "2026-0143",
-      variableSymbol: variableSymbol("2026-0143"),
+      number: "26-003",
+      variableSymbol: variableSymbol("26-003"),
       status: "PAID",
       dueDate: d("2026-08-05"),
       issuedAt: d("2026-07-29"),
@@ -305,7 +311,7 @@ async function main() {
       payments: { create: [{ amount: depositData.total, date: d("2026-08-01"), note: "Deposit received", recordedById: accountant.id }] },
       history: {
         create: [
-          { type: "CREATED", message: "Created from quote 2026-Q35", createdAt: d("2026-07-29"), userId: accountant.id },
+          { type: "CREATED", message: "Created from quote 26-003", createdAt: d("2026-07-29"), userId: accountant.id },
           { type: "ISSUED", message: "Issued and sent — E. Kučerová", createdAt: d("2026-07-29"), userId: accountant.id },
           { type: "MARKED_PAID", message: "Deposit paid in full — E. Kučerová", createdAt: d("2026-08-01"), userId: accountant.id },
         ],
@@ -317,15 +323,15 @@ async function main() {
     data: {
       eventId: offsite.id,
       quoteId: offsiteQuote.id,
-      number: "2026-0144",
-      variableSymbol: variableSymbol("2026-0144"),
+      number: "26-003_v2",
+      variableSymbol: variableSymbol("26-003_v2"),
       status: "ISSUED",
       dueDate: d("2026-08-22"),
       issuedAt: d("2026-08-08"),
       ...balanceData,
       history: {
         create: [
-          { type: "CREATED", message: "Created from quote 2026-Q35", createdAt: d("2026-08-08"), userId: accountant.id },
+          { type: "CREATED", message: "Created from quote 26-003", createdAt: d("2026-08-08"), userId: accountant.id },
           { type: "ISSUED", message: "Issued and sent — E. Kučerová", createdAt: d("2026-08-08"), userId: accountant.id },
         ],
       },
@@ -335,11 +341,10 @@ async function main() {
   // --- Summer Gala — ended, waiting to be invoiced (needs-attention tile) ---
   await prisma.event.create({
     data: {
+      number: "26-004",
       title: "Summer Gala",
       brief: "Aeris annual summer gala — 400 guests, dinner + live music.",
-      clientName: "Radka Sýkorová",
-      clientPhone: "+420 604 552 019",
-      clientEmail: "sykorova@aeris.cz",
+      contacts: { create: [{ name: "Radka Sýkorová", phone: "+420 604 552 019", email: "sykorova@aeris.cz" }] },
       companyName: "Aeris",
       companyAddress: "Karlovo náměstí 10, Praha 2",
       companyIco: "08812234",
@@ -356,11 +361,10 @@ async function main() {
   // --- Roadshow — closed, initial quote rejected, smaller follow-up job overdue ---
   await prisma.event.create({
     data: {
+      number: "26-005",
       title: "Roadshow",
       brief: "Aeris regional roadshow — three-city pop-up activation.",
-      clientName: "Radka Sýkorová",
-      clientPhone: "+420 604 552 019",
-      clientEmail: "sykorova@aeris.cz",
+      contacts: { create: [{ name: "Radka Sýkorová", phone: "+420 604 552 019", email: "sykorova@aeris.cz" }] },
       companyName: "Aeris",
       companyAddress: "Karlovo náměstí 10, Praha 2",
       companyIco: "08812234",
@@ -373,7 +377,7 @@ async function main() {
       quotes: {
         create: [
           {
-            number: "2026-Q27",
+            number: "26-005",
             status: "DECLINED",
             validUntil: d("2026-07-02"),
             issuedAt: d("2026-06-18"),
@@ -389,8 +393,8 @@ async function main() {
   await prisma.invoice.create({
     data: {
       eventId: roadshow.id,
-      number: "2026-0139",
-      variableSymbol: variableSymbol("2026-0139"),
+      number: "26-005",
+      variableSymbol: variableSymbol("26-005"),
       status: "ISSUED",
       dueDate: d("2026-07-16"),
       issuedAt: d("2026-07-02"),
@@ -407,11 +411,10 @@ async function main() {
   // --- Dealer meeting — fresh inquiry, quote still in draft ---
   await prisma.event.create({
     data: {
+      number: "26-006",
       title: "Dealer meeting",
       brief: "Regional dealer meeting for Kobra a.s. — scope not yet confirmed.",
-      clientName: "Petra Válková",
-      clientPhone: "+420 771 220 118",
-      clientEmail: "valkova@kobra.cz",
+      contacts: { create: [{ name: "Petra Válková", phone: "+420 771 220 118", email: "valkova@kobra.cz" }] },
       companyName: "Kobra a.s.",
       companyAddress: "Vinohradská 12, Praha 2",
       companyIco: "27182904",
@@ -424,7 +427,7 @@ async function main() {
       quotes: {
         create: [
           {
-            number: "2026-Q33",
+            number: "26-006",
             status: "DRAFT",
             validUntil: d("2026-09-15"),
             issuedAt: d("2026-08-11"),
@@ -438,11 +441,10 @@ async function main() {
   // --- Spring Kickoff — archived, closed and paid ---
   await prisma.event.create({
     data: {
+      number: "26-007",
       title: "Spring Kickoff",
       brief: "Nordika's spring kickoff event — completed and archived.",
-      clientName: "Tomáš Beneš",
-      clientPhone: "+420 602 118 400",
-      clientEmail: "benes@nordika.cz",
+      contacts: { create: [{ name: "Tomáš Beneš", phone: "+420 602 118 400", email: "benes@nordika.cz" }] },
       companyName: "Nordika",
       companyAddress: "Lidická 20, Brno",
       companyIco: "05512244",
@@ -460,8 +462,8 @@ async function main() {
   await prisma.invoice.create({
     data: {
       eventId: springKickoff.id,
-      number: "2026-0056",
-      variableSymbol: variableSymbol("2026-0056"),
+      number: "26-007",
+      variableSymbol: variableSymbol("26-007"),
       status: "PAID",
       dueDate: d("2026-03-28"),
       issuedAt: d("2026-03-15"),

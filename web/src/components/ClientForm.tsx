@@ -7,7 +7,15 @@ import { AddressAutocompleteInput } from "@/components/ui/AddressAutocompleteInp
 
 const initialState: ClientFormState = {};
 
-export type ClientFormDefaults = { id?: string; name: string; address: string; ico: string; dic: string; note: string };
+export type ClientFormDefaults = {
+  id?: string;
+  name: string;
+  address: string;
+  ico: string;
+  dic: string;
+  note: string;
+  invoicingEmail: string;
+};
 
 export function ClientForm({ defaults }: { defaults: ClientFormDefaults }) {
   const isEdit = Boolean(defaults.id);
@@ -37,6 +45,10 @@ export function ClientForm({ defaults }: { defaults: ClientFormDefaults }) {
           <input name="dic" defaultValue={defaults.dic} className="input" />
         </label>
       </div>
+      <label className="flex flex-col gap-1.5">
+        <span className="heading-label">Invoicing email</span>
+        <input name="invoicingEmail" type="email" defaultValue={defaults.invoicingEmail} className="input" />
+      </label>
       <label className="flex flex-col gap-1.5">
         <span className="heading-label">Note</span>
         <textarea name="note" defaultValue={defaults.note} rows={3} className="input" />

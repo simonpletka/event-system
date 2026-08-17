@@ -25,6 +25,7 @@ export default async function EditClientPage({ params }: { params: Promise<{ id:
             ico: client.ico,
             dic: client.dic,
             note: client.note,
+            invoicingEmail: client.invoicingEmail,
           }}
         />
       )}

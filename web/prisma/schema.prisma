@@ -109,6 +109,13 @@ enum InvoiceEventType {
   ISSUED
   PAYMENT_RECORDED
   MARKED_PAID
+  PAID_REVERTED
+}
+
+enum DiscountType {
+  NONE
+  PERCENT
+  FIXED
 }
 
 // Per-document currency (brief: default CZK, switchable when creating a
@@ -146,12 +153,14 @@ model User {
 }
 
 model Event {
-  id             String      @id @default(cuid())
+  id      String @id @default(cuid())
+  // Short display identifier, "YY-XXX" (e.g. "26-001") — see document-number.ts.
+  // Assigned once at creation by finding the lowest unused XXX for the
+  // current year, so a permanently-deleted event's number becomes reusable
+  // rather than just skipped. Quote/Invoice numbers are derived from this.
+  number         String      @unique
   title          String
   brief          String      @default("")
-  clientName     String // contact person
-  clientPhone    String      @default("")
-  clientEmail    String      @default("")
   companyName    String
   companyAddress String      @default("")
   companyIco     String      @default("")
@@ -183,12 +192,30 @@ model Event {
   timeEntries TimeEntry[]
   quotes      Quote[]
   invoices    Invoice[]
+  contacts    EventContact[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   @@index([startDate])
   @@index([status])
+}
+
+// One or more contact people for an event's client side. Replaces the old
+// single clientName/clientPhone/clientEmail fields — an event can have 1+
+// contacts, and saving the event auto-syncs each onto the linked Client's
+// own contact list (see resolveClientId/syncClientContacts in
+// lib/actions/clients.ts). Deleting a synced ClientContact from the Client
+// page doesn't touch this row — the two are independent copies, not linked
+// by a foreign key, so removing one never silently loses the other.
+model EventContact {
+  id        String @id @default(cuid())
+  eventId   String
+  event     Event  @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  name      String
+  phone     String @default("")
+  email     String @default("")
+  sortOrder Int    @default(0)
 }
 
 // Producer/Member assignment to an event — drives §2.2 visibility rules.
@@ -280,6 +307,10 @@ model Quote {
   status     QuoteStatus @default(DRAFT)
   validUntil DateTime
   issuedAt   DateTime    @default(now())
+  // When true (the default), the PDF/preview hide each item's individual
+  // price and show only each category's subtotal plus the grand total —
+  // useful for a client-facing breakdown that doesn't reveal per-item cost.
+  hideItemPrices Boolean @default(true)
 
   items    QuoteItem[]
   invoices Invoice[] // an accepted quote that's been converted shows "Invoiced <number>" instead of "Convert"
@@ -293,7 +324,11 @@ model QuoteItem {
   quantity    Int    @default(1)
   unitPrice   Int
   vatRate     Int    @default(21)
-  sortOrder   Int    @default(0)
+  // Free text, not a foreign key — matched against Settings' default
+  // category list in the UI, but a quote can also introduce a one-off
+  // category name that's never saved to that global list. Blank = uncategorized.
+  category  String @default("")
+  sortOrder Int    @default(0)
 }
 
 model Invoice {
@@ -304,6 +339,9 @@ model Invoice {
   quote          Quote?        @relation(fields: [quoteId], references: [id])
   number         String
   variableSymbol String
+  // `total` is the final, post-discount amount actually owed — the same
+  // value every existing consumer (KPIs, reports, payment tracking) already
+  // reads, so nothing downstream needed to change when discounts were added.
   total          Int
   currency       Currency      @default(CZK)
   amountPaid     Int           @default(0)
@@ -311,6 +349,9 @@ model Invoice {
   dueDate        DateTime
   issuedAt       DateTime      @default(now())
   paidAt         DateTime?
+  hideItemPrices Boolean       @default(true) // see Quote.hideItemPrices
+  discountType   DiscountType  @default(NONE)
+  discountValue  Int           @default(0) // percent (0-100) if PERCENT, minor-currency amount if FIXED
 
   items    InvoiceItem[]
   payments Payment[]
@@ -328,6 +369,7 @@ model InvoiceItem {
   quantity    Int     @default(1)
   unitPrice   Int
   vatRate     Int     @default(21)
+  category    String  @default("") // see QuoteItem.category
   sortOrder   Int     @default(0)
 }
 
@@ -387,7 +429,11 @@ model Client {
   ico       String   @default("")
   dic       String   @default("")
   note      String   @default("")
-  createdAt DateTime @default(now())
+  // Where invoices should be sent. Editable directly, but also auto-filled
+  // (only if still blank) from the first event contact with an email that
+  // gets synced onto this client — see syncClientContacts() in actions/clients.ts.
+  invoicingEmail String   @default("")
+  createdAt      DateTime @default(now())
 
   contacts ClientContact[]
   events   Event[]
@@ -403,4 +449,15 @@ model ClientContact {
   role     String @default("")
   phone    String @default("")
   email    String @default("")
+}
+
+// Org-wide default categories offered when tagging a quote/invoice line item
+// (seeded: Video, Audio, Rigging, People, Other). Admin/Accountant-editable
+// in Settings. A quote can still tag an item with a category name that isn't
+// in this list at all — that one-off name is just stored as free text on the
+// item itself and never written back here (see QuoteItem.category).
+model ItemCategory {
+  id        String @id @default(cuid())
+  name      String @unique
+  sortOrder Int    @default(0)
 }

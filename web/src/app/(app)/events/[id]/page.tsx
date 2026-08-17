@@ -53,13 +53,20 @@ export default async function EventOverviewPage({ params }: { params: Promise<{ 
         <div className="label mt-3.5">Client</div>
         <div className="grid grid-cols-2 gap-2.5 mt-1 text-[13px]">
           <div className="border border-ink/25 p-2">
-            <div className="label">Contact</div>
-            {event.clientName}
-            <div className="placeholder-text text-[11px] mt-0.5">
-              {event.clientPhone}
-              <br />
-              {event.clientEmail}
+            <div className="label mb-1">
+              Contact{event.contacts.length === 1 ? "" : "s"} ({event.contacts.length})
             </div>
+            {event.contacts.length === 0 && <p className="placeholder-text text-[11px]">None on file.</p>}
+            {event.contacts.map((c) => (
+              <div key={c.id} className="mb-1.5 last:mb-0">
+                {c.name}
+                <div className="placeholder-text text-[11px]">
+                  {c.phone}
+                  {c.phone && c.email ? " · " : ""}
+                  {c.email}
+                </div>
+              </div>
+            ))}
           </div>
           <div className="border border-ink/25 p-2">
             <div className="label">Company</div>

@@ -7,6 +7,8 @@ import { CreateUserForm } from "@/components/settings/CreateUserForm";
 import { CompanySettingsForm } from "@/components/settings/CompanySettingsForm";
 import { RoleReferenceTable } from "@/components/settings/RoleReferenceTable";
 import { RolesTab } from "@/components/settings/RolesTab";
+import { CategoriesTab } from "@/components/settings/CategoriesTab";
+import { getItemCategories } from "@/lib/actions/categories";
 
 export default async function SettingsPage({
   searchParams,
@@ -18,7 +20,7 @@ export default async function SettingsPage({
 
   const canUsers = canManageUsers(user);
   const canCompany = canManageCompanySettings(user);
-  const tab = (params.tab as "users" | "roles" | "company") || (canUsers ? "users" : "company");
+  const tab = (params.tab as "users" | "roles" | "company" | "categories") || (canUsers ? "users" : "company");
 
   if (!canUsers && !canCompany) {
     return (
@@ -33,12 +35,13 @@ export default async function SettingsPage({
     );
   }
 
-  const [users, company, customRoles] = await Promise.all([
+  const [users, company, customRoles, categories] = await Promise.all([
     canUsers ? prisma.user.findMany({ orderBy: { name: "asc" } }) : Promise.resolve([]),
     getCompanySettings(),
     canUsers
       ? prisma.customRole.findMany({ orderBy: { name: "asc" }, include: { _count: { select: { users: true } } } })
       : Promise.resolve([]),
+    canCompany ? getItemCategories() : Promise.resolve([]),
   ]);
   const roleRows = customRoles.map((r) => ({ ...r, userCount: r._count.users }));
 
@@ -69,12 +72,20 @@ export default async function SettingsPage({
           </>
         )}
         {canCompany && (
-          <Link
-            href="/settings?tab=company"
-            className={`text-[9px] tracking-[0.14em] uppercase pb-1.5 border-b-2 ${tab === "company" ? "border-accent text-accent" : "border-transparent placeholder-text hover:text-ink"}`}
-          >
-            Company
-          </Link>
+          <>
+            <Link
+              href="/settings?tab=company"
+              className={`text-[9px] tracking-[0.14em] uppercase pb-1.5 border-b-2 ${tab === "company" ? "border-accent text-accent" : "border-transparent placeholder-text hover:text-ink"}`}
+            >
+              Company
+            </Link>
+            <Link
+              href="/settings?tab=categories"
+              className={`text-[9px] tracking-[0.14em] uppercase pb-1.5 border-b-2 ${tab === "categories" ? "border-accent text-accent" : "border-transparent placeholder-text hover:text-ink"}`}
+            >
+              Categories
+            </Link>
+          </>
         )}
       </div>
 
@@ -90,6 +101,7 @@ export default async function SettingsPage({
         )}
         {tab === "roles" && canUsers && <RolesTab roles={roleRows} />}
         {tab === "company" && canCompany && <CompanySettingsForm defaults={company} />}
+        {tab === "categories" && canCompany && <CategoriesTab categories={categories} />}
       </div>
     </div>
   );

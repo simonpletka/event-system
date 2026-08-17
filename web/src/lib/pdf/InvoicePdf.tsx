@@ -2,6 +2,8 @@ import { Document, Page, Text, View, Image } from "@react-pdf/renderer";
 import type { CurrencyCode } from "@/lib/format";
 import { DEFAULT_ACCENT, sharedStyles as styles, money, pdfDate as date, registerAppFont } from "./shared";
 import { pdfLabels, type PdfLang } from "./i18n";
+import { groupItemsByCategory, categoryTotal } from "@/lib/line-items";
+import type { DiscountType } from "@/generated/prisma/enums";
 
 export type InvoicePdfProps = {
   invoiceNumber: string;
@@ -10,9 +12,12 @@ export type InvoicePdfProps = {
   dueDate: Date;
   currency: CurrencyCode;
   lang: PdfLang;
+  hideItemPrices: boolean;
+  discountType: DiscountType;
   supplier: { name: string; address: string; ico: string; dic: string; bankAccount: string; isVatPayer: boolean };
   customer: { name: string; address: string; ico: string; dic: string };
-  items: { description: string; quantity: number; unitPrice: number; vatRate: number }[];
+  items: { description: string; quantity: number; unitPrice: number; vatRate: number; category: string }[];
+  total: number;
   qrDataUrl: string | null;
   logoDataUrl: string | null;
   accentColor: string;
@@ -25,9 +30,12 @@ export function InvoicePdf({
   dueDate,
   currency,
   lang,
+  hideItemPrices,
+  discountType,
   supplier,
   customer,
   items,
+  total,
   qrDataUrl,
   logoDataUrl,
   accentColor,
@@ -36,8 +44,9 @@ export function InvoicePdf({
   const fontFamily = registerAppFont();
   const base = items.reduce((s, i) => s + i.quantity * i.unitPrice, 0);
   const vat = items.reduce((s, i) => s + i.quantity * i.unitPrice * (i.vatRate / 100), 0);
-  const total = base + vat;
+  const discountAmount = Math.round(base + vat) - total;
   const accent = accentColor || DEFAULT_ACCENT;
+  const groups = groupItemsByCategory(items);
 
   return (
     <Document>
@@ -83,20 +92,38 @@ export function InvoicePdf({
         </View>
 
         <View style={styles.table}>
-          <View style={styles.tableHeaderRow}>
-            <Text style={[styles.th, styles.colDesc]}>{t.item}</Text>
-            <Text style={[styles.th, styles.colQty]}>{t.qty}</Text>
-            <Text style={[styles.th, styles.colUnit]}>{t.unit}</Text>
-            <Text style={[styles.th, styles.colVat]}>{t.vat}</Text>
-            <Text style={[styles.th, styles.colTotal]}>{t.total}</Text>
-          </View>
-          {items.map((item, i) => (
-            <View key={i} style={styles.tableRow}>
-              <Text style={styles.colDesc}>{item.description}</Text>
-              <Text style={styles.colQty}>{item.quantity}</Text>
-              <Text style={styles.colUnit}>{money(item.unitPrice, currency)}</Text>
-              <Text style={styles.colVat}>{item.vatRate}%</Text>
-              <Text style={styles.colTotal}>{money(item.quantity * item.unitPrice, currency)}</Text>
+          {!hideItemPrices && (
+            <View style={styles.tableHeaderRow}>
+              <Text style={[styles.th, styles.colDesc]}>{t.item}</Text>
+              <Text style={[styles.th, styles.colQty]}>{t.qty}</Text>
+              <Text style={[styles.th, styles.colUnit]}>{t.unit}</Text>
+              <Text style={[styles.th, styles.colVat]}>{t.vat}</Text>
+              <Text style={[styles.th, styles.colTotal]}>{t.total}</Text>
+            </View>
+          )}
+          {groups.map((g, gi) => (
+            <View key={gi}>
+              {g.category ? <Text style={[styles.label, { marginTop: 6 }]}>{g.category}</Text> : null}
+              {g.items.map((item, i) =>
+                hideItemPrices ? (
+                  <Text key={i} style={[styles.tableRow, { paddingVertical: 3 }]}>
+                    {item.description}
+                  </Text>
+                ) : (
+                  <View key={i} style={styles.tableRow}>
+                    <Text style={styles.colDesc}>{item.description}</Text>
+                    <Text style={styles.colQty}>{item.quantity}</Text>
+                    <Text style={styles.colUnit}>{money(item.unitPrice, currency)}</Text>
+                    <Text style={styles.colVat}>{item.vatRate}%</Text>
+                    <Text style={styles.colTotal}>{money(item.quantity * item.unitPrice, currency)}</Text>
+                  </View>
+                )
+              )}
+              {hideItemPrices && g.category ? (
+                <Text style={{ fontSize: 9, fontWeight: 700, textAlign: "right" }}>
+                  {money(categoryTotal(g.items), currency)}
+                </Text>
+              ) : null}
             </View>
           ))}
         </View>
@@ -110,6 +137,12 @@ export function InvoicePdf({
             <Text style={styles.label}>{t.vat}</Text>
             <Text style={styles.summaryValue}>{money(vat, currency)}</Text>
           </View>
+          {discountType !== "NONE" && discountAmount > 0 ? (
+            <View style={styles.summaryBlock}>
+              <Text style={styles.label}>{t.discount}</Text>
+              <Text style={styles.summaryValue}>-{money(discountAmount, currency)}</Text>
+            </View>
+          ) : null}
           <View style={styles.summaryBlock}>
             <Text style={styles.label}>{t.toPay}</Text>
             <Text style={[styles.toPayValue, { color: accent }]}>{money(total, currency)}</Text>

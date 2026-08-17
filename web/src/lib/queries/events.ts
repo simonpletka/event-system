@@ -21,7 +21,8 @@ export async function getEventList(user: SessionUser, filters: EventListFilters)
           OR: [
             { title: { contains: filters.q } },
             { companyName: { contains: filters.q } },
-            { clientName: { contains: filters.q } },
+            { number: { contains: filters.q } },
+            { contacts: { some: { name: { contains: filters.q } } } },
           ],
         }
       : {}),
@@ -72,6 +73,7 @@ export const getEventDetail = cache(async function getEventDetail(user: SessionU
       timeEntries: { include: { user: true }, orderBy: { date: "desc" } },
       quotes: { orderBy: { issuedAt: "desc" } },
       invoices: { orderBy: { issuedAt: "desc" } },
+      contacts: { orderBy: { sortOrder: "asc" } },
     },
   });
   return event;

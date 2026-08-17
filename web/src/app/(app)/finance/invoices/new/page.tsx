@@ -3,6 +3,7 @@ import { requireUser, canManageFinance, eventWhereForUser, quoteWhereForUser } f
 import { prisma } from "@/lib/prisma";
 import { formatCurrency, formatDate } from "@/lib/format";
 import { convertQuoteToInvoiceAction } from "@/lib/actions/finance";
+import { getItemCategories } from "@/lib/actions/categories";
 import { InvoiceForm } from "@/components/finance/InvoiceForm";
 
 export default async function NewInvoicePage() {
@@ -17,10 +18,10 @@ export default async function NewInvoicePage() {
     );
   }
 
-  const [events, company, eligibleQuotes] = await Promise.all([
+  const [events, company, eligibleQuotes, categoryRows] = await Promise.all([
     prisma.event.findMany({
       where: eventWhereForUser(user),
-      select: { id: true, title: true, companyName: true },
+      select: { id: true, title: true, companyName: true, quotedValue: true },
       orderBy: { title: "asc" },
     }),
     prisma.companySettings.findUnique({ where: { id: "singleton" } }),
@@ -29,6 +30,7 @@ export default async function NewInvoicePage() {
       include: { event: true },
       orderBy: { issuedAt: "desc" },
     }),
+    getItemCategories(),
   ]);
 
   const dueDays = company?.defaultDueDays ?? 14;
@@ -66,7 +68,7 @@ export default async function NewInvoicePage() {
       )}
 
       <div className="label mb-1.5 max-w-2xl">Or start from scratch</div>
-      <InvoiceForm events={events} defaultDueDate={defaultDueDate} />
+      <InvoiceForm events={events} categories={categoryRows.map((c) => c.name)} defaultDueDate={defaultDueDate} />
     </div>
   );
 }

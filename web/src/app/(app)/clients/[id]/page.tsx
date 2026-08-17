@@ -94,6 +94,10 @@ export default async function ClientDetailPage({ params }: { params: Promise<{ i
           <div className="label">Address</div>
           <p className="text-[13px] mt-1">{client.address || "—"}</p>
 
+          <div className="rule-thin my-2.5" />
+          <div className="label">Invoicing email</div>
+          <p className="text-[13px] mt-1">{client.invoicingEmail || "—"}</p>
+
           {client.note && (
             <>
               <div className="rule-thin my-2.5" />

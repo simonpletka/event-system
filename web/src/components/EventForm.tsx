@@ -20,15 +20,14 @@ const STATUS_OPTIONS: { value: EventStatus; label: string }[] = [
 ];
 
 type VenueRow = { name: string; address: string; note: string };
+type ContactRow = { name: string; phone: string; email: string };
 
 export type EventFormDefaults = {
   id?: string;
   title: string;
   brief: string;
   clientId: string | null;
-  clientName: string;
-  clientPhone: string;
-  clientEmail: string;
+  contacts: ContactRow[];
   companyName: string;
   companyAddress: string;
   companyIco: string;
@@ -49,6 +48,9 @@ export function EventForm({ defaults, clients }: { defaults: EventFormDefaults; 
   const action = isEdit ? updateEventAction : createEventAction;
   const [state, formAction, pending] = useActionState(action, initialState);
   const [venues, setVenues] = useState<VenueRow[]>(defaults.venues.length ? defaults.venues : [{ name: "", address: "", note: "" }]);
+  const [contacts, setContacts] = useState<ContactRow[]>(
+    defaults.contacts.length ? defaults.contacts : [{ name: "", phone: "", email: "" }]
+  );
 
   const [companyIco, setCompanyIco] = useState(defaults.companyIco);
   const [companyName, setCompanyName] = useState(defaults.companyName);
@@ -195,16 +197,43 @@ export function EventForm({ defaults, clients }: { defaults: EventFormDefaults; 
           }}
         />
       </Field>
+      <div>
+        <div className="heading-label mb-1.5">Contact people</div>
+        <p className="text-[10px] placeholder-text mb-2">
+          Each one is automatically added to this client&apos;s contact list on save.
+        </p>
+        <div className="flex flex-col gap-2">
+          {contacts.map((c, i) => (
+            <div key={i} className="grid grid-cols-[1fr_1fr_1fr_auto] gap-2 items-start">
+              <input
+                name="contactName"
+                placeholder="Name"
+                defaultValue={c.name}
+                required
+                className="input"
+              />
+              <input name="contactPhone" placeholder="Phone" defaultValue={c.phone} className="input" />
+              <input name="contactEmail" placeholder="Email" type="email" defaultValue={c.email} className="input" />
+              <button
+                type="button"
+                onClick={() => setContacts((cs) => cs.filter((_, idx) => idx !== i))}
+                className="btno px-2 py-2 text-[9px]"
+              >
+                Remove
+              </button>
+            </div>
+          ))}
+        </div>
+        <button
+          type="button"
+          onClick={() => setContacts((cs) => [...cs, { name: "", phone: "", email: "" }])}
+          className="btno mt-2 text-[9px]"
+        >
+          Add contact
+        </button>
+      </div>
+
       <div className="grid grid-cols-2 gap-3">
-        <Field label="Contact name">
-          <input name="clientName" defaultValue={defaults.clientName} required className="input" />
-        </Field>
-        <Field label="Contact phone">
-          <input name="clientPhone" defaultValue={defaults.clientPhone} className="input" />
-        </Field>
-        <Field label="Contact email">
-          <input name="clientEmail" type="email" defaultValue={defaults.clientEmail} className="input" />
-        </Field>
         <Field label="IČO">
           <div className="flex gap-1.5">
             <input
