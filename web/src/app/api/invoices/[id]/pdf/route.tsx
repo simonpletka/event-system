@@ -4,6 +4,7 @@ import { requireUser } from "@/lib/authz";
 import { getInvoiceDetail, getCompanySettings } from "@/lib/queries/finance";
 import { variableSymbolFor } from "@/lib/document-number";
 import { buildQrPaymentString } from "@/lib/qr-payment";
+import { readLogoAsDataUrl } from "@/lib/uploads";
 import { InvoicePdf } from "@/lib/pdf/InvoicePdf";
 
 export async function GET(_req: Request, { params }: { params: Promise<{ id: string }> }) {
@@ -22,6 +23,8 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
     bankAccount: "",
     isVatPayer: true,
   };
+
+  const logoDataUrl = company?.logoPath ? await readLogoAsDataUrl(company.logoPath) : null;
 
   let qrDataUrl: string | null = null;
   if (supplier.bankAccount) {
@@ -54,6 +57,8 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
         vatRate: i.vatRate,
       }))}
       qrDataUrl={qrDataUrl}
+      logoDataUrl={logoDataUrl}
+      accentColor={company?.accentColor || "#ec3013"}
     />
   );
 

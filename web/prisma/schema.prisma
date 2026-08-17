@@ -347,4 +347,6 @@ model CompanySettings {
   isVatPayer     Boolean @default(true)
   bankAccount    String  @default("") // IBAN; QR code is skipped if empty
   defaultDueDays Int     @default(14)
+  logoPath       String? // filename under uploads/logos/, served through an authenticated route like receipts
+  accentColor    String  @default("#ec3013") // hex; used for the invoice PDF's accent instead of the fixed app-theme constant
 }

@@ -5,6 +5,7 @@ import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
 import { requireUser, canManageUsers, canManageCompanySettings } from "@/lib/authz";
+import { saveLogo, deleteLogo } from "@/lib/uploads";
 import type { Role, EventsAccess, FinanceAccess, ExpensesAccess, SettingsAccess } from "@/generated/prisma/enums";
 
 export type SettingsFormState = { error?: string; success?: string };
@@ -191,6 +192,8 @@ export async function deleteCustomRoleAction(_prev: SettingsFormState, formData:
   return { success: "Role deleted." };
 }
 
+const HEX_COLOR = /^#[0-9a-fA-F]{6}$/;
+
 export async function updateCompanySettingsAction(
   _prev: SettingsFormState,
   formData: FormData
@@ -205,13 +208,35 @@ export async function updateCompanySettingsAction(
   const isVatPayer = formData.get("isVatPayer") === "on";
   const bankAccount = String(formData.get("bankAccount") ?? "").trim();
   const defaultDueDays = Math.max(1, Number(formData.get("defaultDueDays")) || 14);
+  const accentColor = String(formData.get("accentColor") ?? "#ec3013").trim();
+  const removeLogo = formData.get("removeLogo") === "on";
+  const logoFile = formData.get("logo");
 
   if (!name || !ico) return { error: "Company name and IČO are required." };
+  if (!HEX_COLOR.test(accentColor)) return { error: "Accent colour must be a hex value like #ec3013." };
+
+  const existing = await prisma.companySettings.findUnique({ where: { id: "singleton" } });
+
+  let logoPath = existing?.logoPath ?? null;
+  try {
+    if (removeLogo && logoPath) {
+      await deleteLogo(logoPath);
+      logoPath = null;
+    } else if (logoFile instanceof File && logoFile.size > 0) {
+      const saved = await saveLogo(logoFile);
+      if (saved) {
+        if (logoPath) await deleteLogo(logoPath);
+        logoPath = saved;
+      }
+    }
+  } catch (e) {
+    return { error: e instanceof Error ? e.message : "Couldn't save the logo." };
+  }
 
   await prisma.companySettings.upsert({
     where: { id: "singleton" },
-    create: { id: "singleton", name, address, ico, dic, isVatPayer, bankAccount, defaultDueDays },
-    update: { name, address, ico, dic, isVatPayer, bankAccount, defaultDueDays },
+    create: { id: "singleton", name, address, ico, dic, isVatPayer, bankAccount, defaultDueDays, accentColor, logoPath },
+    update: { name, address, ico, dic, isVatPayer, bankAccount, defaultDueDays, accentColor, logoPath },
   });
 
   revalidatePath("/settings");

@@ -1,7 +1,7 @@
 import path from "path";
 import { Document, Page, Text, View, Image, StyleSheet, Font } from "@react-pdf/renderer";
 
-const ACCENT = "#ec3013";
+const DEFAULT_ACCENT = "#ec3013";
 const INK = "#201e1d";
 
 // The built-in "Helvetica" standard font only covers WinAnsi (cp1252), which
@@ -49,7 +49,8 @@ const styles = StyleSheet.create({
   summaryRow: { flexDirection: "row", justifyContent: "flex-end", marginTop: 12, gap: 24 },
   summaryBlock: { alignItems: "flex-end" },
   summaryValue: { fontSize: 10 },
-  toPayValue: { fontSize: 14, fontWeight: 700, color: ACCENT },
+  toPayValue: { fontSize: 14, fontWeight: 700 },
+  logoImage: { width: 40, height: 40, objectFit: "contain", marginBottom: 4 },
   footerRow: {
     flexDirection: "row",
     justifyContent: "space-between",
@@ -72,6 +73,8 @@ export type InvoicePdfProps = {
   customer: { name: string; address: string; ico: string; dic: string };
   items: { description: string; quantity: number; unitPrice: number; vatRate: number }[];
   qrDataUrl: string | null;
+  logoDataUrl: string | null;
+  accentColor: string;
 };
 
 function money(n: number) {
@@ -81,16 +84,32 @@ function date(d: Date) {
   return new Intl.DateTimeFormat("en-GB", { day: "numeric", month: "short", year: "numeric" }).format(d);
 }
 
-export function InvoicePdf({ invoiceNumber, variableSymbol, issuedAt, dueDate, supplier, customer, items, qrDataUrl }: InvoicePdfProps) {
+export function InvoicePdf({
+  invoiceNumber,
+  variableSymbol,
+  issuedAt,
+  dueDate,
+  supplier,
+  customer,
+  items,
+  qrDataUrl,
+  logoDataUrl,
+  accentColor,
+}: InvoicePdfProps) {
   const base = items.reduce((s, i) => s + i.quantity * i.unitPrice, 0);
   const vat = items.reduce((s, i) => s + i.quantity * i.unitPrice * (i.vatRate / 100), 0);
   const total = base + vat;
+  const accent = accentColor || DEFAULT_ACCENT;
 
   return (
     <Document>
       <Page size="A4" style={styles.page}>
         <View style={styles.headerRow}>
-          <Text style={styles.companyName}>{supplier.name}</Text>
+          <View>
+            {/* eslint-disable-next-line jsx-a11y/alt-text -- @react-pdf/renderer's Image has no alt prop; this renders to PDF, not the DOM */}
+            {logoDataUrl ? <Image src={logoDataUrl} style={styles.logoImage} /> : null}
+            <Text style={styles.companyName}>{supplier.name}</Text>
+          </View>
           <View>
             <Text style={styles.invoiceLabel}>Invoice</Text>
             <Text style={styles.invoiceNumber}>{invoiceNumber}</Text>
@@ -151,7 +170,7 @@ export function InvoicePdf({ invoiceNumber, variableSymbol, issuedAt, dueDate, s
           </View>
           <View style={styles.summaryBlock}>
             <Text style={styles.label}>To pay</Text>
-            <Text style={styles.toPayValue}>{money(total)}</Text>
+            <Text style={[styles.toPayValue, { color: accent }]}>{money(total)}</Text>
           </View>
         </View>
 
