@@ -7,6 +7,7 @@ import { convertQuoteToInvoiceAction, deleteQuoteAction } from "@/lib/actions/fi
 import { BackLink } from "@/components/BackLink";
 import { ConfirmDeleteButton } from "@/components/ui/ConfirmDeleteButton";
 import { QuoteStatusPill } from "@/components/StatusPill";
+import { DownloadPdfButton } from "@/components/finance/DownloadPdfButton";
 
 export default async function QuoteDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const user = await requireUser();
@@ -33,9 +34,7 @@ export default async function QuoteDetailPage({ params }: { params: Promise<{ id
         </div>
         <div className="flex gap-1.5 items-center">
           <QuoteStatusPill status={quote.status} />
-          <a href={`/api/quotes/${quote.id}/pdf`} target="_blank" rel="noreferrer" className="btno">
-            Download PDF
-          </a>
+          <DownloadPdfButton pdfUrl={`/api/quotes/${quote.id}/pdf`} />
           {canManage && quote.status === "DRAFT" && (
             <Link href={`/finance/quotes/${quote.id}/edit`} className="btno">
               Edit

@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
 import { requireUser, canEditEvent, canCreateEvent, isAdmin } from "@/lib/authz";
+import { resolveClientId } from "@/lib/actions/clients";
 import type { EventStatus } from "@/generated/prisma/enums";
 
 export type EventFormState = { error?: string };
@@ -55,6 +56,12 @@ export async function createEventAction(_prev: EventFormState, formData: FormDat
   if (!data.title || !data.companyName || !data.clientName) {
     return { error: "Title, client contact and client company are required." };
   }
+  data.clientId = await resolveClientId(data.clientId, {
+    name: data.companyName,
+    address: data.companyAddress,
+    ico: data.companyIco,
+    dic: data.companyDic,
+  });
 
   const event = await prisma.event.create({
     data: {
@@ -84,6 +91,12 @@ export async function updateEventAction(_prev: EventFormState, formData: FormDat
   if (!data.title || !data.companyName || !data.clientName) {
     return { error: "Title, client contact and client company are required." };
   }
+  data.clientId = await resolveClientId(data.clientId, {
+    name: data.companyName,
+    address: data.companyAddress,
+    ico: data.companyIco,
+    dic: data.companyDic,
+  });
 
   await prisma.$transaction([
     prisma.venue.deleteMany({ where: { eventId: id } }),

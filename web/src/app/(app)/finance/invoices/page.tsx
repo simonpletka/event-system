@@ -3,6 +3,7 @@ import { requireUser, canManageFinance } from "@/lib/authz";
 import { getInvoiceList, getInvoiceKpis, type InvoiceListFilters } from "@/lib/queries/finance";
 import { formatCurrency, formatDate } from "@/lib/format";
 import { InvoiceStatusPill } from "@/components/StatusPill";
+import { DownloadPdfButton } from "@/components/finance/DownloadPdfButton";
 
 export default async function InvoicesPage({
   searchParams,
@@ -56,7 +57,7 @@ export default async function InvoicesPage({
           <Link
             key={b.key}
             href={b.key ? `/finance/invoices?bucket=${b.key}` : "/finance/invoices"}
-            className={`btno text-[9px] ${(filters.bucket ?? "") === b.key ? "bg-ink text-bg" : ""}`}
+            className={`btno text-[9px] ${(filters.bucket ?? "") === b.key ? "!bg-ink !text-bg" : ""}`}
           >
             {b.label}
           </Link>
@@ -111,14 +112,11 @@ export default async function InvoicesPage({
           <div>
             <InvoiceStatusPill status={inv.status} dueDate={inv.dueDate} paidAt={inv.paidAt} />
           </div>
-          <a
-            href={`/api/invoices/${inv.id}/pdf`}
-            target="_blank"
-            rel="noreferrer"
+          <DownloadPdfButton
+            pdfUrl={`/api/invoices/${inv.id}/pdf`}
+            label="Download"
             className="text-[9px] tracking-[0.1em] uppercase hover:text-accent"
-          >
-            Download
-          </a>
+          />
         </div>
       ))}
 

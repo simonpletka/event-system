@@ -6,10 +6,12 @@ import { variableSymbolFor } from "@/lib/document-number";
 import { buildQrPaymentString } from "@/lib/qr-payment";
 import { readLogoAsDataUrl } from "@/lib/uploads";
 import { InvoicePdf } from "@/lib/pdf/InvoicePdf";
+import type { PdfLang } from "@/lib/pdf/i18n";
 
-export async function GET(_req: Request, { params }: { params: Promise<{ id: string }> }) {
+export async function GET(req: Request, { params }: { params: Promise<{ id: string }> }) {
   const user = await requireUser();
   const { id } = await params;
+  const lang: PdfLang = new URL(req.url).searchParams.get("lang") === "cs" ? "cs" : "en";
 
   const invoice = await getInvoiceDetail(user, id);
   if (!invoice) return new Response("Not found", { status: 404 });
@@ -46,6 +48,7 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
       issuedAt={invoice.issuedAt}
       dueDate={invoice.dueDate}
       currency={invoice.currency}
+      lang={lang}
       supplier={supplier}
       customer={{
         name: invoice.event.companyName,

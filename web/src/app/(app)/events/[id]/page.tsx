@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { requireUser } from "@/lib/authz";
+import { requireUser, canManageFinance } from "@/lib/authz";
 import { getEventDetail } from "@/lib/queries/events";
 import { formatCurrency, formatDate, formatMinutes } from "@/lib/format";
 import { QuoteStatusPill, InvoiceStatusPill } from "@/components/StatusPill";
@@ -125,6 +125,11 @@ export default async function EventOverviewPage({ params }: { params: Promise<{ 
         <Link href={`/events/${event.id}/quotes`} className="btno block text-center mt-2">
           View quotes & invoices
         </Link>
+        {canManageFinance(user) && (
+          <Link href={`/finance/quotes/new?eventId=${event.id}`} className="btn block text-center mt-1.5">
+            New quote for this event
+          </Link>
+        )}
 
         <div className="rule-thin my-2.5" />
         <div className="label">Team</div>

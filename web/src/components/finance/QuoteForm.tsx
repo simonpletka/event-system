@@ -22,6 +22,7 @@ function isoDateInput(d: Date) {
 export function QuoteForm({
   events,
   defaults,
+  initialEventId,
 }: {
   events: { id: string; title: string; companyName: string; startDate: Date }[];
   defaults?: {
@@ -32,12 +33,14 @@ export function QuoteForm({
     validUntil: Date;
     items: LineItem[];
   };
+  /** Pre-selects the event when arriving via an event's own "New quote" shortcut. */
+  initialEventId?: string;
 }) {
   const isEdit = Boolean(defaults);
   const action = isEdit ? updateQuoteAction : createQuoteAction;
   const [state, formAction, pending] = useActionState(action, initialState);
 
-  const [eventId, setEventId] = useState(defaults?.eventId ?? "");
+  const [eventId, setEventId] = useState(defaults?.eventId ?? initialEventId ?? "");
   const [currency, setCurrency] = useState<Currency>(defaults?.currency ?? "CZK");
   const [validUntil, setValidUntil] = useState(
     defaults ? toDateTimeLocal(defaults.validUntil).slice(0, 10) : isoDateInput(new Date(new Date().getTime() + TWO_WEEKS_MS))
@@ -59,7 +62,7 @@ export function QuoteForm({
       {!isEdit && (
         <label className="flex flex-col gap-1.5">
           <span className="heading-label">Event</span>
-          <EventPicker name="eventId" initialEvents={events} required onSelect={setEventId} />
+          <EventPicker name="eventId" initialEvents={events} defaultValue={initialEventId} required onSelect={setEventId} />
         </label>
       )}
 

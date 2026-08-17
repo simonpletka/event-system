@@ -43,19 +43,31 @@ export async function updateClientAction(_prev: ClientFormState, formData: FormD
   redirect(`/clients/${id}`);
 }
 
-/** Minimal client creation used from EventForm's "+ New client" picker — mirrors quickCreateEventAction. */
-export type QuickClientState = { error?: string; client?: { id: string; name: string; address: string; ico: string; dic: string } };
+/**
+ * Called from createEventAction/updateEventAction when the event form's
+ * client picker is left on "New client" but company fields are filled in —
+ * auto-creates (or reuses) a Client instead of requiring a separate step,
+ * per user's explicit request to drop the old "+ New client" modal.
+ * Matches on IČO first (far more reliable than a free-text name), then an
+ * exact name match, so re-saving the same event repeatedly — or two events
+ * for the same real client — doesn't spawn duplicate Client rows.
+ */
+export async function resolveClientId(
+  explicitClientId: string | null,
+  company: { name: string; address: string; ico: string; dic: string }
+): Promise<string | null> {
+  if (explicitClientId) return explicitClientId;
+  if (!company.name) return null;
 
-export async function quickCreateClientAction(_prev: QuickClientState, formData: FormData): Promise<QuickClientState> {
-  const user = await requireUser();
-  if (!canManageClients(user)) return { error: "You don't have permission to add clients." };
+  const existing = await prisma.client.findFirst({
+    where: company.ico ? { OR: [{ ico: company.ico }, { name: company.name }] } : { name: company.name },
+  });
+  if (existing) return existing.id;
 
-  const data = clientDataFromForm(formData);
-  if (!data.name) return { error: "Company name is required." };
-
-  const client = await prisma.client.create({ data });
-  revalidatePath("/clients");
-  return { client };
+  const created = await prisma.client.create({
+    data: { name: company.name, address: company.address, ico: company.ico, dic: company.dic },
+  });
+  return created.id;
 }
 
 /** Admin-only, irreversible. Events linked to this client just lose the link (clientId set null via cascade-less optional FK — Prisma requires the relation be nullable, which it is). */

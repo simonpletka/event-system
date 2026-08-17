@@ -1,24 +1,41 @@
 import path from "path";
 import { StyleSheet, Font } from "@react-pdf/renderer";
 import type { CurrencyCode } from "@/lib/format";
+import type { PdfLang } from "./i18n";
 
 export const DEFAULT_ACCENT = "#ec3013";
 export const INK = "#201e1d";
 
 // The built-in "Helvetica" standard font only covers WinAnsi (cp1252), which
 // is missing ě/ř/ů/ď/ť/ň — real Czech diacritics were silently dropping from
-// PDFs (e.g. "Vojtěšská" -> "Vojtská"). Neue Regrade covers all of them, so
-// it's registered here once and shared by both the invoice and quote PDFs.
+// PDFs (e.g. "Vojtěšská" -> "Vojtská"). Neue Regrade covers all of them.
 // Same file registered at both weights since it's the only style file kept
 // on disk — react-pdf needs *a* match for `fontWeight: 700` or it throws.
 const FONT_PATH = path.join(process.cwd(), "src/fonts/neue-regrade/NeueRegrade-Variable.ttf");
-Font.register({
-  family: "NeueRegrade",
-  fonts: [
-    { src: FONT_PATH, fontWeight: 400 },
-    { src: FONT_PATH, fontWeight: 700 },
-  ],
-});
+
+// Deliberately NOT registered once at module scope under a fixed family name.
+// @react-pdf/font's FontStore caches the loaded fontkit font object per
+// family+weight for the lifetime of the process, and its glyph-subsetting
+// state turned out to leak across unrelated renderToBuffer() calls: an
+// invoice PDF rendered first would silently corrupt specific digit glyphs
+// (found in testing: "3" and "4") in a quote PDF rendered afterwards in the
+// same long-running Next.js server process — reproducible and deterministic,
+// confirmed via pdfminer text extraction, and gone once each render gets its
+// own family name. registerAppFont() is called fresh inside each PDF
+// component's render body so every document gets an independent FontSource
+// and thus independent subsetting state, at the cost of re-parsing a small
+// local TTF file per PDF (irrelevant for this app's request volume).
+export function registerAppFont(): string {
+  const family = `NeueRegrade-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+  Font.register({
+    family,
+    fonts: [
+      { src: FONT_PATH, fontWeight: 400 },
+      { src: FONT_PATH, fontWeight: 700 },
+    ],
+  });
+  return family;
+}
 
 const CURRENCY_LOCALE: Record<CurrencyCode, string> = { CZK: "cs-CZ", EUR: "de-DE", USD: "en-US" };
 
@@ -30,12 +47,16 @@ export function money(n: number, currency: CurrencyCode = "CZK") {
   }).format(n);
 }
 
-export function pdfDate(d: Date) {
-  return new Intl.DateTimeFormat("en-GB", { day: "numeric", month: "short", year: "numeric" }).format(d);
+export function pdfDate(d: Date, lang: PdfLang = "en") {
+  return new Intl.DateTimeFormat(lang === "cs" ? "cs-CZ" : "en-GB", {
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+  }).format(d);
 }
 
 export const sharedStyles = StyleSheet.create({
-  page: { padding: 36, fontSize: 10, color: INK, fontFamily: "NeueRegrade" },
+  page: { padding: 36, fontSize: 10, color: INK },
   headerRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "flex-start" },
   companyName: { fontSize: 14, fontWeight: 700 },
   docLabel: { fontSize: 8, letterSpacing: 1, textTransform: "uppercase", color: "#666", textAlign: "right" },

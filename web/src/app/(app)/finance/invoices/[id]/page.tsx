@@ -6,6 +6,7 @@ import { formatCurrency, formatDate, formatDateTime } from "@/lib/format";
 import { recordPaymentAction, markInvoicePaidAction, deleteInvoiceAction } from "@/lib/actions/finance";
 import { BackLink } from "@/components/BackLink";
 import { ConfirmDeleteButton } from "@/components/ui/ConfirmDeleteButton";
+import { DownloadPdfButton } from "@/components/finance/DownloadPdfButton";
 
 export default async function InvoiceDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const user = await requireUser();
@@ -35,9 +36,7 @@ export default async function InvoiceDetailPage({ params }: { params: Promise<{ 
           <span className="btno opacity-40 cursor-not-allowed" title="Email sending isn't wired up yet">
             Send by mail
           </span>
-          <a href={`/api/invoices/${invoice.id}/pdf`} target="_blank" rel="noreferrer" className="btno">
-            Download PDF
-          </a>
+          <DownloadPdfButton pdfUrl={`/api/invoices/${invoice.id}/pdf`} />
           {canManage && invoice.status !== "PAID" && (
             <form action={markInvoicePaidAction}>
               <input type="hidden" name="invoiceId" value={invoice.id} />

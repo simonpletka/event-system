@@ -3,10 +3,12 @@ import { requireUser } from "@/lib/authz";
 import { getQuoteDetail, getCompanySettings } from "@/lib/queries/finance";
 import { readLogoAsDataUrl } from "@/lib/uploads";
 import { QuotePdf } from "@/lib/pdf/QuotePdf";
+import type { PdfLang } from "@/lib/pdf/i18n";
 
-export async function GET(_req: Request, { params }: { params: Promise<{ id: string }> }) {
+export async function GET(req: Request, { params }: { params: Promise<{ id: string }> }) {
   const user = await requireUser();
   const { id } = await params;
+  const lang: PdfLang = new URL(req.url).searchParams.get("lang") === "cs" ? "cs" : "en";
 
   const quote = await getQuoteDetail(user, id);
   if (!quote) return new Response("Not found", { status: 404 });
@@ -21,6 +23,7 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
       issuedAt={quote.issuedAt}
       validUntil={quote.validUntil}
       currency={quote.currency}
+      lang={lang}
       supplier={supplier}
       customer={{
         name: quote.event.companyName,
