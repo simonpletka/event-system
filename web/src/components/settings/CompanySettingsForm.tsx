@@ -1,7 +1,8 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useState } from "react";
 import { updateCompanySettingsAction, type SettingsFormState } from "@/lib/actions/settings";
+import { useAresLookup } from "@/hooks/useAresLookup";
 
 const initialState: SettingsFormState = {};
 
@@ -13,32 +14,60 @@ type Company = {
   isVatPayer: boolean;
   bankAccount: string;
   defaultDueDays: number;
-} | null;
+};
 
-export function CompanySettingsForm({ defaults }: { defaults: Company }) {
+const EMPTY: Company = { name: "", address: "", ico: "", dic: "", isVatPayer: true, bankAccount: "", defaultDueDays: 14 };
+
+export function CompanySettingsForm({ defaults }: { defaults: Company | null }) {
   const [state, formAction, pending] = useActionState(updateCompanySettingsAction, initialState);
+  const initial = defaults ?? EMPTY;
+  const [fields, setFields] = useState<Company>(initial);
+  const ares = useAresLookup();
+
+  function set<K extends keyof Company>(key: K, value: Company[K]) {
+    setFields((f) => ({ ...f, [key]: value }));
+  }
+
+  async function loadFromAres() {
+    const company = await ares.lookup(fields.ico);
+    if (!company) return;
+    setFields((f) => ({ ...f, ico: company.ico, name: company.name, address: company.address, dic: company.dic }));
+  }
 
   return (
     <div className="grid grid-cols-2 gap-6 max-w-3xl">
       <form action={formAction} className="flex flex-col gap-3">
         <div className="label">Company details</div>
         <div className="flex gap-1.5">
-          <input name="ico" placeholder="IČO" defaultValue={defaults?.ico ?? ""} required className="input flex-1" />
-          <span className="btno opacity-40 cursor-not-allowed" title="ARES lookup lands in a later phase">
-            Load from ARES
-          </span>
+          <input name="ico" placeholder="IČO" value={fields.ico} onChange={(e) => set("ico", e.target.value)} required className="input flex-1" />
+          <button type="button" onClick={loadFromAres} disabled={ares.loading} className="btno whitespace-nowrap">
+            {ares.loading ? "Loading…" : "Load from ARES"}
+          </button>
         </div>
-        <input name="name" placeholder="Company name" defaultValue={defaults?.name ?? ""} required className="input" />
-        <input name="address" placeholder="Address" defaultValue={defaults?.address ?? ""} className="input" />
+        {ares.error && <p className="text-[11px] text-accent -mt-1">{ares.error}</p>}
+        <input name="name" placeholder="Company name" value={fields.name} onChange={(e) => set("name", e.target.value)} required className="input" />
+        <input name="address" placeholder="Address" value={fields.address} onChange={(e) => set("address", e.target.value)} className="input" />
         <div className="flex gap-1.5 items-center">
-          <input name="dic" placeholder="DIČ" defaultValue={defaults?.dic ?? ""} className="input flex-1" />
+          <input name="dic" placeholder="DIČ" value={fields.dic} onChange={(e) => set("dic", e.target.value)} className="input flex-1" />
           <label className="flex items-center gap-1.5 text-[11px] whitespace-nowrap">
-            <input name="isVatPayer" type="checkbox" defaultChecked={defaults?.isVatPayer ?? true} /> VAT payer
+            <input
+              name="isVatPayer"
+              type="checkbox"
+              checked={fields.isVatPayer}
+              onChange={(e) => set("isVatPayer", e.target.checked)}
+            />{" "}
+            VAT payer
           </label>
         </div>
 
         <div className="label mt-2">Bank</div>
-        <input name="bankAccount" placeholder="IBAN" defaultValue={defaults?.bankAccount ?? ""} className="input" />
+        <input
+          name="bankAccount"
+          placeholder="IBAN"
+          value={fields.bankAccount}
+          onChange={(e) => set("bankAccount", e.target.value)}
+          className="input"
+        />
         <span className="text-[9px] placeholder-text -mt-1">Used to render the QR payment code on invoice PDFs.</span>
 
         <div className="label mt-2">Numbering</div>
@@ -50,7 +79,14 @@ export function CompanySettingsForm({ defaults }: { defaults: Company }) {
           <div className="input opacity-60 flex-1">Restarts each year — fixed</div>
           <label className="flex items-center gap-1.5 text-[11px] whitespace-nowrap">
             Due
-            <input name="defaultDueDays" type="number" min={1} defaultValue={defaults?.defaultDueDays ?? 14} className="input w-14" />
+            <input
+              name="defaultDueDays"
+              type="number"
+              min={1}
+              value={fields.defaultDueDays}
+              onChange={(e) => set("defaultDueDays", Number(e.target.value) || 1)}
+              className="input w-14"
+            />
             days
           </label>
         </div>
@@ -62,7 +98,7 @@ export function CompanySettingsForm({ defaults }: { defaults: Company }) {
           <button type="submit" disabled={pending} className="btn">
             {pending ? "Saving…" : "Save changes"}
           </button>
-          <button type="reset" className="btno">
+          <button type="button" onClick={() => setFields(initial)} className="btno">
             Cancel
           </button>
         </div>
@@ -70,23 +106,24 @@ export function CompanySettingsForm({ defaults }: { defaults: Company }) {
 
       <div>
         <div className="label mb-1.5">Connected accounts</div>
-        <ConnectedRow label="Google Workspace" note="sign-in + calendar sync" />
-        <ConnectedRow label="Calendar for milestones" note="milestone export" />
-        <ConnectedRow label="ARES lookup" note="company auto-fill" />
+        <ConnectedRow label="Google Workspace" note="sign-in + calendar sync" connected={false} />
+        <ConnectedRow label="Calendar for milestones" note="milestone export" connected={false} />
+        <ConnectedRow label="ARES lookup" note="company auto-fill" connected />
         <p className="text-[10px] placeholder-text mt-3 max-w-xs">
-          None of these are wired up yet — they land in a later phase alongside Google OAuth login.
+          ARES is a free public registry, so that one&apos;s live. Google Workspace/Calendar need OAuth credentials
+          that land in a later phase.
         </p>
       </div>
     </div>
   );
 }
 
-function ConnectedRow({ label, note }: { label: string; note: string }) {
+function ConnectedRow({ label, note, connected }: { label: string; note: string; connected: boolean }) {
   return (
     <div className="grid grid-cols-[1fr_.8fr_.7fr] gap-2.5 py-2 border-b border-ink/10 text-[13px] items-center">
       <div>{label}</div>
       <div className="placeholder-text text-[11px]">{note}</div>
-      <span className="pill">Not connected</span>
+      <span className="pill">{connected ? "Active" : "Not connected"}</span>
     </div>
   );
 }

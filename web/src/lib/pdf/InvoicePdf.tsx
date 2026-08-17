@@ -1,10 +1,26 @@
-import { Document, Page, Text, View, Image, StyleSheet } from "@react-pdf/renderer";
+import path from "path";
+import { Document, Page, Text, View, Image, StyleSheet, Font } from "@react-pdf/renderer";
 
 const ACCENT = "#ec3013";
 const INK = "#201e1d";
 
+// The built-in "Helvetica" standard font only covers WinAnsi (cp1252), which
+// is missing ě/ř/ů/ď/ť/ň — real Czech diacritics were silently dropping from
+// invoice PDFs (e.g. "Vojtěšská" -> "Vojtská"). Neue Regrade covers all of
+// them, so it's registered here too, not just used for the web UI. Same file
+// registered at both weights since it's the only style file kept on disk —
+// react-pdf needs *a* match for `fontWeight: 700` or it throws.
+const FONT_PATH = path.join(process.cwd(), "src/fonts/neue-regrade/NeueRegrade-Variable.ttf");
+Font.register({
+  family: "NeueRegrade",
+  fonts: [
+    { src: FONT_PATH, fontWeight: 400 },
+    { src: FONT_PATH, fontWeight: 700 },
+  ],
+});
+
 const styles = StyleSheet.create({
-  page: { padding: 36, fontSize: 10, color: INK, fontFamily: "Helvetica" },
+  page: { padding: 36, fontSize: 10, color: INK, fontFamily: "NeueRegrade" },
   headerRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "flex-start" },
   companyName: { fontSize: 14, fontWeight: 700 },
   invoiceLabel: { fontSize: 8, letterSpacing: 1, textTransform: "uppercase", color: "#666", textAlign: "right" },

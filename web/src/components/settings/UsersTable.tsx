@@ -1,17 +1,8 @@
 "use client";
 
-import { useRef } from "react";
 import { useActionState } from "react";
 import Link from "next/link";
-import {
-  assignRoleAction,
-  toggleCardHolderAction,
-  resetPasswordAction,
-  deactivateUserAction,
-  reactivateUserAction,
-  type SettingsFormState,
-} from "@/lib/actions/settings";
-import { RoleSelect } from "./RoleSelect";
+import { toggleCardHolderAction, resetPasswordAction, type SettingsFormState } from "@/lib/actions/settings";
 
 type User = {
   id: string;
@@ -22,6 +13,13 @@ type User = {
   active: boolean;
   isCardHolder: boolean;
   lastSeenAt: Date | null;
+};
+
+const ROLE_LABEL: Record<string, string> = {
+  ADMIN: "Admin",
+  ACCOUNTANT: "Accountant",
+  PRODUCER: "Producer",
+  MEMBER: "Member",
 };
 
 function relativeTime(date: Date | null) {
@@ -46,9 +44,11 @@ export function UsersTable({
   customRoles: { id: string; name: string }[];
   currentUserId: string;
 }) {
+  const customRoleName = new Map(customRoles.map((r) => [r.id, r.name]));
+
   return (
     <div>
-      <div className="grid grid-cols-[1.2fr_1.4fr_1.1fr_.7fr_.8fr_1fr] gap-2.5 border-b-2 border-ink pb-1.5">
+      <div className="grid grid-cols-[1.2fr_1.4fr_1fr_.7fr_.8fr_1fr] gap-2.5 border-b-2 border-ink pb-1.5">
         <span className="heading-label">Name</span>
         <span className="heading-label">Account</span>
         <span className="heading-label">Role</span>
@@ -57,7 +57,13 @@ export function UsersTable({
         <span className="heading-label"></span>
       </div>
       {users.map((u) => (
-        <UserRow key={u.id} user={u} customRoles={customRoles} isSelf={u.id === currentUserId} lastSeenLabel={relativeTime(u.lastSeenAt)} />
+        <UserRow
+          key={u.id}
+          user={u}
+          roleLabel={u.customRoleId ? (customRoleName.get(u.customRoleId) ?? "Custom") : ROLE_LABEL[u.role]}
+          isSelf={u.id === currentUserId}
+          lastSeenLabel={relativeTime(u.lastSeenAt)}
+        />
       ))}
     </div>
   );
@@ -65,37 +71,26 @@ export function UsersTable({
 
 function UserRow({
   user,
-  customRoles,
+  roleLabel,
   isSelf,
   lastSeenLabel,
 }: {
   user: User;
-  customRoles: { id: string; name: string }[];
+  roleLabel: string;
   isSelf: boolean;
   lastSeenLabel: string;
 }) {
-  const formRef = useRef<HTMLFormElement>(null);
   const [resetState, resetAction, resetPending] = useActionState<SettingsFormState, FormData>(resetPasswordAction, {});
-  const roleValue = user.customRoleId ? `CUSTOM:${user.customRoleId}` : `ROLE:${user.role}`;
 
   return (
-    <div className={`grid grid-cols-[1.2fr_1.4fr_1.1fr_.7fr_.8fr_1fr] gap-2.5 items-center py-2.5 border-b border-ink/13 text-[13px] ${!user.active ? "opacity-50" : ""}`}>
+    <div className={`grid grid-cols-[1.2fr_1.4fr_1fr_.7fr_.8fr_1fr] gap-2.5 items-center py-2.5 border-b border-ink/13 text-[13px] ${!user.active ? "opacity-50" : ""}`}>
       <div>
         {user.name}
+        {isSelf && <span className="label ml-1.5">you</span>}
         {!user.active && <span className="pill pill-red ml-1.5">Inactive</span>}
       </div>
       <div className="placeholder-text truncate">{user.email}</div>
-      <form ref={formRef} action={assignRoleAction}>
-        <input type="hidden" name="id" value={user.id} />
-        <RoleSelect
-          name="role"
-          defaultValue={roleValue}
-          customRoles={customRoles}
-          disabled={isSelf}
-          onChange={() => formRef.current?.requestSubmit()}
-          className="pill bg-transparent"
-        />
-      </form>
+      <div>{roleLabel}</div>
       <form action={toggleCardHolderAction}>
         <input type="hidden" name="id" value={user.id} />
         <button type="submit" className="text-[13px] hover:text-accent" title="Toggle company card">
@@ -113,37 +108,8 @@ function UserRow({
             Reset password
           </button>
         </form>
-        {!isSelf &&
-          (user.active ? (
-            <DeactivateButton id={user.id} />
-          ) : (
-            <form action={reactivateUserAction}>
-              <input type="hidden" name="id" value={user.id} />
-              <button type="submit" className="placeholder-text hover:text-ink">
-                Reactivate
-              </button>
-            </form>
-          ))}
       </div>
       {resetState.success && <div className="col-span-6 text-[11px] border border-ink/25 p-1.5 mt-1">{resetState.success}</div>}
     </div>
-  );
-}
-
-function DeactivateButton({ id }: { id: string }) {
-  return (
-    <form
-      action={deactivateUserAction}
-      onSubmit={(e) => {
-        if (!confirm("Deactivate this account? They won't be able to log in, but their past records stay intact.")) {
-          e.preventDefault();
-        }
-      }}
-    >
-      <input type="hidden" name="id" value={id} />
-      <button type="submit" className="placeholder-text hover:text-accent">
-        Deactivate
-      </button>
-    </form>
   );
 }

@@ -53,18 +53,6 @@ export async function createUserAction(_prev: SettingsFormState, formData: FormD
   return { success: `Account created. Share this one-time password with ${name}: ${password}` };
 }
 
-export async function assignRoleAction(formData: FormData) {
-  const user = await requireUser();
-  if (!canManageUsers(user)) return;
-
-  const id = String(formData.get("id"));
-  const roleSelection = parseRoleSelection(String(formData.get("role") ?? ""));
-  if (!roleSelection || id === user.id) return; // don't let an admin change their own role by accident
-
-  await prisma.user.update({ where: { id }, data: { role: roleSelection.role, customRoleId: roleSelection.customRoleId } });
-  revalidatePath("/settings");
-}
-
 export async function toggleCardHolderAction(formData: FormData) {
   const user = await requireUser();
   if (!canManageUsers(user)) return;
@@ -100,13 +88,25 @@ export async function updateUserInfoAction(_prev: SettingsFormState, formData: F
   const name = String(formData.get("name") ?? "").trim();
   const email = String(formData.get("email") ?? "").trim().toLowerCase();
   const isCardHolder = formData.get("isCardHolder") === "on";
+  const roleSelection = parseRoleSelection(String(formData.get("role") ?? ""));
 
-  if (!name || !email) return { error: "Name and email are required." };
+  if (!name || !email || !roleSelection) return { error: "Name, email and role are required." };
 
   const existing = await prisma.user.findUnique({ where: { email } });
   if (existing && existing.id !== id) return { error: "Another account already uses that email." };
 
-  await prisma.user.update({ where: { id }, data: { name, email, isCardHolder } });
+  const isSelf = id === user.id;
+  await prisma.user.update({
+    where: { id },
+    data: {
+      name,
+      email,
+      isCardHolder,
+      // Don't let an admin change their own role by accident — everything
+      // else on the page still saves normally.
+      ...(isSelf ? {} : { role: roleSelection.role, customRoleId: roleSelection.customRoleId }),
+    },
+  });
 
   revalidatePath("/settings");
   redirect("/settings");

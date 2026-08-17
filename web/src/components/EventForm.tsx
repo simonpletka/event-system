@@ -4,6 +4,7 @@ import { useActionState, useState } from "react";
 import { createEventAction, updateEventAction, type EventFormState } from "@/lib/actions/events";
 import { toDateTimeLocal } from "@/lib/format";
 import { CancelLink } from "@/components/ui/CancelLink";
+import { useAresLookup } from "@/hooks/useAresLookup";
 import type { EventStatus } from "@/generated/prisma/enums";
 
 const STATUS_OPTIONS: { value: EventStatus; label: string }[] = [
@@ -45,6 +46,21 @@ export function EventForm({ defaults }: { defaults: EventFormDefaults }) {
   const action = isEdit ? updateEventAction : createEventAction;
   const [state, formAction, pending] = useActionState(action, initialState);
   const [venues, setVenues] = useState<VenueRow[]>(defaults.venues.length ? defaults.venues : [{ name: "", address: "", note: "" }]);
+
+  const [companyIco, setCompanyIco] = useState(defaults.companyIco);
+  const [companyName, setCompanyName] = useState(defaults.companyName);
+  const [companyAddress, setCompanyAddress] = useState(defaults.companyAddress);
+  const [companyDic, setCompanyDic] = useState(defaults.companyDic);
+  const ares = useAresLookup();
+
+  async function loadFromAres() {
+    const company = await ares.lookup(companyIco);
+    if (!company) return;
+    setCompanyName(company.name);
+    setCompanyAddress(company.address);
+    setCompanyDic(company.dic);
+    setCompanyIco(company.ico);
+  }
 
   return (
     <form action={formAction} className="max-w-2xl flex flex-col gap-5">
@@ -132,22 +148,42 @@ export function EventForm({ defaults }: { defaults: EventFormDefaults }) {
         <Field label="Contact email">
           <input name="clientEmail" type="email" defaultValue={defaults.clientEmail} className="input" />
         </Field>
+        <Field label="IČO">
+          <div className="flex gap-1.5">
+            <input
+              name="companyIco"
+              value={companyIco}
+              onChange={(e) => setCompanyIco(e.target.value)}
+              className="input flex-1"
+            />
+            <button type="button" onClick={loadFromAres} disabled={ares.loading} className="btno text-[9px] whitespace-nowrap">
+              {ares.loading ? "Loading…" : "Load from ARES"}
+            </button>
+          </div>
+        </Field>
+        <Field label="DIČ">
+          <input name="companyDic" value={companyDic} onChange={(e) => setCompanyDic(e.target.value)} className="input" />
+        </Field>
         <Field label="Company name">
-          <input name="companyName" defaultValue={defaults.companyName} required className="input" />
+          <input
+            name="companyName"
+            value={companyName}
+            onChange={(e) => setCompanyName(e.target.value)}
+            required
+            className="input"
+          />
         </Field>
         <Field label="Company address">
-          <input name="companyAddress" defaultValue={defaults.companyAddress} className="input" />
+          <input
+            name="companyAddress"
+            value={companyAddress}
+            onChange={(e) => setCompanyAddress(e.target.value)}
+            className="input"
+          />
         </Field>
-        <div className="grid grid-cols-2 gap-3">
-          <Field label="IČO">
-            <input name="companyIco" defaultValue={defaults.companyIco} className="input" />
-          </Field>
-          <Field label="DIČ">
-            <input name="companyDic" defaultValue={defaults.companyDic} className="input" />
-          </Field>
-        </div>
       </div>
-      <p className="text-[10px] placeholder-text -mt-3">ARES auto-fill by IČO lands in a later phase — enter company data manually for now.</p>
+      {ares.error && <p className="text-[11px] text-accent -mt-3">{ares.error}</p>}
+      <p className="text-[10px] placeholder-text -mt-3">Enter the IČO and use &quot;Load from ARES&quot; to fill in the rest.</p>
 
       {state.error && <p className="text-sm text-accent">{state.error}</p>}
 
