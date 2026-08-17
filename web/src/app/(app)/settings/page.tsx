@@ -1,21 +1,84 @@
-import { requireUser } from "@/lib/authz";
+import Link from "next/link";
+import { requireUser, canManageUsers, canManageCompanySettings } from "@/lib/authz";
+import { prisma } from "@/lib/prisma";
+import { getCompanySettings } from "@/lib/queries/finance";
+import { UsersTable } from "@/components/settings/UsersTable";
+import { CreateUserForm } from "@/components/settings/CreateUserForm";
+import { CompanySettingsForm } from "@/components/settings/CompanySettingsForm";
+import { RoleReferenceTable } from "@/components/settings/RoleReferenceTable";
 
-export default async function SettingsPage() {
+export default async function SettingsPage({
+  searchParams,
+}: {
+  searchParams: Promise<Record<string, string | undefined>>;
+}) {
   const user = await requireUser();
+  const params = await searchParams;
+
+  const canUsers = canManageUsers(user);
+  const canCompany = canManageCompanySettings(user);
+  const tab = (params.tab as "users" | "company") || (canUsers ? "users" : "company");
+
+  if (!canUsers && !canCompany) {
+    return (
+      <div>
+        <h1 className="text-xl font-semibold border-b-2 border-ink pb-2 mb-4">Settings</h1>
+        <div className="heading-label mb-1">Signed in as</div>
+        <div className="text-sm mb-4">
+          {user.name} <span className="placeholder-text">· {user.email} · {user.role}</span>
+        </div>
+        <p className="text-sm placeholder-text max-w-prose">You don&apos;t have access to broader settings — that&apos;s Admin/Accountant territory.</p>
+      </div>
+    );
+  }
+
+  const [users, company] = await Promise.all([
+    canUsers
+      ? prisma.user.findMany({ orderBy: { name: "asc" } })
+      : Promise.resolve([]),
+    getCompanySettings(),
+  ]);
 
   return (
     <div>
-      <h1 className="text-xl font-semibold border-b-2 border-ink pb-2 mb-4">Settings</h1>
-
-      <div className="heading-label mb-1">Signed in as</div>
-      <div className="text-sm mb-4">
-        {user.name} <span className="placeholder-text">· {user.email} · {user.role}</span>
+      <div className="flex items-end justify-between border-b-2 border-ink pb-2">
+        <div>
+          <div className="heading-label">{users.length ? `${users.length} accounts` : "Company settings"}</div>
+          <h1 className="text-xl font-semibold">Settings</h1>
+        </div>
       </div>
 
-      <p className="text-sm placeholder-text max-w-prose">
-        Users & roles, company data, invoice template and connected accounts (Google Workspace, Calendar, ARES) land
-        in a later phase.
-      </p>
+      <div className="flex gap-3.5 mt-2.5 border-b border-ink/20">
+        {canUsers && (
+          <Link
+            href="/settings?tab=users"
+            className={`text-[9px] tracking-[0.14em] uppercase pb-1.5 border-b-2 ${tab === "users" ? "border-accent text-accent" : "border-transparent placeholder-text hover:text-ink"}`}
+          >
+            Users &amp; roles
+          </Link>
+        )}
+        {canCompany && (
+          <Link
+            href="/settings?tab=company"
+            className={`text-[9px] tracking-[0.14em] uppercase pb-1.5 border-b-2 ${tab === "company" ? "border-accent text-accent" : "border-transparent placeholder-text hover:text-ink"}`}
+          >
+            Company
+          </Link>
+        )}
+      </div>
+
+      <div className="mt-4">
+        {tab === "users" && canUsers && (
+          <div>
+            <CreateUserForm />
+            <div className="rule-thin my-4" />
+            <UsersTable users={users} currentUserId={user.id} />
+            <div className="rule-thin my-4" />
+            <RoleReferenceTable />
+          </div>
+        )}
+        {tab === "company" && canCompany && <CompanySettingsForm defaults={company} />}
+      </div>
     </div>
   );
 }

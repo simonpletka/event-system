@@ -4,6 +4,8 @@ import { requireUser } from "@/lib/authz";
 import { getEventDetail } from "@/lib/queries/events";
 import { formatCurrency, formatDate, formatMinutes } from "@/lib/format";
 import { QuoteStatusPill, InvoiceStatusPill } from "@/components/StatusPill";
+import { getRunningTimer } from "@/lib/queries/timetracker";
+import { startTimerAction } from "@/lib/actions/timetracker";
 
 export default async function EventOverviewPage({ params }: { params: Promise<{ id: string }> }) {
   const user = await requireUser();
@@ -16,6 +18,7 @@ export default async function EventOverviewPage({ params }: { params: Promise<{ 
   const totalMinutes = event.timeEntries.reduce((s, t) => s + t.minutes, 0);
   const upcomingMilestones = event.milestones.filter((m) => m.date >= new Date()).slice(0, 3);
   const uniquePeople = new Set(event.timeEntries.map((t) => t.userId));
+  const runningTimer = await getRunningTimer(user.id);
 
   return (
     <div className="grid grid-cols-[1fr_190px] gap-4">
@@ -93,6 +96,16 @@ export default async function EventOverviewPage({ params }: { params: Promise<{ 
         <div className="label">Time logged</div>
         <div className="text-base font-semibold">{formatMinutes(totalMinutes)}</div>
         <div className="placeholder-text text-[9px]">{uniquePeople.size} people</div>
+        {runningTimer?.eventId === event.id ? (
+          <div className="btno block text-center mt-2 opacity-50 cursor-default">Timer running here</div>
+        ) : (
+          <form action={startTimerAction}>
+            <input type="hidden" name="eventId" value={event.id} />
+            <button type="submit" className="btno block w-full text-center mt-2">
+              Start timer
+            </button>
+          </form>
+        )}
 
         <div className="rule-thin my-2.5" />
         <div className="label">Documents</div>

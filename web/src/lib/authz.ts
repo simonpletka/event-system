@@ -79,3 +79,27 @@ export function canAddExpense(user: SessionUser, event: { ownerId: string; membe
   if (!event) return true; // company overhead — anyone can log their own
   return event.ownerId === user.id || event.memberIds.includes(user.id);
 }
+
+// --- Time tracker (brief §6.3: "Member sees own only; Producer sees own events'
+// summary; Admin and Accountant ('Finance manažer') see all.") ---
+
+/** Everyone can see their own entries; scoping only matters for entries by *other* people. */
+export function timeEntryWhereForUser(user: SessionUser): Prisma.TimeEntryWhereInput {
+  if (user.role === "ADMIN" || user.role === "ACCOUNTANT") return {};
+  if (user.role === "PRODUCER") {
+    return { OR: [{ userId: user.id }, { event: { members: { some: { userId: user.id } } } }] };
+  }
+  return { userId: user.id };
+}
+
+// --- Settings (brief §2.2 "Nastavení" column) ---
+
+/** Only Admin manages user accounts, roles and invitations. */
+export function canManageUsers(user: SessionUser) {
+  return user.role === "ADMIN";
+}
+
+/** Admin and Accountant can edit company data / invoice template settings. */
+export function canManageCompanySettings(user: SessionUser) {
+  return user.role === "ADMIN" || user.role === "ACCOUNTANT";
+}

@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
 import { signOutAction } from "@/lib/actions/auth";
+import { TimerWidget } from "@/components/TimerWidget";
 
 const NAV = [
   { href: "/dashboard", label: "Dashboard" },
@@ -12,7 +13,13 @@ const NAV = [
   { href: "/time-tracker", label: "Time tracker" },
 ] as const;
 
-export function Sidebar({ userName }: { userName: string }) {
+export function Sidebar({
+  userName,
+  running,
+}: {
+  userName: string;
+  running: { eventTitle: string; startedAt: string } | null;
+}) {
   const pathname = usePathname();
   const [collapsed, setCollapsed] = useState(false);
 
@@ -58,11 +65,7 @@ export function Sidebar({ userName }: { userName: string }) {
 
       <div className="rule-thin" />
 
-      <div>
-        <div className="heading-label mb-1.5">My timer</div>
-        <div className="text-sm placeholder-text">No timer running</div>
-        <div className="text-[10px] placeholder-text mt-1">Time tracker lands in a later phase</div>
-      </div>
+      <TimerWidget running={running} />
 
       <div className="mt-auto flex flex-col gap-2.5">
         <Link href="/settings" className={`nav-item ${pathname.startsWith("/settings") ? "active" : ""}`}>

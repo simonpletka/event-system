@@ -67,9 +67,10 @@ async function main() {
   });
 
   const passwordHash = await bcrypt.hash(DEV_PASSWORD, 10);
+  const HOUR = 60 * 60 * 1000;
 
   const admin = await prisma.user.create({
-    data: { name: "Admin User", email: "admin@eventsystem.cz", passwordHash, role: "ADMIN" },
+    data: { name: "Admin User", email: "admin@eventsystem.cz", passwordHash, role: "ADMIN", lastSeenAt: new Date() },
   });
 
   const accountant = await prisma.user.create({
@@ -78,6 +79,7 @@ async function main() {
       email: "eva.kucerova@eventsystem.cz",
       passwordHash,
       role: "ACCOUNTANT",
+      lastSeenAt: new Date(Date.now() - 2 * HOUR),
     },
   });
 
@@ -88,11 +90,18 @@ async function main() {
       passwordHash,
       role: "PRODUCER",
       isCardHolder: true,
+      lastSeenAt: new Date(),
     },
   });
 
   const member = await prisma.user.create({
-    data: { name: "M. Dvořák", email: "m.dvorak@eventsystem.cz", passwordHash, role: "MEMBER" },
+    data: {
+      name: "M. Dvořák",
+      email: "m.dvorak@eventsystem.cz",
+      passwordHash,
+      role: "MEMBER",
+      lastSeenAt: new Date(Date.now() - 24 * HOUR),
+    },
   });
 
   // --- Autumn Conference — confirmed, upcoming, fully fleshed out ---
@@ -138,8 +147,10 @@ async function main() {
       },
       timeEntries: {
         create: [
-          { userId: producer.id, minutes: 850, date: d("2026-08-15"), description: "Run of show planning" },
-          { userId: member.id, minutes: 765, date: d("2026-08-15"), description: "Vendor coordination" },
+          { userId: producer.id, minutes: 1200, date: d("2026-08-10"), description: "Run of show planning", phase: "PLANNING" },
+          { userId: producer.id, minutes: 1450, date: d("2026-08-13"), description: "Supplier calls — AV & catering", phase: "SUPPLIERS" },
+          { userId: member.id, minutes: 765, date: d("2026-08-15"), description: "Vendor coordination", phase: "SUPPLIERS" },
+          { userId: member.id, minutes: 920, date: d("2026-08-16"), description: "Venue walkthrough", phase: "ON_SITE" },
         ],
       },
       quotes: {
@@ -472,6 +483,38 @@ async function main() {
       { paidById: producer.id, amount: 1490, date: d("2026-08-05"), category: "GENERIC", note: "office supplies" },
       { paidById: admin.id, amount: 8900, date: d("2026-08-11"), category: "GEAR", note: "replacement laptop charger" },
     ],
+  });
+
+  // --- more time-tracking history so Compare Events has real multi-event, multi-person data ---
+  const gala = await prisma.event.findFirstOrThrow({ where: { title: "Summer Gala" } });
+  await prisma.timeEntry.createMany({
+    data: [
+      { eventId: gala.id, userId: admin.id, minutes: 1830, date: d("2026-07-25"), description: "Vendor sourcing", phase: "SUPPLIERS" },
+      { eventId: gala.id, userId: admin.id, minutes: 1200, date: d("2026-08-01"), description: "Run of show", phase: "PLANNING" },
+      { eventId: gala.id, userId: accountant.id, minutes: 1740, date: d("2026-08-09"), description: "On-site guest list & payments", phase: "ON_SITE" },
+      { eventId: gala.id, userId: producer.id, minutes: 340, date: d("2026-08-10"), description: "Wrap-up notes", phase: "WRAP_UP" },
+    ],
+  });
+  await prisma.timeEntry.createMany({
+    data: [
+      { eventId: springKickoff.id, userId: admin.id, minutes: 1450, date: d("2026-02-20"), description: "Planning workshop", phase: "PLANNING" },
+      { eventId: springKickoff.id, userId: accountant.id, minutes: 1330, date: d("2026-03-01"), description: "Supplier contracts", phase: "SUPPLIERS" },
+      { eventId: springKickoff.id, userId: admin.id, minutes: 970, date: d("2026-03-14"), description: "On-site coordination", phase: "ON_SITE" },
+      { eventId: springKickoff.id, userId: accountant.id, minutes: 155, date: d("2026-03-16"), description: "Final invoice reconciliation", phase: "WRAP_UP" },
+    ],
+  });
+
+  // --- one running timer, so the sidebar widget has something real to show ---
+  await prisma.timeEntry.create({
+    data: {
+      eventId: autumn.id,
+      userId: producer.id,
+      description: "Build plan and crew schedule",
+      phase: "ON_SITE",
+      running: true,
+      startedAt: new Date(Date.now() - 72 * 60 * 1000),
+      date: new Date(),
+    },
   });
 
   console.log("Seeded 7 events, 4 users, company settings. Dev login password for all seed accounts:", DEV_PASSWORD);

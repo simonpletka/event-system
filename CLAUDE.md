@@ -12,7 +12,9 @@ Build plan for the current phase lives at `/Users/simonpletka/.claude/plans/ting
 
 Dev login (seeded by `prisma/seed.ts`, password `changeme123` for all): `admin@eventsystem.cz`, `eva.kucerova@eventsystem.cz` (Accountant), `jan.novak@eventsystem.cz` (Producer), `m.dvorak@eventsystem.cz` (Member). **Re-login after every `prisma db seed`** — seeding wipes and recreates all rows with new IDs, so old session cookies/JWTs silently point at users/events that no longer exist (cost real debugging time once already — the symptom is empty lists with no error).
 
-**Deferred to later phases (not built yet):** Time tracker (start/stop, manual entry, comparisons), Settings screens (users & roles, company data editing, invoice template editing), Google Calendar sync, Google OAuth login, ARES lookup, notifications/reminder emails, general audit log (beyond the invoice-specific action log), events calendar week view (`3e`), PWA offline queue, expense approval workflow (the field and hint text exist, nothing enforces it). Dashboard/Time-tracker nav still lands on a "coming soon" placeholder; Finance is now fully live.
+**Phase 3 (done):** Time tracker — one-running-timer-at-a-time (`5b`, live-ticking in the sidebar and on the Tracking page, switch/stop, manual entry with start/end or duration, edit/delete own entries, day/week/month views), Compare events (`5c`, multi-select via query-string chips, hours-by-phase stacked bars, per-person matrix, cost-per-hour, CSV export). Settings — Users & roles (`5d`, Admin-only: create accounts with a generated one-time password since there's no email system, change role, toggle company-card flag, reset password) and Company (`5e`, Admin/Accountant: company/bank/VAT/due-days, "Connected accounts" shown honestly as "Not connected" rather than the wireframe's aspirational mock status). Verified via clean `npm run build` + `npm run lint`, plus HTTP smoke tests: start→stop→switch timer with correct elapsed-minutes math, manual entry create/edit with both start/end and duration-only paths, Compare Events numbers hand-verified against seed data (cost-per-hour = quotedValue ÷ hours, confirmed exact), user creation followed by an actual login with the generated password, role/card-holder toggles, company settings save. Role scoping confirmed: Member has no Settings access but full personal Time-tracker access (it's inherently personal, not event-scoped); Producer's Compare Events is limited to their own/assigned events.
+
+**Deferred to later phases (not built yet):** Google Calendar sync, Google OAuth login, ARES lookup, notifications/reminder emails, general audit log (beyond the invoice-specific action log), events calendar week view (`3e`), PWA offline queue, expense approval workflow (the field and hint text exist, nothing enforces it), invoice template visual customization (logo/accent-colour upload — company *data* is editable, the branded PDF template itself isn't yet). Every nav item is now live; nothing lands on a placeholder anymore.
 
 ## Environment
 
@@ -36,6 +38,7 @@ This machine had **no Node.js, npm, Homebrew, Docker, or working Postgres** when
 - `@react-pdf/renderer` (server-side invoice PDF generation, `src/lib/pdf/InvoicePdf.tsx`, rendered via `renderToBuffer` in a route handler — not part of the app's own React tree, so no version-conflict risk) + `qrcode` (renders the Czech "QR Platba" payment string to a PNG data URL for the PDF).
 - Uploaded expense receipts are stored on local disk at `web/uploads/receipts/` (gitignored, **not** under `public/`) and served only through an authenticated route handler (`src/app/api/uploads/receipts/[filename]/route.ts`) that checks the requesting user actually has access to the expense the receipt belongs to. Won't survive a redeploy to a stateless host — fine for local dev, would need object storage (S3-alike) before shipping anywhere else.
 - ESLint's `react-hooks/purity` rule flags `Date.now()` (but not `new Date()`) as an impure call inside a component body — write `new Date().getTime()` instead if a component needs "now".
+- ESLint's `react-hooks/set-state-in-effect` rule flags calling `setState` synchronously at the top of a `useEffect` (e.g. seeding a ticking-clock value before starting the `setInterval`). Fix: use the lazy `useState(() => Date.now())` initializer for the starting value, and let the effect only set up the interval/subscription — see `TimerWidget.tsx` / `RunningTimerBox.tsx`.
 
 ## Data model decisions
 
@@ -48,15 +51,19 @@ This machine had **no Node.js, npm, Homebrew, Docker, or working Postgres** when
 - **"Paid by" on an expense**: defaults to the current user. A non-card-holder can only submit as themselves; a card holder (or Admin/Accountant/Producer) gets a dropdown of all card holders plus themselves. This reconciles brief §5.3 (paid-by limited to card holders) with §2.2 (a Member can add their own expense) — it's a judgment call, not a direct spec quote.
 - **Company overhead**: `Expense.eventId` is nullable rather than a fake pseudo-Event row; the new-expense form's event picker has an explicit "Company overhead — not tied to an event" option.
 - **Invoice "History" panel** (`4c`) is a small, targeted `InvoiceEvent` action log (created/issued/payment-recorded/marked-paid), not a general audit log — that's still out of scope.
+- **A running timer is a `TimeEntry` row with `running: true`**, not a separate concept — `startedAt` set, `endedAt`/`minutes` filled in on stop. Enforcing "only one running timer per user" is app-level (the start action stops any existing one first), not a DB constraint. `TimePhase` (Planning/Suppliers/On site/Wrap-up) is a new enum on `TimeEntry`, added specifically because Compare Events' "hours by phase" stacked bar (`5c`) needs it — the brief itself never names these phases, they're inferred from the wireframe's legend.
+- **Compare Events' "cost per hour"** is just `event.quotedValue ÷ totalHours` — re-reading the wireframe numbers directly instead of inventing a per-user hourly-rate field. No schema needed for it.
+- **"Invite user" (`5d`) creates the account immediately** with a random one-time password shown once in the UI, rather than a real emailed invitation — there's no email system (per Phase 1's auth decision) and the brief's own login model is "issued credentials," which this matches directly. There's no "pending invitation" state as a result — an account is either created or it isn't.
+- **`User.lastSeenAt`** is updated on successful login only (not on every request) — cheap approximation of the wireframe's "Last seen" column without hammering the DB on every page load.
 
 ## Open questions from the brief (still open, will shape later phases)
 
-From brief §8 — chapter 8 in the PDF has more detail on each. Resolved by Phase 2 (see above): invoice numbering, VAT handling, partial payments, company overhead. Still open:
+From brief §8 — chapter 8 in the PDF has more detail on each. Resolved by Phase 2: invoice numbering, VAT handling, partial payments, company overhead. Still open:
 - Event budget vs. actual tracking (beyond the simple quoted-value-vs-expenses shown on the event overview).
 - Expense approval workflow — the `approved` field and UI hint text exist, nothing enforces it yet.
 - Notifications (email/Slack) for milestones, due invoices, expense approvals — no email system exists; "Send by mail" and reminder-email copy in the UI are inert/labelled as such.
 - General audit log for edits (not just invoice actions).
-- Time tracker → invoicing (hourly rate → invoice line item); time is still internal-only stats.
+- Time tracker → invoicing (hourly rate → invoice line item) — brief explicitly says time is internal-only for now; Compare Events' cost-per-hour is a read-only derived figure, not a step toward this.
 
 ## Commands (from `web/`)
 

@@ -65,13 +65,14 @@ enum InvoiceEventType {
 }
 
 model User {
-  id           String   @id @default(cuid())
+  id           String    @id @default(cuid())
   name         String
-  email        String   @unique
+  email        String    @unique
   passwordHash String
   role         Role
-  isCardHolder Boolean  @default(false)
-  createdAt    DateTime @default(now())
+  isCardHolder Boolean   @default(false)
+  createdAt    DateTime  @default(now())
+  lastSeenAt   DateTime?
 
   ownedEvents   Event[]        @relation("EventOwner")
   assignments   EventMember[]
@@ -171,15 +172,31 @@ model Expense {
   @@index([date])
 }
 
+enum TimePhase {
+  PLANNING
+  SUPPLIERS
+  ON_SITE
+  WRAP_UP
+}
+
 model TimeEntry {
-  id          String   @id @default(cuid())
+  id          String    @id @default(cuid())
   eventId     String
-  event       Event    @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  event       Event     @relation(fields: [eventId], references: [id], onDelete: Cascade)
   userId      String
-  user        User     @relation(fields: [userId], references: [id])
-  minutes     Int
+  user        User      @relation(fields: [userId], references: [id])
+  minutes     Int       @default(0) // 0 while running; set on stop, or directly for manual entries
   date        DateTime
-  description String   @default("")
+  description String    @default("")
+  phase       TimePhase @default(PLANNING)
+
+  // Only one entry per user should have running=true at a time — enforced in
+  // the start-timer action (stops any prior running entry first), not the DB.
+  running   Boolean   @default(false)
+  startedAt DateTime?
+  endedAt   DateTime?
+
+  @@index([userId, running])
 }
 
 model Quote {
