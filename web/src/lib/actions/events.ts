@@ -4,7 +4,6 @@ import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
 import { requireUser, canEditEvent, canCreateEvent, isAdmin } from "@/lib/authz";
-import { deleteReceipt } from "@/lib/uploads";
 import type { EventStatus } from "@/generated/prisma/enums";
 
 export type EventFormState = { error?: string };
@@ -102,18 +101,25 @@ export async function updateEventAction(_prev: EventFormState, formData: FormDat
  * Admin-only, irreversible: cascades through the schema's onDelete: Cascade
  * relations (members, venues, milestones, time entries, quotes+items,
  * invoices+items/payments/history) — see CLAUDE.md for the full list.
- * Expense receipt files aren't part of that cascade (they live on disk, not
- * in a relation), so they're cleaned up here explicitly first.
+ *
+ * Refuses to delete an event that has any expenses recorded against it —
+ * those need to be reassigned or removed first rather than silently wiped
+ * out along with everything else. The primary gate is client-side
+ * (DeleteEventButton shows a popup explaining why and never submits in that
+ * case); this check is defense in depth against a stale page or a direct
+ * spoofed request, so it silently no-ops rather than throwing (matches the
+ * isAdmin check just above it). Since expenses always block the delete,
+ * there's never a receipt file left to clean up here.
  */
 export async function deleteEventAction(formData: FormData) {
   const user = await requireUser();
   if (!isAdmin(user)) return;
 
   const id = String(formData.get("id"));
-  const expenses = await prisma.expense.findMany({ where: { eventId: id }, select: { receiptPath: true } });
+  const expenseCount = await prisma.expense.count({ where: { eventId: id } });
+  if (expenseCount > 0) return;
 
   await prisma.event.delete({ where: { id } });
-  await Promise.all(expenses.filter((e) => e.receiptPath).map((e) => deleteReceipt(e.receiptPath!)));
 
   revalidatePath("/events");
   revalidatePath("/dashboard");

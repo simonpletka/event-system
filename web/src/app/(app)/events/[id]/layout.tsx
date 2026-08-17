@@ -6,7 +6,7 @@ import { formatDateRange, formatMinutes } from "@/lib/format";
 import { EventStatusPill } from "@/components/StatusPill";
 import { EventTabs } from "@/components/EventTabs";
 import { BackLink } from "@/components/BackLink";
-import { ConfirmDeleteButton } from "@/components/ui/ConfirmDeleteButton";
+import { DeleteEventButton } from "@/components/DeleteEventButton";
 import { deleteEventAction } from "@/lib/actions/events";
 
 export default async function EventDetailLayout({
@@ -43,11 +43,11 @@ export default async function EventDetailLayout({
             </Link>
           )}
           {isAdmin(user) && (
-            <ConfirmDeleteButton
+            <DeleteEventButton
               action={deleteEventAction}
-              fields={{ id: event.id }}
-              label="Delete event"
-              confirmMessage={`Delete "${event.title}"? This permanently removes its milestones, time entries, quotes, invoices and expenses. This can't be undone.`}
+              eventId={event.id}
+              eventTitle={event.title}
+              expenseCount={event.expenses.length}
             />
           )}
         </div>
