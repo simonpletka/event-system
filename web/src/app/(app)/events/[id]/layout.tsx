@@ -41,7 +41,7 @@ export default async function EventDetailLayout({
           <EventStatusPill status={event.status} />
           {editable && (
             <Link href={`/events/${event.id}/edit`} className="btno">
-              Edit
+              Edit event
             </Link>
           )}
           {isAdmin(user) && (

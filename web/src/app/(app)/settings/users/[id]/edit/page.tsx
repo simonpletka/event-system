@@ -30,6 +30,7 @@ export default async function EditUserPage({ params }: { params: Promise<{ id: s
         id={target.id}
         name={target.name}
         email={target.email}
+        phone={target.phone}
         isCardHolder={target.isCardHolder}
         role={target.role}
         customRoleId={target.customRoleId}

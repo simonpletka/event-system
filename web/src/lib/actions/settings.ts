@@ -88,6 +88,7 @@ export async function updateUserInfoAction(_prev: SettingsFormState, formData: F
   const id = String(formData.get("id"));
   const name = String(formData.get("name") ?? "").trim();
   const email = String(formData.get("email") ?? "").trim().toLowerCase();
+  const phone = String(formData.get("phone") ?? "").trim();
   const isCardHolder = formData.get("isCardHolder") === "on";
   const roleSelection = parseRoleSelection(String(formData.get("role") ?? ""));
 
@@ -102,6 +103,7 @@ export async function updateUserInfoAction(_prev: SettingsFormState, formData: F
     data: {
       name,
       email,
+      phone,
       isCardHolder,
       // Don't let an admin change their own role by accident — everything
       // else on the page still saves normally.

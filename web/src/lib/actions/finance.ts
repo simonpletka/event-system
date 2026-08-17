@@ -87,6 +87,7 @@ export async function createQuoteAction(_prev: FinanceFormState, formData: FormD
       status,
       currency,
       hideItemPrices,
+      createdById: user.id,
       validUntil: new Date(validUntil),
       total: itemsTotal(items),
       items: { create: items.map((i, idx) => ({ ...i, sortOrder: idx })) },
@@ -131,6 +132,31 @@ export async function updateQuoteAction(_prev: FinanceFormState, formData: FormD
 
   revalidatePath("/finance/quotes");
   redirect(`/finance/quotes/${id}`);
+}
+
+/**
+ * Moves a sent quote to Accepted or Declined — the client's actual verdict,
+ * not something the original draft/edit form covers (that only sets status
+ * up front, at DRAFT/SENT time). Scoped to quotes currently SENT, since
+ * that's the only state this was missing a UI for; DRAFT keeps going
+ * through Edit, and ACCEPTED/DECLINED are terminal (converting to an
+ * invoice or deleting are the only next steps from there).
+ */
+export async function updateQuoteStatusAction(formData: FormData) {
+  const user = await requireUser();
+  if (!canManageFinance(user)) return;
+
+  const id = String(formData.get("id"));
+  const status = formData.get("status") as QuoteStatus;
+  if (status !== "ACCEPTED" && status !== "DECLINED") return;
+
+  const quote = await prisma.quote.findUnique({ where: { id } });
+  if (!quote || quote.status !== "SENT") return;
+
+  await prisma.quote.update({ where: { id }, data: { status } });
+
+  revalidatePath(`/finance/quotes/${id}`);
+  revalidatePath("/finance/quotes");
 }
 
 /** Admin-only, irreversible. If already converted, the invoice stays — only its quoteId link is cleared (schema's ON DELETE SET NULL). */
@@ -342,12 +368,18 @@ export async function revertInvoicePaidAction(formData: FormData) {
   if (!invoice || invoice.status !== "PAID") return;
 
   const realAmountPaid = invoice.payments.reduce((s, p) => s + p.amount, 0);
-  const status = realAmountPaid >= invoice.total ? "PAID" : realAmountPaid > 0 ? "PARTLY_PAID" : "ISSUED";
+  // Nothing to undo — this invoice is genuinely, fully paid by real recorded
+  // Payment rows, not the "mark as paid" shortcut's fabricated amount. The UI
+  // already hides this button for that case (see InvoiceDetailPage), but a
+  // spoofed/stale POST should still no-op rather than log a misleading
+  // "undid" history entry for an action that changed nothing.
+  if (realAmountPaid >= invoice.total) return;
+  const status = realAmountPaid > 0 ? "PARTLY_PAID" : "ISSUED";
 
   await prisma.$transaction([
     prisma.invoice.update({
       where: { id: invoiceId },
-      data: { amountPaid: realAmountPaid, status, paidAt: status === "PAID" ? invoice.paidAt : null },
+      data: { amountPaid: realAmountPaid, status, paidAt: null },
     }),
     prisma.invoiceEvent.create({
       data: { invoiceId, type: "PAID_REVERTED", message: `Undid "mark as paid" — ${user.name}`, userId: user.id },

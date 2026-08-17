@@ -27,6 +27,13 @@ export default async function InvoiceDetailPage({ params }: { params: Promise<{ 
   // rounded Int, so an un-rounded diff is spuriously nonzero even with no
   // discount applied (e.g. 0.34) and would otherwise show a "-0 Kč" row.
   const discountAmount = Math.round(base + vat) - invoice.total;
+  const realAmountPaid = invoice.payments.reduce((s, p) => s + p.amount, 0);
+  // "Undo mark as paid" only has something to undo when the PAID status
+  // isn't already fully backed by real recorded payments — otherwise it's a
+  // silent no-op that never lets the invoice go back to "Mark as paid" (a
+  // real bug found in testing: the button stayed visible forever with no
+  // visible effect for an invoice paid via genuine Payment rows).
+  const canUndoPaid = invoice.status === "PAID" && realAmountPaid < invoice.total;
 
   return (
     <div>
@@ -52,7 +59,7 @@ export default async function InvoiceDetailPage({ params }: { params: Promise<{ 
               </button>
             </form>
           )}
-          {canManage && invoice.status === "PAID" && (
+          {canManage && canUndoPaid && (
             <form action={revertInvoicePaidAction}>
               <input type="hidden" name="invoiceId" value={invoice.id} />
               <button type="submit" className="btno">

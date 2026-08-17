@@ -104,7 +104,7 @@ export default async function QuotesPage({
           <div>
             <QuoteStatusPill status={q.status} />
           </div>
-          <div className="flex items-center gap-2 text-[9px] tracking-[0.1em] uppercase">
+          <div className="flex items-center justify-between gap-2 text-[9px] tracking-[0.1em] uppercase">
             {q.status === "ACCEPTED" && q.invoices.length === 0 && canManage ? (
               <form action={convertQuoteToInvoiceAction}>
                 <input type="hidden" name="quoteId" value={q.id} />

@@ -18,6 +18,7 @@ export function EditUserForm({
   id,
   name,
   email,
+  phone,
   isCardHolder,
   role,
   customRoleId,
@@ -28,6 +29,7 @@ export function EditUserForm({
   id: string;
   name: string;
   email: string;
+  phone: string;
   isCardHolder: boolean;
   role: string;
   customRoleId: string | null;
@@ -49,6 +51,10 @@ export function EditUserForm({
         <label className="flex flex-col gap-1.5">
           <span className="heading-label">Email</span>
           <input name="email" type="email" defaultValue={email} required className="input" />
+        </label>
+        <label className="flex flex-col gap-1.5">
+          <span className="heading-label">Phone</span>
+          <input name="phone" type="tel" defaultValue={phone} className="input" />
         </label>
         <label className="flex flex-col gap-1.5">
           <span className="heading-label">Role</span>

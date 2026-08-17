@@ -3,7 +3,7 @@ import { notFound } from "next/navigation";
 import { requireUser, canManageFinance, isAdmin } from "@/lib/authz";
 import { getQuoteDetail, getCompanySettings } from "@/lib/queries/finance";
 import { formatCurrency, formatDate } from "@/lib/format";
-import { convertQuoteToInvoiceAction, deleteQuoteAction } from "@/lib/actions/finance";
+import { convertQuoteToInvoiceAction, deleteQuoteAction, updateQuoteStatusAction } from "@/lib/actions/finance";
 import { BackLink } from "@/components/BackLink";
 import { ConfirmDeleteButton } from "@/components/ui/ConfirmDeleteButton";
 import { QuoteStatusPill } from "@/components/StatusPill";
@@ -41,6 +41,24 @@ export default async function QuoteDetailPage({ params }: { params: Promise<{ id
             <Link href={`/finance/quotes/${quote.id}/edit`} className="btno">
               Edit
             </Link>
+          )}
+          {canManage && quote.status === "SENT" && (
+            <>
+              <form action={updateQuoteStatusAction}>
+                <input type="hidden" name="id" value={quote.id} />
+                <input type="hidden" name="status" value="ACCEPTED" />
+                <button type="submit" className="btn">
+                  Mark accepted
+                </button>
+              </form>
+              <form action={updateQuoteStatusAction}>
+                <input type="hidden" name="id" value={quote.id} />
+                <input type="hidden" name="status" value="DECLINED" />
+                <button type="submit" className="btno">
+                  Mark declined
+                </button>
+              </form>
+            </>
           )}
           {canManage && quote.status === "ACCEPTED" && !alreadyInvoiced && (
             <form action={convertQuoteToInvoiceAction}>
@@ -160,6 +178,17 @@ export default async function QuoteDetailPage({ params }: { params: Promise<{ id
               </Link>
             </div>
           ))}
+
+          <div className="rule-thin my-2.5" />
+          <div className="label">Created by</div>
+          <div className="py-1.5 text-[13px]">
+            {quote.createdBy.name}
+            <div className="placeholder-text text-[11px] mt-0.5">
+              {quote.createdBy.email}
+              {quote.createdBy.phone ? ` · ${quote.createdBy.phone}` : ""}
+            </div>
+            <div className="placeholder-text text-[11px]">{formatDate(quote.issuedAt)}</div>
+          </div>
 
           {isAdmin(user) && (
             <>

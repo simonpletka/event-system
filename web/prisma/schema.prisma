@@ -134,6 +134,7 @@ model User {
   id           String    @id @default(cuid())
   name         String
   email        String    @unique
+  phone        String    @default("") // shown on a quote's "Created by" block alongside name/email
   passwordHash String
   role         Role // fallback/least-privilege value when customRoleId is set — see resolvePermissions()
   isCardHolder Boolean   @default(false)
@@ -148,6 +149,7 @@ model User {
   assignments   EventMember[]
   expenses      Expense[]
   timeEntries   TimeEntry[]
+  createdQuotes Quote[]        @relation("QuoteCreator")
   payments      Payment[]
   invoiceEvents InvoiceEvent[]
 }
@@ -311,6 +313,14 @@ model Quote {
   // price and show only each category's subtotal plus the grand total —
   // useful for a client-facing breakdown that doesn't reveal per-item cost.
   hideItemPrices Boolean @default(true)
+
+  // Who made this quote — shown on the detail page as "Created by" (name,
+  // email, phone) alongside issuedAt as the creation date. No separate
+  // createdAt field: issuedAt is already set at creation time via
+  // @default(now()) and is never independently editable, so it already IS
+  // the creation timestamp — adding another one would just duplicate it.
+  createdById String
+  createdBy   User   @relation("QuoteCreator", fields: [createdById], references: [id])
 
   items    QuoteItem[]
   invoices Invoice[] // an accepted quote that's been converted shows "Invoiced <number>" instead of "Convert"

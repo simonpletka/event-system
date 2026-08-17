@@ -95,16 +95,14 @@ export default async function ReportsPage({
               <span className="heading-label">Expenses</span>
               <span className="heading-label">Balance</span>
             </div>
-            {report.byMonth
-              .filter((m) => m.income > 0 || m.expense > 0)
-              .map((m) => (
-                <div key={m.month} className="grid grid-cols-[1fr_.7fr_.7fr_.6fr] gap-2 py-1.5 text-[13px]">
-                  <div>{MONTHS[m.month]}</div>
-                  <div className="placeholder-text">{formatCurrency(m.income)}</div>
-                  <div className="placeholder-text">{formatCurrency(m.expense)}</div>
-                  <div>{formatCurrency(m.income - m.expense)}</div>
-                </div>
-              ))}
+            {report.byMonth.map((m) => (
+              <div key={m.month} className="grid grid-cols-[1fr_.7fr_.7fr_.6fr] gap-2 py-1.5 text-[13px]">
+                <div>{MONTHS[m.month]}</div>
+                <div className="placeholder-text">{formatCurrency(m.income)}</div>
+                <div className="placeholder-text">{formatCurrency(m.expense)}</div>
+                <div>{formatCurrency(m.income - m.expense)}</div>
+              </div>
+            ))}
 
             <div className="rule-thin my-3" />
             <div className="label mb-1.5">Top expense categories</div>

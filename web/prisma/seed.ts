@@ -79,13 +79,21 @@ async function main() {
   const HOUR = 60 * 60 * 1000;
 
   const admin = await prisma.user.create({
-    data: { name: "Admin User", email: "admin@eventsystem.cz", passwordHash, role: "ADMIN", lastSeenAt: new Date() },
+    data: {
+      name: "Admin User",
+      email: "admin@eventsystem.cz",
+      phone: "+420 601 100 200",
+      passwordHash,
+      role: "ADMIN",
+      lastSeenAt: new Date(),
+    },
   });
 
   const accountant = await prisma.user.create({
     data: {
       name: "Eva Kučerová",
       email: "eva.kucerova@eventsystem.cz",
+      phone: "+420 602 330 441",
       passwordHash,
       role: "ACCOUNTANT",
       lastSeenAt: new Date(Date.now() - 2 * HOUR),
@@ -96,6 +104,7 @@ async function main() {
     data: {
       name: "J. Novák",
       email: "jan.novak@eventsystem.cz",
+      phone: "+420 603 550 118",
       passwordHash,
       role: "PRODUCER",
       isCardHolder: true,
@@ -113,6 +122,52 @@ async function main() {
     },
   });
 
+  // --- Clients — one per demo company, so the Clients section has real
+  // data instead of every demo event sitting unlinked. Contacts here match
+  // the EventContact rows created below verbatim (same person, same
+  // details) since in real usage that's exactly what syncClientContacts()
+  // would produce from saving each event through the UI.
+  const kobra = await prisma.client.create({
+    data: {
+      name: "Kobra a.s.",
+      address: "Vinohradská 12, Praha 2",
+      ico: "27182904",
+      dic: "CZ27182904",
+      invoicingEmail: "valkova@kobra.cz",
+      contacts: { create: [{ name: "Petra Válková", phone: "+420 771 220 118", email: "valkova@kobra.cz" }] },
+    },
+  });
+  const nordika = await prisma.client.create({
+    data: {
+      name: "Nordika",
+      address: "Lidická 20, Brno",
+      ico: "05512244",
+      dic: "CZ05512244",
+      invoicingEmail: "benes@nordika.cz",
+      contacts: { create: [{ name: "Tomáš Beneš", phone: "+420 602 118 400", email: "benes@nordika.cz" }] },
+    },
+  });
+  const vela = await prisma.client.create({
+    data: {
+      name: "Vela s.r.o.",
+      address: "Náměstí Míru 5, Praha 2",
+      ico: "09984411",
+      dic: "CZ09984411",
+      invoicingEmail: "maresova@vela.cz",
+      contacts: { create: [{ name: "Lucie Marešová", phone: "+420 733 900 210", email: "maresova@vela.cz" }] },
+    },
+  });
+  const aeris = await prisma.client.create({
+    data: {
+      name: "Aeris",
+      address: "Karlovo náměstí 10, Praha 2",
+      ico: "08812234",
+      dic: "CZ08812234",
+      invoicingEmail: "sykorova@aeris.cz",
+      contacts: { create: [{ name: "Radka Sýkorová", phone: "+420 604 552 019", email: "sykorova@aeris.cz" }] },
+    },
+  });
+
   // --- Autumn Conference — confirmed, upcoming, fully fleshed out ---
   await prisma.event.create({
     data: {
@@ -120,6 +175,7 @@ async function main() {
       title: "Autumn Conference 2026",
       brief:
         "Two-day corporate conference for Kobra a.s. — keynote, breakout tracks, evening reception on the boat.",
+      clientId: kobra.id,
       contacts: { create: [{ name: "Petra Válková", phone: "+420 771 220 118", email: "valkova@kobra.cz" }] },
       companyName: "Kobra a.s.",
       companyAddress: "Vinohradská 12, Praha 2",
@@ -169,6 +225,7 @@ async function main() {
             validUntil: d("2026-08-15"),
             issuedAt: d("2026-07-28"),
             hideItemPrices: false,
+            createdById: producer.id,
             ...withTotal([
               { description: "Production management — Autumn Conference", unitPrice: 250000, category: "People" },
               { description: "Stage & light rental", unitPrice: 60000, category: "Rigging" },
@@ -230,6 +287,7 @@ async function main() {
       number: "26-002",
       title: "Product launch",
       brief: "Nordika's autumn product launch — press + partner event.",
+      clientId: nordika.id,
       contacts: { create: [{ name: "Tomáš Beneš", phone: "+420 602 118 400", email: "benes@nordika.cz" }] },
       companyName: "Nordika",
       companyAddress: "Lidická 20, Brno",
@@ -249,6 +307,7 @@ async function main() {
             status: "SENT",
             validUntil: d("2026-08-31"),
             issuedAt: d("2026-08-14"),
+            createdById: producer.id,
             ...withTotal([
               { description: "Production management — Product launch", unitPrice: 88000 },
               { description: "Press kit & signage", unitPrice: 40000 },
@@ -265,6 +324,7 @@ async function main() {
       number: "26-003",
       title: "Team offsite",
       brief: "Vela's internal team offsite — workshops + outdoor activities.",
+      clientId: vela.id,
       contacts: { create: [{ name: "Lucie Marešová", phone: "+420 733 900 210", email: "maresova@vela.cz" }] },
       companyName: "Vela s.r.o.",
       companyAddress: "Náměstí Míru 5, Praha 2",
@@ -286,6 +346,7 @@ async function main() {
             status: "ACCEPTED",
             validUntil: d("2026-08-10"),
             issuedAt: d("2026-07-25"),
+            createdById: accountant.id,
             ...withTotal([{ description: "Team offsite — full package", unitPrice: 96000 }]),
           },
         ],
@@ -318,6 +379,9 @@ async function main() {
       },
     },
   });
+  // Demoing the discount feature: 10% off, applied to the pre-VAT base with
+  // VAT recomputed on the discounted amount — base 48000, discount 4800,
+  // discounted base 43200, VAT 21% of that is 9072, total 52272.
   const balanceData = withTotal([{ description: "Team offsite — balance (50%)", unitPrice: 48000 }]);
   await prisma.invoice.create({
     data: {
@@ -329,6 +393,9 @@ async function main() {
       dueDate: d("2026-08-22"),
       issuedAt: d("2026-08-08"),
       ...balanceData,
+      total: 52272,
+      discountType: "PERCENT",
+      discountValue: 10,
       history: {
         create: [
           { type: "CREATED", message: "Created from quote 26-003", createdAt: d("2026-08-08"), userId: accountant.id },
@@ -344,6 +411,7 @@ async function main() {
       number: "26-004",
       title: "Summer Gala",
       brief: "Aeris annual summer gala — 400 guests, dinner + live music.",
+      clientId: aeris.id,
       contacts: { create: [{ name: "Radka Sýkorová", phone: "+420 604 552 019", email: "sykorova@aeris.cz" }] },
       companyName: "Aeris",
       companyAddress: "Karlovo náměstí 10, Praha 2",
@@ -364,6 +432,7 @@ async function main() {
       number: "26-005",
       title: "Roadshow",
       brief: "Aeris regional roadshow — three-city pop-up activation.",
+      clientId: aeris.id,
       contacts: { create: [{ name: "Radka Sýkorová", phone: "+420 604 552 019", email: "sykorova@aeris.cz" }] },
       companyName: "Aeris",
       companyAddress: "Karlovo náměstí 10, Praha 2",
@@ -381,6 +450,7 @@ async function main() {
             status: "DECLINED",
             validUntil: d("2026-07-02"),
             issuedAt: d("2026-06-18"),
+            createdById: admin.id,
             ...withTotal([{ description: "Roadshow — full three-city package", unitPrice: 96000 }]),
           },
         ],
@@ -414,6 +484,7 @@ async function main() {
       number: "26-006",
       title: "Dealer meeting",
       brief: "Regional dealer meeting for Kobra a.s. — scope not yet confirmed.",
+      clientId: kobra.id,
       contacts: { create: [{ name: "Petra Válková", phone: "+420 771 220 118", email: "valkova@kobra.cz" }] },
       companyName: "Kobra a.s.",
       companyAddress: "Vinohradská 12, Praha 2",
@@ -431,6 +502,7 @@ async function main() {
             status: "DRAFT",
             validUntil: d("2026-09-15"),
             issuedAt: d("2026-08-11"),
+            createdById: producer.id,
             ...withTotal([{ description: "Dealer meeting — draft scope", unitPrice: 74500 }]),
           },
         ],
@@ -444,6 +516,7 @@ async function main() {
       number: "26-007",
       title: "Spring Kickoff",
       brief: "Nordika's spring kickoff event — completed and archived.",
+      clientId: nordika.id,
       contacts: { create: [{ name: "Tomáš Beneš", phone: "+420 602 118 400", email: "benes@nordika.cz" }] },
       companyName: "Nordika",
       companyAddress: "Lidická 20, Brno",
@@ -521,7 +594,7 @@ async function main() {
     },
   });
 
-  console.log("Seeded 7 events, 4 users, company settings. Dev login password for all seed accounts:", DEV_PASSWORD);
+  console.log("Seeded 7 events, 4 clients, 4 users, company settings. Dev login password for all seed accounts:", DEV_PASSWORD);
   console.log("  admin@eventsystem.cz (Admin)");
   console.log("  eva.kucerova@eventsystem.cz (Accountant)");
   console.log("  jan.novak@eventsystem.cz (Producer)");

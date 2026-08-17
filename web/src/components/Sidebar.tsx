@@ -8,8 +8,8 @@ import { TimerWidget } from "@/components/TimerWidget";
 
 const NAV = [
   { href: "/dashboard", label: "Dashboard" },
-  { href: "/events", label: "Events" },
   { href: "/clients", label: "Clients" },
+  { href: "/events", label: "Events" },
   { href: "/finance", label: "Finance" },
   { href: "/time-tracker", label: "Time tracker" },
 ] as const;
