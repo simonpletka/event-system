@@ -3,6 +3,7 @@ import { requireUser, canEditEvent } from "@/lib/authz";
 import { getEventDetail } from "@/lib/queries/events";
 import { formatDateTime } from "@/lib/format";
 import { addMilestoneAction, deleteMilestoneAction } from "@/lib/actions/events";
+import { ConfirmDeleteButton } from "@/components/ui/ConfirmDeleteButton";
 
 export default async function MilestonesTab({ params }: { params: Promise<{ id: string }> }) {
   const user = await requireUser();
@@ -24,13 +25,12 @@ export default async function MilestonesTab({ params }: { params: Promise<{ id: 
           <div className="placeholder-text">{formatDateTime(m.date)}</div>
           <div>{m.title}</div>
           {editable && (
-            <form action={deleteMilestoneAction}>
-              <input type="hidden" name="eventId" value={event.id} />
-              <input type="hidden" name="milestoneId" value={m.id} />
-              <button type="submit" className="text-[9px] tracking-[0.1em] uppercase placeholder-text hover:text-accent">
-                Delete
-              </button>
-            </form>
+            <ConfirmDeleteButton
+              action={deleteMilestoneAction}
+              fields={{ eventId: event.id, milestoneId: m.id }}
+              confirmMessage={`Delete milestone "${m.title}"? This can't be undone.`}
+              className="text-[9px] tracking-[0.1em] uppercase placeholder-text hover:text-accent"
+            />
           )}
         </div>
       ))}
