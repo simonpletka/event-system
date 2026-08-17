@@ -73,6 +73,36 @@ export async function getDashboardData(user: SessionUser) {
   };
 }
 
+export type TimelineItem = { date: Date; kind: "build" | "start" | "milestone"; label: string; eventId: string; eventTitle: string };
+
+/** Chronological feed for the Dashboard's Timeline view: build/start days + milestones, next 60 days. */
+export async function getDashboardTimeline(user: SessionUser): Promise<TimelineItem[]> {
+  const now = new Date();
+  const horizon = new Date(now.getTime() + 60 * 86400000);
+
+  const events = await prisma.event.findMany({
+    where: { ...eventWhereForUser(user), status: { notIn: ["CANCELLED", "CLOSED"] }, startDate: { lte: horizon }, endDate: { gte: now } },
+    include: { milestones: { where: { date: { gte: now, lte: horizon } } } },
+    orderBy: { startDate: "asc" },
+    take: 20,
+  });
+
+  const items: TimelineItem[] = [];
+  for (const e of events) {
+    const buildOrStart = e.buildDate ?? e.startDate;
+    if (buildOrStart >= now) {
+      items.push({ date: buildOrStart, kind: e.buildDate ? "build" : "start", label: e.buildDate ? "Build day" : "Event begins", eventId: e.id, eventTitle: e.title });
+    } else if (e.startDate >= now) {
+      items.push({ date: e.startDate, kind: "start", label: "Event begins", eventId: e.id, eventTitle: e.title });
+    }
+    for (const m of e.milestones) {
+      items.push({ date: m.date, kind: "milestone", label: m.title, eventId: e.id, eventTitle: e.title });
+    }
+  }
+
+  return items.sort((a, b) => a.date.getTime() - b.date.getTime());
+}
+
 function buildMonthlyBalance(
   invoices: { total: number; issuedAt: Date }[],
   expenses: { amount: number; date: Date }[]

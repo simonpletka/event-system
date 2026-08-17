@@ -4,6 +4,7 @@ import { requireUser, canManageFinance } from "@/lib/authz";
 import { getInvoiceDetail, getCompanySettings } from "@/lib/queries/finance";
 import { formatCurrency, formatDate, formatDateTime } from "@/lib/format";
 import { recordPaymentAction, markInvoicePaidAction } from "@/lib/actions/finance";
+import { BackLink } from "@/components/BackLink";
 
 export default async function InvoiceDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const user = await requireUser();
@@ -20,12 +21,7 @@ export default async function InvoiceDetailPage({ params }: { params: Promise<{ 
 
   return (
     <div>
-      <div className="label mb-1.5">
-        <Link href="/finance/invoices" className="hover:text-ink">
-          ← Finance / Invoices
-        </Link>{" "}
-        / {invoice.number}
-      </div>
+      <BackLink href="/finance/invoices">Invoices</BackLink>
       <div className="flex justify-between items-end border-b-2 border-ink pb-2 flex-wrap gap-2">
         <div>
           <div className="text-xl font-semibold">Invoice {invoice.number}</div>

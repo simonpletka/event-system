@@ -1,8 +1,12 @@
 import Link from "next/link";
 import { requireUser, canCreateEvent } from "@/lib/authz";
 import { getEventList, type EventListFilters } from "@/lib/queries/events";
+import { getWeekCalendarData } from "@/lib/queries/calendar";
 import { formatCurrency, formatDateRange } from "@/lib/format";
 import { EventStatusPill } from "@/components/StatusPill";
+import { WeekCalendar } from "@/components/calendar/WeekCalendar";
+import { WeekNav } from "@/components/calendar/WeekNav";
+import { mondayOf, parseIsoDate } from "@/lib/calendar";
 import type { EventStatus } from "@/generated/prisma/enums";
 
 const STATUSES: EventStatus[] = [
@@ -22,6 +26,26 @@ export default async function EventsPage({
 }) {
   const user = await requireUser();
   const params = await searchParams;
+  const view = params.view === "calendar" ? "calendar" : "table";
+
+  if (view === "calendar") {
+    const weekStart = mondayOf(params.week ? parseIsoDate(params.week) : new Date());
+    const events = await getWeekCalendarData(user, weekStart);
+
+    return (
+      <div>
+        <ViewHeader canCreate={canCreateEvent(user)} />
+        <div className="flex items-center justify-between gap-2 mt-3 pb-2.5 border-b border-ink/20 flex-wrap">
+          <ViewSwitch view="calendar" />
+          <WeekNav weekStart={weekStart} hrefFor={(week) => `/events?view=calendar&week=${week}`} />
+        </div>
+        <div className="mt-2">
+          <WeekCalendar weekStart={weekStart} events={events} eventHref={(id) => `/events/${id}`} />
+        </div>
+      </div>
+    );
+  }
+
   const filters: EventListFilters = {
     q: params.q || undefined,
     status: (params.status as EventStatus) || undefined,
@@ -34,30 +58,10 @@ export default async function EventsPage({
 
   return (
     <div>
-      <div className="flex items-end justify-between border-b-2 border-ink pb-2">
-        <div>
-          <div className="heading-label">
-            {total} events · {activeCount} active
-          </div>
-          <h1 className="text-xl font-semibold">Events</h1>
-        </div>
-        {canCreateEvent(user) && (
-          <Link href="/events/new" className="btn">
-            New event
-          </Link>
-        )}
-      </div>
+      <ViewHeader canCreate={canCreateEvent(user)} total={total} activeCount={activeCount} />
 
       <div className="flex items-center justify-between gap-2 mt-3 pb-2.5 border-b border-ink/20 flex-wrap">
-        <div className="flex border border-ink">
-          <span className="text-[9px] tracking-[0.14em] uppercase px-3 py-1.5 bg-ink text-bg">Table</span>
-          <span
-            className="text-[9px] tracking-[0.14em] uppercase px-3 py-1.5 border-l border-ink placeholder-text cursor-not-allowed"
-            title="Calendar week view lands in a later phase"
-          >
-            Calendar
-          </span>
-        </div>
+        <ViewSwitch view="table" />
 
         <form method="get" className="flex gap-1.5 flex-wrap items-center">
           <select
@@ -145,6 +149,45 @@ export default async function EventsPage({
           Today
         </a>
       </div>
+    </div>
+  );
+}
+
+function ViewHeader({ canCreate, total, activeCount }: { canCreate: boolean; total?: number; activeCount?: number }) {
+  return (
+    <div className="flex items-end justify-between border-b-2 border-ink pb-2">
+      <div>
+        {total !== undefined && (
+          <div className="heading-label">
+            {total} events · {activeCount} active
+          </div>
+        )}
+        <h1 className="text-xl font-semibold">Events</h1>
+      </div>
+      {canCreate && (
+        <Link href="/events/new" className="btn">
+          New event
+        </Link>
+      )}
+    </div>
+  );
+}
+
+function ViewSwitch({ view }: { view: "table" | "calendar" }) {
+  return (
+    <div className="flex border border-ink">
+      <Link
+        href="/events"
+        className={`text-[9px] tracking-[0.14em] uppercase px-3 py-1.5 ${view === "table" ? "bg-ink text-bg" : ""}`}
+      >
+        Table
+      </Link>
+      <Link
+        href="/events?view=calendar"
+        className={`text-[9px] tracking-[0.14em] uppercase px-3 py-1.5 border-l border-ink ${view === "calendar" ? "bg-ink text-bg" : ""}`}
+      >
+        Calendar
+      </Link>
     </div>
   );
 }

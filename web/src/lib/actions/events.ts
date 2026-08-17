@@ -97,6 +97,45 @@ export async function updateEventAction(_prev: EventFormState, formData: FormDat
   redirect(`/events/${id}`);
 }
 
+export type QuickEventState = { error?: string; event?: { id: string; title: string; companyName: string } };
+
+/**
+ * Minimal event creation used from the "+ New event" modal on the Quote/
+ * Invoice/Expense forms — just enough fields to pick the event right after,
+ * not the full EventForm. Returns the created event instead of redirecting
+ * so the modal can hand it back to the picker without leaving the page.
+ */
+export async function quickCreateEventAction(_prev: QuickEventState, formData: FormData): Promise<QuickEventState> {
+  const user = await requireUser();
+  if (!canCreateEvent(user)) return { error: "You don't have permission to create events." };
+
+  const title = String(formData.get("title") ?? "").trim();
+  const clientName = String(formData.get("clientName") ?? "").trim();
+  const companyName = String(formData.get("companyName") ?? "").trim();
+  const startDate = String(formData.get("startDate") ?? "");
+  const endDate = String(formData.get("endDate") ?? "");
+
+  if (!title || !clientName || !companyName || !startDate || !endDate) {
+    return { error: "All fields are required." };
+  }
+
+  const event = await prisma.event.create({
+    data: {
+      title,
+      clientName,
+      companyName,
+      startDate: new Date(startDate),
+      endDate: new Date(endDate),
+      ownerId: user.id,
+      members: { create: [{ userId: user.id }] },
+    },
+  });
+
+  revalidatePath("/events");
+  revalidatePath("/dashboard");
+  return { event: { id: event.id, title: event.title, companyName: event.companyName } };
+}
+
 export async function addMilestoneAction(formData: FormData) {
   const user = await requireUser();
   const eventId = String(formData.get("eventId"));

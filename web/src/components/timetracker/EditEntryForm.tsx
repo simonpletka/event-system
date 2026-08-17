@@ -3,6 +3,7 @@
 import { useActionState } from "react";
 import { updateManualEntryAction, type TimeFormState } from "@/lib/actions/timetracker";
 import { PHASE_LABEL } from "@/lib/time-phases";
+import { CancelLink } from "@/components/ui/CancelLink";
 import type { TimePhase } from "@/generated/prisma/enums";
 
 const initialState: TimeFormState = {};
@@ -72,10 +73,11 @@ export function EditEntryForm({
 
       {state.error && <p className="text-sm text-accent">{state.error}</p>}
 
-      <div>
+      <div className="flex gap-2">
         <button type="submit" disabled={pending} className="btn">
           {pending ? "Saving…" : "Save changes"}
         </button>
+        <CancelLink href="/time-tracker/tracking" />
       </div>
     </form>
   );

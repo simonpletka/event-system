@@ -5,6 +5,7 @@ import { getEventDetail } from "@/lib/queries/events";
 import { formatDateRange, formatMinutes } from "@/lib/format";
 import { EventStatusPill } from "@/components/StatusPill";
 import { EventTabs } from "@/components/EventTabs";
+import { BackLink } from "@/components/BackLink";
 
 export default async function EventDetailLayout({
   children,
@@ -23,12 +24,7 @@ export default async function EventDetailLayout({
 
   return (
     <div>
-      <div className="label mb-1.5">
-        <Link href="/events" className="hover:text-ink">
-          ← Events
-        </Link>{" "}
-        / {event.title}
-      </div>
+      <BackLink href="/events">Events</BackLink>
       <div className="flex justify-between items-end border-b-2 border-ink pb-2 flex-wrap gap-2">
         <div>
           <div className="text-xl font-semibold">{event.title}</div>

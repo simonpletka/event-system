@@ -8,7 +8,7 @@ export default async function NewExpensePage() {
   const [events, cardHolders] = await Promise.all([
     prisma.event.findMany({
       where: eventWhereForUser(user),
-      select: { id: true, title: true },
+      select: { id: true, title: true, companyName: true },
       orderBy: { title: "asc" },
     }),
     prisma.user.findMany({ where: { isCardHolder: true }, select: { id: true, name: true }, orderBy: { name: "asc" } }),

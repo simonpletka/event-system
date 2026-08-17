@@ -1,0 +1,174 @@
+import Link from "next/link";
+import { addDays, dayHeaderLabel, isSameDay, startOfDay, weekDays, assignColumns } from "@/lib/calendar";
+import { EventStatusPill } from "@/components/StatusPill";
+import type { EventStatus } from "@/generated/prisma/enums";
+
+export type CalendarEvent = {
+  id: string;
+  title: string;
+  status: EventStatus;
+  buildDate: Date | null;
+  startDate: Date;
+  endDate: Date;
+  strikeDate: Date | null;
+  milestones: { id: string; title: string; date: Date }[];
+};
+
+const GRID_START_HOUR = 7;
+const GRID_END_HOUR = 21;
+const HOUR_PX = 32;
+const GRID_HEIGHT = (GRID_END_HOUR - GRID_START_HOUR) * HOUR_PX;
+
+function dayIndex(date: Date, weekStart: Date) {
+  return Math.floor((startOfDay(date).getTime() - weekStart.getTime()) / 86400000);
+}
+
+function clampRange(start: Date, endInclusive: Date, weekStart: Date): [number, number] | null {
+  const s = Math.max(0, dayIndex(start, weekStart));
+  const e = Math.min(6, dayIndex(endInclusive, weekStart));
+  if (s > e) return null;
+  return [s, e];
+}
+
+function minutesFromGridStart(d: Date) {
+  const min = d.getHours() * 60 + d.getMinutes() - GRID_START_HOUR * 60;
+  return Math.min(Math.max(min, 0), (GRID_END_HOUR - GRID_START_HOUR) * 60);
+}
+
+export function WeekCalendar({ weekStart, events, eventHref }: { weekStart: Date; events: CalendarEvent[]; eventHref: (id: string) => string }) {
+  const days = weekDays(weekStart);
+  const today = new Date();
+
+  type AllDayBar = { eventId: string; title: string; status: EventStatus; kind: "prep" | "main"; colStart: number; colEnd: number };
+  const bars: AllDayBar[] = [];
+  for (const event of events) {
+    const prepStart = event.buildDate ?? event.startDate;
+    if (startOfDay(prepStart).getTime() < startOfDay(event.startDate).getTime()) {
+      const range = clampRange(prepStart, addDays(event.startDate, -1), weekStart);
+      if (range) bars.push({ eventId: event.id, title: event.title, status: event.status, kind: "prep", colStart: range[0], colEnd: range[1] });
+    }
+    const mainRange = clampRange(event.startDate, event.endDate, weekStart);
+    if (mainRange) bars.push({ eventId: event.id, title: event.title, status: event.status, kind: "main", colStart: mainRange[0], colEnd: mainRange[1] });
+    const strikeEnd = event.strikeDate ?? event.endDate;
+    if (startOfDay(strikeEnd).getTime() > startOfDay(event.endDate).getTime()) {
+      const range = clampRange(addDays(event.endDate, 1), strikeEnd, weekStart);
+      if (range) bars.push({ eventId: event.id, title: event.title, status: event.status, kind: "prep", colStart: range[0], colEnd: range[1] });
+    }
+  }
+
+  const hours = Array.from({ length: (GRID_END_HOUR - GRID_START_HOUR) / 2 + 1 }, (_, i) => GRID_START_HOUR + i * 2);
+
+  return (
+    <div>
+      <div className="grid grid-cols-[44px_repeat(7,minmax(0,1fr))] border-b border-ink/20 pb-1">
+        <div />
+        {days.map((d) => (
+          <div key={d.toISOString()} className={`heading-label text-center ${isSameDay(d, today) ? "text-accent" : ""}`}>
+            {dayHeaderLabel(d)}
+          </div>
+        ))}
+      </div>
+
+      {bars.length > 0 && (
+        <div className="grid grid-cols-[44px_repeat(7,minmax(0,1fr))] auto-rows-[24px] gap-y-0.5 py-1.5 border-b-2 border-ink">
+          <div className="label" style={{ gridRow: 1, gridColumn: 1 }}>
+            All day
+          </div>
+          {bars.map((bar, i) => (
+            <Link
+              key={i}
+              href={eventHref(bar.eventId)}
+              title={bar.title}
+              className={`overflow-hidden text-[8.5px] px-1.5 flex items-center truncate ${
+                bar.kind === "main" ? "bg-ink text-bg" : "bg-ink/14"
+              }`}
+              style={{ gridRow: 1, gridColumn: `${bar.colStart + 2} / ${bar.colEnd + 3}` }}
+            >
+              {bar.title} — {bar.kind === "main" ? "event days" : "prep / build"}
+            </Link>
+          ))}
+        </div>
+      )}
+
+      <div className="grid grid-cols-[44px_repeat(7,minmax(0,1fr))] mt-1">
+        <div>
+          {hours.map((h) => (
+            <div key={h} className="label" style={{ height: HOUR_PX * 2 }}>
+              {String(h).padStart(2, "0")}:00
+            </div>
+          ))}
+        </div>
+        {days.map((day) => {
+          const dayMilestones = events.flatMap((e) =>
+            e.milestones.filter((m) => isSameDay(m.date, day)).map((m) => ({ ...m, eventId: e.id, eventTitle: e.title }))
+          );
+          const placed = assignColumns(
+            dayMilestones.map((m) => ({
+              ...m,
+              startMin: minutesFromGridStart(m.date),
+              endMin: minutesFromGridStart(new Date(m.date.getTime() + 60 * 60000)),
+            }))
+          );
+          return (
+            <div
+              key={day.toISOString()}
+              className="relative border-l border-ink/13"
+              style={{
+                height: GRID_HEIGHT,
+                backgroundImage: `repeating-linear-gradient(to bottom, rgba(243,242,242,.1) 0 1px, transparent 1px ${HOUR_PX * 2}px)`,
+              }}
+            >
+              {placed.map((m) => (
+                <Link
+                  key={m.id}
+                  href={eventHref(m.eventId)}
+                  title={`${m.eventTitle}: ${m.title}`}
+                  className="absolute overflow-hidden text-[8px] leading-tight bg-ink/14 border border-ink/25 px-1 py-0.5 box-border hover:border-accent"
+                  style={{
+                    top: (m.startMin / 60) * HOUR_PX,
+                    height: Math.max(16, ((m.endMin - m.startMin) / 60) * HOUR_PX),
+                    left: `${(m.col / m.cols) * 100}%`,
+                    width: `${100 / m.cols}%`,
+                  }}
+                >
+                  {m.title}
+                  <div className="placeholder-text">{m.eventTitle}</div>
+                </Link>
+              ))}
+            </div>
+          );
+        })}
+      </div>
+
+      <div className="flex gap-3.5 flex-wrap mt-2.5">
+        <Legend swatch="bg-ink" label="Event days" />
+        <Legend swatch="bg-ink/14" label="Prep / build / strike" />
+        <Legend swatch="border border-ink/25" label="Milestone" />
+      </div>
+
+      {events.length === 0 && <p className="text-sm placeholder-text mt-3">No events this week.</p>}
+      {events.length > 0 && (
+        <div className="mt-3">
+          <div className="label mb-1">This week&apos;s events</div>
+          <div className="flex flex-col gap-1">
+            {events.map((e) => (
+              <Link key={e.id} href={eventHref(e.id)} className="flex items-center gap-2 text-[12px] hover:text-accent">
+                <EventStatusPill status={e.status} />
+                {e.title}
+              </Link>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function Legend({ swatch, label }: { swatch: string; label: string }) {
+  return (
+    <div className="flex gap-1.5 items-center">
+      <div className={`w-2.5 h-2.5 ${swatch}`} />
+      <div className="label">{label}</div>
+    </div>
+  );
+}

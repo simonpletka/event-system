@@ -4,6 +4,8 @@ import { useActionState } from "react";
 import { createQuoteAction, updateQuoteAction, type FinanceFormState } from "@/lib/actions/finance";
 import { toDateTimeLocal } from "@/lib/format";
 import { LineItemsFields, type LineItem } from "./LineItemsFields";
+import { EventPicker } from "@/components/EventPicker";
+import { CancelLink } from "@/components/ui/CancelLink";
 import type { QuoteStatus } from "@/generated/prisma/enums";
 
 const initialState: FinanceFormState = {};
@@ -26,16 +28,7 @@ export function QuoteForm({
       {!isEdit && (
         <label className="flex flex-col gap-1.5">
           <span className="heading-label">Event</span>
-          <select name="eventId" required defaultValue="" className="input">
-            <option value="" disabled>
-              Select an event…
-            </option>
-            {events.map((e) => (
-              <option key={e.id} value={e.id}>
-                {e.title} — {e.companyName}
-              </option>
-            ))}
-          </select>
+          <EventPicker name="eventId" initialEvents={events} required />
         </label>
       )}
 
@@ -65,10 +58,11 @@ export function QuoteForm({
 
       {state.error && <p className="text-sm text-accent">{state.error}</p>}
 
-      <div>
+      <div className="flex gap-2">
         <button type="submit" disabled={pending} className="btn">
           {pending ? "Saving…" : isEdit ? "Save changes" : "Create quote"}
         </button>
+        <CancelLink href="/finance/quotes" />
       </div>
     </form>
   );

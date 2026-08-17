@@ -4,6 +4,8 @@ import { useActionState, useRef, useEffect } from "react";
 import { createExpenseAction, type FinanceFormState } from "@/lib/actions/finance";
 import { ReceiptInput } from "./ReceiptInput";
 import { EXPENSE_CATEGORIES, EXPENSE_CATEGORY_LABEL } from "@/lib/expense-categories";
+import { EventPicker, type PickableEvent } from "@/components/EventPicker";
+import { CancelLink } from "@/components/ui/CancelLink";
 
 const initialState: FinanceFormState = {};
 
@@ -12,7 +14,7 @@ export function ExpenseForm({
   payers,
   currentUserId,
 }: {
-  events: { id: string; title: string }[];
+  events: PickableEvent[];
   payers: { id: string; name: string }[];
   currentUserId: string;
 }) {
@@ -53,14 +55,11 @@ export function ExpenseForm({
 
       <label className="flex flex-col gap-1.5">
         <span className="heading-label">Event</span>
-        <select name="eventId" defaultValue="" className="input">
-          <option value="">Company overhead — not tied to an event</option>
-          {events.map((e) => (
-            <option key={e.id} value={e.id}>
-              {e.title}
-            </option>
-          ))}
-        </select>
+        <EventPicker
+          name="eventId"
+          initialEvents={events}
+          extraOption={{ value: "", label: "Company overhead — not tied to an event" }}
+        />
       </label>
 
       <div className="grid grid-cols-2 gap-4">
@@ -91,6 +90,7 @@ export function ExpenseForm({
         <button type="submit" name="again" value="1" disabled={pending} className="btno">
           Save and add another
         </button>
+        <CancelLink href="/finance/expenses" />
       </div>
     </form>
   );

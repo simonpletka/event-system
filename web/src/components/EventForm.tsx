@@ -3,6 +3,7 @@
 import { useActionState, useState } from "react";
 import { createEventAction, updateEventAction, type EventFormState } from "@/lib/actions/events";
 import { toDateTimeLocal } from "@/lib/format";
+import { CancelLink } from "@/components/ui/CancelLink";
 import type { EventStatus } from "@/generated/prisma/enums";
 
 const STATUS_OPTIONS: { value: EventStatus; label: string }[] = [
@@ -154,6 +155,7 @@ export function EventForm({ defaults }: { defaults: EventFormDefaults }) {
         <button type="submit" disabled={pending} className="btn">
           {pending ? "Saving…" : isEdit ? "Save changes" : "Create event"}
         </button>
+        <CancelLink href={isEdit ? `/events/${defaults.id}` : "/events"} />
       </div>
     </form>
   );

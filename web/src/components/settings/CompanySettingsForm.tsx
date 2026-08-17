@@ -58,9 +58,12 @@ export function CompanySettingsForm({ defaults }: { defaults: Company }) {
         {state.error && <p className="text-sm text-accent">{state.error}</p>}
         {state.success && <p className="text-sm">{state.success}</p>}
 
-        <div>
+        <div className="flex gap-2">
           <button type="submit" disabled={pending} className="btn">
             {pending ? "Saving…" : "Save changes"}
+          </button>
+          <button type="reset" className="btno">
+            Cancel
           </button>
         </div>
       </form>
