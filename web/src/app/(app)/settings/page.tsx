@@ -6,6 +6,7 @@ import { UsersTable } from "@/components/settings/UsersTable";
 import { CreateUserForm } from "@/components/settings/CreateUserForm";
 import { CompanySettingsForm } from "@/components/settings/CompanySettingsForm";
 import { RoleReferenceTable } from "@/components/settings/RoleReferenceTable";
+import { RolesTab } from "@/components/settings/RolesTab";
 
 export default async function SettingsPage({
   searchParams,
@@ -17,7 +18,7 @@ export default async function SettingsPage({
 
   const canUsers = canManageUsers(user);
   const canCompany = canManageCompanySettings(user);
-  const tab = (params.tab as "users" | "company") || (canUsers ? "users" : "company");
+  const tab = (params.tab as "users" | "roles" | "company") || (canUsers ? "users" : "company");
 
   if (!canUsers && !canCompany) {
     return (
@@ -32,12 +33,14 @@ export default async function SettingsPage({
     );
   }
 
-  const [users, company] = await Promise.all([
-    canUsers
-      ? prisma.user.findMany({ orderBy: { name: "asc" } })
-      : Promise.resolve([]),
+  const [users, company, customRoles] = await Promise.all([
+    canUsers ? prisma.user.findMany({ orderBy: { name: "asc" } }) : Promise.resolve([]),
     getCompanySettings(),
+    canUsers
+      ? prisma.customRole.findMany({ orderBy: { name: "asc" }, include: { _count: { select: { users: true } } } })
+      : Promise.resolve([]),
   ]);
+  const roleRows = customRoles.map((r) => ({ ...r, userCount: r._count.users }));
 
   return (
     <div>
@@ -50,12 +53,20 @@ export default async function SettingsPage({
 
       <div className="flex gap-3.5 mt-2.5 border-b border-ink/20">
         {canUsers && (
-          <Link
-            href="/settings?tab=users"
-            className={`text-[9px] tracking-[0.14em] uppercase pb-1.5 border-b-2 ${tab === "users" ? "border-accent text-accent" : "border-transparent placeholder-text hover:text-ink"}`}
-          >
-            Users &amp; roles
-          </Link>
+          <>
+            <Link
+              href="/settings?tab=users"
+              className={`text-[9px] tracking-[0.14em] uppercase pb-1.5 border-b-2 ${tab === "users" ? "border-accent text-accent" : "border-transparent placeholder-text hover:text-ink"}`}
+            >
+              Users &amp; roles
+            </Link>
+            <Link
+              href="/settings?tab=roles"
+              className={`text-[9px] tracking-[0.14em] uppercase pb-1.5 border-b-2 ${tab === "roles" ? "border-accent text-accent" : "border-transparent placeholder-text hover:text-ink"}`}
+            >
+              Custom roles
+            </Link>
+          </>
         )}
         {canCompany && (
           <Link
@@ -70,13 +81,14 @@ export default async function SettingsPage({
       <div className="mt-4">
         {tab === "users" && canUsers && (
           <div>
-            <CreateUserForm />
+            <CreateUserForm customRoles={customRoles} />
             <div className="rule-thin my-4" />
-            <UsersTable users={users} currentUserId={user.id} />
+            <UsersTable users={users} customRoles={customRoles} currentUserId={user.id} />
             <div className="rule-thin my-4" />
-            <RoleReferenceTable />
+            <RoleReferenceTable customRoles={roleRows} />
           </div>
         )}
+        {tab === "roles" && canUsers && <RolesTab roles={roleRows} />}
         {tab === "company" && canCompany && <CompanySettingsForm defaults={company} />}
       </div>
     </div>

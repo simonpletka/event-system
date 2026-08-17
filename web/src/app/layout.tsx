@@ -1,11 +1,14 @@
 import type { Metadata } from "next";
-import { Archivo } from "next/font/google";
+import localFont from "next/font/local";
 import "./globals.css";
 
-const archivo = Archivo({
-  variable: "--font-archivo",
-  subsets: ["latin", "latin-ext"],
-  weight: ["400", "500", "600", "700", "800"],
+// Licensed font (commercial use allowed — see src/fonts/neue-regrade/LICENSE.txt).
+// Self-hosted rather than Google Fonts since it isn't published there.
+const neueRegrade = localFont({
+  src: "../fonts/neue-regrade/NeueRegrade-Variable.ttf",
+  variable: "--font-neue-regrade",
+  weight: "300 800",
+  display: "swap",
 });
 
 export const metadata: Metadata = {
@@ -15,7 +18,7 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
-    <html lang="en" className={`${archivo.variable} h-full antialiased`}>
+    <html lang="en" className={`${neueRegrade.variable} h-full antialiased`}>
       <body className="min-h-full bg-bg text-ink font-sans">{children}</body>
     </html>
   );

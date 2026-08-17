@@ -2,6 +2,9 @@ import NextAuth from "next-auth";
 import Credentials from "next-auth/providers/credentials";
 import bcrypt from "bcryptjs";
 import { prisma } from "@/lib/prisma";
+import type { EventsAccess, FinanceAccess, ExpensesAccess, SettingsAccess } from "@/generated/prisma/enums";
+
+type CustomRolePermissions = { events: EventsAccess; finance: FinanceAccess; expenses: ExpensesAccess; settings: SettingsAccess } | null;
 
 export const { handlers, signIn, signOut, auth } = NextAuth({
   session: { strategy: "jwt" },
@@ -17,8 +20,8 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         const password = credentials?.password as string | undefined;
         if (!email || !password) return null;
 
-        const user = await prisma.user.findUnique({ where: { email } });
-        if (!user) return null;
+        const user = await prisma.user.findUnique({ where: { email }, include: { customRole: true } });
+        if (!user || !user.active) return null;
 
         const valid = await bcrypt.compare(password, user.passwordHash);
         if (!valid) return null;
@@ -31,6 +34,14 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
           email: user.email,
           role: user.role,
           isCardHolder: user.isCardHolder,
+          customRole: user.customRole
+            ? {
+                events: user.customRole.events,
+                finance: user.customRole.finance,
+                expenses: user.customRole.expenses,
+                settings: user.customRole.settings,
+              }
+            : null,
         };
       },
     }),
@@ -41,6 +52,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         token.id = user.id as string;
         token.role = user.role as string;
         token.isCardHolder = Boolean((user as { isCardHolder?: boolean }).isCardHolder);
+        token.customRole = (user as { customRole?: CustomRolePermissions }).customRole ?? null;
       }
       return token;
     },
@@ -49,6 +61,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         session.user.id = token.id as string;
         session.user.role = token.role as "ADMIN" | "ACCOUNTANT" | "PRODUCER" | "MEMBER";
         session.user.isCardHolder = token.isCardHolder as boolean;
+        session.user.customRole = (token.customRole as CustomRolePermissions) ?? null;
       }
       return session;
     },

@@ -3,7 +3,7 @@
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
-import { requireUser, canManageFinance, canAddExpense, eventWhereForUser } from "@/lib/authz";
+import { requireUser, canManageFinance, canAddExpense, canPickOtherPayer, eventWhereForUser } from "@/lib/authz";
 import { nextQuoteNumber, nextInvoiceNumber, variableSymbolFor } from "@/lib/document-number";
 import { saveReceipt } from "@/lib/uploads";
 import type { ExpenseCategory, QuoteStatus } from "@/generated/prisma/enums";
@@ -283,11 +283,11 @@ export async function createExpenseAction(_prev: FinanceFormState, formData: For
   // card holders / Admin / Accountant / Producer may pick any card holder. See CLAUDE.md.
   let paidById = user.id;
   if (paidByRaw && paidByRaw !== user.id) {
-    if (user.role === "MEMBER" && !user.isCardHolder) {
+    if (!canPickOtherPayer(user)) {
       return { error: "You can only log expenses paid by yourself." };
     }
     const target = await prisma.user.findUnique({ where: { id: paidByRaw } });
-    if (!target?.isCardHolder) return { error: "Selected payer is not a company-card holder." };
+    if (!target?.isCardHolder || !target.active) return { error: "Selected payer is not an active company-card holder." };
     paidById = paidByRaw;
   }
 

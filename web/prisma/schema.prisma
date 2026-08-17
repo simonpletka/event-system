@@ -18,6 +18,53 @@ enum Role {
   MEMBER
 }
 
+// Access tiers for custom roles — one enum per module, matching the granularity
+// the four built-in roles already use (see resolvePermissions() in authz.ts,
+// which maps ADMIN/ACCOUNTANT/PRODUCER/MEMBER onto these same tiers so both
+// built-in and custom roles flow through one set of checks).
+enum EventsAccess {
+  NONE
+  ASSIGNED_READ // Member: assigned events, read-only
+  OWN_EDIT // Producer: own/assigned events, can edit
+  ALL_READ // Accountant: all events, read-only
+  ALL_FULL // Admin: all events, full access
+}
+
+enum FinanceAccess {
+  NONE
+  READ_OWN_EVENTS // Producer: view quotes/invoices on own events
+  FULL
+}
+
+enum ExpensesAccess {
+  NONE
+  OWN_ONLY // Member: add/view own expenses only
+  ADD_ON_OWN_EVENTS // Producer: add/view expenses on own/assigned events
+  FULL
+}
+
+enum SettingsAccess {
+  NONE
+  COMPANY // Accountant: company data + invoice template
+  USERS_AND_COMPANY // Admin: users & roles too
+}
+
+// User-defined role with its own configurable reach, additive to the four
+// built-in roles (which stay hardcoded and unchanged). A user has either a
+// built-in Role or a CustomRole, never both in effect — see resolvePermissions().
+model CustomRole {
+  id        String   @id @default(cuid())
+  name      String   @unique
+  createdAt DateTime @default(now())
+
+  events   EventsAccess   @default(NONE)
+  finance  FinanceAccess  @default(NONE)
+  expenses ExpensesAccess @default(NONE)
+  settings SettingsAccess @default(NONE)
+
+  users User[]
+}
+
 enum EventStatus {
   INQUIRY // Poptávka
   QUOTE_SENT // Nabídka odeslána
@@ -69,10 +116,14 @@ model User {
   name         String
   email        String    @unique
   passwordHash String
-  role         Role
+  role         Role // fallback/least-privilege value when customRoleId is set — see resolvePermissions()
   isCardHolder Boolean   @default(false)
+  active       Boolean   @default(true) // deactivated accounts can't log in; history is kept, not deleted
   createdAt    DateTime  @default(now())
   lastSeenAt   DateTime?
+
+  customRoleId String?
+  customRole   CustomRole? @relation(fields: [customRoleId], references: [id])
 
   ownedEvents   Event[]        @relation("EventOwner")
   assignments   EventMember[]

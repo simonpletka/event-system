@@ -1,10 +1,16 @@
 import { redirect } from "next/navigation";
 import { auth } from "@/auth";
+import { prisma } from "@/lib/prisma";
 import { LoginForm } from "./LoginForm";
 
 export default async function LoginPage() {
   const session = await auth();
-  if (session?.user) redirect("/dashboard");
+  if (session?.user) {
+    // A deactivated account's cookie can still be present (see authz.ts requireUser
+    // for why it isn't cleared) — only bounce onward if they're actually still active.
+    const current = await prisma.user.findUnique({ where: { id: session.user.id }, select: { active: true } });
+    if (current?.active) redirect("/dashboard");
+  }
 
   return (
     <div className="min-h-screen flex items-center justify-center px-4">
