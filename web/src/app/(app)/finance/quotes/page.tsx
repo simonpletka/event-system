@@ -1,9 +1,10 @@
 import Link from "next/link";
-import { requireUser, canManageFinance } from "@/lib/authz";
+import { requireUser, canManageFinance, isAdmin } from "@/lib/authz";
 import { getQuoteList, type QuoteListFilters } from "@/lib/queries/finance";
 import { formatCurrency, formatDate } from "@/lib/format";
 import { QuoteStatusPill } from "@/components/StatusPill";
-import { convertQuoteToInvoiceAction } from "@/lib/actions/finance";
+import { convertQuoteToInvoiceAction, deleteQuoteAction } from "@/lib/actions/finance";
+import { ConfirmDeleteButton } from "@/components/ui/ConfirmDeleteButton";
 import type { QuoteStatus } from "@/generated/prisma/enums";
 
 const STATUSES: QuoteStatus[] = ["DRAFT", "SENT", "ACCEPTED", "DECLINED"];
@@ -23,6 +24,7 @@ export default async function QuotesPage({
   };
   const { quotes, openValue, events, year } = await getQuoteList(user, filters);
   const canManage = canManageFinance(user);
+  const admin = isAdmin(user);
 
   return (
     <div>
@@ -97,7 +99,7 @@ export default async function QuotesPage({
           <div>
             <QuoteStatusPill status={q.status} />
           </div>
-          <div className="text-[9px] tracking-[0.1em] uppercase">
+          <div className="flex items-center gap-2 text-[9px] tracking-[0.1em] uppercase">
             {q.status === "ACCEPTED" && q.invoices.length === 0 && canManage ? (
               <form action={convertQuoteToInvoiceAction}>
                 <input type="hidden" name="quoteId" value={q.id} />
@@ -117,6 +119,14 @@ export default async function QuotesPage({
               <span className="placeholder-text" title="Reminder emails aren't wired up yet">
                 Remind client
               </span>
+            )}
+            {admin && (
+              <ConfirmDeleteButton
+                action={deleteQuoteAction}
+                fields={{ id: q.id }}
+                confirmMessage={`Delete quote ${q.number}? This can't be undone.`}
+                className="placeholder-text hover:text-accent"
+              />
             )}
           </div>
         </div>

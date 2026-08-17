@@ -3,9 +3,9 @@
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
-import { requireUser, canManageFinance, canAddExpense, canPickOtherPayer, eventWhereForUser } from "@/lib/authz";
+import { requireUser, canManageFinance, canAddExpense, canPickOtherPayer, eventWhereForUser, isAdmin } from "@/lib/authz";
 import { nextQuoteNumber, nextInvoiceNumber, variableSymbolFor } from "@/lib/document-number";
-import { saveReceipt } from "@/lib/uploads";
+import { saveReceipt, deleteReceipt } from "@/lib/uploads";
 import type { ExpenseCategory, QuoteStatus } from "@/generated/prisma/enums";
 
 export type FinanceFormState = { error?: string; success?: boolean };
@@ -94,6 +94,21 @@ export async function updateQuoteAction(_prev: FinanceFormState, formData: FormD
 
   revalidatePath("/finance/quotes");
   redirect("/finance/quotes");
+}
+
+/** Admin-only, irreversible. If already converted, the invoice stays — only its quoteId link is cleared (schema's ON DELETE SET NULL). */
+export async function deleteQuoteAction(formData: FormData) {
+  const user = await requireUser();
+  if (!isAdmin(user)) return;
+
+  const id = String(formData.get("id"));
+  const quote = await prisma.quote.findUnique({ where: { id }, select: { eventId: true } });
+  if (!quote) return;
+
+  await prisma.quote.delete({ where: { id } });
+
+  revalidatePath("/finance/quotes");
+  revalidatePath(`/events/${quote.eventId}`);
 }
 
 export async function convertQuoteToInvoiceAction(formData: FormData) {
@@ -250,6 +265,22 @@ export async function markInvoicePaidAction(formData: FormData) {
   revalidatePath("/finance/invoices");
 }
 
+/** Admin-only, irreversible: cascades payments and history along with the invoice. */
+export async function deleteInvoiceAction(formData: FormData) {
+  const user = await requireUser();
+  if (!isAdmin(user)) return;
+
+  const id = String(formData.get("id"));
+  const invoice = await prisma.invoice.findUnique({ where: { id }, select: { eventId: true } });
+  if (!invoice) return;
+
+  await prisma.invoice.delete({ where: { id } });
+
+  revalidatePath("/finance/invoices");
+  revalidatePath(`/events/${invoice.eventId}`);
+  redirect("/finance/invoices");
+}
+
 // --- Expenses ---
 
 export async function createExpenseAction(_prev: FinanceFormState, formData: FormData): Promise<FinanceFormState> {
@@ -311,4 +342,21 @@ export async function createExpenseAction(_prev: FinanceFormState, formData: For
 
   if (formData.get("again") === "1") return { success: true };
   redirect("/finance/expenses");
+}
+
+/** Admin-only, irreversible. Also removes the receipt file from disk, if any. */
+export async function deleteExpenseAction(formData: FormData) {
+  const user = await requireUser();
+  if (!isAdmin(user)) return;
+
+  const id = String(formData.get("id"));
+  const expense = await prisma.expense.findUnique({ where: { id }, select: { eventId: true, receiptPath: true } });
+  if (!expense) return;
+
+  await prisma.expense.delete({ where: { id } });
+  if (expense.receiptPath) await deleteReceipt(expense.receiptPath);
+
+  revalidatePath("/finance/expenses");
+  revalidatePath("/dashboard");
+  if (expense.eventId) revalidatePath(`/events/${expense.eventId}`);
 }

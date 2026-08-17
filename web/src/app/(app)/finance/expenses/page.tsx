@@ -1,8 +1,10 @@
 import Link from "next/link";
-import { requireUser } from "@/lib/authz";
+import { requireUser, isAdmin } from "@/lib/authz";
 import { getExpenseList, type ExpenseListFilters } from "@/lib/queries/finance";
 import { formatCurrency, formatDate } from "@/lib/format";
 import { EXPENSE_CATEGORY_LABEL, EXPENSE_CATEGORIES } from "@/lib/expense-categories";
+import { deleteExpenseAction } from "@/lib/actions/finance";
+import { ConfirmDeleteButton } from "@/components/ui/ConfirmDeleteButton";
 import type { ExpenseCategory } from "@/generated/prisma/enums";
 
 export default async function ExpensesPage({
@@ -17,6 +19,7 @@ export default async function ExpensesPage({
     category: (params.category as ExpenseCategory) || undefined,
   };
   const { expenses, total, events } = await getExpenseList(user, filters);
+  const admin = isAdmin(user);
 
   return (
     <div>
@@ -48,13 +51,14 @@ export default async function ExpensesPage({
         </Link>
       </div>
 
-      <div className="grid grid-cols-[80px_1fr_1fr_1fr_auto_auto] gap-2.5 border-b-2 border-ink pb-1.5 mt-3">
+      <div className={`grid ${admin ? "grid-cols-[80px_1fr_1fr_1fr_auto_auto_auto]" : "grid-cols-[80px_1fr_1fr_1fr_auto_auto]"} gap-2.5 border-b-2 border-ink pb-1.5 mt-3`}>
         <span className="heading-label">Date</span>
         <span className="heading-label">Category</span>
         <span className="heading-label">Event</span>
         <span className="heading-label">Paid by</span>
         <span className="heading-label">Amount</span>
         <span className="heading-label">Receipt</span>
+        {admin && <span className="heading-label"></span>}
       </div>
 
       {expenses.length === 0 && <p className="text-sm placeholder-text mt-4">No expenses match this filter.</p>}
@@ -62,7 +66,7 @@ export default async function ExpensesPage({
       {expenses.map((exp) => (
         <div
           key={exp.id}
-          className="grid grid-cols-[80px_1fr_1fr_1fr_auto_auto] gap-2.5 items-center py-2.5 border-b border-ink/13 text-[13px]"
+          className={`grid ${admin ? "grid-cols-[80px_1fr_1fr_1fr_auto_auto_auto]" : "grid-cols-[80px_1fr_1fr_1fr_auto_auto]"} gap-2.5 items-center py-2.5 border-b border-ink/13 text-[13px]`}
         >
           <div className="placeholder-text">{formatDate(exp.date)}</div>
           <div>{EXPENSE_CATEGORY_LABEL[exp.category]}</div>
@@ -91,6 +95,14 @@ export default async function ExpensesPage({
               <span className="placeholder-text text-[9px]">—</span>
             )}
           </div>
+          {admin && (
+            <ConfirmDeleteButton
+              action={deleteExpenseAction}
+              fields={{ id: exp.id }}
+              confirmMessage={`Delete this ${formatCurrency(exp.amount)} expense? This can't be undone.`}
+              className="text-[9px] tracking-[0.1em] uppercase placeholder-text hover:text-accent"
+            />
+          )}
         </div>
       ))}
 

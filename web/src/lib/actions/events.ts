@@ -3,7 +3,8 @@
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
-import { requireUser, canEditEvent, canCreateEvent } from "@/lib/authz";
+import { requireUser, canEditEvent, canCreateEvent, isAdmin } from "@/lib/authz";
+import { deleteReceipt } from "@/lib/uploads";
 import type { EventStatus } from "@/generated/prisma/enums";
 
 export type EventFormState = { error?: string };
@@ -95,6 +96,31 @@ export async function updateEventAction(_prev: EventFormState, formData: FormDat
   revalidatePath("/events");
   revalidatePath("/dashboard");
   redirect(`/events/${id}`);
+}
+
+/**
+ * Admin-only, irreversible: cascades through the schema's onDelete: Cascade
+ * relations (members, venues, milestones, time entries, quotes+items,
+ * invoices+items/payments/history) — see CLAUDE.md for the full list.
+ * Expense receipt files aren't part of that cascade (they live on disk, not
+ * in a relation), so they're cleaned up here explicitly first.
+ */
+export async function deleteEventAction(formData: FormData) {
+  const user = await requireUser();
+  if (!isAdmin(user)) return;
+
+  const id = String(formData.get("id"));
+  const expenses = await prisma.expense.findMany({ where: { eventId: id }, select: { receiptPath: true } });
+
+  await prisma.event.delete({ where: { id } });
+  await Promise.all(expenses.filter((e) => e.receiptPath).map((e) => deleteReceipt(e.receiptPath!)));
+
+  revalidatePath("/events");
+  revalidatePath("/dashboard");
+  revalidatePath("/finance/quotes");
+  revalidatePath("/finance/invoices");
+  revalidatePath("/finance/expenses");
+  redirect("/events");
 }
 
 export type QuickEventState = { error?: string; event?: { id: string; title: string; companyName: string } };

@@ -1,10 +1,11 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { requireUser, canManageFinance } from "@/lib/authz";
+import { requireUser, canManageFinance, isAdmin } from "@/lib/authz";
 import { getInvoiceDetail, getCompanySettings } from "@/lib/queries/finance";
 import { formatCurrency, formatDate, formatDateTime } from "@/lib/format";
-import { recordPaymentAction, markInvoicePaidAction } from "@/lib/actions/finance";
+import { recordPaymentAction, markInvoicePaidAction, deleteInvoiceAction } from "@/lib/actions/finance";
 import { BackLink } from "@/components/BackLink";
+import { ConfirmDeleteButton } from "@/components/ui/ConfirmDeleteButton";
 
 export default async function InvoiceDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const user = await requireUser();
@@ -184,6 +185,22 @@ export default async function InvoiceDetailPage({ params }: { params: Promise<{ 
               <div>{h.message}</div>
             </div>
           ))}
+
+          {isAdmin(user) && (
+            <>
+              <div className="rule-thin my-2.5" />
+              <div className="label mb-1.5">Delete</div>
+              <p className="text-[10px] placeholder-text mb-2">
+                Removes this invoice, its line items, payment history and PDF permanently.
+              </p>
+              <ConfirmDeleteButton
+                action={deleteInvoiceAction}
+                fields={{ id: invoice.id }}
+                label="Delete invoice"
+                confirmMessage={`Delete invoice ${invoice.number}? This removes its payment history too and can't be undone.`}
+              />
+            </>
+          )}
         </div>
       </div>
     </div>

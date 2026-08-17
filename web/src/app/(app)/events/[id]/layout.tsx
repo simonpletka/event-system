@@ -1,11 +1,13 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { requireUser, canEditEvent } from "@/lib/authz";
+import { requireUser, canEditEvent, isAdmin } from "@/lib/authz";
 import { getEventDetail } from "@/lib/queries/events";
 import { formatDateRange, formatMinutes } from "@/lib/format";
 import { EventStatusPill } from "@/components/StatusPill";
 import { EventTabs } from "@/components/EventTabs";
 import { BackLink } from "@/components/BackLink";
+import { ConfirmDeleteButton } from "@/components/ui/ConfirmDeleteButton";
+import { deleteEventAction } from "@/lib/actions/events";
 
 export default async function EventDetailLayout({
   children,
@@ -39,6 +41,14 @@ export default async function EventDetailLayout({
             <Link href={`/events/${event.id}/edit`} className="btno">
               Edit
             </Link>
+          )}
+          {isAdmin(user) && (
+            <ConfirmDeleteButton
+              action={deleteEventAction}
+              fields={{ id: event.id }}
+              label="Delete event"
+              confirmMessage={`Delete "${event.title}"? This permanently removes its milestones, time entries, quotes, invoices and expenses. This can't be undone.`}
+            />
           )}
         </div>
       </div>

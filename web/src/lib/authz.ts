@@ -152,3 +152,17 @@ export function canManageUsers(user: SessionUser) {
 export function canManageCompanySettings(user: SessionUser) {
   return resolvePermissions(user).settings !== "NONE";
 }
+
+// --- Deletion (events, quotes, invoices, expenses) ---
+
+/**
+ * Deliberately checks the literal built-in Admin role rather than a
+ * permission tier — a CustomRole can be granted ALL_FULL/FULL access for
+ * day-to-day work without also getting the irreversible-delete button.
+ * `customRole` is only ever non-null when `role` holds its least-privilege
+ * MEMBER fallback (see resolvePermissions()), so this can't be spoofed by
+ * assigning a custom role that happens to be named/configured like Admin.
+ */
+export function isAdmin(user: SessionUser) {
+  return user.customRole === null && user.role === "ADMIN";
+}

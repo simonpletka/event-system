@@ -40,6 +40,11 @@ export async function readReceipt(filename: string) {
   return { buffer, contentType };
 }
 
+export async function deleteReceipt(filename: string) {
+  const safe = path.basename(filename);
+  await unlink(path.join(UPLOAD_ROOT, safe)).catch(() => {});
+}
+
 const LOGO_ROOT = path.join(process.cwd(), "uploads", "logos");
 const LOGO_TYPES: Record<string, string> = {
   "image/png": "png",
