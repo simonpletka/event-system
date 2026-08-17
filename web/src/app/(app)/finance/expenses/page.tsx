@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { requireUser, isAdmin } from "@/lib/authz";
+import { requireUser, isAdmin, canEditExpense } from "@/lib/authz";
 import { getExpenseList, type ExpenseListFilters } from "@/lib/queries/finance";
 import { formatCurrency, formatDate } from "@/lib/format";
 import { EXPENSE_CATEGORY_LABEL, EXPENSE_CATEGORIES } from "@/lib/expense-categories";
@@ -51,13 +51,14 @@ export default async function ExpensesPage({
         </Link>
       </div>
 
-      <div className={`grid ${admin ? "grid-cols-[80px_1fr_1fr_1fr_auto_auto_auto]" : "grid-cols-[80px_1fr_1fr_1fr_auto_auto]"} gap-2.5 border-b-2 border-ink pb-1.5 mt-3`}>
+      <div className={`grid ${admin ? "grid-cols-[80px_1fr_1fr_1fr_auto_auto_auto_auto]" : "grid-cols-[80px_1fr_1fr_1fr_auto_auto_auto]"} gap-2.5 border-b-2 border-ink pb-1.5 mt-3`}>
         <span className="heading-label">Date</span>
         <span className="heading-label">Category</span>
         <span className="heading-label">Event</span>
         <span className="heading-label">Paid by</span>
         <span className="heading-label">Amount</span>
         <span className="heading-label">Receipt</span>
+        <span className="heading-label"></span>
         {admin && <span className="heading-label"></span>}
       </div>
 
@@ -66,7 +67,7 @@ export default async function ExpensesPage({
       {expenses.map((exp) => (
         <div
           key={exp.id}
-          className={`grid ${admin ? "grid-cols-[80px_1fr_1fr_1fr_auto_auto_auto]" : "grid-cols-[80px_1fr_1fr_1fr_auto_auto]"} gap-2.5 items-center py-2.5 border-b border-ink/13 text-[13px]`}
+          className={`grid ${admin ? "grid-cols-[80px_1fr_1fr_1fr_auto_auto_auto_auto]" : "grid-cols-[80px_1fr_1fr_1fr_auto_auto_auto]"} gap-2.5 items-center py-2.5 border-b border-ink/13 text-[13px]`}
         >
           <div className="placeholder-text">{formatDate(exp.date)}</div>
           <div>{EXPENSE_CATEGORY_LABEL[exp.category]}</div>
@@ -94,6 +95,16 @@ export default async function ExpensesPage({
             ) : (
               <span className="placeholder-text text-[9px]">—</span>
             )}
+          </div>
+          <div>
+            {canEditExpense(user, exp.paidById) ? (
+              <Link
+                href={`/finance/expenses/${exp.id}/edit`}
+                className="text-[9px] tracking-[0.1em] uppercase placeholder-text hover:text-ink"
+              >
+                Edit
+              </Link>
+            ) : null}
           </div>
           {admin && (
             <ConfirmDeleteButton

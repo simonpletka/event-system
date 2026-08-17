@@ -128,6 +128,11 @@ export function canPickOtherPayer(user: SessionUser) {
   return resolvePermissions(user).expenses !== "OWN_ONLY" || user.isCardHolder;
 }
 
+/** Full expense access can edit any expense; everyone else only their own (matches who could have logged it). */
+export function canEditExpense(user: SessionUser, expensePaidById: string) {
+  return resolvePermissions(user).expenses === "FULL" || expensePaidById === user.id;
+}
+
 // --- Time tracker (brief §6.3: "Member sees own only; Producer sees own events'
 // summary; Admin and Accountant ('Finance manažer') see all.") ---
 

@@ -3,7 +3,7 @@
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
-import { requireUser, canManageFinance, canAddExpense, canPickOtherPayer, eventWhereForUser, isAdmin } from "@/lib/authz";
+import { requireUser, canManageFinance, canAddExpense, canPickOtherPayer, canEditExpense, eventWhereForUser, isAdmin } from "@/lib/authz";
 import { nextQuoteNumber, nextInvoiceNumber, variableSymbolFor } from "@/lib/document-number";
 import { saveReceipt, deleteReceipt } from "@/lib/uploads";
 import type { ExpenseCategory, QuoteStatus, Currency, DiscountType } from "@/generated/prisma/enums";
@@ -139,8 +139,8 @@ export async function updateQuoteAction(_prev: FinanceFormState, formData: FormD
  * not something the original draft/edit form covers (that only sets status
  * up front, at DRAFT/SENT time). Scoped to quotes currently SENT, since
  * that's the only state this was missing a UI for; DRAFT keeps going
- * through Edit, and ACCEPTED/DECLINED are terminal (converting to an
- * invoice or deleting are the only next steps from there).
+ * through Edit, and ACCEPTED converts to an invoice. DECLINED's own next
+ * step is duplicateQuoteAction below, not a further status change.
  */
 export async function updateQuoteStatusAction(formData: FormData) {
   const user = await requireUser();
@@ -157,6 +157,54 @@ export async function updateQuoteStatusAction(formData: FormData) {
 
   revalidatePath(`/finance/quotes/${id}`);
   revalidatePath("/finance/quotes");
+}
+
+/**
+ * "Create new" for a declined quote — copies the event, items, currency and
+ * hide-item-prices setting into a fresh DRAFT quote (own new YY-XXX_v# number,
+ * own new creator/issuedAt) and sends the user straight to its edit page, so
+ * a rejected quote can be revised and resent without retyping every line
+ * item from scratch. validUntil is reset to two weeks out rather than
+ * copying the old (likely already-expired) date.
+ */
+export async function duplicateQuoteAction(formData: FormData) {
+  const user = await requireUser();
+  if (!canManageFinance(user)) return;
+
+  const id = String(formData.get("id"));
+  const quote = await prisma.quote.findUnique({
+    where: { id },
+    include: { items: true, event: { select: { number: true } } },
+  });
+  if (!quote || quote.status !== "DECLINED") return;
+
+  const number = await nextQuoteNumber(quote.eventId, quote.event.number);
+  const duplicate = await prisma.quote.create({
+    data: {
+      eventId: quote.eventId,
+      number,
+      status: "DRAFT",
+      currency: quote.currency,
+      hideItemPrices: quote.hideItemPrices,
+      createdById: user.id,
+      validUntil: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000),
+      total: quote.total,
+      items: {
+        create: quote.items.map((i, idx) => ({
+          description: i.description,
+          quantity: i.quantity,
+          unitPrice: i.unitPrice,
+          vatRate: i.vatRate,
+          category: i.category,
+          sortOrder: idx,
+        })),
+      },
+    },
+  });
+
+  revalidatePath("/finance/quotes");
+  revalidatePath(`/events/${quote.eventId}`);
+  redirect(`/finance/quotes/${duplicate.id}/edit`);
 }
 
 /** Admin-only, irreversible. If already converted, the invoice stays — only its quoteId link is cleared (schema's ON DELETE SET NULL). */
@@ -466,6 +514,79 @@ export async function createExpenseAction(_prev: FinanceFormState, formData: For
   if (eventId) revalidatePath(`/events/${eventId}`);
 
   if (formData.get("again") === "1") return { success: true };
+  redirect("/finance/expenses");
+}
+
+export async function updateExpenseAction(_prev: FinanceFormState, formData: FormData): Promise<FinanceFormState> {
+  const user = await requireUser();
+
+  const id = String(formData.get("id"));
+  const existing = await prisma.expense.findUnique({ where: { id } });
+  if (!existing) return { error: "Expense not found." };
+  if (!canEditExpense(user, existing.paidById)) {
+    return { error: "You don't have permission to edit this expense." };
+  }
+
+  const eventIdRaw = String(formData.get("eventId") ?? "");
+  const eventId = eventIdRaw === "overhead" || eventIdRaw === "" ? null : eventIdRaw;
+  const amount = Math.round(Number(formData.get("amount")) || 0);
+  const date = String(formData.get("date") ?? "");
+  const category = formData.get("category") as ExpenseCategory;
+  const note = String(formData.get("note") ?? "");
+  const paidByRaw = String(formData.get("paidById") ?? "");
+  const removeReceipt = formData.get("removeReceipt") === "on";
+
+  if (amount <= 0 || !date || !category) {
+    return { error: "Amount, date and category are required." };
+  }
+
+  let event: { ownerId: string; members: { userId: string }[] } | null = null;
+  if (eventId) {
+    event = await prisma.event.findFirst({
+      where: { id: eventId, ...eventWhereForUser(user) },
+      include: { members: { select: { userId: true } } },
+    });
+    if (!event) return { error: "Event not found or not accessible." };
+  }
+  if (!canAddExpense(user, event ? { ownerId: event.ownerId, memberIds: event.members.map((m) => m.userId) } : null)) {
+    return { error: "You don't have permission to log an expense on that event." };
+  }
+
+  let paidById = existing.paidById;
+  if (paidByRaw && paidByRaw !== existing.paidById) {
+    if (!canPickOtherPayer(user)) {
+      return { error: "You can only log expenses paid by yourself." };
+    }
+    const target = await prisma.user.findUnique({ where: { id: paidByRaw } });
+    if (!target?.isCardHolder || !target.active) return { error: "Selected payer is not an active company-card holder." };
+    paidById = paidByRaw;
+  }
+
+  let receiptPath = existing.receiptPath;
+  const receipt = formData.get("receipt");
+  if (receipt instanceof File && receipt.size > 0) {
+    try {
+      const newPath = await saveReceipt(receipt);
+      if (existing.receiptPath) await deleteReceipt(existing.receiptPath);
+      receiptPath = newPath;
+    } catch (e) {
+      return { error: e instanceof Error ? e.message : "Could not save receipt." };
+    }
+  } else if (removeReceipt && existing.receiptPath) {
+    await deleteReceipt(existing.receiptPath);
+    receiptPath = null;
+  }
+
+  await prisma.expense.update({
+    where: { id },
+    data: { eventId, paidById, amount, date: new Date(date), category, note, receiptPath },
+  });
+
+  revalidatePath("/finance/expenses");
+  revalidatePath("/dashboard");
+  if (eventId) revalidatePath(`/events/${eventId}`);
+  if (existing.eventId && existing.eventId !== eventId) revalidatePath(`/events/${existing.eventId}`);
+
   redirect("/finance/expenses");
 }
 

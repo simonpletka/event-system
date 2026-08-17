@@ -32,7 +32,7 @@ export default async function ReportsPage({
 
       <div className="flex justify-between items-center gap-2 mt-3 pb-2.5 border-b border-ink/20 flex-wrap print-hide">
         <div className="flex border border-ink">
-          {(["event", "month", "category"] as const).map((v) => (
+          {(["month", "event", "category"] as const).map((v) => (
             <Link
               key={v}
               href={`/finance/reports?view=${v}&year=${year}`}
@@ -40,7 +40,7 @@ export default async function ReportsPage({
                 view === v ? "bg-ink text-bg" : "border-l border-ink first:border-l-0"
               }`}
             >
-              By {v}
+              {v === "month" ? "Overview" : `By ${v}`}
             </Link>
           ))}
         </div>

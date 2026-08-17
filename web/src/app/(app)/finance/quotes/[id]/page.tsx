@@ -3,7 +3,7 @@ import { notFound } from "next/navigation";
 import { requireUser, canManageFinance, isAdmin } from "@/lib/authz";
 import { getQuoteDetail, getCompanySettings } from "@/lib/queries/finance";
 import { formatCurrency, formatDate } from "@/lib/format";
-import { convertQuoteToInvoiceAction, deleteQuoteAction, updateQuoteStatusAction } from "@/lib/actions/finance";
+import { convertQuoteToInvoiceAction, deleteQuoteAction, updateQuoteStatusAction, duplicateQuoteAction } from "@/lib/actions/finance";
 import { BackLink } from "@/components/BackLink";
 import { ConfirmDeleteButton } from "@/components/ui/ConfirmDeleteButton";
 import { QuoteStatusPill } from "@/components/StatusPill";
@@ -65,6 +65,14 @@ export default async function QuoteDetailPage({ params }: { params: Promise<{ id
               <input type="hidden" name="quoteId" value={quote.id} />
               <button type="submit" className="btn">
                 Convert to invoice →
+              </button>
+            </form>
+          )}
+          {canManage && quote.status === "DECLINED" && (
+            <form action={duplicateQuoteAction}>
+              <input type="hidden" name="id" value={quote.id} />
+              <button type="submit" className="btn">
+                Create new (duplicate)
               </button>
             </form>
           )}

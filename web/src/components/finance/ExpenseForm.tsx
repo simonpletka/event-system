@@ -1,24 +1,40 @@
 "use client";
 
 import { useActionState, useRef, useEffect } from "react";
-import { createExpenseAction, type FinanceFormState } from "@/lib/actions/finance";
+import { createExpenseAction, updateExpenseAction, type FinanceFormState } from "@/lib/actions/finance";
 import { ReceiptInput } from "./ReceiptInput";
 import { EXPENSE_CATEGORIES, EXPENSE_CATEGORY_LABEL } from "@/lib/expense-categories";
 import { EventPicker, type PickableEvent } from "@/components/EventPicker";
 import { CancelLink } from "@/components/ui/CancelLink";
+import type { ExpenseCategory } from "@/generated/prisma/enums";
 
 const initialState: FinanceFormState = {};
+
+export type ExpenseFormDefaults = {
+  id: string;
+  eventId: string | null;
+  amount: number;
+  date: string;
+  paidById: string;
+  category: ExpenseCategory;
+  note: string;
+  receiptPath: string | null;
+};
 
 export function ExpenseForm({
   events,
   payers,
   currentUserId,
+  defaults,
 }: {
   events: PickableEvent[];
   payers: { id: string; name: string }[];
   currentUserId: string;
+  defaults?: ExpenseFormDefaults;
 }) {
-  const [state, formAction, pending] = useActionState(createExpenseAction, initialState);
+  const isEdit = Boolean(defaults);
+  const action = isEdit ? updateExpenseAction : createExpenseAction;
+  const [state, formAction, pending] = useActionState(action, initialState);
   const formRef = useRef<HTMLFormElement>(null);
 
   useEffect(() => {
@@ -27,20 +43,27 @@ export function ExpenseForm({
 
   return (
     <form ref={formRef} action={formAction} className="max-w-2xl flex flex-col gap-4">
+      {isEdit && <input type="hidden" name="id" value={defaults!.id} />}
       <div className="grid grid-cols-2 gap-4">
-        <ReceiptInput />
+        <ReceiptInput existingReceiptPath={defaults?.receiptPath} />
         <div className="flex flex-col gap-3">
           <label className="flex flex-col gap-1.5">
             <span className="heading-label">Amount (CZK)</span>
-            <input name="amount" type="number" min={1} required className="input" />
+            <input name="amount" type="number" min={1} required defaultValue={defaults?.amount} className="input" />
           </label>
           <label className="flex flex-col gap-1.5">
             <span className="heading-label">Date of payment</span>
-            <input name="date" type="date" required defaultValue={new Date().toISOString().slice(0, 10)} className="input" />
+            <input
+              name="date"
+              type="date"
+              required
+              defaultValue={defaults?.date ?? new Date().toISOString().slice(0, 10)}
+              className="input"
+            />
           </label>
           <label className="flex flex-col gap-1.5">
             <span className="heading-label">Paid by</span>
-            <select name="paidById" defaultValue={currentUserId} className="input">
+            <select name="paidById" defaultValue={defaults?.paidById ?? currentUserId} className="input">
               {payers.map((p) => (
                 <option key={p.id} value={p.id}>
                   {p.name}
@@ -58,6 +81,7 @@ export function ExpenseForm({
         <EventPicker
           name="eventId"
           initialEvents={events}
+          defaultValue={defaults?.eventId ?? ""}
           extraOption={{ value: "", label: "Company overhead — not tied to an event" }}
         />
       </label>
@@ -65,7 +89,7 @@ export function ExpenseForm({
       <div className="grid grid-cols-2 gap-4">
         <label className="flex flex-col gap-1.5">
           <span className="heading-label">Category</span>
-          <select name="category" defaultValue="GENERIC" className="input">
+          <select name="category" defaultValue={defaults?.category ?? "GENERIC"} className="input">
             {EXPENSE_CATEGORIES.map((c) => (
               <option key={c} value={c}>
                 {EXPENSE_CATEGORY_LABEL[c]}
@@ -75,7 +99,7 @@ export function ExpenseForm({
         </label>
         <label className="flex flex-col gap-1.5">
           <span className="heading-label">Note</span>
-          <input name="note" placeholder="e.g. two-way radios rental" className="input" />
+          <input name="note" placeholder="e.g. two-way radios rental" defaultValue={defaults?.note} className="input" />
           <span className="text-[9px] placeholder-text">Needs approval by a manager — not enforced yet, expenses count immediately.</span>
         </label>
       </div>
@@ -85,11 +109,13 @@ export function ExpenseForm({
 
       <div className="flex gap-2 pt-3 border-t-2 border-ink">
         <button type="submit" disabled={pending} className="btn">
-          Save expense
+          {isEdit ? "Save changes" : "Save expense"}
         </button>
-        <button type="submit" name="again" value="1" disabled={pending} className="btno">
-          Save and add another
-        </button>
+        {!isEdit && (
+          <button type="submit" name="again" value="1" disabled={pending} className="btno">
+            Save and add another
+          </button>
+        )}
         <CancelLink href="/finance/expenses" />
       </div>
     </form>

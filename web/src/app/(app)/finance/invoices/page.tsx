@@ -99,7 +99,7 @@ export default async function InvoicesPage({
           <Link href={`/finance/invoices/${inv.id}`} className="hover:text-accent">
             {inv.number}
           </Link>
-          <Link href={`/events/${inv.eventId}`} className="hover:text-accent">
+          <Link href={`/finance/invoices/${inv.id}`} className="hover:text-accent">
             {inv.event.title}
           </Link>
           <div className="placeholder-text">{inv.event.companyName}</div>

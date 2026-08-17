@@ -3,7 +3,7 @@ import { requireUser, canManageFinance, isAdmin } from "@/lib/authz";
 import { getQuoteList, type QuoteListFilters } from "@/lib/queries/finance";
 import { formatCurrency, formatDate } from "@/lib/format";
 import { QuoteStatusPill } from "@/components/StatusPill";
-import { convertQuoteToInvoiceAction, deleteQuoteAction } from "@/lib/actions/finance";
+import { convertQuoteToInvoiceAction, deleteQuoteAction, duplicateQuoteAction } from "@/lib/actions/finance";
 import { ConfirmDeleteButton } from "@/components/ui/ConfirmDeleteButton";
 import type { QuoteStatus } from "@/generated/prisma/enums";
 
@@ -91,7 +91,7 @@ export default async function QuotesPage({
           <Link href={`/finance/quotes/${q.id}`} className="hover:text-accent">
             {q.number}
           </Link>
-          <Link href={`/events/${q.eventId}`} className="hover:text-accent">
+          <Link href={`/finance/quotes/${q.id}`} className="hover:text-accent">
             {q.event.title}
           </Link>
           <div className="placeholder-text">{q.event.companyName}</div>
@@ -120,6 +120,13 @@ export default async function QuotesPage({
               <Link href={`/finance/quotes/${q.id}/edit`} className="hover:text-ink">
                 Edit
               </Link>
+            ) : q.status === "DECLINED" && canManage ? (
+              <form action={duplicateQuoteAction}>
+                <input type="hidden" name="id" value={q.id} />
+                <button type="submit" className="hover:text-ink">
+                  Create new →
+                </button>
+              </form>
             ) : (
               <span className="placeholder-text" title="Reminder emails aren't wired up yet">
                 Remind client
