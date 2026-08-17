@@ -7,11 +7,13 @@ declare module "next-auth" {
     user: {
       id: string;
       role: AppRole;
+      isCardHolder: boolean;
     } & DefaultSession["user"];
   }
 
   interface User {
     role: AppRole;
+    isCardHolder: boolean;
   }
 }
 
@@ -19,5 +21,6 @@ declare module "next-auth/jwt" {
   interface JWT {
     id: string;
     role: AppRole;
+    isCardHolder: boolean;
   }
 }

@@ -28,6 +28,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
           name: user.name,
           email: user.email,
           role: user.role,
+          isCardHolder: user.isCardHolder,
         };
       },
     }),
@@ -37,6 +38,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
       if (user) {
         token.id = user.id as string;
         token.role = user.role as string;
+        token.isCardHolder = Boolean((user as { isCardHolder?: boolean }).isCardHolder);
       }
       return token;
     },
@@ -44,6 +46,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
       if (session.user) {
         session.user.id = token.id as string;
         session.user.role = token.role as "ADMIN" | "ACCOUNTANT" | "PRODUCER" | "MEMBER";
+        session.user.isCardHolder = token.isCardHolder as boolean;
       }
       return session;
     },

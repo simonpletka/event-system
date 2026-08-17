@@ -1,12 +1,5 @@
-import { requireUser } from "@/lib/authz";
-import { ComingSoon } from "@/components/ComingSoon";
+import { redirect } from "next/navigation";
 
-export default async function FinancePage() {
-  await requireUser();
-  return (
-    <ComingSoon
-      title="Finance"
-      description="Quotes, invoices, expenses and reports land in the next phase. Individual events already track their own quotes, invoices and expenses on the event detail page."
-    />
-  );
+export default function FinancePage() {
+  redirect("/finance/quotes");
 }

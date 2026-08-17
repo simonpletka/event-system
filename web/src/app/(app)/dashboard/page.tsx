@@ -109,7 +109,7 @@ export default async function DashboardPage() {
               <div key={exp.id} className="row grid grid-cols-[1fr_auto] items-center gap-2.5 py-2 border-b border-ink/10 text-[13px]">
                 <div>
                   {EXPENSE_CATEGORY_LABEL[exp.category]}{" "}
-                  <span className="placeholder-text">· {exp.event.title}</span>
+                  <span className="placeholder-text">· {exp.event?.title ?? "Company overhead"}</span>
                 </div>
                 <div className="placeholder-text">{formatCurrency(exp.amount)}</div>
               </div>

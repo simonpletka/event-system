@@ -7,6 +7,7 @@ export type SessionUser = {
   name?: string | null;
   email?: string | null;
   role: "ADMIN" | "ACCOUNTANT" | "PRODUCER" | "MEMBER";
+  isCardHolder: boolean;
 };
 
 /**
@@ -39,4 +40,42 @@ export function canEditEvent(user: SessionUser, event: { ownerId: string; member
     return event.ownerId === user.id || event.memberIds.includes(user.id);
   }
   return false;
+}
+
+// --- Finance (brief §2.2 "Finance (nabídky/faktury)" column) ---
+
+/** Admin/Accountant: full access. Producer: view-only on own/assigned events. Member: no access. */
+export function canViewFinance(user: SessionUser) {
+  return user.role !== "MEMBER";
+}
+
+/** Only Admin/Accountant can create/edit/convert quotes & invoices, record payments. */
+export function canManageFinance(user: SessionUser) {
+  return user.role === "ADMIN" || user.role === "ACCOUNTANT";
+}
+
+/** Quotes/invoices scoped like events: Admin/Accountant see all, Producer sees own/assigned. */
+export function quoteWhereForUser(user: SessionUser): Prisma.QuoteWhereInput {
+  if (user.role === "ADMIN" || user.role === "ACCOUNTANT") return {};
+  return { event: { members: { some: { userId: user.id } } } };
+}
+
+export function invoiceWhereForUser(user: SessionUser): Prisma.InvoiceWhereInput {
+  if (user.role === "ADMIN" || user.role === "ACCOUNTANT") return {};
+  return { event: { members: { some: { userId: user.id } } } };
+}
+
+// --- Expenses (brief §2.2 "Výdaje" column) ---
+
+/** Admin/Accountant: all. Producer: add/view on own/assigned events. Member: add/view own only. */
+export function expenseWhereForUser(user: SessionUser): Prisma.ExpenseWhereInput {
+  if (user.role === "ADMIN" || user.role === "ACCOUNTANT") return {};
+  if (user.role === "PRODUCER") return { event: { members: { some: { userId: user.id } } } };
+  return { paidById: user.id };
+}
+
+export function canAddExpense(user: SessionUser, event: { ownerId: string; memberIds: string[] } | null) {
+  if (user.role === "ADMIN" || user.role === "ACCOUNTANT") return true;
+  if (!event) return true; // company overhead — anyone can log their own
+  return event.ownerId === user.id || event.memberIds.includes(user.id);
 }

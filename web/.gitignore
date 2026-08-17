@@ -45,3 +45,6 @@ next-env.d.ts
 # sqlite (dev database — schema lives in prisma/migrations, this is local data)
 *.db
 *.db-journal
+
+# uploaded receipts (local dev storage, not for git)
+/uploads

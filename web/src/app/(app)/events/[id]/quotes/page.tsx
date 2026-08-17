@@ -34,7 +34,7 @@ export default async function QuotesTab({ params }: { params: Promise<{ id: stri
           <div>{inv.number}</div>
           <div className="placeholder-text">due {formatDate(inv.dueDate)}</div>
           <div>{formatCurrency(inv.total)}</div>
-          <InvoiceStatusPill status={inv.status} />
+          <InvoiceStatusPill status={inv.status} dueDate={inv.dueDate} paidAt={inv.paidAt} />
         </div>
       ))}
     </div>

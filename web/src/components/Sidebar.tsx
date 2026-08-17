@@ -18,7 +18,7 @@ export function Sidebar({ userName }: { userName: string }) {
 
   if (collapsed) {
     return (
-      <div className="w-10 shrink-0 border-r-2 border-ink flex flex-col items-center py-4">
+      <div className="w-10 shrink-0 border-r-2 border-ink flex flex-col items-center py-4 print-hide">
         <button
           type="button"
           onClick={() => setCollapsed(false)}
@@ -32,7 +32,7 @@ export function Sidebar({ userName }: { userName: string }) {
   }
 
   return (
-    <div className="w-[190px] shrink-0 border-r-2 border-ink px-4 pt-4 pb-5 flex flex-col gap-4">
+    <div className="w-[190px] shrink-0 border-r-2 border-ink px-4 pt-4 pb-5 flex flex-col gap-4 print-hide">
       <div className="flex items-center justify-between gap-2">
         <span className="text-[11px] font-bold tracking-[0.16em]">EVENT SYSTEM</span>
         <button

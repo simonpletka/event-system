@@ -106,7 +106,7 @@ export default async function EventOverviewPage({ params }: { params: Promise<{ 
         {event.invoices.map((inv) => (
           <div key={inv.id} className="flex justify-between items-center py-1 text-[11px]">
             <span>Invoice {inv.number}</span>
-            <InvoiceStatusPill status={inv.status} />
+            <InvoiceStatusPill status={inv.status} dueDate={inv.dueDate} paidAt={inv.paidAt} />
           </div>
         ))}
         <Link href={`/events/${event.id}/quotes`} className="btno block text-center mt-2">

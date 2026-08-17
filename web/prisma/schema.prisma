@@ -1,5 +1,5 @@
-// Event system — Phase 1 schema (Dashboard, Events; Finance/Time-tracker tables
-// are minimal stubs so relation counts on the event detail page are real).
+// Event system schema. Phase 1: Dashboard, Events. Phase 2: Finance (Quotes,
+// Invoices, Expenses, Reports). Time tracker/Settings tables are still stubs.
 // See /CLAUDE.md and docs/system_info/event-system-zadani.pdf for background.
 
 generator client {
@@ -49,11 +49,19 @@ enum QuoteStatus {
   DECLINED
 }
 
+// OVERDUE is deliberately not a stored state — it's derived from
+// (dueDate < now && status != PAID) so it can't go stale without a cron job.
 enum InvoiceStatus {
   ISSUED
   PARTLY_PAID
   PAID
-  OVERDUE
+}
+
+enum InvoiceEventType {
+  CREATED
+  ISSUED
+  PAYMENT_RECORDED
+  MARKED_PAID
 }
 
 model User {
@@ -65,24 +73,26 @@ model User {
   isCardHolder Boolean  @default(false)
   createdAt    DateTime @default(now())
 
-  ownedEvents    Event[]       @relation("EventOwner")
-  assignments    EventMember[]
-  expenses       Expense[]
-  timeEntries    TimeEntry[]
+  ownedEvents   Event[]        @relation("EventOwner")
+  assignments   EventMember[]
+  expenses      Expense[]
+  timeEntries   TimeEntry[]
+  payments      Payment[]
+  invoiceEvents InvoiceEvent[]
 }
 
 model Event {
-  id          String      @id @default(cuid())
-  title       String
-  brief       String      @default("")
-  clientName  String // contact person
-  clientPhone String      @default("")
-  clientEmail String      @default("")
-  companyName String
-  companyAddress String   @default("")
-  companyIco  String      @default("")
-  companyDic  String      @default("")
-  status      EventStatus @default(INQUIRY)
+  id             String      @id @default(cuid())
+  title          String
+  brief          String      @default("")
+  clientName     String // contact person
+  clientPhone    String      @default("")
+  clientEmail    String      @default("")
+  companyName    String
+  companyAddress String      @default("")
+  companyIco     String      @default("")
+  companyDic     String      @default("")
+  status         EventStatus @default(INQUIRY)
 
   buildDate  DateTime?
   startDate  DateTime
@@ -94,13 +104,13 @@ model Event {
   ownerId String
   owner   User   @relation("EventOwner", fields: [ownerId], references: [id])
 
-  venues     Venue[]
-  milestones Milestone[]
-  members    EventMember[]
-  expenses   Expense[]
+  venues      Venue[]
+  milestones  Milestone[]
+  members     EventMember[]
+  expenses    Expense[]
   timeEntries TimeEntry[]
-  quotes     Quote[]
-  invoices   Invoice[]
+  quotes      Quote[]
+  invoices    Invoice[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -121,18 +131,18 @@ model EventMember {
 }
 
 model Venue {
-  id      String  @id @default(cuid())
+  id      String @id @default(cuid())
   eventId String
-  event   Event   @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  event   Event  @relation(fields: [eventId], references: [id], onDelete: Cascade)
   name    String
   address String
-  note    String  @default("")
+  note    String @default("")
 }
 
 model Milestone {
-  id                    String    @id @default(cuid())
+  id                    String   @id @default(cuid())
   eventId               String
-  event                 Event     @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  event                 Event    @relation(fields: [eventId], references: [id], onDelete: Cascade)
   date                  DateTime
   title                 String
   googleCalendarEventId String? // populated once Calendar sync (later phase) is wired
@@ -145,15 +155,20 @@ model Milestone {
 
 model Expense {
   id          String          @id @default(cuid())
-  eventId     String
-  event       Event           @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  eventId     String? // null = company overhead, not tied to an event
+  event       Event?          @relation(fields: [eventId], references: [id], onDelete: Cascade)
   paidById    String
   paidBy      User            @relation(fields: [paidById], references: [id])
   amount      Int
   date        DateTime
   category    ExpenseCategory
   note        String          @default("")
+  receiptPath String? // relative path under web/uploads/receipts, served via an authed route
+  approved    Boolean         @default(true) // approval workflow not built yet; expenses count immediately
   createdAt   DateTime        @default(now())
+
+  @@index([eventId])
+  @@index([date])
 }
 
 model TimeEntry {
@@ -168,22 +183,100 @@ model TimeEntry {
 }
 
 model Quote {
-  id        String      @id @default(cuid())
-  eventId   String
-  event     Event       @relation(fields: [eventId], references: [id], onDelete: Cascade)
-  number    String
-  total     Int
-  status    QuoteStatus @default(DRAFT)
-  issuedAt  DateTime    @default(now())
+  id         String      @id @default(cuid())
+  eventId    String
+  event      Event       @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  number     String
+  total      Int
+  status     QuoteStatus @default(DRAFT)
+  validUntil DateTime
+  issuedAt   DateTime    @default(now())
+
+  items    QuoteItem[]
+  invoices Invoice[] // an accepted quote that's been converted shows "Invoiced <number>" instead of "Convert"
+}
+
+model QuoteItem {
+  id          String @id @default(cuid())
+  quoteId     String
+  quote       Quote  @relation(fields: [quoteId], references: [id], onDelete: Cascade)
+  description String
+  quantity    Int    @default(1)
+  unitPrice   Int
+  vatRate     Int    @default(21)
+  sortOrder   Int    @default(0)
 }
 
 model Invoice {
-  id        String        @id @default(cuid())
-  eventId   String
-  event     Event         @relation(fields: [eventId], references: [id], onDelete: Cascade)
-  number    String
-  total     Int
-  status    InvoiceStatus @default(ISSUED)
-  dueDate   DateTime
-  issuedAt  DateTime      @default(now())
+  id             String        @id @default(cuid())
+  eventId        String
+  event          Event         @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  quoteId        String? // set when created via "convert quote to invoice"
+  quote          Quote?        @relation(fields: [quoteId], references: [id])
+  number         String
+  variableSymbol String
+  total          Int
+  amountPaid     Int           @default(0)
+  status         InvoiceStatus @default(ISSUED)
+  dueDate        DateTime
+  issuedAt       DateTime      @default(now())
+  paidAt         DateTime?
+
+  items    InvoiceItem[]
+  payments Payment[]
+  history  InvoiceEvent[]
+
+  @@index([dueDate])
+  @@index([status])
+}
+
+model InvoiceItem {
+  id          String  @id @default(cuid())
+  invoiceId   String
+  invoice     Invoice @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+  description String
+  quantity    Int     @default(1)
+  unitPrice   Int
+  vatRate     Int     @default(21)
+  sortOrder   Int     @default(0)
+}
+
+model Payment {
+  id           String   @id @default(cuid())
+  invoiceId    String
+  invoice      Invoice  @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+  amount       Int
+  date         DateTime @default(now())
+  note         String   @default("")
+  recordedById String
+  recordedBy   User     @relation(fields: [recordedById], references: [id])
+}
+
+// Small, targeted action log for the invoice detail's "History" panel —
+// not a general audit log (that's still explicitly out of scope).
+model InvoiceEvent {
+  id        String           @id @default(cuid())
+  invoiceId String
+  invoice   Invoice          @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+  type      InvoiceEventType
+  message   String
+  userId    String?
+  user      User?            @relation(fields: [userId], references: [id])
+  createdAt DateTime         @default(now())
+
+  @@index([invoiceId, createdAt])
+}
+
+// Single-row company profile used to render invoice PDFs (supplier block,
+// VAT handling, bank details for the QR payment code). No editing UI yet —
+// that's Settings (Phase 4) — seeded directly for now.
+model CompanySettings {
+  id             String  @id @default("singleton")
+  name           String
+  address        String
+  ico            String
+  dic            String
+  isVatPayer     Boolean @default(true)
+  bankAccount    String  @default("") // IBAN; QR code is skipped if empty
+  defaultDueDays Int     @default(14)
 }

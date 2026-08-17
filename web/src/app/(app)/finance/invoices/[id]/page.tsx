@@ -1,0 +1,195 @@
+import Link from "next/link";
+import { notFound } from "next/navigation";
+import { requireUser, canManageFinance } from "@/lib/authz";
+import { getInvoiceDetail, getCompanySettings } from "@/lib/queries/finance";
+import { formatCurrency, formatDate, formatDateTime } from "@/lib/format";
+import { recordPaymentAction, markInvoicePaidAction } from "@/lib/actions/finance";
+
+export default async function InvoiceDetailPage({ params }: { params: Promise<{ id: string }> }) {
+  const user = await requireUser();
+  const { id } = await params;
+  const [invoice, company] = await Promise.all([getInvoiceDetail(user, id), getCompanySettings()]);
+  if (!invoice) notFound();
+
+  const canManage = canManageFinance(user);
+  const base = invoice.items.reduce((s, i) => s + i.quantity * i.unitPrice, 0);
+  const vat = invoice.items.reduce((s, i) => s + i.quantity * i.unitPrice * (i.vatRate / 100), 0);
+  const remaining = invoice.total - invoice.amountPaid;
+  const overdue = invoice.status !== "PAID" && invoice.dueDate < new Date();
+  const progress = invoice.total > 0 ? Math.min(100, Math.round((invoice.amountPaid / invoice.total) * 100)) : 0;
+
+  return (
+    <div>
+      <div className="label mb-1.5">
+        <Link href="/finance/invoices" className="hover:text-ink">
+          ← Finance / Invoices
+        </Link>{" "}
+        / {invoice.number}
+      </div>
+      <div className="flex justify-between items-end border-b-2 border-ink pb-2 flex-wrap gap-2">
+        <div>
+          <div className="text-xl font-semibold">Invoice {invoice.number}</div>
+          <div className="placeholder-text text-[11px] mt-0.5">
+            {invoice.event.title} · {invoice.event.companyName} · issued {formatDate(invoice.issuedAt)}, due{" "}
+            {formatDate(invoice.dueDate)}
+          </div>
+        </div>
+        <div className="flex gap-1.5">
+          <span className="btno opacity-40 cursor-not-allowed" title="Email sending isn't wired up yet">
+            Send by mail
+          </span>
+          <a href={`/api/invoices/${invoice.id}/pdf`} target="_blank" rel="noreferrer" className="btno">
+            Download PDF
+          </a>
+          {canManage && invoice.status !== "PAID" && (
+            <form action={markInvoicePaidAction}>
+              <input type="hidden" name="invoiceId" value={invoice.id} />
+              <button type="submit" className="btn">
+                Mark as paid
+              </button>
+            </form>
+          )}
+        </div>
+      </div>
+
+      <div className="grid grid-cols-[1fr_220px] gap-4 mt-3">
+        <div className="border border-ink/25 p-4 flex flex-col gap-2.5">
+          <div className="flex justify-between items-start">
+            <div className="text-sm font-semibold">{company?.name ?? "Company"}</div>
+            <div className="text-right">
+              <div className="label">Invoice</div>
+              <div className="text-sm font-semibold">{invoice.number}</div>
+            </div>
+          </div>
+          <div className="rule" />
+          <div className="grid grid-cols-2 gap-3 text-[11px]">
+            <div>
+              <div className="label">Supplier</div>
+              {company?.name}
+              <div className="placeholder-text">
+                {company?.address}
+                <br />
+                IČO {company?.ico} · DIČ {company?.dic}
+                {company?.bankAccount ? (
+                  <>
+                    <br />
+                    {company.bankAccount}
+                  </>
+                ) : null}
+              </div>
+            </div>
+            <div>
+              <div className="label">Customer</div>
+              {invoice.event.companyName}
+              <div className="placeholder-text">
+                {invoice.event.companyAddress}
+                <br />
+                IČO {invoice.event.companyIco || "—"} · DIČ {invoice.event.companyDic || "—"}
+              </div>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-[2fr_.5fr_.7fr_.5fr_.9fr] gap-2 border-b-2 border-ink pb-1 text-[10px] mt-2">
+            <span className="heading-label">Item</span>
+            <span className="heading-label">Qty</span>
+            <span className="heading-label">Unit</span>
+            <span className="heading-label">VAT</span>
+            <span className="heading-label text-right">Total</span>
+          </div>
+          {invoice.items.map((item) => (
+            <div key={item.id} className="grid grid-cols-[2fr_.5fr_.7fr_.5fr_.9fr] gap-2 py-1 text-[11px]">
+              <span>{item.description}</span>
+              <span className="placeholder-text">{item.quantity}</span>
+              <span className="placeholder-text">{formatCurrency(item.unitPrice)}</span>
+              <span className="placeholder-text">{item.vatRate}%</span>
+              <span className="text-right">{formatCurrency(item.quantity * item.unitPrice)}</span>
+            </div>
+          ))}
+          <div className="flex justify-end gap-6 mt-2 text-[12px]">
+            <div>
+              <span className="label mr-2">Base</span>
+              {formatCurrency(base)}
+            </div>
+            <div>
+              <span className="label mr-2">VAT</span>
+              {formatCurrency(vat)}
+            </div>
+            <div className="font-semibold">
+              <span className="label mr-2">To pay</span>
+              {formatCurrency(base + vat)}
+            </div>
+          </div>
+          <div className="placeholder-text text-[9px] mt-auto pt-2">
+            Rendered from the company invoice template · variable symbol {invoice.variableSymbol}
+            {company?.bankAccount ? " · QR payment" : ""}
+          </div>
+        </div>
+
+        <div>
+          <div className="label">Payment state</div>
+          <div className={`border p-2 mt-1 ${invoice.status === "PAID" ? "border-ink/25" : overdue ? "border-accent" : "border-ink/25"}`}>
+            <div className="text-sm font-semibold">
+              {invoice.status === "PAID" ? "Paid" : invoice.status === "PARTLY_PAID" ? "Partly paid" : overdue ? "Overdue" : "Issued"}
+            </div>
+            <div className="placeholder-text text-[9px]">
+              {formatCurrency(invoice.amountPaid)} of {formatCurrency(invoice.total)}
+              {invoice.paidAt ? ` received ${formatDate(invoice.paidAt)}` : ""}
+            </div>
+            <div className="h-1.5 bg-ink/12 mt-1.5">
+              <div className={`h-1.5 ${overdue ? "bg-accent" : "bg-ink"}`} style={{ width: `${progress}%` }} />
+            </div>
+          </div>
+          <div className="flex justify-between py-1.5 text-[13px] border-b border-ink/10 mt-1">
+            <div>Due</div>
+            <div className="placeholder-text">{formatDate(invoice.dueDate)}</div>
+          </div>
+          <div className="flex justify-between py-1.5 text-[13px] border-b border-ink/10">
+            <div>Reminder</div>
+            <div className="placeholder-text">not wired up yet</div>
+          </div>
+
+          {canManage && remaining > 0 && (
+            <form action={recordPaymentAction} className="flex flex-col gap-1.5 mt-2">
+              <input type="hidden" name="invoiceId" value={invoice.id} />
+              <span className="heading-label">Record payment</span>
+              <input name="amount" type="number" min={1} max={remaining} defaultValue={remaining} className="input" />
+              <input name="note" placeholder="Note (optional)" className="input" />
+              <button type="submit" className="btno">
+                Record payment
+              </button>
+            </form>
+          )}
+
+          <div className="rule-thin my-2.5" />
+          <div className="label">Linked</div>
+          <div className="py-1.5 text-[13px]">
+            <Link href={`/events/${invoice.eventId}`} className="hover:text-accent">
+              Event — {invoice.event.title} →
+            </Link>
+          </div>
+          {invoice.quote && (
+            <div className="py-1.5 text-[13px]">
+              <Link href={`/finance/quotes`} className="hover:text-accent">
+                Quote {invoice.quote.number} →
+              </Link>
+            </div>
+          )}
+          <div className="py-1.5 text-[13px]">
+            <Link href={`/events/${invoice.eventId}/expenses`} className="hover:text-accent">
+              Expenses on this event →
+            </Link>
+          </div>
+
+          <div className="rule-thin my-2.5" />
+          <div className="label">History</div>
+          {invoice.history.map((h) => (
+            <div key={h.id} className="grid grid-cols-[52px_1fr] gap-2.5 py-1 text-[9px]">
+              <div className="placeholder-text">{formatDateTime(h.createdAt)}</div>
+              <div>{h.message}</div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}

@@ -1,14 +1,15 @@
 import { prisma } from "@/lib/prisma";
-import { eventWhereForUser, type SessionUser } from "@/lib/authz";
+import { eventWhereForUser, expenseWhereForUser, type SessionUser } from "@/lib/authz";
 
 export async function getDashboardData(user: SessionUser) {
   const eventWhere = eventWhereForUser(user);
+  const expenseWhere = expenseWhereForUser(user);
   const now = new Date();
 
   const [overdueInvoices, waitingQuotes, eventsToInvoice, upcomingEvents, latestExpenses, allInvoices, allExpenses] =
     await Promise.all([
       prisma.invoice.findMany({
-        where: { status: "OVERDUE", event: eventWhere },
+        where: { status: { not: "PAID" }, dueDate: { lt: now }, event: eventWhere },
         include: { event: true },
         orderBy: { dueDate: "asc" },
       }),
@@ -28,13 +29,13 @@ export async function getDashboardData(user: SessionUser) {
         take: 3,
       }),
       prisma.expense.findMany({
-        where: { event: eventWhere },
+        where: expenseWhere,
         include: { event: true },
         orderBy: { date: "desc" },
         take: 4,
       }),
       prisma.invoice.findMany({ where: { event: eventWhere }, select: { total: true, issuedAt: true } }),
-      prisma.expense.findMany({ where: { event: eventWhere }, select: { amount: true, date: true } }),
+      prisma.expense.findMany({ where: expenseWhere, select: { amount: true, date: true } }),
     ]);
 
   const oldestOverdueDays = overdueInvoices.length

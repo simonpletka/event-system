@@ -113,3 +113,8 @@ body {
 .input:focus {
   border-color: var(--color-ink);
 }
+
+@media print {
+  body { background: #fff; color: #000; }
+  .print-hide { display: none !important; }
+}
