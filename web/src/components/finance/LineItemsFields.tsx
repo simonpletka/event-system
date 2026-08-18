@@ -47,11 +47,11 @@ export function LineItemsFields({
       </datalist>
       <div className="grid grid-cols-[24px_1fr_110px_70px_110px_70px_auto] gap-2 mb-1.5">
         <span></span>
-        <span className="heading-label pl-2.5">Description</span>
-        <span className="heading-label pl-2.5">Category</span>
-        <span className="heading-label pl-2.5">Qty</span>
-        <span className="heading-label pl-2.5">Unit price</span>
-        <span className="heading-label pl-2.5">VAT %</span>
+        <span className="heading-label">Description</span>
+        <span className="heading-label">Category</span>
+        <span className="heading-label">Qty</span>
+        <span className="heading-label">Unit price</span>
+        <span className="heading-label">VAT %</span>
         <span></span>
       </div>
       <div className="flex flex-col gap-2">

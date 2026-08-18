@@ -36,22 +36,22 @@ export function DownloadPdfButton({
       {open && (
         <div className="absolute right-0 top-full mt-1 z-10 border border-ink bg-bg min-w-[9rem] shadow-lg">
           <a
-            href={`${pdfUrl}?lang=en`}
+            href={`${pdfUrl}?lang=cs`}
             target="_blank"
             rel="noreferrer"
             onClick={() => setOpen(false)}
             className="block px-3 py-2 text-[11px] hover:bg-accent hover:text-bg"
           >
-            English
+            Čeština
           </a>
           <a
-            href={`${pdfUrl}?lang=cs`}
+            href={`${pdfUrl}?lang=en`}
             target="_blank"
             rel="noreferrer"
             onClick={() => setOpen(false)}
             className="block px-3 py-2 text-[11px] border-t border-ink/15 hover:bg-accent hover:text-bg"
           >
-            Čeština
+            English
           </a>
         </div>
       )}

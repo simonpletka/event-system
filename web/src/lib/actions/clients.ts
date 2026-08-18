@@ -126,13 +126,15 @@ export async function deleteClientAction(formData: FormData) {
 
 // --- Contacts ---
 
-export async function addClientContactAction(formData: FormData) {
+export type ContactFormState = { error?: string; success?: boolean };
+
+export async function addClientContactAction(_prev: ContactFormState, formData: FormData): Promise<ContactFormState> {
   const user = await requireUser();
-  if (!canManageClients(user)) return;
+  if (!canManageClients(user)) return { error: "You don't have permission to add contacts." };
 
   const clientId = String(formData.get("clientId"));
   const name = String(formData.get("name") ?? "").trim();
-  if (!name) return;
+  if (!name) return { error: "Name is required." };
 
   await prisma.clientContact.create({
     data: {
@@ -144,6 +146,7 @@ export async function addClientContactAction(formData: FormData) {
     },
   });
   revalidatePath(`/clients/${clientId}`);
+  return { success: true };
 }
 
 export async function deleteClientContactAction(formData: FormData) {
