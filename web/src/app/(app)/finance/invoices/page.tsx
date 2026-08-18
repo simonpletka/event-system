@@ -94,18 +94,18 @@ export default async function InvoicesPage({
       {invoices.map((inv) => (
         <div
           key={inv.id}
-          className="grid grid-cols-[.8fr_1.2fr_.9fr_.6fr_.6fr_.8fr_1fr_.7fr] gap-2.5 items-center py-2.5 border-b border-ink/13 text-[13px]"
+          className="group grid grid-cols-[.8fr_1.2fr_.9fr_.6fr_.6fr_.8fr_1fr_.7fr] gap-2.5 items-center py-2.5 border-b border-ink/13 text-[13px] hover:bg-ink/5"
         >
-          <Link href={`/finance/invoices/${inv.id}`} className="hover:text-accent">
+          <Link href={`/finance/invoices/${inv.id}`} className="group-hover:text-accent">
             {inv.number}
           </Link>
-          <Link href={`/finance/invoices/${inv.id}`} className="hover:text-accent">
+          <Link href={`/finance/invoices/${inv.id}`} className="group-hover:text-accent">
             {inv.event.title}
           </Link>
-          <div className="placeholder-text">{inv.event.companyName}</div>
-          <div className="placeholder-text">{formatDate(inv.issuedAt)}</div>
-          <div className="placeholder-text">{formatDate(inv.dueDate)}</div>
-          <div>
+          <div className="placeholder-text group-hover:!text-accent">{inv.event.companyName}</div>
+          <div className="placeholder-text group-hover:!text-accent">{formatDate(inv.issuedAt)}</div>
+          <div className="placeholder-text group-hover:!text-accent">{formatDate(inv.dueDate)}</div>
+          <div className="group-hover:text-accent">
             {formatCurrency(inv.total, inv.currency)}
             {inv.currency !== "CZK" && <span className="pill ml-1 !border-accent text-accent">{inv.currency}</span>}
           </div>

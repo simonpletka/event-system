@@ -86,18 +86,18 @@ export default async function QuotesPage({
       {quotes.map((q) => (
         <div
           key={q.id}
-          className="grid grid-cols-[.8fr_1.3fr_1fr_.7fr_.7fr_.8fr_.9fr_1fr] gap-2.5 items-center py-2.5 border-b border-ink/13 text-[13px]"
+          className="group grid grid-cols-[.8fr_1.3fr_1fr_.7fr_.7fr_.8fr_.9fr_1fr] gap-2.5 items-center py-2.5 border-b border-ink/13 text-[13px] hover:bg-ink/5"
         >
-          <Link href={`/finance/quotes/${q.id}`} className="hover:text-accent">
+          <Link href={`/finance/quotes/${q.id}`} className="group-hover:text-accent">
             {q.number}
           </Link>
-          <Link href={`/finance/quotes/${q.id}`} className="hover:text-accent">
+          <Link href={`/finance/quotes/${q.id}`} className="group-hover:text-accent">
             {q.event.title}
           </Link>
-          <div className="placeholder-text">{q.event.companyName}</div>
-          <div className="placeholder-text">{formatDate(q.issuedAt)}</div>
-          <div className="placeholder-text">{formatDate(q.validUntil)}</div>
-          <div>
+          <div className="placeholder-text group-hover:!text-accent">{q.event.companyName}</div>
+          <div className="placeholder-text group-hover:!text-accent">{formatDate(q.issuedAt)}</div>
+          <div className="placeholder-text group-hover:!text-accent">{formatDate(q.validUntil)}</div>
+          <div className="group-hover:text-accent">
             {formatCurrency(q.total, q.currency)}
             {q.currency !== "CZK" && <span className="pill ml-1 !border-accent text-accent">{q.currency}</span>}
           </div>

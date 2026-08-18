@@ -125,20 +125,20 @@ export default async function EventsPage({
           key={event.id}
           id={event.id === firstUpcomingId ? "today-row" : undefined}
           href={`/events/${event.id}`}
-          className="grid grid-cols-[1.5fr_.9fr_.8fr_.8fr_.9fr_.6fr] gap-2.5 items-center py-2.5 border-b border-ink/13 text-[13px] hover:bg-ink/5"
+          className="group grid grid-cols-[1.5fr_.9fr_.8fr_.8fr_.9fr_.6fr] gap-2.5 items-center py-2.5 border-b border-ink/13 text-[13px] hover:bg-ink/5"
         >
-          <div>
-            <span className="placeholder-text text-[11px] mr-1">{event.number}</span>
+          <div className="group-hover:text-accent">
+            <span className="placeholder-text text-[11px] mr-1 group-hover:!text-accent">{event.number}</span>
             {event.title}
-            <div className="label">{event.milestones[0]?.title ?? "—"}</div>
+            <div className="label group-hover:!text-accent">{event.milestones[0]?.title ?? "—"}</div>
           </div>
-          <div className="placeholder-text">{event.companyName}</div>
-          <div className="placeholder-text">{formatDateRange(event.startDate, event.endDate)}</div>
-          <div className="placeholder-text">{event.venues[0]?.name ?? "—"}</div>
+          <div className="placeholder-text group-hover:!text-accent">{event.companyName}</div>
+          <div className="placeholder-text group-hover:!text-accent">{formatDateRange(event.startDate, event.endDate)}</div>
+          <div className="placeholder-text group-hover:!text-accent">{event.venues[0]?.name ?? "—"}</div>
           <div>
             <EventStatusPill status={event.status} />
           </div>
-          <div className="placeholder-text">{event.quotedValue ? formatCurrency(event.quotedValue) : "—"}</div>
+          <div className="placeholder-text group-hover:!text-accent">{event.quotedValue ? formatCurrency(event.quotedValue) : "—"}</div>
         </Link>
       ))}
 
