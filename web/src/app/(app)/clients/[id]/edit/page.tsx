@@ -21,7 +21,10 @@ export default async function EditClientPage({ params }: { params: Promise<{ id:
           defaults={{
             id: client.id,
             name: client.name,
-            address: client.address,
+            street: client.street,
+            city: client.city,
+            postCode: client.postCode,
+            state: client.state,
             ico: client.ico,
             dic: client.dic,
             note: client.note,

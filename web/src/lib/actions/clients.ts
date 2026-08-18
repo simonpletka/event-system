@@ -10,7 +10,10 @@ export type ClientFormState = { error?: string };
 function clientDataFromForm(formData: FormData) {
   return {
     name: String(formData.get("name") ?? "").trim(),
-    address: String(formData.get("address") ?? "").trim(),
+    street: String(formData.get("street") ?? "").trim(),
+    city: String(formData.get("city") ?? "").trim(),
+    postCode: String(formData.get("postCode") ?? "").trim(),
+    state: String(formData.get("state") ?? "").trim(),
     ico: String(formData.get("ico") ?? "").trim(),
     dic: String(formData.get("dic") ?? "").trim(),
     note: String(formData.get("note") ?? "").trim(),
@@ -66,7 +69,11 @@ export async function resolveClientId(
   if (existing) return existing.id;
 
   const created = await prisma.client.create({
-    data: { name: company.name, address: company.address, ico: company.ico, dic: company.dic },
+    // company.address is one free-text line (from Event's own embedded
+    // companyAddress field, which stays a single string) — same tradeoff as
+    // ARES in ClientForm: land it in street, leave city/postCode/state for
+    // the user to fill in on the Client's own page later.
+    data: { name: company.name, street: company.address, ico: company.ico, dic: company.dic },
   });
   return created.id;
 }

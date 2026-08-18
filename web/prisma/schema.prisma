@@ -433,12 +433,22 @@ model CompanySettings {
 // Client; the Clients section's event list/total-charged figure is only
 // ever as complete as which events actually got linked.
 model Client {
-  id        String   @id @default(cuid())
-  name      String
-  address   String   @default("")
-  ico       String   @default("")
-  dic       String   @default("")
-  note      String   @default("")
+  id     String @id @default(cuid())
+  name   String
+  // Structured rather than one free-text line, so it can round-trip through
+  // the Photon worldwide-address autocomplete (src/lib/address-search.ts),
+  // which already returns these as separate components. "state" covers
+  // whatever Photon's own "state" field resolves to for the country in
+  // question (a US/CA state/province, a Czech kraj, etc.) — not literal
+  // country-level data, which Photon returns separately and isn't stored
+  // here (matches how Event/CompanySettings addresses work today).
+  street   String @default("")
+  city     String @default("")
+  postCode String @default("")
+  state    String @default("")
+  ico      String @default("")
+  dic      String @default("")
+  note     String @default("")
   // Where invoices should be sent. Editable directly, but also auto-filled
   // (only if still blank) from the first event contact with an email that
   // gets synced onto this client — see syncClientContacts() in actions/clients.ts.

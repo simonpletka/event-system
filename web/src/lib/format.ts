@@ -43,6 +43,12 @@ export function toDateTimeLocal(date: Date | null | undefined) {
   return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`;
 }
 
+/** Single-line rendering of a Client's structured address, for contexts (like Event.companyAddress) that only take one string. */
+export function formatClientAddress(c: { street: string; city: string; postCode: string; state: string }) {
+  const cityLine = [c.postCode, c.city].filter(Boolean).join(" ");
+  return [c.street, cityLine, c.state].filter(Boolean).join(", ");
+}
+
 export function formatMinutes(minutes: number) {
   const h = Math.floor(minutes / 60);
   const m = minutes % 60;

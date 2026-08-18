@@ -2,7 +2,16 @@
 
 import { useState } from "react";
 
-export type PickableClient = { id: string; name: string; address?: string; ico?: string; dic?: string };
+export type PickableClient = {
+  id: string;
+  name: string;
+  street?: string;
+  city?: string;
+  postCode?: string;
+  state?: string;
+  ico?: string;
+  dic?: string;
+};
 
 export function ClientPicker({
   initialClients,

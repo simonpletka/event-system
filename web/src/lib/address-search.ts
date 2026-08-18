@@ -7,7 +7,19 @@
  */
 const PHOTON_BASE = "https://photon.komoot.io/api/";
 
-export type AddressSuggestion = { label: string; lat: number; lon: number };
+export type AddressSuggestion = {
+  label: string;
+  lat: number;
+  lon: number;
+  // Structured components, for callers (like the Client form's
+  // StructuredAddressInput) that store address parts separately instead of
+  // one free-text line. Photon already returns these — formatLabel() below
+  // just used to throw them away.
+  street: string;
+  city: string;
+  postCode: string;
+  state: string;
+};
 
 type PhotonFeature = {
   geometry: { coordinates: [number, number] };
@@ -50,6 +62,10 @@ export async function searchAddresses(query: string): Promise<AddressSuggestion[
       label: formatLabel(f.properties),
       lat: f.geometry.coordinates[1],
       lon: f.geometry.coordinates[0],
+      street: [f.properties.street, f.properties.housenumber].filter(Boolean).join(" "),
+      city: f.properties.city ?? "",
+      postCode: f.properties.postcode ?? "",
+      state: f.properties.state ?? "",
     }))
     .filter((s) => s.label);
 }

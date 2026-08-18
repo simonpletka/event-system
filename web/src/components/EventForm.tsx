@@ -2,7 +2,7 @@
 
 import { useActionState, useState } from "react";
 import { createEventAction, updateEventAction, type EventFormState } from "@/lib/actions/events";
-import { toDateTimeLocal } from "@/lib/format";
+import { toDateTimeLocal, formatClientAddress } from "@/lib/format";
 import { CancelLink } from "@/components/ui/CancelLink";
 import { AddressAutocompleteInput } from "@/components/ui/AddressAutocompleteInput";
 import { ClientPicker, type PickableClient } from "@/components/ClientPicker";
@@ -191,7 +191,9 @@ export function EventForm({ defaults, clients }: { defaults: EventFormDefaults; 
           onSelect={(client) => {
             if (!client) return;
             setCompanyName(client.name);
-            setCompanyAddress(client.address ?? "");
+            setCompanyAddress(
+              formatClientAddress({ street: client.street ?? "", city: client.city ?? "", postCode: client.postCode ?? "", state: client.state ?? "" })
+            );
             setCompanyIco(client.ico ?? "");
             setCompanyDic(client.dic ?? "");
           }}

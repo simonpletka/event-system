@@ -10,7 +10,7 @@ export default async function NewClientPage() {
       {!canManageClients(user) ? (
         <p className="text-sm placeholder-text">You don&apos;t have permission to add clients.</p>
       ) : (
-        <ClientForm defaults={{ name: "", address: "", ico: "", dic: "", note: "", invoicingEmail: "" }} />
+        <ClientForm defaults={{ name: "", street: "", city: "", postCode: "", state: "", ico: "", dic: "", note: "", invoicingEmail: "" }} />
       )}
     </div>
   );

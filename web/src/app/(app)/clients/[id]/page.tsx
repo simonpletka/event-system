@@ -78,7 +78,20 @@ export default async function ClientDetailPage({ params }: { params: Promise<{ i
 
         <div className="card p-5 self-start">
           <div className="heading-label">Address</div>
-          <p className="text-[13px] mt-1.5">{client.address || "—"}</p>
+          {client.street || client.city || client.postCode || client.state ? (
+            <p className="text-[13px] mt-1.5 leading-relaxed">
+              {client.street && <>{client.street}<br /></>}
+              {(client.postCode || client.city) && (
+                <>
+                  {[client.postCode, client.city].filter(Boolean).join(" ")}
+                  <br />
+                </>
+              )}
+              {client.state}
+            </p>
+          ) : (
+            <p className="text-[13px] mt-1.5">—</p>
+          )}
 
           <div className="h-px bg-ink/8 my-3.5" />
           <div className="heading-label">IČO</div>

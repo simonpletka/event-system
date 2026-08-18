@@ -130,7 +130,10 @@ async function main() {
   const kobra = await prisma.client.create({
     data: {
       name: "Kobra a.s.",
-      address: "Vinohradská 12, Praha 2",
+      street: "Vinohradská 12",
+      city: "Praha 2",
+      postCode: "120 00",
+      state: "Hlavní město Praha",
       ico: "27182904",
       dic: "CZ27182904",
       invoicingEmail: "valkova@kobra.cz",
@@ -140,7 +143,10 @@ async function main() {
   const nordika = await prisma.client.create({
     data: {
       name: "Nordika",
-      address: "Lidická 20, Brno",
+      street: "Lidická 20",
+      city: "Brno",
+      postCode: "602 00",
+      state: "Jihomoravský kraj",
       ico: "05512244",
       dic: "CZ05512244",
       invoicingEmail: "benes@nordika.cz",
@@ -150,7 +156,10 @@ async function main() {
   const vela = await prisma.client.create({
     data: {
       name: "Vela s.r.o.",
-      address: "Náměstí Míru 5, Praha 2",
+      street: "Náměstí Míru 5",
+      city: "Praha 2",
+      postCode: "120 00",
+      state: "Hlavní město Praha",
       ico: "09984411",
       dic: "CZ09984411",
       invoicingEmail: "maresova@vela.cz",
@@ -160,7 +169,10 @@ async function main() {
   const aeris = await prisma.client.create({
     data: {
       name: "Aeris",
-      address: "Karlovo náměstí 10, Praha 2",
+      street: "Karlovo náměstí 10",
+      city: "Praha 2",
+      postCode: "120 00",
+      state: "Hlavní město Praha",
       ico: "08812234",
       dic: "CZ08812234",
       invoicingEmail: "sykorova@aeris.cz",

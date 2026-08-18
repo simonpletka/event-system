@@ -94,7 +94,7 @@ export function LineItemsFields({
               value={item.description}
               onChange={(e) => update(i, { description: e.target.value })}
               className="input"
-              required
+              placeholder="Description"
             />
             <input
               name="itemCategory"
