@@ -10,22 +10,22 @@ export function CreateUserForm({ customRoles }: { customRoles: { id: string; nam
   const [state, formAction, pending] = useActionState(createUserAction, initialState);
 
   return (
-    <div>
-      <div className="label mb-1.5">New account — issued credentials, no self sign-up</div>
-      <form action={formAction} className="grid grid-cols-[1fr_1fr_150px_100px_auto] gap-2 items-end">
-        <label className="flex flex-col gap-1">
+    <div className="card px-5 py-4">
+      <div className="heading-label mb-2.5">New account — issued credentials, no self sign-up</div>
+      <form action={formAction} className="grid grid-cols-[1fr_1fr_150px_100px_auto] gap-2.5 items-end">
+        <label className="flex flex-col gap-1.5">
           <span className="heading-label">Name</span>
           <input name="name" required className="input" />
         </label>
-        <label className="flex flex-col gap-1">
+        <label className="flex flex-col gap-1.5">
           <span className="heading-label">Email</span>
           <input name="email" type="email" required className="input" />
         </label>
-        <label className="flex flex-col gap-1">
+        <label className="flex flex-col gap-1.5">
           <span className="heading-label">Role</span>
           <RoleSelect name="role" defaultValue="ROLE:MEMBER" customRoles={customRoles} className="input" />
         </label>
-        <label className="flex items-center gap-1.5 pb-2">
+        <label className="flex items-center gap-1.5 pb-2.5">
           <input name="isCardHolder" type="checkbox" />
           <span className="text-[10px]">Company card</span>
         </label>
@@ -34,7 +34,7 @@ export function CreateUserForm({ customRoles }: { customRoles: { id: string; nam
         </button>
       </form>
       {state.error && <p className="text-sm text-warning mt-2">{state.error}</p>}
-      {state.success && <p className="text-sm mt-2 border border-ink/25 p-2 max-w-lg">{state.success}</p>}
+      {state.success && <p className="text-sm mt-2 border border-ink/25 rounded-lg p-2.5 max-w-lg">{state.success}</p>}
     </div>
   );
 }

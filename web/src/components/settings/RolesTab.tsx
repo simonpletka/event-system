@@ -42,19 +42,21 @@ export function RolesTab({ roles }: { roles: CustomRoleRow[] }) {
         someone needs a reach none of those four quite match.
       </p>
 
-      <div className="grid grid-cols-[1fr_1.3fr_1fr_1.3fr_1.3fr_auto] gap-2.5 border-b-2 border-ink pb-1.5">
-        <span className="heading-label">Name</span>
-        <span className="heading-label">Events</span>
-        <span className="heading-label">Finance</span>
-        <span className="heading-label">Expenses</span>
-        <span className="heading-label">Settings</span>
-        <span className="heading-label"></span>
-      </div>
+      <div className="card p-3.5">
+        <div className="grid grid-cols-[1fr_1.3fr_1fr_1.3fr_1.3fr_auto] gap-2.5 border-b border-ink/14 pb-1.5">
+          <span className="heading-label">Name</span>
+          <span className="heading-label">Events</span>
+          <span className="heading-label">Finance</span>
+          <span className="heading-label">Expenses</span>
+          <span className="heading-label">Settings</span>
+          <span className="heading-label"></span>
+        </div>
 
-      {roles.length === 0 && !creating && <p className="text-sm placeholder-text mt-3">No custom roles yet.</p>}
-      {roles.map((role) => (
-        <RoleRow key={role.id} role={role} />
-      ))}
+        {roles.length === 0 && !creating && <p className="text-sm placeholder-text mt-3">No custom roles yet.</p>}
+        {roles.map((role) => (
+          <RoleRow key={role.id} role={role} />
+        ))}
+      </div>
 
       {creating ? (
         <RoleForm onDone={() => setCreating(false)} />
@@ -112,7 +114,7 @@ function RoleForm({ existing, onDone }: { existing?: CustomRoleRow; onDone: () =
   const [state, formAction, pending] = useActionState(action, initialState);
 
   return (
-    <form action={formAction} className="border border-ink/25 p-3 mt-2 flex flex-col gap-2.5 max-w-2xl">
+    <form action={formAction} className="card p-4 mt-2.5 flex flex-col gap-2.5 max-w-2xl">
       {existing && <input type="hidden" name="id" value={existing.id} />}
       <label className="flex flex-col gap-1">
         <span className="heading-label">Role name</span>

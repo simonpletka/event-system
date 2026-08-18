@@ -48,7 +48,7 @@ export function UsersTable({
 
   return (
     <div>
-      <div className="grid grid-cols-[1.2fr_1.4fr_1fr_.7fr_.8fr_1fr] gap-2.5 border-b-2 border-ink pb-1.5">
+      <div className="grid grid-cols-[1.2fr_1.4fr_1fr_.7fr_.8fr_1fr] gap-2.5 border-b border-ink/14 pb-1.5 px-3.5">
         <span className="heading-label">Name</span>
         <span className="heading-label">Account</span>
         <span className="heading-label">Role</span>
@@ -83,22 +83,34 @@ function UserRow({
   const [resetState, resetAction, resetPending] = useActionState<SettingsFormState, FormData>(resetPasswordAction, {});
 
   return (
-    <div className={`grid grid-cols-[1.2fr_1.4fr_1fr_.7fr_.8fr_1fr] gap-2.5 items-center py-2.5 border-b border-ink/13 text-[13px] ${!user.active ? "opacity-50" : ""}`}>
-      <div>
+    <div
+      className={`grid grid-cols-[1.2fr_1.4fr_1fr_.7fr_.8fr_1fr] gap-2.5 items-center py-3 px-3.5 rounded-xl border-b border-ink/8 last:border-b-0 text-[13px] ${!user.active ? "opacity-50" : ""}`}
+    >
+      <div className="font-medium">
         {user.name}
         {isSelf && <span className="label ml-1.5">you</span>}
         {!user.active && <span className="tag tag-warning ml-1.5">Inactive</span>}
       </div>
       <div className="placeholder-text truncate">{user.email}</div>
-      <div>{roleLabel}</div>
+      <div className="placeholder-text">{roleLabel}</div>
       <form action={toggleCardHolderAction}>
         <input type="hidden" name="id" value={user.id} />
-        <button type="submit" className="text-[13px] hover:text-accent" title="Toggle company card">
-          {user.isCardHolder ? "✓" : "—"}
+        <button type="submit" title="Toggle company card">
+          <span
+            className={`w-[18px] h-[18px] rounded-[5px] border flex items-center justify-center ${
+              user.isCardHolder ? "bg-accent border-accent" : "border-ink/25 bg-ink/4"
+            }`}
+          >
+            {user.isCardHolder && (
+              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#f3f2f2" strokeWidth="3">
+                <path d="M20 6 9 17l-5-5" />
+              </svg>
+            )}
+          </span>
         </button>
       </form>
       <div className="placeholder-text">{lastSeenLabel}</div>
-      <div className="flex gap-2 text-[9px] tracking-[0.1em] uppercase flex-wrap">
+      <div className="flex gap-2.5 text-[9px] tracking-[0.1em] uppercase flex-wrap">
         <Link href={`/settings/users/${user.id}/edit`} className="placeholder-text hover:text-ink">
           Edit
         </Link>
@@ -109,7 +121,7 @@ function UserRow({
           </button>
         </form>
       </div>
-      {resetState.success && <div className="col-span-6 text-[11px] border border-ink/25 p-1.5 mt-1">{resetState.success}</div>}
+      {resetState.success && <div className="col-span-6 text-[11px] border border-ink/25 rounded-lg p-2 mt-1">{resetState.success}</div>}
     </div>
   );
 }

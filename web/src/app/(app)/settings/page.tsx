@@ -47,49 +47,51 @@ export default async function SettingsPage({
 
   return (
     <div>
-      <div className="flex items-end justify-between border-b-2 border-ink pb-2">
-        <div>
-          <div className="heading-label">{users.length ? `${users.length} accounts` : "Company settings"}</div>
-          <h1 className="text-xl font-semibold">Settings</h1>
+      <div className="sticky top-0 z-20 -mx-6 -mt-5 px-6 pt-5 pb-2 backdrop-blur-2xl bg-gradient-to-b from-bg/80 to-bg/50 border-b border-ink/10">
+        <div className="flex items-end justify-between">
+          <div>
+            <div className="heading-label">{users.length ? `${users.length} accounts` : "Company settings"}</div>
+            <h1 className="text-[28px] font-bold tracking-tight mt-1">Settings</h1>
+          </div>
+        </div>
+
+        <div className="flex gap-3.5 mt-3">
+          {canUsers && (
+            <>
+              <Link
+                href="/settings?tab=users"
+                className={`text-[9px] tracking-[0.14em] uppercase pb-2 border-b-2 ${tab === "users" ? "border-accent text-accent" : "border-transparent placeholder-text hover:text-ink"}`}
+              >
+                Users &amp; roles
+              </Link>
+              <Link
+                href="/settings?tab=roles"
+                className={`text-[9px] tracking-[0.14em] uppercase pb-2 border-b-2 ${tab === "roles" ? "border-accent text-accent" : "border-transparent placeholder-text hover:text-ink"}`}
+              >
+                Custom roles
+              </Link>
+            </>
+          )}
+          {canCompany && (
+            <>
+              <Link
+                href="/settings?tab=company"
+                className={`text-[9px] tracking-[0.14em] uppercase pb-2 border-b-2 ${tab === "company" ? "border-accent text-accent" : "border-transparent placeholder-text hover:text-ink"}`}
+              >
+                Company
+              </Link>
+              <Link
+                href="/settings?tab=categories"
+                className={`text-[9px] tracking-[0.14em] uppercase pb-2 border-b-2 ${tab === "categories" ? "border-accent text-accent" : "border-transparent placeholder-text hover:text-ink"}`}
+              >
+                Categories
+              </Link>
+            </>
+          )}
         </div>
       </div>
 
-      <div className="flex gap-3.5 mt-2.5 border-b border-ink/20">
-        {canUsers && (
-          <>
-            <Link
-              href="/settings?tab=users"
-              className={`text-[9px] tracking-[0.14em] uppercase pb-1.5 border-b-2 ${tab === "users" ? "border-accent text-accent" : "border-transparent placeholder-text hover:text-ink"}`}
-            >
-              Users &amp; roles
-            </Link>
-            <Link
-              href="/settings?tab=roles"
-              className={`text-[9px] tracking-[0.14em] uppercase pb-1.5 border-b-2 ${tab === "roles" ? "border-accent text-accent" : "border-transparent placeholder-text hover:text-ink"}`}
-            >
-              Custom roles
-            </Link>
-          </>
-        )}
-        {canCompany && (
-          <>
-            <Link
-              href="/settings?tab=company"
-              className={`text-[9px] tracking-[0.14em] uppercase pb-1.5 border-b-2 ${tab === "company" ? "border-accent text-accent" : "border-transparent placeholder-text hover:text-ink"}`}
-            >
-              Company
-            </Link>
-            <Link
-              href="/settings?tab=categories"
-              className={`text-[9px] tracking-[0.14em] uppercase pb-1.5 border-b-2 ${tab === "categories" ? "border-accent text-accent" : "border-transparent placeholder-text hover:text-ink"}`}
-            >
-              Categories
-            </Link>
-          </>
-        )}
-      </div>
-
-      <div className="mt-4">
+      <div className="mt-5">
         {tab === "users" && canUsers && (
           <div>
             <CreateUserForm customRoles={customRoles} />

@@ -42,7 +42,7 @@ export function EditUserForm({
 
   return (
     <div className="max-w-sm">
-      <form action={formAction} className="flex flex-col gap-3">
+      <form action={formAction} className="card p-5 flex flex-col gap-3">
         <input type="hidden" name="id" value={id} />
         <label className="flex flex-col gap-1.5">
           <span className="heading-label">Name</span>

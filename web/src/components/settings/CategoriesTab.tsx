@@ -17,17 +17,19 @@ export function CategoriesTab({ categories }: { categories: CategoryRow[] }) {
         document simply doesn&apos;t show up in its PDF.
       </p>
 
-      <div className="grid grid-cols-[1fr_auto] gap-2.5 border-b-2 border-ink pb-1.5">
-        <span className="heading-label">Name</span>
-        <span className="heading-label"></span>
+      <div className="card p-3.5">
+        <div className="grid grid-cols-[1fr_auto] gap-2.5 border-b border-ink/14 pb-1.5">
+          <span className="heading-label">Name</span>
+          <span className="heading-label"></span>
+        </div>
+
+        {categories.length === 0 && <p className="text-sm placeholder-text mt-3">No categories yet.</p>}
+        {categories.map((c) => (
+          <CategoryRowItem key={c.id} category={c} />
+        ))}
+
+        <AddCategoryForm />
       </div>
-
-      {categories.length === 0 && <p className="text-sm placeholder-text mt-3">No categories yet.</p>}
-      {categories.map((c) => (
-        <CategoryRowItem key={c.id} category={c} />
-      ))}
-
-      <AddCategoryForm />
     </div>
   );
 }

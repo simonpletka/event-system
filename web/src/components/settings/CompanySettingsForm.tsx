@@ -51,9 +51,9 @@ export function CompanySettingsForm({ defaults }: { defaults: Company | null }) 
   }
 
   return (
-    <div className="grid grid-cols-2 gap-6 max-w-3xl">
-      <form action={formAction} className="flex flex-col gap-3">
-        <div className="label">Company details</div>
+    <div className="grid grid-cols-[1fr_300px] gap-5 max-w-3xl">
+      <form action={formAction} className="card p-5 flex flex-col gap-3">
+        <div className="heading-label">Company details</div>
         <div className="flex gap-1.5">
           <input name="ico" placeholder="IČO" value={fields.ico} onChange={(e) => set("ico", e.target.value)} required className="input flex-1" />
           <button type="button" onClick={loadFromAres} disabled={ares.loading} className="btno whitespace-nowrap">
@@ -81,7 +81,7 @@ export function CompanySettingsForm({ defaults }: { defaults: Company | null }) 
           </label>
         </div>
 
-        <div className="label mt-2">Bank</div>
+        <div className="heading-label mt-2">Bank</div>
         <input
           name="bankAccount"
           placeholder="IBAN"
@@ -91,7 +91,7 @@ export function CompanySettingsForm({ defaults }: { defaults: Company | null }) 
         />
         <span className="text-[9px] placeholder-text -mt-1">Used to render the QR payment code on invoice PDFs.</span>
 
-        <div className="label mt-2">Branding</div>
+        <div className="heading-label mt-2">Branding</div>
         <div className="flex gap-3 items-start">
           <div className="flex flex-col gap-1.5 flex-1">
             <input
@@ -124,7 +124,7 @@ export function CompanySettingsForm({ defaults }: { defaults: Company | null }) 
               </label>
             )}
           </div>
-          <div className="w-20 h-20 border border-ink/20 flex items-center justify-center shrink-0 overflow-hidden bg-surface">
+          <div className="w-20 h-20 rounded-xl border border-ink/16 flex items-center justify-center shrink-0 overflow-hidden bg-ink/4">
             {logoPreview ? (
               // eslint-disable-next-line @next/next/no-img-element -- ephemeral blob: preview URL, not a static asset
               <img src={logoPreview} alt="New logo preview" className="max-w-full max-h-full object-contain" />
@@ -142,7 +142,7 @@ export function CompanySettingsForm({ defaults }: { defaults: Company | null }) 
             type="color"
             value={fields.accentColor}
             onChange={(e) => set("accentColor", e.target.value)}
-            className="w-8 h-6 border border-ink/30 p-0 bg-transparent"
+            className="w-8 h-6 rounded-md border border-ink/30 p-0 bg-transparent"
           />
           <input
             name="accentColor"
@@ -153,13 +153,12 @@ export function CompanySettingsForm({ defaults }: { defaults: Company | null }) 
         </label>
         <span className="text-[9px] placeholder-text -mt-1">Used for the total-due figure and rules on invoice PDFs.</span>
 
-        <div className="label mt-2">Numbering</div>
+        <div className="heading-label mt-2">Numbering</div>
         <div className="flex gap-1.5">
-          <div className="input opacity-60 flex-1">Invoices YYYY-NNNN</div>
-          <div className="input opacity-60 flex-1">Quotes YYYY-Q##</div>
+          <div className="input opacity-60 flex-1">Events, quotes &amp; invoices — YY-XXX</div>
         </div>
         <div className="flex gap-1.5 items-center">
-          <div className="input opacity-60 flex-1">Restarts each year — fixed</div>
+          <div className="input opacity-60 flex-1">Reused per event · lowest unused number</div>
           <label className="flex items-center gap-1.5 text-[11px] whitespace-nowrap">
             Due
             <input
@@ -196,8 +195,8 @@ export function CompanySettingsForm({ defaults }: { defaults: Company | null }) 
         </div>
       </form>
 
-      <div>
-        <div className="label mb-1.5">Connected accounts</div>
+      <div className="card p-5 self-start">
+        <div className="heading-label mb-2">Connected accounts</div>
         <ConnectedRow label="Google Workspace" note="sign-in + calendar sync" connected={false} />
         <ConnectedRow label="Calendar for milestones" note="milestone export" connected={false} />
         <ConnectedRow label="ARES lookup" note="company auto-fill" connected />
@@ -212,9 +211,11 @@ export function CompanySettingsForm({ defaults }: { defaults: Company | null }) 
 
 function ConnectedRow({ label, note, connected }: { label: string; note: string; connected: boolean }) {
   return (
-    <div className="grid grid-cols-[1fr_.8fr_.7fr] gap-2.5 py-2 border-b border-ink/10 text-[13px] items-center">
-      <div>{label}</div>
-      <div className="placeholder-text text-[11px]">{note}</div>
+    <div className="flex items-center justify-between gap-2.5 py-2.5 border-b border-ink/8 last:border-b-0 text-[13px]">
+      <div>
+        <div>{label}</div>
+        <div className="placeholder-text text-[11px] mt-0.5">{note}</div>
+      </div>
       <span className={`tag ${connected ? "tag-positive" : "tag-neutral"}`}>{connected ? "Active" : "Not connected"}</span>
     </div>
   );
