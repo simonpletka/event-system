@@ -6,6 +6,14 @@
   --color-ink: #f3f2f2;
   --color-accent: #ec3013;
   --color-accent-hover: #c0250e;
+  /* Orange (--color-accent) stays the general action color — primary
+     buttons, active nav/tabs, focus. These two are semantic-only: teal for
+     a positive/"good" state (Confirmed, Accepted, Paid — orange's
+     complement, so a status is never visually confused with a CTA), red
+     reserved strictly for warnings (overdue, due very soon, cancelled/
+     declined). Never used decoratively. */
+  --color-positive: #2dd4bf;
+  --color-warning: #dc2626;
 }
 
 @theme inline {
@@ -14,11 +22,17 @@
   --color-ink: var(--color-ink);
   --color-accent: var(--color-accent);
   --color-accent-hover: var(--color-accent-hover);
+  --color-positive: var(--color-positive);
+  --color-warning: var(--color-warning);
   --font-sans: var(--font-neue-regrade);
 }
 
 body {
-  background: var(--color-bg);
+  background:
+    radial-gradient(ellipse 1100px 620px at 12% -8%, color-mix(in srgb, var(--color-accent) 11%, transparent), transparent 60%),
+    radial-gradient(ellipse 900px 520px at 92% -4%, color-mix(in srgb, var(--color-ink) 6%, transparent), transparent 55%),
+    var(--color-bg);
+  background-attachment: fixed;
   color: var(--color-ink);
   /* Without this, native controls (date/time picker popups, number input
      spin arrows) render with the browser's light-mode chrome regardless of
@@ -28,6 +42,56 @@ body {
      checkboxes/radios and range sliders — without it the picker highlights
      the selected date in browser-default blue instead of the app's accent. */
   accent-color: var(--color-accent);
+}
+
+/* Rounded, gradient-tinted glass surface for cards/panels. */
+.card {
+  background:
+    linear-gradient(160deg, color-mix(in srgb, var(--color-ink) 5%, transparent), color-mix(in srgb, var(--color-ink) 1%, transparent)),
+    var(--color-surface);
+  border: 1px solid color-mix(in srgb, var(--color-ink) 12%, transparent);
+  border-radius: 16px;
+}
+
+/* Frosted-glass surface for the sidebar and sticky toolbars. The dark
+   color-mix(bg) layer is load-bearing, not decorative: when this sits as a
+   floating overlay above real page content (the unpinned sidebar, revealed
+   over the dashboard), blur alone doesn't sufficiently obscure sharp bold
+   text behind it — the tint dims it enough that the panel's own text stays
+   legible regardless of what's underneath. */
+.glass-panel {
+  background:
+    linear-gradient(165deg, color-mix(in srgb, var(--color-ink) 9%, transparent), color-mix(in srgb, var(--color-ink) 2%, transparent)),
+    color-mix(in srgb, var(--color-bg) 72%, transparent);
+  backdrop-filter: blur(28px);
+  -webkit-backdrop-filter: blur(28px);
+  border: 1px solid color-mix(in srgb, var(--color-ink) 16%, transparent);
+}
+
+/* Status/state chip — soft filled background, no border, so it reads as a
+   tag rather than an outline button. Neutral is the default for anything
+   that isn't explicitly positive or a warning. */
+.tag {
+  font-size: 9px;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  padding: 4px 9px;
+  border-radius: 999px;
+  display: inline-block;
+  white-space: nowrap;
+}
+.tag-positive {
+  background: color-mix(in srgb, var(--color-positive) 15%, transparent);
+  color: var(--color-positive);
+}
+.tag-neutral {
+  background: color-mix(in srgb, var(--color-ink) 9%, transparent);
+  color: color-mix(in srgb, var(--color-ink) 72%, transparent);
+}
+.tag-warning {
+  background: color-mix(in srgb, var(--color-warning) 15%, transparent);
+  color: var(--color-warning);
 }
 
 /* Wireframe vocabulary, ported 1:1 so screens match the approved mocks. */
@@ -46,24 +110,12 @@ body {
 .placeholder-text {
   color: color-mix(in srgb, var(--color-ink) 40%, transparent);
 }
-.pill {
-  font-size: 9px;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-  padding: 3px 7px;
-  border: 1px solid color-mix(in srgb, var(--color-ink) 35%, transparent);
-  display: inline-block;
-  white-space: nowrap;
-}
-.pill-red {
-  color: var(--color-accent);
-  border-color: var(--color-accent);
-}
 .btn {
   font-size: 10px;
   letter-spacing: 0.14em;
   text-transform: uppercase;
   padding: 8px 14px;
+  border-radius: 999px;
   background: var(--color-accent);
   color: var(--color-ink);
   transition: background 0.15s ease;
@@ -80,6 +132,7 @@ body {
   letter-spacing: 0.14em;
   text-transform: uppercase;
   padding: 8px 14px;
+  border-radius: 999px;
   border: 1px solid var(--color-ink);
   color: var(--color-ink);
   transition: opacity 0.15s ease;
@@ -100,19 +153,24 @@ body {
   font-size: 11px;
   letter-spacing: 0.1em;
   text-transform: uppercase;
-  padding: 7px 0;
+  padding: 7px 10px;
+  margin: 0 -10px;
+  border-radius: 9px;
   color: color-mix(in srgb, var(--color-ink) 65%, transparent);
 }
 .nav-item:hover {
   color: var(--color-ink);
+  background: color-mix(in srgb, var(--color-ink) 5%, transparent);
 }
 .nav-item.active {
   color: var(--color-accent);
   font-weight: 600;
+  background: color-mix(in srgb, var(--color-ink) 6%, transparent);
 }
 .input {
-  background: transparent;
-  border: 1px solid color-mix(in srgb, var(--color-ink) 35%, transparent);
+  background: color-mix(in srgb, var(--color-ink) 4%, transparent);
+  border: 1px solid color-mix(in srgb, var(--color-ink) 18%, transparent);
+  border-radius: 10px;
   padding: 8px 10px;
   font-size: 13px;
   color: var(--color-ink);

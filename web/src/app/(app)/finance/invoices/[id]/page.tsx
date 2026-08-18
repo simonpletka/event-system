@@ -158,7 +158,7 @@ export default async function InvoiceDetailPage({ params }: { params: Promise<{ 
             <div className="flex items-center gap-1.5">
               <span className="label mr-1">To pay</span>
               <span className="font-semibold text-base">{formatCurrency(invoice.total, invoice.currency)}</span>
-              <span className="pill !border-accent text-accent">{invoice.currency}</span>
+              <span className="tag tag-neutral">{invoice.currency}</span>
             </div>
           </div>
           <div className="placeholder-text text-[9px] mt-auto pt-2">

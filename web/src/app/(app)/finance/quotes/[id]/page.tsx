@@ -157,7 +157,7 @@ export default async function QuoteDetailPage({ params }: { params: Promise<{ id
             <div className="flex items-center gap-1.5">
               <span className="label mr-1">Total</span>
               <span className="font-semibold text-base">{formatCurrency(base + vat, quote.currency)}</span>
-              <span className="pill !border-accent text-accent">{quote.currency}</span>
+              <span className="tag tag-neutral">{quote.currency}</span>
             </div>
           </div>
           <div className="placeholder-text text-[9px] mt-auto pt-2">

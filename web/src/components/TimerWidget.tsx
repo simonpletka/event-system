@@ -23,12 +23,12 @@ export function TimerWidget({ running }: { running: { eventTitle: string; starte
 
   if (!running) {
     return (
-      <div>
-        <div className="heading-label mb-1.5">My tracker</div>
+      <div className="card px-3.5 py-3 flex flex-col gap-1">
+        <div className="heading-label">My tracker</div>
         <div className="text-sm placeholder-text">No timer running</div>
         <NextLink
           href="/time-tracker"
-          className="text-[9px] placeholder-text hover:text-ink underline underline-offset-2 mt-1 inline-block"
+          className="text-[9px] placeholder-text hover:text-ink underline underline-offset-2 mt-0.5 inline-block"
         >
           Start one →
         </NextLink>
@@ -39,13 +39,19 @@ export function TimerWidget({ running }: { running: { eventTitle: string; starte
   const elapsed = now - new Date(running.startedAt).getTime();
 
   return (
-    <div>
-      <div className="heading-label mb-1.5">My tracker</div>
-      <div className="text-base font-semibold tabular-nums">{formatElapsed(elapsed)}</div>
+    <div className="card px-3.5 py-3 flex flex-col gap-2">
+      <div className="heading-label">My tracker</div>
       <div className="label truncate">{running.eventTitle}</div>
-      <form action={stopTimerAction}>
-        <button type="submit" className="btno mt-2 text-[9px]">
-          Stop
+      <form action={stopTimerAction} className="flex items-center justify-between">
+        <div className="text-lg font-semibold tabular-nums tracking-tight">{formatElapsed(elapsed)}</div>
+        <button
+          type="submit"
+          title="Stop timer"
+          className="w-[27px] h-[27px] rounded-lg border border-ink/20 bg-ink/5 flex items-center justify-center hover:bg-ink/10 transition-colors"
+        >
+          <svg width="10" height="10" viewBox="0 0 24 24">
+            <rect x="3" y="3" width="18" height="18" rx="3" fill="currentColor" className="text-ink/85" />
+          </svg>
         </button>
       </form>
     </div>

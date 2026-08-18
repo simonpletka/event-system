@@ -215,7 +215,7 @@ function ConnectedRow({ label, note, connected }: { label: string; note: string;
     <div className="grid grid-cols-[1fr_.8fr_.7fr] gap-2.5 py-2 border-b border-ink/10 text-[13px] items-center">
       <div>{label}</div>
       <div className="placeholder-text text-[11px]">{note}</div>
-      <span className="pill">{connected ? "Active" : "Not connected"}</span>
+      <span className={`tag ${connected ? "tag-positive" : "tag-neutral"}`}>{connected ? "Active" : "Not connected"}</span>
     </div>
   );
 }

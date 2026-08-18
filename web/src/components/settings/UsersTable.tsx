@@ -87,7 +87,7 @@ function UserRow({
       <div>
         {user.name}
         {isSelf && <span className="label ml-1.5">you</span>}
-        {!user.active && <span className="pill pill-red ml-1.5">Inactive</span>}
+        {!user.active && <span className="tag tag-warning ml-1.5">Inactive</span>}
       </div>
       <div className="placeholder-text truncate">{user.email}</div>
       <div>{roleLabel}</div>

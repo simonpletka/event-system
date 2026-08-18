@@ -194,7 +194,7 @@ function TimelineList({ items }: { items: TimelineItem[] }) {
           <div className="flex flex-col gap-1.5">
             {g.items.map((item, i) => (
               <Link key={i} href={`/events/${item.eventId}`} className="flex items-center gap-2 text-[13px] hover:text-accent">
-                <span className="pill">{KIND_LABEL[item.kind]}</span>
+                <span className="tag tag-neutral">{KIND_LABEL[item.kind]}</span>
                 <span>{item.label}</span>
                 <span className="placeholder-text text-[11px]">· {item.eventTitle}</span>
               </Link>

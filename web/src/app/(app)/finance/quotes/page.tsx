@@ -99,7 +99,7 @@ export default async function QuotesPage({
           <div className="placeholder-text group-hover:!text-accent">{formatDate(q.validUntil)}</div>
           <div className="group-hover:text-accent">
             {formatCurrency(q.total, q.currency)}
-            {q.currency !== "CZK" && <span className="pill ml-1 !border-accent text-accent">{q.currency}</span>}
+            {q.currency !== "CZK" && <span className="tag tag-neutral ml-1">{q.currency}</span>}
           </div>
           <div>
             <QuoteStatusPill status={q.status} />

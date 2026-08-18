@@ -158,7 +158,7 @@ export function LineItemsFields({
         <div className="flex items-center gap-1.5">
           <span className="heading-label mr-1">To pay</span>
           <span className="font-semibold text-base">{formatCurrency(base + vat, currency)}</span>
-          <span className="pill !border-accent text-accent">{currency}</span>
+          <span className="tag tag-neutral">{currency}</span>
         </div>
       </div>
     </div>
