@@ -2,7 +2,10 @@ import { mkdir, writeFile, readFile, unlink } from "fs/promises";
 import path from "path";
 import { randomUUID } from "crypto";
 
-const UPLOAD_ROOT = path.join(process.cwd(), "uploads", "receipts");
+// Defaults to `<cwd>/uploads` for local dev; set UPLOAD_DIR to point uploads
+// at a mounted persistent volume in a stateless-filesystem deployment.
+const DATA_ROOT = process.env.UPLOAD_DIR ?? process.cwd();
+const UPLOAD_ROOT = path.join(DATA_ROOT, "uploads", "receipts");
 const ALLOWED_TYPES: Record<string, string> = {
   "image/jpeg": "jpg",
   "image/png": "png",
@@ -45,7 +48,7 @@ export async function deleteReceipt(filename: string) {
   await unlink(path.join(UPLOAD_ROOT, safe)).catch(() => {});
 }
 
-const LOGO_ROOT = path.join(process.cwd(), "uploads", "logos");
+const LOGO_ROOT = path.join(DATA_ROOT, "uploads", "logos");
 const LOGO_TYPES: Record<string, string> = {
   "image/png": "png",
   "image/jpeg": "jpg",
