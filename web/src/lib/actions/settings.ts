@@ -6,6 +6,7 @@ import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
 import { requireUser, canManageUsers, canManageCompanySettings } from "@/lib/authz";
 import { saveLogo, deleteLogo } from "@/lib/uploads";
+import { getLocale, getDictionary } from "@/lib/i18n";
 import type { Role, EventsAccess, FinanceAccess, ExpensesAccess, SettingsAccess } from "@/generated/prisma/enums";
 
 export type SettingsFormState = { error?: string; success?: string };
@@ -210,12 +211,10 @@ export async function updateCompanySettingsAction(
   const isVatPayer = formData.get("isVatPayer") === "on";
   const bankAccount = String(formData.get("bankAccount") ?? "").trim();
   const defaultDueDays = Math.max(1, Number(formData.get("defaultDueDays")) || 14);
-  const accentColor = String(formData.get("accentColor") ?? "#ec3013").trim();
   const removeLogo = formData.get("removeLogo") === "on";
   const logoFile = formData.get("logo");
 
   if (!name || !ico) return { error: "Company name and IČO are required." };
-  if (!HEX_COLOR.test(accentColor)) return { error: "Accent colour must be a hex value like #ec3013." };
 
   const existing = await prisma.companySettings.findUnique({ where: { id: "singleton" } });
 
@@ -237,10 +236,49 @@ export async function updateCompanySettingsAction(
 
   await prisma.companySettings.upsert({
     where: { id: "singleton" },
-    create: { id: "singleton", name, address, ico, dic, isVatPayer, bankAccount, defaultDueDays, accentColor, logoPath },
-    update: { name, address, ico, dic, isVatPayer, bankAccount, defaultDueDays, accentColor, logoPath },
+    create: { id: "singleton", name, address, ico, dic, isVatPayer, bankAccount, defaultDueDays, logoPath },
+    update: { name, address, ico, dic, isVatPayer, bankAccount, defaultDueDays, logoPath },
   });
 
   revalidatePath("/settings");
-  return { success: "Company settings saved." };
+  return { success: getDictionary(await getLocale()).settings.company.savedMsg };
+}
+
+export async function updateAppSettingsAction(_prev: SettingsFormState, formData: FormData): Promise<SettingsFormState> {
+  const user = await requireUser();
+  if (!canManageCompanySettings(user)) return { error: "You don't have permission to edit app settings." };
+
+  const colors = {
+    bgColor: String(formData.get("bgColor") ?? "").trim(),
+    surfaceColor: String(formData.get("surfaceColor") ?? "").trim(),
+    inkColor: String(formData.get("inkColor") ?? "").trim(),
+    accentColor: String(formData.get("accentColor") ?? "").trim(),
+    positiveColor: String(formData.get("positiveColor") ?? "").trim(),
+    warningColor: String(formData.get("warningColor") ?? "").trim(),
+  };
+  for (const value of Object.values(colors)) {
+    if (!HEX_COLOR.test(value)) return { error: "Every colour must be a hex value like #ec3013." };
+  }
+
+  const locale = formData.get("locale") === "cs" ? "cs" : "en";
+
+  await prisma.companySettings.upsert({
+    where: { id: "singleton" },
+    create: {
+      id: "singleton",
+      name: "",
+      address: "",
+      ico: "",
+      dic: "",
+      ...colors,
+      locale,
+    },
+    update: { ...colors, locale },
+  });
+
+  // Colors/locale are read by the root layout on every route, not just
+  // /settings, so the whole shell needs revalidating for the change to
+  // show up immediately rather than on the next unrelated navigation.
+  revalidatePath("/", "layout");
+  return { success: getDictionary(locale).settings.appSettings.savedMsg };
 }

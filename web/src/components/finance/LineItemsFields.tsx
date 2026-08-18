@@ -2,10 +2,13 @@
 
 import { Fragment } from "react";
 import { formatCurrency, type CurrencyCode } from "@/lib/format";
+import type { Dictionary } from "@/lib/dictionary";
 
 export type LineItem = { description: string; quantity: number; unitPrice: number; vatRate: number; category: string };
 
 export const BLANK_ITEM: LineItem = { description: "", quantity: 1, unitPrice: 0, vatRate: 21, category: "" };
+
+type T = Dictionary["finance"]["lineItems"];
 
 /**
  * Controlled by the parent form (QuoteForm/InvoiceForm) rather than owning
@@ -18,11 +21,13 @@ export function LineItemsFields({
   onChange,
   currency = "CZK",
   categories,
+  t,
 }: {
   items: LineItem[];
   onChange: (items: LineItem[]) => void;
   currency?: CurrencyCode;
   categories: string[];
+  t: T;
 }) {
   const base = items.reduce((s, i) => s + i.quantity * i.unitPrice, 0);
   const vat = items.reduce((s, i) => s + i.quantity * i.unitPrice * (i.vatRate / 100), 0);
@@ -60,11 +65,11 @@ export function LineItemsFields({
       */}
       <div className="grid grid-cols-[24px_1fr_110px_70px_110px_70px_auto] gap-2 items-center">
         <span></span>
-        <span className="heading-label">Description</span>
-        <span className="heading-label">Category</span>
-        <span className="heading-label">Qty</span>
-        <span className="heading-label">Unit price</span>
-        <span className="heading-label">VAT %</span>
+        <span className="heading-label">{t.colDescription}</span>
+        <span className="heading-label">{t.colCategory}</span>
+        <span className="heading-label">{t.colQty}</span>
+        <span className="heading-label">{t.colUnitPrice}</span>
+        <span className="heading-label">{t.colVat}</span>
         <span></span>
 
         {items.map((item, i) => (
@@ -75,7 +80,7 @@ export function LineItemsFields({
                 onClick={() => move(i, -1)}
                 disabled={i === 0}
                 className="text-[9px] leading-none disabled:opacity-20"
-                title="Move up"
+                title={t.moveUp}
               >
                 ▲
               </button>
@@ -84,7 +89,7 @@ export function LineItemsFields({
                 onClick={() => move(i, 1)}
                 disabled={i === items.length - 1}
                 className="text-[9px] leading-none disabled:opacity-20"
-                title="Move down"
+                title={t.moveDown}
               >
                 ▼
               </button>
@@ -94,7 +99,7 @@ export function LineItemsFields({
               value={item.description}
               onChange={(e) => update(i, { description: e.target.value })}
               className="input"
-              placeholder="Description"
+              placeholder={t.descriptionPlaceholder}
             />
             <input
               name="itemCategory"
@@ -137,26 +142,26 @@ export function LineItemsFields({
               onClick={() => onChange(items.filter((_, idx) => idx !== i))}
               className="btno px-2 py-2 text-[9px]"
             >
-              Remove
+              {t.removeBtn}
             </button>
           </Fragment>
         ))}
       </div>
       <button type="button" onClick={() => onChange([...items, { ...BLANK_ITEM }])} className="btno mt-2 text-[9px]">
-        Add item
+        {t.addItem}
       </button>
 
       <div className="flex justify-end items-center gap-6 mt-3 text-[13px]">
         <div>
-          <span className="heading-label mr-2">Base</span>
+          <span className="heading-label mr-2">{t.base}</span>
           {formatCurrency(base, currency)}
         </div>
         <div>
-          <span className="heading-label mr-2">VAT</span>
+          <span className="heading-label mr-2">{t.vat}</span>
           {formatCurrency(vat, currency)}
         </div>
         <div className="flex items-center gap-1.5">
-          <span className="heading-label mr-1">To pay</span>
+          <span className="heading-label mr-1">{t.toPay}</span>
           <span className="font-semibold text-base">{formatCurrency(base + vat, currency)}</span>
           <span className="tag tag-neutral">{currency}</span>
         </div>

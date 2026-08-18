@@ -10,12 +10,14 @@ export function AddressAutocompleteInput({
   onChange,
   placeholder,
   className = "input",
+  searchingLabel = "Searching…",
 }: {
   name?: string;
   value: string;
   onChange: (value: string) => void;
   placeholder?: string;
   className?: string;
+  searchingLabel?: string;
 }) {
   const [suggestions, setSuggestions] = useState<AddressSuggestion[]>([]);
   const [open, setOpen] = useState(false);
@@ -66,7 +68,7 @@ export function AddressAutocompleteInput({
       />
       {open && (loading || suggestions.length > 0) && (
         <div className="absolute z-20 top-full left-0 right-0 mt-1 bg-surface border border-ink/30 max-h-52 overflow-y-auto">
-          {loading && <div className="px-2.5 py-1.5 text-[11px] placeholder-text">Searching…</div>}
+          {loading && <div className="px-2.5 py-1.5 text-[11px] placeholder-text">{searchingLabel}</div>}
           {!loading &&
             suggestions.map((s, i) => (
               <button

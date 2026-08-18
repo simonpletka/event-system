@@ -3,10 +3,11 @@
 import { useActionState, useRef, useEffect } from "react";
 import { createExpenseAction, updateExpenseAction, type FinanceFormState } from "@/lib/actions/finance";
 import { ReceiptInput } from "./ReceiptInput";
-import { EXPENSE_CATEGORIES, EXPENSE_CATEGORY_LABEL } from "@/lib/expense-categories";
+import { EXPENSE_CATEGORIES } from "@/lib/expense-categories";
 import { EventPicker, type PickableEvent } from "@/components/EventPicker";
 import { CancelLink } from "@/components/ui/CancelLink";
 import type { ExpenseCategory } from "@/generated/prisma/enums";
+import { getDictionary, type Locale } from "@/lib/dictionary";
 
 const initialState: FinanceFormState = {};
 
@@ -26,16 +27,20 @@ export function ExpenseForm({
   payers,
   currentUserId,
   defaults,
+  locale,
 }: {
   events: PickableEvent[];
   payers: { id: string; name: string }[];
   currentUserId: string;
   defaults?: ExpenseFormDefaults;
+  locale: Locale;
 }) {
+  const t = getDictionary(locale);
   const isEdit = Boolean(defaults);
   const action = isEdit ? updateExpenseAction : createExpenseAction;
   const [state, formAction, pending] = useActionState(action, initialState);
   const formRef = useRef<HTMLFormElement>(null);
+  const tf = t.finance.expenses.form;
 
   useEffect(() => {
     if (state.success) formRef.current?.reset();
@@ -45,14 +50,14 @@ export function ExpenseForm({
     <form ref={formRef} action={formAction} className="max-w-2xl flex flex-col gap-4">
       {isEdit && <input type="hidden" name="id" value={defaults!.id} />}
       <div className="grid grid-cols-2 gap-4">
-        <ReceiptInput existingReceiptPath={defaults?.receiptPath} />
+        <ReceiptInput existingReceiptPath={defaults?.receiptPath} t={t.finance.expenses.receipt} />
         <div className="flex flex-col gap-3">
           <label className="flex flex-col gap-1.5">
-            <span className="heading-label">Amount (CZK)</span>
+            <span className="heading-label">{tf.amountLabel}</span>
             <input name="amount" type="number" min={1} required defaultValue={defaults?.amount} className="input" />
           </label>
           <label className="flex flex-col gap-1.5">
-            <span className="heading-label">Date of payment</span>
+            <span className="heading-label">{tf.dateOfPaymentLabel}</span>
             <input
               name="date"
               type="date"
@@ -62,61 +67,62 @@ export function ExpenseForm({
             />
           </label>
           <label className="flex flex-col gap-1.5">
-            <span className="heading-label">Paid by</span>
+            <span className="heading-label">{tf.paidByLabel}</span>
             <select name="paidById" defaultValue={defaults?.paidById ?? currentUserId} className="input">
               {payers.map((p) => (
                 <option key={p.id} value={p.id}>
                   {p.name}
-                  {p.id === currentUserId ? " (me)" : ""}
+                  {p.id === currentUserId ? tf.meSuffix : ""}
                 </option>
               ))}
             </select>
-            <span className="text-[9px] placeholder-text">Only members flagged as card holders are offered.</span>
+            <span className="text-[9px] placeholder-text">{tf.cardHoldersHint}</span>
           </label>
         </div>
       </div>
 
       <label className="flex flex-col gap-1.5">
-        <span className="heading-label">Event</span>
+        <span className="heading-label">{tf.eventLabel}</span>
         <EventPicker
           name="eventId"
           initialEvents={events}
           defaultValue={defaults?.eventId ?? ""}
-          extraOption={{ value: "", label: "Company overhead — not tied to an event" }}
+          extraOption={{ value: "", label: tf.companyOverheadOption }}
+          t={t.events.picker}
         />
       </label>
 
       <div className="grid grid-cols-2 gap-4">
         <label className="flex flex-col gap-1.5">
-          <span className="heading-label">Category</span>
+          <span className="heading-label">{tf.categoryLabel}</span>
           <select name="category" defaultValue={defaults?.category ?? "GENERIC"} className="input">
             {EXPENSE_CATEGORIES.map((c) => (
               <option key={c} value={c}>
-                {EXPENSE_CATEGORY_LABEL[c]}
+                {t.expenseCategories[c]}
               </option>
             ))}
           </select>
         </label>
         <label className="flex flex-col gap-1.5">
-          <span className="heading-label">Note</span>
-          <input name="note" placeholder="e.g. two-way radios rental" defaultValue={defaults?.note} className="input" />
-          <span className="text-[9px] placeholder-text">Needs approval by a manager — not enforced yet, expenses count immediately.</span>
+          <span className="heading-label">{tf.noteLabel}</span>
+          <input name="note" placeholder={tf.notePlaceholder} defaultValue={defaults?.note} className="input" />
+          <span className="text-[9px] placeholder-text">{tf.approvalHint}</span>
         </label>
       </div>
 
       {state.error && <p className="text-sm text-accent">{state.error}</p>}
-      {state.success && <p className="text-sm">Expense saved.</p>}
+      {state.success && <p className="text-sm">{tf.savedMsg}</p>}
 
       <div className="flex gap-2 pt-3 border-t-2 border-ink">
         <button type="submit" disabled={pending} className="btn">
-          {isEdit ? "Save changes" : "Save expense"}
+          {isEdit ? tf.saveChanges : tf.saveExpense}
         </button>
         {!isEdit && (
           <button type="submit" name="again" value="1" disabled={pending} className="btno">
-            Save and add another
+            {tf.saveAndAddAnother}
           </button>
         )}
-        <CancelLink href="/finance/expenses" />
+        <CancelLink href="/finance/expenses" label={t.common.cancel} />
       </div>
     </form>
   );

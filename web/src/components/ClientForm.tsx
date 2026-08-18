@@ -5,6 +5,7 @@ import { createClientAction, updateClientAction, type ClientFormState } from "@/
 import { CancelLink } from "@/components/ui/CancelLink";
 import { StructuredAddressInput, type StructuredAddress } from "@/components/ui/StructuredAddressInput";
 import { useAresLookup } from "@/hooks/useAresLookup";
+import { getDictionary, type Locale } from "@/lib/dictionary";
 
 const initialState: ClientFormState = {};
 
@@ -21,7 +22,8 @@ export type ClientFormDefaults = {
   invoicingEmail: string;
 };
 
-export function ClientForm({ defaults }: { defaults: ClientFormDefaults }) {
+export function ClientForm({ defaults, locale }: { defaults: ClientFormDefaults; locale: Locale }) {
+  const t = getDictionary(locale);
   const isEdit = Boolean(defaults.id);
   const action = isEdit ? updateClientAction : createClientAction;
   const [state, formAction, pending] = useActionState(action, initialState);
@@ -35,6 +37,7 @@ export function ClientForm({ defaults }: { defaults: ClientFormDefaults }) {
     state: defaults.state,
   });
   const ares = useAresLookup();
+  const tf = t.clients.form;
 
   async function loadFromAres() {
     const company = await ares.lookup(ico);
@@ -53,33 +56,33 @@ export function ClientForm({ defaults }: { defaults: ClientFormDefaults }) {
       {isEdit && <input type="hidden" name="id" value={defaults.id} />}
 
       <label className="flex flex-col gap-1.5">
-        <span className="heading-label">IČO</span>
+        <span className="heading-label">{tf.icoLabel}</span>
         <div className="flex gap-1.5">
           <input name="ico" value={ico} onChange={(e) => setIco(e.target.value)} className="input flex-1" />
           <button type="button" onClick={loadFromAres} disabled={ares.loading} className="btno whitespace-nowrap">
-            {ares.loading ? "Loading…" : "Load from ARES"}
+            {ares.loading ? tf.loadingAres : tf.loadFromAres}
           </button>
         </div>
         {ares.error && <span className="text-[11px] text-warning">{ares.error}</span>}
       </label>
       <label className="flex flex-col gap-1.5">
-        <span className="heading-label">Company name</span>
+        <span className="heading-label">{tf.companyNameLabel}</span>
         <input name="name" value={name} onChange={(e) => setName(e.target.value)} required autoFocus className="input" />
       </label>
       <label className="flex flex-col gap-1.5">
-        <span className="heading-label">Address</span>
-        <StructuredAddressInput value={address} onChange={setAddress} />
+        <span className="heading-label">{tf.addressLabel}</span>
+        <StructuredAddressInput value={address} onChange={setAddress} t={t.clients.address} />
       </label>
       <label className="flex flex-col gap-1.5">
-        <span className="heading-label">DIČ</span>
+        <span className="heading-label">{tf.dicLabel}</span>
         <input name="dic" value={dic} onChange={(e) => setDic(e.target.value)} className="input" />
       </label>
       <label className="flex flex-col gap-1.5">
-        <span className="heading-label">Invoicing email</span>
+        <span className="heading-label">{tf.invoicingEmailLabel}</span>
         <input name="invoicingEmail" type="email" defaultValue={defaults.invoicingEmail} className="input" />
       </label>
       <label className="flex flex-col gap-1.5">
-        <span className="heading-label">Note</span>
+        <span className="heading-label">{tf.noteLabel}</span>
         <textarea name="note" defaultValue={defaults.note} rows={3} className="input" />
       </label>
 
@@ -87,9 +90,9 @@ export function ClientForm({ defaults }: { defaults: ClientFormDefaults }) {
 
       <div className="flex gap-2">
         <button type="submit" disabled={pending} className="btn">
-          {pending ? "Saving…" : isEdit ? "Save changes" : "Create client"}
+          {pending ? tf.saving : isEdit ? tf.saveChanges : tf.createClient}
         </button>
-        <CancelLink href={isEdit ? `/clients/${defaults.id}` : "/clients"} />
+        <CancelLink href={isEdit ? `/clients/${defaults.id}` : "/clients"} label={t.common.cancel} />
       </div>
     </form>
   );

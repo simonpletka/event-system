@@ -3,10 +3,13 @@ import { requireUser, eventWhereForUser, canPickOtherPayer, canEditExpense } fro
 import { prisma } from "@/lib/prisma";
 import { ExpenseForm } from "@/components/finance/ExpenseForm";
 import { BackLink } from "@/components/BackLink";
+import { getLocale, getDictionary } from "@/lib/i18n";
 
 export default async function EditExpensePage({ params }: { params: Promise<{ id: string }> }) {
   const user = await requireUser();
   const { id } = await params;
+  const locale = await getLocale();
+  const t = getDictionary(locale);
 
   const expense = await prisma.expense.findUnique({ where: { id }, include: { paidBy: true } });
   if (!expense) notFound();
@@ -14,8 +17,8 @@ export default async function EditExpensePage({ params }: { params: Promise<{ id
   if (!canEditExpense(user, expense.paidById)) {
     return (
       <div>
-        <h1 className="text-xl font-semibold border-b-2 border-ink pb-2 mb-4">Edit expense</h1>
-        <p className="text-sm placeholder-text">You don&apos;t have permission to edit this expense.</p>
+        <h1 className="text-xl font-semibold border-b-2 border-ink pb-2 mb-4">{t.finance.expenses.editExpense}</h1>
+        <p className="text-sm placeholder-text">{t.finance.expenses.noPermEdit}</p>
       </div>
     );
   }
@@ -39,8 +42,8 @@ export default async function EditExpensePage({ params }: { params: Promise<{ id
 
   return (
     <div>
-      <BackLink href="/finance/expenses">Expenses</BackLink>
-      <h1 className="text-xl font-semibold border-b-2 border-ink pb-2 mb-4">Edit expense</h1>
+      <BackLink href="/finance/expenses">{t.finance.expenses.backLink}</BackLink>
+      <h1 className="text-xl font-semibold border-b-2 border-ink pb-2 mb-4">{t.finance.expenses.editExpense}</h1>
       <ExpenseForm
         events={events}
         payers={payers}
@@ -55,6 +58,7 @@ export default async function EditExpensePage({ params }: { params: Promise<{ id
           note: expense.note,
           receiptPath: expense.receiptPath,
         }}
+        locale={locale}
       />
     </div>
   );

@@ -7,11 +7,13 @@ export function PasswordInput({
   name,
   autoComplete,
   required,
+  holdToShowLabel = "Hold to show password",
 }: {
   id: string;
   name: string;
   autoComplete?: string;
   required?: boolean;
+  holdToShowLabel?: string;
 }) {
   const [visible, setVisible] = useState(false);
 
@@ -30,8 +32,8 @@ export function PasswordInput({
       />
       <button
         type="button"
-        aria-label="Hold to show password"
-        title="Hold to show password"
+        aria-label={holdToShowLabel}
+        title={holdToShowLabel}
         onMouseDown={reveal}
         onMouseUp={hide}
         onMouseLeave={hide}

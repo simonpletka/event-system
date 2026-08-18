@@ -8,6 +8,7 @@ import { LineItemsFields, BLANK_ITEM, type LineItem } from "./LineItemsFields";
 import { EventPicker } from "@/components/EventPicker";
 import { CancelLink } from "@/components/ui/CancelLink";
 import type { QuoteStatus, Currency } from "@/generated/prisma/enums";
+import { getDictionary, type Locale } from "@/lib/dictionary";
 
 const initialState: FinanceFormState = {};
 
@@ -24,6 +25,7 @@ export function QuoteForm({
   categories,
   defaults,
   initialEventId,
+  locale,
 }: {
   events: { id: string; title: string; companyName: string; startDate: Date }[];
   categories: string[];
@@ -38,10 +40,14 @@ export function QuoteForm({
   };
   /** Pre-selects the event when arriving via an event's own "New quote" shortcut. */
   initialEventId?: string;
+  locale: Locale;
 }) {
+  const t = getDictionary(locale);
   const isEdit = Boolean(defaults);
   const action = isEdit ? updateQuoteAction : createQuoteAction;
   const [state, formAction, pending] = useActionState(action, initialState);
+  const tf = t.finance.quoteForm;
+  const tl = t.finance.lineItems;
 
   const [eventId, setEventId] = useState(defaults?.eventId ?? initialEventId ?? "");
   const [currency, setCurrency] = useState<Currency>(defaults?.currency ?? "CZK");
@@ -66,31 +72,31 @@ export function QuoteForm({
 
       {!isEdit && (
         <label className="flex flex-col gap-1.5">
-          <span className="heading-label">Event</span>
-          <EventPicker name="eventId" initialEvents={events} defaultValue={initialEventId} required onSelect={setEventId} />
+          <span className="heading-label">{tf.eventLabel}</span>
+          <EventPicker name="eventId" initialEvents={events} defaultValue={initialEventId} required onSelect={setEventId} t={t.events.picker} />
         </label>
       )}
 
       <div className="grid grid-cols-3 gap-3">
         <label className="flex flex-col gap-1.5">
-          <span className="heading-label">Status</span>
+          <span className="heading-label">{tf.statusLabel}</span>
           <select name="status" defaultValue={defaults?.status ?? "DRAFT"} className="input">
-            <option value="DRAFT">Draft</option>
-            <option value="SENT">Sent</option>
-            <option value="ACCEPTED">Accepted</option>
-            <option value="DECLINED">Rejected</option>
+            <option value="DRAFT">{tf.statusDraft}</option>
+            <option value="SENT">{tf.statusSent}</option>
+            <option value="ACCEPTED">{tf.statusAccepted}</option>
+            <option value="DECLINED">{tf.statusRejected}</option>
           </select>
         </label>
         <label className="flex flex-col gap-1.5">
-          <span className="heading-label">Currency</span>
+          <span className="heading-label">{tf.currencyLabel}</span>
           <select name="currency" value={currency} onChange={(e) => setCurrency(e.target.value as Currency)} className="input">
-            <option value="CZK">CZK — Czech koruna</option>
-            <option value="EUR">EUR — Euro</option>
-            <option value="USD">USD — US dollar</option>
+            <option value="CZK">{tf.czk}</option>
+            <option value="EUR">{tf.eur}</option>
+            <option value="USD">{tf.usd}</option>
           </select>
         </label>
         <label className="flex flex-col gap-1.5">
-          <span className="heading-label">Valid until</span>
+          <span className="heading-label">{tf.validUntilLabel}</span>
           <input
             name="validUntil"
             type="date"
@@ -101,14 +107,13 @@ export function QuoteForm({
           />
           {conflict && (
             <span className="text-[9px] text-warning">
-              Event starts {formatDate(conflict, { day: "numeric", month: "short", year: "numeric" })} — too close to
-              this validity date.
+              {tf.eventTooCloseWarning(formatDate(conflict, { day: "numeric", month: "short", year: "numeric" }))}
             </span>
           )}
         </label>
       </div>
 
-      <LineItemsFields items={items} onChange={setItems} currency={currency} categories={categories} />
+      <LineItemsFields items={items} onChange={setItems} currency={currency} categories={categories} t={tl} />
 
       <label className="flex items-center gap-1.5 text-[11px]">
         <input
@@ -117,16 +122,16 @@ export function QuoteForm({
           checked={hideItemPrices}
           onChange={(e) => setHideItemPrices(e.target.checked)}
         />
-        Hide individual item prices on the PDF — show only each category&apos;s subtotal and the grand total
+        {tf.hideItemPricesLabel}
       </label>
 
       {state.error && <p className="text-sm text-warning">{state.error}</p>}
 
       <div className="flex gap-2">
         <button type="submit" disabled={pending} className="btn">
-          {pending ? "Saving…" : isEdit ? "Save changes" : "Create quote"}
+          {pending ? tf.saving : isEdit ? tf.saveChanges : tf.createQuote}
         </button>
-        <CancelLink href="/finance/quotes" />
+        <CancelLink href="/finance/quotes" label={t.common.cancel} />
       </div>
     </form>
   );

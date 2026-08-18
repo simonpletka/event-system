@@ -2,12 +2,14 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { getDictionary, type Locale } from "@/lib/dictionary";
 
-export function TimeTrackerTabs() {
+export function TimeTrackerTabs({ locale }: { locale: Locale }) {
   const pathname = usePathname();
+  const t = getDictionary(locale).timeTracker;
   const tabs = [
-    { href: "/time-tracker/tracking", label: "Tracking" },
-    { href: "/time-tracker/overview", label: "Overview" },
+    { href: "/time-tracker/tracking", label: t.tabTracking },
+    { href: "/time-tracker/overview", label: t.tabOverview },
   ];
 
   return (

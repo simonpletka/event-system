@@ -6,10 +6,12 @@ export function Modal({
   title,
   onClose,
   children,
+  closeLabel = "Close",
 }: {
   title: string;
   onClose: () => void;
   children: React.ReactNode;
+  closeLabel?: string;
 }) {
   useEffect(() => {
     function onKeyDown(e: KeyboardEvent) {
@@ -34,7 +36,7 @@ export function Modal({
       >
         <div className="flex items-center justify-between border-b border-ink/20 pb-2 mb-3.5">
           <div className="text-sm font-semibold">{title}</div>
-          <button type="button" onClick={onClose} aria-label="Close" className="btno px-2 py-1 text-[10px]">
+          <button type="button" onClick={onClose} aria-label={closeLabel} className="btno px-2 py-1 text-[10px]">
             ✕
           </button>
         </div>

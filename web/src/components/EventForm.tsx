@@ -8,16 +8,9 @@ import { AddressAutocompleteInput } from "@/components/ui/AddressAutocompleteInp
 import { ClientPicker, type PickableClient } from "@/components/ClientPicker";
 import { useAresLookup } from "@/hooks/useAresLookup";
 import type { EventStatus } from "@/generated/prisma/enums";
+import { getDictionary, type Locale } from "@/lib/dictionary";
 
-const STATUS_OPTIONS: { value: EventStatus; label: string }[] = [
-  { value: "INQUIRY", label: "Inquiry" },
-  { value: "QUOTE_SENT", label: "Quote sent" },
-  { value: "CONFIRMED", label: "Confirmed" },
-  { value: "IN_PROGRESS", label: "In progress" },
-  { value: "TO_INVOICE", label: "To invoice" },
-  { value: "CLOSED", label: "Closed" },
-  { value: "CANCELLED", label: "Cancelled" },
-];
+const STATUS_KEYS: EventStatus[] = ["INQUIRY", "QUOTE_SENT", "CONFIRMED", "IN_PROGRESS", "TO_INVOICE", "CLOSED", "CANCELLED"];
 
 type VenueRow = { name: string; address: string; note: string };
 type ContactRow = { name: string; phone: string; email: string };
@@ -43,7 +36,8 @@ export type EventFormDefaults = {
 
 const initialState: EventFormState = {};
 
-export function EventForm({ defaults, clients }: { defaults: EventFormDefaults; clients: PickableClient[] }) {
+export function EventForm({ defaults, clients, locale }: { defaults: EventFormDefaults; clients: PickableClient[]; locale: Locale }) {
+  const t = getDictionary(locale);
   const isEdit = Boolean(defaults.id);
   const action = isEdit ? updateEventAction : createEventAction;
   const [state, formAction, pending] = useActionState(action, initialState);
@@ -60,6 +54,8 @@ export function EventForm({ defaults, clients }: { defaults: EventFormDefaults; 
 
   const [startDate, setStartDate] = useState(toDateTimeLocal(defaults.startDate));
   const [endDate, setEndDate] = useState(toDateTimeLocal(defaults.endDate));
+
+  const tf = t.events.form;
 
   // Moving the start date always pulls the end date onto the same day (a
   // multi-day span has to be re-picked deliberately, not left stale). If
@@ -98,38 +94,38 @@ export function EventForm({ defaults, clients }: { defaults: EventFormDefaults; 
     <form action={formAction} className="max-w-2xl flex flex-col gap-5">
       {isEdit && <input type="hidden" name="id" value={defaults.id} />}
 
-      <Field label="Title">
+      <Field label={tf.titleLabel}>
         <input name="title" defaultValue={defaults.title} required className="input" />
       </Field>
 
-      <Field label="Brief / description">
+      <Field label={tf.briefLabel}>
         <textarea name="brief" defaultValue={defaults.brief} rows={3} className="input" />
       </Field>
 
       <div className="grid grid-cols-2 gap-3">
-        <Field label="Status">
+        <Field label={tf.statusLabel}>
           <select name="status" defaultValue={defaults.status} className="input">
-            {STATUS_OPTIONS.map((s) => (
-              <option key={s.value} value={s.value}>
-                {s.label}
+            {STATUS_KEYS.map((s) => (
+              <option key={s} value={s}>
+                {t.statusEvent[s]}
               </option>
             ))}
           </select>
         </Field>
-        <Field label="Quoted value (CZK)">
+        <Field label={tf.quotedValueLabel}>
           <input name="quotedValue" type="number" min={0} defaultValue={defaults.quotedValue} className="input" />
         </Field>
       </div>
 
-      <div className="heading-label">Dates</div>
+      <div className="heading-label">{tf.datesHeading}</div>
       <div className="grid grid-cols-2 gap-3">
-        <Field label="Build / prep">
+        <Field label={tf.buildPrepLabel}>
           <input name="buildDate" type="datetime-local" defaultValue={toDateTimeLocal(defaults.buildDate)} className="input" />
         </Field>
-        <Field label="Strike">
+        <Field label={tf.strikeLabel}>
           <input name="strikeDate" type="datetime-local" defaultValue={toDateTimeLocal(defaults.strikeDate)} className="input" />
         </Field>
-        <Field label="Event start">
+        <Field label={tf.eventStartLabel}>
           <input
             name="startDate"
             type="datetime-local"
@@ -139,7 +135,7 @@ export function EventForm({ defaults, clients }: { defaults: EventFormDefaults; 
             className="input"
           />
         </Field>
-        <Field label="Event end">
+        <Field label={tf.eventEndLabel}>
           <input
             name="endDate"
             type="datetime-local"
@@ -152,24 +148,24 @@ export function EventForm({ defaults, clients }: { defaults: EventFormDefaults; 
       </div>
 
       <div>
-        <div className="heading-label mb-1.5">Venues</div>
+        <div className="heading-label mb-1.5">{tf.venuesHeading}</div>
         <div className="flex flex-col gap-2">
           {venues.map((v, i) => (
             <div key={i} className="grid grid-cols-[1fr_1fr_1fr_auto] gap-2 items-start">
               <input
                 name="venueName"
-                placeholder="Name"
+                placeholder={tf.venueName}
                 defaultValue={v.name}
                 className="input"
               />
-              <input name="venueAddress" placeholder="Address" defaultValue={v.address} className="input" />
-              <input name="venueNote" placeholder="Note" defaultValue={v.note} className="input" />
+              <input name="venueAddress" placeholder={tf.venueAddress} defaultValue={v.address} className="input" />
+              <input name="venueNote" placeholder={tf.venueNote} defaultValue={v.note} className="input" />
               <button
                 type="button"
                 onClick={() => setVenues((vs) => vs.filter((_, idx) => idx !== i))}
                 className="btno px-2 py-2 text-[9px]"
               >
-                Remove
+                {tf.remove}
               </button>
             </div>
           ))}
@@ -179,15 +175,16 @@ export function EventForm({ defaults, clients }: { defaults: EventFormDefaults; 
           onClick={() => setVenues((vs) => [...vs, { name: "", address: "", note: "" }])}
           className="btno mt-2 text-[9px]"
         >
-          Add venue
+          {tf.addVenue}
         </button>
       </div>
 
-      <div className="heading-label">Client</div>
-      <Field label="Linked client (optional — powers the Clients section's event/revenue rollup)">
+      <div className="heading-label">{tf.clientHeading}</div>
+      <Field label={tf.linkedClientLabel}>
         <ClientPicker
           initialClients={clients}
           defaultValue={defaults.clientId ?? ""}
+          newClientOptionLabel={tf.newClientOption}
           onSelect={(client) => {
             if (!client) return;
             setCompanyName(client.name);
@@ -200,28 +197,26 @@ export function EventForm({ defaults, clients }: { defaults: EventFormDefaults; 
         />
       </Field>
       <div>
-        <div className="heading-label mb-1.5">Contact people</div>
-        <p className="text-[10px] placeholder-text mb-2">
-          Each one is automatically added to this client&apos;s contact list on save.
-        </p>
+        <div className="heading-label mb-1.5">{tf.contactPeopleHeading}</div>
+        <p className="text-[10px] placeholder-text mb-2">{tf.contactNote}</p>
         <div className="flex flex-col gap-2">
           {contacts.map((c, i) => (
             <div key={i} className="grid grid-cols-[1fr_1fr_1fr_auto] gap-2 items-start">
               <input
                 name="contactName"
-                placeholder="Name"
+                placeholder={tf.contactName}
                 defaultValue={c.name}
                 required
                 className="input"
               />
-              <input name="contactPhone" placeholder="Phone" defaultValue={c.phone} className="input" />
-              <input name="contactEmail" placeholder="Email" type="email" defaultValue={c.email} className="input" />
+              <input name="contactPhone" placeholder={tf.contactPhone} defaultValue={c.phone} className="input" />
+              <input name="contactEmail" placeholder={tf.contactEmail} type="email" defaultValue={c.email} className="input" />
               <button
                 type="button"
                 onClick={() => setContacts((cs) => cs.filter((_, idx) => idx !== i))}
                 className="btno px-2 py-2 text-[9px]"
               >
-                Remove
+                {tf.remove}
               </button>
             </div>
           ))}
@@ -231,12 +226,12 @@ export function EventForm({ defaults, clients }: { defaults: EventFormDefaults; 
           onClick={() => setContacts((cs) => [...cs, { name: "", phone: "", email: "" }])}
           className="btno mt-2 text-[9px]"
         >
-          Add contact
+          {tf.addContact}
         </button>
       </div>
 
       <div className="grid grid-cols-2 gap-3">
-        <Field label="IČO">
+        <Field label={tf.icoLabel}>
           <div className="flex gap-1.5">
             <input
               name="companyIco"
@@ -245,14 +240,14 @@ export function EventForm({ defaults, clients }: { defaults: EventFormDefaults; 
               className="input flex-1"
             />
             <button type="button" onClick={loadFromAres} disabled={ares.loading} className="btno text-[9px] whitespace-nowrap">
-              {ares.loading ? "Loading…" : "Load from ARES"}
+              {ares.loading ? tf.loadingAres : tf.loadFromAres}
             </button>
           </div>
         </Field>
-        <Field label="DIČ">
+        <Field label={tf.dicLabel}>
           <input name="companyDic" value={companyDic} onChange={(e) => setCompanyDic(e.target.value)} className="input" />
         </Field>
-        <Field label="Company name">
+        <Field label={tf.companyNameLabel}>
           <input
             name="companyName"
             value={companyName}
@@ -261,20 +256,20 @@ export function EventForm({ defaults, clients }: { defaults: EventFormDefaults; 
             className="input"
           />
         </Field>
-        <Field label="Company address">
-          <AddressAutocompleteInput name="companyAddress" value={companyAddress} onChange={setCompanyAddress} />
+        <Field label={tf.companyAddressLabel}>
+          <AddressAutocompleteInput name="companyAddress" value={companyAddress} onChange={setCompanyAddress} searchingLabel={t.addressInput.searching} />
         </Field>
       </div>
       {ares.error && <p className="text-[11px] text-warning -mt-3">{ares.error}</p>}
-      <p className="text-[10px] placeholder-text -mt-3">Enter the IČO and use &quot;Load from ARES&quot; to fill in the rest.</p>
+      <p className="text-[10px] placeholder-text -mt-3">{tf.icoHelper}</p>
 
       {state.error && <p className="text-sm text-warning">{state.error}</p>}
 
       <div className="flex gap-2">
         <button type="submit" disabled={pending} className="btn">
-          {pending ? "Saving…" : isEdit ? "Save changes" : "Create event"}
+          {pending ? tf.saving : isEdit ? tf.saveChanges : tf.createEvent}
         </button>
-        <CancelLink href={isEdit ? `/events/${defaults.id}` : "/events"} />
+        <CancelLink href={isEdit ? `/events/${defaults.id}` : "/events"} label={t.common.cancel} />
       </div>
     </form>
   );

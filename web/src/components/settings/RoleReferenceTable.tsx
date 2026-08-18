@@ -7,18 +7,10 @@ import {
   deleteCustomRoleAction,
   type SettingsFormState,
 } from "@/lib/actions/settings";
-import {
-  EVENTS_ACCESS_LABEL,
-  FINANCE_ACCESS_LABEL,
-  EXPENSES_ACCESS_LABEL,
-  SETTINGS_ACCESS_LABEL,
-  EVENTS_ACCESS_OPTIONS,
-  FINANCE_ACCESS_OPTIONS,
-  EXPENSES_ACCESS_OPTIONS,
-  SETTINGS_ACCESS_OPTIONS,
-} from "@/lib/access-levels";
+import { EVENTS_ACCESS_OPTIONS, FINANCE_ACCESS_OPTIONS, EXPENSES_ACCESS_OPTIONS, SETTINGS_ACCESS_OPTIONS } from "@/lib/access-levels";
 import { useConfirmDialog } from "@/components/ui/ConfirmDialogProvider";
 import type { EventsAccess, FinanceAccess, ExpensesAccess, SettingsAccess } from "@/generated/prisma/enums";
+import { getDictionary, type Dictionary, type Locale } from "@/lib/dictionary";
 
 export type CustomRoleRow = {
   id: string;
@@ -30,47 +22,58 @@ export type CustomRoleRow = {
   userCount: number;
 };
 
+type T = Dictionary["settings"]["roles"];
+type TAccess = Dictionary["accessLevels"];
+type TRoles = Dictionary["roles"];
+
 const initialState: SettingsFormState = {};
 
 const GRID = "grid grid-cols-[.9fr_1.1fr_1.1fr_1fr_1.2fr_auto] gap-2.5";
 
-const BUILT_IN_ROWS = [
-  { role: "Admin", events: "all, full", finance: "full", expenses: "full", settings: "users, roles, company, template" },
-  { role: "Accountant", events: "all, read", finance: "full", expenses: "full", settings: "company, invoice template" },
-  { role: "Producer", events: "own / assigned, edit", finance: "read on own events", expenses: "add on own events", settings: "none" },
-  { role: "Member", events: "assigned, read", finance: "none", expenses: "own expenses only", settings: "none" },
-];
-
 export function RoleReferenceTable({
   customRoles = [],
   canManage = false,
+  locale,
+  tAccess,
+  tRoles,
 }: {
   customRoles?: CustomRoleRow[];
   canManage?: boolean;
+  locale: Locale;
+  tAccess: TAccess;
+  tRoles: TRoles;
 }) {
   const [creating, setCreating] = useState(false);
+  const t = getDictionary(locale).settings.roles;
+
+  const builtInRows = [
+    { role: tRoles.ADMIN, events: t.builtIn.adminEvents, finance: t.builtIn.full, expenses: t.builtIn.full, settings: t.builtIn.adminSettings },
+    { role: tRoles.ACCOUNTANT, events: t.builtIn.accountantEvents, finance: t.builtIn.full, expenses: t.builtIn.full, settings: t.builtIn.accountantSettings },
+    { role: tRoles.PRODUCER, events: t.builtIn.producerEvents, finance: t.builtIn.producerFinance, expenses: t.builtIn.producerExpenses, settings: t.builtIn.none },
+    { role: tRoles.MEMBER, events: t.builtIn.memberEvents, finance: t.builtIn.none, expenses: t.builtIn.memberExpenses, settings: t.builtIn.none },
+  ];
 
   return (
     <div className="card px-3.5 py-3.5">
       <div className="flex items-center justify-between mb-2">
-        <div className="heading-label">What each role can reach</div>
+        <div className="heading-label">{t.whatEachRoleCanReach}</div>
         {canManage && !creating && (
           <button type="button" onClick={() => setCreating(true)} className="btno text-[9px]">
-            + New role
+            {t.newRoleBtn}
           </button>
         )}
       </div>
 
       <div className={`${GRID} border-b border-ink/14 pb-1.5`}>
-        <span className="heading-label">Role</span>
-        <span className="heading-label">Events</span>
-        <span className="heading-label">Quotes &amp; invoices</span>
-        <span className="heading-label">Expenses</span>
-        <span className="heading-label">Settings</span>
+        <span className="heading-label">{t.colRole}</span>
+        <span className="heading-label">{t.colEvents}</span>
+        <span className="heading-label">{t.colQuotesInvoices}</span>
+        <span className="heading-label">{t.colExpenses}</span>
+        <span className="heading-label">{t.colSettings}</span>
         <span className="heading-label"></span>
       </div>
 
-      {BUILT_IN_ROWS.map((r) => (
+      {builtInRows.map((r) => (
         <div key={r.role} className={`${GRID} py-2.5 border-b border-ink/8 text-[13px]`}>
           <div className="font-medium">{r.role}</div>
           <div className="placeholder-text">{r.events}</div>
@@ -83,53 +86,53 @@ export function RoleReferenceTable({
 
       {(customRoles.length > 0 || creating) && (
         <div className="pt-2.5 pb-1">
-          <div className="heading-label">Custom roles</div>
+          <div className="heading-label">{t.customRolesHeading}</div>
         </div>
       )}
 
       {customRoles.map((role) => (
-        <RoleRow key={role.id} role={role} canManage={canManage} />
+        <RoleRow key={role.id} role={role} canManage={canManage} t={t} tAccess={tAccess} />
       ))}
 
-      {creating && <RoleForm onDone={() => setCreating(false)} />}
+      {creating && <RoleForm onDone={() => setCreating(false)} t={t} tAccess={tAccess} />}
     </div>
   );
 }
 
-function RoleRow({ role, canManage }: { role: CustomRoleRow; canManage: boolean }) {
+function RoleRow({ role, canManage, t, tAccess }: { role: CustomRoleRow; canManage: boolean; t: T; tAccess: TAccess }) {
   const [editing, setEditing] = useState(false);
   const [deleteState, deleteAction, deletePending] = useActionState(deleteCustomRoleAction, initialState);
   const { confirm } = useConfirmDialog();
 
-  if (editing) return <RoleForm existing={role} onDone={() => setEditing(false)} />;
+  if (editing) return <RoleForm existing={role} onDone={() => setEditing(false)} t={t} tAccess={tAccess} />;
 
   return (
     <div className={`${GRID} py-2.5 border-b border-ink/8 last:border-b-0 text-[13px] items-center`}>
       <div className="font-medium flex items-center gap-1.5">
-        {role.name} <span className="tag tag-neutral">custom</span>
+        {role.name} <span className="tag tag-neutral">{t.customTag}</span>
       </div>
-      <div className="placeholder-text">{EVENTS_ACCESS_LABEL[role.events]}</div>
-      <div className="placeholder-text">{FINANCE_ACCESS_LABEL[role.finance]}</div>
-      <div className="placeholder-text">{EXPENSES_ACCESS_LABEL[role.expenses]}</div>
-      <div className="placeholder-text">{SETTINGS_ACCESS_LABEL[role.settings]}</div>
+      <div className="placeholder-text">{tAccess.events[role.events]}</div>
+      <div className="placeholder-text">{tAccess.finance[role.finance]}</div>
+      <div className="placeholder-text">{tAccess.expenses[role.expenses]}</div>
+      <div className="placeholder-text">{tAccess.settings[role.settings]}</div>
       {canManage ? (
         <div className="flex gap-2 text-[9px] tracking-[0.1em] uppercase">
           <button type="button" onClick={() => setEditing(true)} className="placeholder-text hover:text-ink">
-            Edit
+            {t.edit}
           </button>
           <button
             type="button"
             disabled={deletePending}
             className="placeholder-text hover:text-warning"
             onClick={async () => {
-              const ok = await confirm(`Delete the role "${role.name}"? This can't be undone.`, { confirmLabel: "Delete" });
+              const ok = await confirm(t.confirmDelete(role.name), { confirmLabel: t.delete });
               if (!ok) return;
               const formData = new FormData();
               formData.set("id", role.id);
               startTransition(() => deleteAction(formData));
             }}
           >
-            Delete
+            {t.delete}
           </button>
         </div>
       ) : (
@@ -140,7 +143,7 @@ function RoleRow({ role, canManage }: { role: CustomRoleRow; canManage: boolean 
   );
 }
 
-function RoleForm({ existing, onDone }: { existing?: CustomRoleRow; onDone: () => void }) {
+function RoleForm({ existing, onDone, t, tAccess }: { existing?: CustomRoleRow; onDone: () => void; t: T; tAccess: TAccess }) {
   const action = existing ? updateCustomRoleAction : createCustomRoleAction;
   const [state, formAction, pending] = useActionState(action, initialState);
 
@@ -148,24 +151,24 @@ function RoleForm({ existing, onDone }: { existing?: CustomRoleRow; onDone: () =
     <form action={formAction} className="card p-4 mt-2.5 flex flex-col gap-2.5 max-w-2xl">
       {existing && <input type="hidden" name="id" value={existing.id} />}
       <label className="flex flex-col gap-1">
-        <span className="heading-label">Role name</span>
+        <span className="heading-label">{t.roleNameLabel}</span>
         <input name="name" defaultValue={existing?.name} required className="input max-w-xs" />
       </label>
       <div className="grid grid-cols-2 gap-3">
-        <AccessField label="Events" name="events" options={EVENTS_ACCESS_OPTIONS} labels={EVENTS_ACCESS_LABEL} defaultValue={existing?.events ?? "NONE"} />
-        <AccessField label="Finance (quotes/invoices)" name="finance" options={FINANCE_ACCESS_OPTIONS} labels={FINANCE_ACCESS_LABEL} defaultValue={existing?.finance ?? "NONE"} />
-        <AccessField label="Expenses" name="expenses" options={EXPENSES_ACCESS_OPTIONS} labels={EXPENSES_ACCESS_LABEL} defaultValue={existing?.expenses ?? "NONE"} />
-        <AccessField label="Settings" name="settings" options={SETTINGS_ACCESS_OPTIONS} labels={SETTINGS_ACCESS_LABEL} defaultValue={existing?.settings ?? "NONE"} />
+        <AccessField label={t.eventsFieldLabel} name="events" options={EVENTS_ACCESS_OPTIONS} labels={tAccess.events} defaultValue={existing?.events ?? "NONE"} />
+        <AccessField label={t.financeFieldLabel} name="finance" options={FINANCE_ACCESS_OPTIONS} labels={tAccess.finance} defaultValue={existing?.finance ?? "NONE"} />
+        <AccessField label={t.expensesFieldLabel} name="expenses" options={EXPENSES_ACCESS_OPTIONS} labels={tAccess.expenses} defaultValue={existing?.expenses ?? "NONE"} />
+        <AccessField label={t.settingsFieldLabel} name="settings" options={SETTINGS_ACCESS_OPTIONS} labels={tAccess.settings} defaultValue={existing?.settings ?? "NONE"} />
       </div>
 
       {state.error && <p className="text-sm text-warning">{state.error}</p>}
 
       <div className="flex gap-2">
         <button type="submit" disabled={pending} className="btn">
-          {pending ? "Saving…" : existing ? "Save role" : "Create role"}
+          {pending ? t.saving : existing ? t.saveRole : t.createRole}
         </button>
         <button type="button" onClick={onDone} className="btno">
-          Cancel
+          {t.cancel}
         </button>
       </div>
     </form>

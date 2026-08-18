@@ -2,23 +2,27 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { getDictionary, type Locale } from "@/lib/dictionary";
 
 export function EventTabs({
   eventId,
   counts,
+  locale,
 }: {
   eventId: string;
   counts: { expenses: number; time: string; docs: number };
+  locale: Locale;
 }) {
+  const t = getDictionary(locale).events;
   const pathname = usePathname();
   const base = `/events/${eventId}`;
   const tabs = [
-    { href: base, label: "Overview", exact: true },
-    { href: `${base}/milestones`, label: "Milestones" },
-    { href: `${base}/expenses`, label: `Expenses ${counts.expenses}` },
-    { href: `${base}/time`, label: `Time ${counts.time}` },
-    { href: `${base}/quotes`, label: `Quotes & invoices ${counts.docs}` },
-    { href: `${base}/files`, label: "Files" },
+    { href: base, label: t.tabOverview, exact: true },
+    { href: `${base}/milestones`, label: t.tabMilestones },
+    { href: `${base}/expenses`, label: t.tabExpenses(counts.expenses) },
+    { href: `${base}/time`, label: t.tabTime(counts.time) },
+    { href: `${base}/quotes`, label: t.tabQuotesInvoices(counts.docs) },
+    { href: `${base}/files`, label: t.tabFiles },
   ];
 
   return (

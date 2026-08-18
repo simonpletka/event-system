@@ -2,6 +2,7 @@
 
 import { AuthError } from "next-auth";
 import { signIn, signOut } from "@/auth";
+import { getLocale, getDictionary } from "@/lib/i18n";
 
 export async function signOutAction() {
   await signOut({ redirectTo: "/login" });
@@ -18,7 +19,8 @@ export async function loginAction(_prev: LoginState, formData: FormData): Promis
     return {};
   } catch (err) {
     if (err instanceof AuthError) {
-      return { error: "Invalid email or password." };
+      const t = getDictionary(await getLocale());
+      return { error: t.auth.invalidCredentials };
     }
     throw err;
   }

@@ -15,7 +15,17 @@ export type StructuredAddress = { street: string; city: string; postCode: string
  * always resolve every component (e.g. no postcode for a broad village
  * match), so the user needs to be able to fill gaps by hand.
  */
-export function StructuredAddressInput({ value, onChange }: { value: StructuredAddress; onChange: (value: StructuredAddress) => void }) {
+type T = { streetPlaceholder: string; searching: string; postCodePlaceholder: string; cityPlaceholder: string; statePlaceholder: string };
+
+export function StructuredAddressInput({
+  value,
+  onChange,
+  t = { streetPlaceholder: "Street and number", searching: "Searching…", postCodePlaceholder: "Post code", cityPlaceholder: "City", statePlaceholder: "State / region" },
+}: {
+  value: StructuredAddress;
+  onChange: (value: StructuredAddress) => void;
+  t?: T;
+}) {
   const [suggestions, setSuggestions] = useState<AddressSuggestion[]>([]);
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -64,13 +74,13 @@ export function StructuredAddressInput({ value, onChange }: { value: StructuredA
           value={value.street}
           onChange={(e) => handleStreetChange(e.target.value)}
           onFocus={() => value.street.trim().length >= 3 && setOpen(true)}
-          placeholder="Street and number"
+          placeholder={t.streetPlaceholder}
           autoComplete="off"
           className="input w-full"
         />
         {open && (loading || suggestions.length > 0) && (
           <div className="absolute z-20 top-full left-0 right-0 mt-1 bg-surface border border-ink/30 max-h-52 overflow-y-auto">
-            {loading && <div className="px-2.5 py-1.5 text-[11px] placeholder-text">Searching…</div>}
+            {loading && <div className="px-2.5 py-1.5 text-[11px] placeholder-text">{t.searching}</div>}
             {!loading &&
               suggestions.map((s, i) => (
                 <button
@@ -90,10 +100,10 @@ export function StructuredAddressInput({ value, onChange }: { value: StructuredA
         )}
       </div>
       <div className="grid grid-cols-2 gap-3">
-        <input name="postCode" value={value.postCode} onChange={(e) => set("postCode", e.target.value)} placeholder="Post code" className="input" />
-        <input name="city" value={value.city} onChange={(e) => set("city", e.target.value)} placeholder="City" className="input" />
+        <input name="postCode" value={value.postCode} onChange={(e) => set("postCode", e.target.value)} placeholder={t.postCodePlaceholder} className="input" />
+        <input name="city" value={value.city} onChange={(e) => set("city", e.target.value)} placeholder={t.cityPlaceholder} className="input" />
       </div>
-      <input name="state" value={value.state} onChange={(e) => set("state", e.target.value)} placeholder="State / region" className="input" />
+      <input name="state" value={value.state} onChange={(e) => set("state", e.target.value)} placeholder={t.statePlaceholder} className="input" />
     </div>
   );
 }

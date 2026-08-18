@@ -1,8 +1,11 @@
 "use client";
 
 import { useRef, useState } from "react";
+import type { Dictionary } from "@/lib/dictionary";
 
-export function ReceiptInput({ existingReceiptPath }: { existingReceiptPath?: string | null }) {
+type T = Dictionary["finance"]["expenses"]["receipt"];
+
+export function ReceiptInput({ existingReceiptPath, t }: { existingReceiptPath?: string | null; t: T }) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [fileName, setFileName] = useState<string | null>(null);
   const [dragOver, setDragOver] = useState(false);
@@ -21,7 +24,7 @@ export function ReceiptInput({ existingReceiptPath }: { existingReceiptPath?: st
 
   return (
     <div>
-      <div className="label mb-1.5">Receipt</div>
+      <div className="label mb-1.5">{t.receiptLabel}</div>
       {existingReceiptPath && !fileName && (
         <div className="flex items-center justify-between gap-2 mb-1.5 text-[11px]">
           <a
@@ -30,7 +33,7 @@ export function ReceiptInput({ existingReceiptPath }: { existingReceiptPath?: st
             rel="noreferrer"
             className={`hover:text-accent ${removeExisting ? "line-through placeholder-text" : ""}`}
           >
-            Current receipt on file
+            {t.currentReceipt}
           </a>
           <label className="flex items-center gap-1.5 text-[9px] placeholder-text">
             <input
@@ -39,7 +42,7 @@ export function ReceiptInput({ existingReceiptPath }: { existingReceiptPath?: st
               checked={removeExisting}
               onChange={(e) => setRemoveExisting(e.target.checked)}
             />
-            Remove
+            {t.removeLabel}
           </label>
         </div>
       )}
@@ -59,10 +62,8 @@ export function ReceiptInput({ existingReceiptPath }: { existingReceiptPath?: st
           dragOver ? "border border-accent" : "border border-dashed border-ink/45"
         }`}
       >
-        <div className="text-[11px]">Drag the photo here</div>
-        <div className="placeholder-text text-[9px]">
-          or <span className="underline">choose a file</span> · JPG, PNG, PDF
-        </div>
+        <div className="text-[11px]">{t.dragHere}</div>
+        <div className="placeholder-text text-[9px] underline">{t.orChoose}</div>
       </div>
       <input
         ref={inputRef}
@@ -73,7 +74,7 @@ export function ReceiptInput({ existingReceiptPath }: { existingReceiptPath?: st
         className="hidden"
         onChange={(e) => setFile(e.target.files?.[0])}
       />
-      {fileName && <div className="label mt-1.5">1 file attached · {fileName}</div>}
+      {fileName && <div className="label mt-1.5">{t.fileAttached(fileName)}</div>}
     </div>
   );
 }

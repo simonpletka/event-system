@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { addDays, isoDate, mondayOf, weekLabel } from "@/lib/calendar";
 
-export function WeekNav({ weekStart, hrefFor }: { weekStart: Date; hrefFor: (weekIso: string) => string }) {
+export function WeekNav({ weekStart, hrefFor, todayLabel = "Today" }: { weekStart: Date; hrefFor: (weekIso: string) => string; todayLabel?: string }) {
   const prev = isoDate(addDays(weekStart, -7));
   const next = isoDate(addDays(weekStart, 7));
   const today = isoDate(mondayOf(new Date()));
@@ -16,7 +16,7 @@ export function WeekNav({ weekStart, hrefFor }: { weekStart: Date; hrefFor: (wee
         →
       </Link>
       <Link href={hrefFor(today)} className="btno">
-        Today
+        {todayLabel}
       </Link>
     </div>
   );

@@ -15,13 +15,19 @@ export function periodLabel(period: TimePeriod, anchor: Date) {
   return new Intl.DateTimeFormat("en-GB", { month: "long", year: "numeric" }).format(anchor);
 }
 
-export function periodNounFor(period: TimePeriod) {
+export function periodNounFor(period: TimePeriod, t?: { day: string; week: string; month: string }) {
+  if (t) return t[period];
   if (period === "day") return "day";
   if (period === "week") return "week";
   return "month";
 }
 
-export function currentPeriodLabel(period: TimePeriod) {
+export function currentPeriodLabel(period: TimePeriod, t?: { todayHeading: string; thisWeekHeading: string; thisMonthHeading: string }) {
+  if (t) {
+    if (period === "day") return t.todayHeading;
+    if (period === "week") return t.thisWeekHeading;
+    return t.thisMonthHeading;
+  }
   if (period === "day") return "Today";
   if (period === "week") return "This week";
   return "This month";

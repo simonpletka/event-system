@@ -2,6 +2,7 @@ import Link from "next/link";
 import { requireUser } from "@/lib/authz";
 import { getOverviewData, getOverviewUsers, type TimePeriod } from "@/lib/queries/timetracker";
 import { formatMinutes } from "@/lib/format";
+import { getLocale, getDictionary, type Dictionary } from "@/lib/i18n";
 import { SegmentedTabs } from "@/components/ui/SegmentedTabs";
 import { DateJumpPicker } from "@/components/timetracker/DateJumpPicker";
 import { isoDate, parseIsoDate } from "@/lib/calendar";
@@ -26,6 +27,9 @@ export default async function OverviewPage({
 }) {
   const user = await requireUser();
   const params = await searchParams;
+  const t = getDictionary(await getLocale());
+  const tt = t.timeTracker.tracking;
+  const to = t.timeTracker.overview;
   const period: TimePeriod = params.period === "day" || params.period === "month" ? params.period : "week";
   const anchor = params.date ? parseIsoDate(params.date) : new Date();
   const selectedIds = params.users ? params.users.split(",").filter(Boolean) : [user.id];
@@ -37,9 +41,9 @@ export default async function OverviewPage({
   const { buckets, people } = await getOverviewData(selectedUsers, period, anchor);
 
   const periodOptions = [
-    { value: "day", label: "Day", href: overviewHref({ period: "day", users: params.users }) },
-    { value: "week", label: "Week", href: overviewHref({ period: "week", users: params.users }) },
-    { value: "month", label: "Month", href: overviewHref({ period: "month", users: params.users }) },
+    { value: "day", label: tt.day, href: overviewHref({ period: "day", users: params.users }) },
+    { value: "week", label: tt.week, href: overviewHref({ period: "week", users: params.users }) },
+    { value: "month", label: tt.month, href: overviewHref({ period: "month", users: params.users }) },
   ];
 
   const prevHref = overviewHref({ period, date: isoDate(stepDate(period, anchor, -1)), users: params.users });
@@ -59,14 +63,14 @@ export default async function OverviewPage({
             →
           </Link>
           <Link href={todayHref} className="btno">
-            Today
+            {to.today}
           </Link>
           <DateJumpPicker value={isoDate(anchor)} base={overviewHref({ period, users: params.users })} />
         </div>
       </div>
 
       <div className="flex gap-1.5 flex-wrap items-center pb-2.5 mt-4 border-b border-ink/20">
-        <span className="label mr-1">People</span>
+        <span className="label mr-1">{to.people}</span>
         {selectedUsers.map((u) => (
           <Link
             key={u.id}
@@ -83,11 +87,11 @@ export default async function OverviewPage({
       </div>
 
       {people.length === 0 ? (
-        <p className="text-sm placeholder-text mt-4">Select at least one person to see their tracked time.</p>
+        <p className="text-sm placeholder-text mt-4">{to.selectAtLeastOne}</p>
       ) : period === "day" ? (
-        <DayBreakdown people={people} />
+        <DayBreakdown people={people} t={t} />
       ) : (
-        <BucketTable buckets={buckets} people={people} />
+        <BucketTable buckets={buckets} people={people} t={t} />
       )}
     </div>
   );
@@ -106,7 +110,8 @@ function AddPersonPicker({ options, hrefFor }: { options: { id: string; name: st
   );
 }
 
-function DayBreakdown({ people }: { people: OverviewPerson[] }) {
+function DayBreakdown({ people, t }: { people: OverviewPerson[]; t: Dictionary }) {
+  const to = t.timeTracker.overview;
   return (
     <div className="grid gap-px mt-3 border border-ink/20" style={{ gridTemplateColumns: `repeat(${people.length}, minmax(0,1fr))` }}>
       {people.map((p) => (
@@ -114,7 +119,7 @@ function DayBreakdown({ people }: { people: OverviewPerson[] }) {
           <div className="heading-label">{p.name}</div>
           <div className="text-xl font-semibold tracking-tight mt-0.5">{formatMinutes(p.total)}</div>
           {p.eventBreakdown.length === 0 ? (
-            <div className="placeholder-text text-[11px] mt-2">No time logged.</div>
+            <div className="placeholder-text text-[11px] mt-2">{to.noTimeLogged}</div>
           ) : (
             <div className="mt-2 flex flex-col gap-1">
               {p.eventBreakdown.map((e) => (
@@ -131,18 +136,19 @@ function DayBreakdown({ people }: { people: OverviewPerson[] }) {
   );
 }
 
-function BucketTable({ buckets, people }: { buckets: OverviewBucket[]; people: OverviewPerson[] }) {
+function BucketTable({ buckets, people, t }: { buckets: OverviewBucket[]; people: OverviewPerson[]; t: Dictionary }) {
+  const to = t.timeTracker.overview;
   const cols = `1fr repeat(${buckets.length}, .7fr) .7fr`;
   return (
     <div className="mt-4">
       <div className="grid gap-2 border-b-2 border-ink pb-1.5" style={{ gridTemplateColumns: cols }}>
-        <span className="heading-label">Person</span>
+        <span className="heading-label">{to.colPerson}</span>
         {buckets.map((b, i) => (
           <span key={i} className="heading-label text-center">
             {b.label}
           </span>
         ))}
-        <span className="heading-label text-right">Total</span>
+        <span className="heading-label text-right">{to.colTotal}</span>
       </div>
       {people.map((p) => (
         <div key={p.id} className="grid gap-2 py-2 text-[13px] items-center border-b border-ink/8 last:border-b-0" style={{ gridTemplateColumns: cols }}>

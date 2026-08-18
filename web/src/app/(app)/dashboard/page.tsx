@@ -4,11 +4,11 @@ import { getDashboardData, getDashboardTimeline, type TimelineItem } from "@/lib
 import { getWeekCalendarData } from "@/lib/queries/calendar";
 import { formatCurrency, formatDate, formatDateRange } from "@/lib/format";
 import { EventStatusPill } from "@/components/StatusPill";
-import { EXPENSE_CATEGORY_LABEL } from "@/lib/expense-categories";
 import { WeekCalendar } from "@/components/calendar/WeekCalendar";
 import { WeekNav } from "@/components/calendar/WeekNav";
 import { isSameDay, mondayOf, parseIsoDate } from "@/lib/calendar";
 import { SegmentedTabs } from "@/components/ui/SegmentedTabs";
+import { getLocale, getDictionary, type Dictionary } from "@/lib/i18n";
 
 export default async function DashboardPage({
   searchParams,
@@ -17,6 +17,7 @@ export default async function DashboardPage({
 }) {
   const user = await requireUser();
   const params = await searchParams;
+  const t = getDictionary(await getLocale());
   const view = params.view === "timeline" || params.view === "calendar" ? params.view : "list";
   const weekStart = mondayOf(params.week ? parseIsoDate(params.week) : new Date());
 
@@ -28,71 +29,76 @@ export default async function DashboardPage({
   const maxMonthly = Math.max(1, ...data.monthly.flatMap((m) => [m.income, m.expense]));
 
   const viewOptions = [
-    { value: "list", label: "List", href: "/dashboard" },
-    { value: "timeline", label: "Timeline", href: "/dashboard?view=timeline" },
-    { value: "calendar", label: "Calendar", href: "/dashboard?view=calendar" },
+    { value: "list", label: t.dashboard.viewList, href: "/dashboard" },
+    { value: "timeline", label: t.dashboard.viewTimeline, href: "/dashboard?view=timeline" },
+    { value: "calendar", label: t.dashboard.viewCalendar, href: "/dashboard?view=calendar" },
   ];
 
   return (
     <div>
       <div className="sticky top-0 z-20 -mx-6 -mt-5 px-6 pt-5 pb-4 backdrop-blur-2xl bg-gradient-to-b from-bg/80 to-bg/50 border-b border-ink/10">
         <div className="flex items-end justify-between">
-          <h1 className="text-[28px] font-bold tracking-tight">Dashboard</h1>
+          <h1 className="text-[28px] font-bold tracking-tight">{t.dashboard.title}</h1>
           {canCreateEvent(user) && (
             <Link href="/events/new" className="btn font-semibold">
-              New event
+              {t.dashboard.newEvent}
             </Link>
           )}
         </div>
 
         <div className="flex items-center justify-between mt-4 flex-wrap gap-2">
           <SegmentedTabs options={viewOptions} active={view} />
-          {view === "calendar" && <WeekNav weekStart={weekStart} hrefFor={(week) => `/dashboard?view=calendar&week=${week}`} />}
+          {view === "calendar" && (
+            <WeekNav weekStart={weekStart} hrefFor={(week) => `/dashboard?view=calendar&week=${week}`} todayLabel={t.calendar.today} />
+          )}
         </div>
       </div>
 
       {view === "timeline" && timeline && (
         <div className="mt-5">
-          <TimelineList items={timeline} />
+          <TimelineList items={timeline} t={t} />
         </div>
       )}
       {view === "calendar" && calendarEvents && (
         <div className="mt-4">
-          <WeekCalendar weekStart={weekStart} events={calendarEvents} eventHref={(id) => `/events/${id}`} />
+          <WeekCalendar weekStart={weekStart} events={calendarEvents} eventHref={(id) => `/events/${id}`} t={t.calendar} tStatus={t.statusEvent} />
         </div>
       )}
 
-      <div className="heading-label mt-6 mb-2.5">Needs attention</div>
+      <div className="heading-label mt-6 mb-2.5">{t.dashboard.needsAttention}</div>
       <div className="grid grid-cols-3 gap-3">
         <AttentionTile
           icon={ICON_ALERT}
-          label={`${data.needsAttention.overdueInvoices.count} invoice${data.needsAttention.overdueInvoices.count === 1 ? "" : "s"} overdue`}
+          label={t.dashboard.invoiceOverdue(data.needsAttention.overdueInvoices.count)}
           value={formatCurrency(data.needsAttention.overdueInvoices.total)}
           sub={
             data.needsAttention.overdueInvoices.count
-              ? `oldest ${data.needsAttention.overdueInvoices.oldestDays} days`
-              : "none"
+              ? t.dashboard.oldestDays(data.needsAttention.overdueInvoices.oldestDays)
+              : t.dashboard.none
           }
           attention={data.needsAttention.overdueInvoices.count > 0}
         />
         <AttentionTile
           icon={ICON_SEND}
-          label={`${data.needsAttention.waitingQuotes.count} quote${data.needsAttention.waitingQuotes.count === 1 ? "" : "s"} waiting`}
+          label={t.dashboard.quoteWaiting(data.needsAttention.waitingQuotes.count)}
           value={formatCurrency(data.needsAttention.waitingQuotes.total)}
           sub={
             data.needsAttention.waitingQuotes.count
-              ? `sent ${data.needsAttention.waitingQuotes.rangeDays[0]}–${data.needsAttention.waitingQuotes.rangeDays[1]} days ago`
-              : "none"
+              ? t.dashboard.sentDaysAgo(data.needsAttention.waitingQuotes.rangeDays[0], data.needsAttention.waitingQuotes.rangeDays[1])
+              : t.dashboard.none
           }
         />
         <AttentionTile
           icon={ICON_INVOICE}
-          label={`${data.needsAttention.eventsToInvoice.count} event${data.needsAttention.eventsToInvoice.count === 1 ? "" : "s"} to invoice`}
+          label={t.dashboard.eventToInvoice(data.needsAttention.eventsToInvoice.count)}
           value={String(data.needsAttention.eventsToInvoice.count)}
           sub={
             data.needsAttention.eventsToInvoice.first
-              ? `${data.needsAttention.eventsToInvoice.first.title} — ended ${formatDateRange(data.needsAttention.eventsToInvoice.first.startDate, data.needsAttention.eventsToInvoice.first.endDate)}`
-              : "none"
+              ? t.dashboard.eventEnded(
+                  data.needsAttention.eventsToInvoice.first.title,
+                  formatDateRange(data.needsAttention.eventsToInvoice.first.startDate, data.needsAttention.eventsToInvoice.first.endDate)
+                )
+              : t.dashboard.none
           }
         />
       </div>
@@ -100,16 +106,16 @@ export default async function DashboardPage({
       {view === "list" && (
         <>
           <div className="flex items-baseline justify-between mt-7 mb-2.5">
-            <div className="heading-label">Upcoming events</div>
+            <div className="heading-label">{t.dashboard.upcomingEvents}</div>
           </div>
           {data.upcomingEvents.length === 0 ? (
-            <p className="text-sm placeholder-text">No upcoming events.</p>
+            <p className="text-sm placeholder-text">{t.dashboard.noUpcomingEvents}</p>
           ) : (
             <div className="grid grid-cols-3 gap-3">
               {data.upcomingEvents.map((event) => (
                 <Link key={event.id} href={`/events/${event.id}`} className="card block overflow-hidden hover:border-ink/35 transition-colors">
                   <div className="p-4 flex flex-col gap-2.5">
-                    <EventStatusPill status={event.status} />
+                    <EventStatusPill status={event.status} t={t.statusEvent} />
                     <div className="text-[15px] font-semibold">{event.title}</div>
                     <div className="text-[12px] placeholder-text leading-relaxed">
                       {event.companyName}
@@ -120,7 +126,7 @@ export default async function DashboardPage({
                   </div>
                   <div className="h-px bg-ink/10" />
                   <div className="flex justify-between items-center px-4 py-2.5 text-[11px]">
-                    <span className="heading-label">Next milestone</span>
+                    <span className="heading-label">{t.dashboard.nextMilestone}</span>
                     <span className="text-ink/75">{event.milestones[0]?.title ?? "—"}</span>
                   </div>
                 </Link>
@@ -132,15 +138,15 @@ export default async function DashboardPage({
 
       <div className="grid grid-cols-2 gap-3 mt-7">
         <div className="card px-5 py-4">
-          <div className="heading-label mb-1.5">Latest expenses</div>
+          <div className="heading-label mb-1.5">{t.dashboard.latestExpenses}</div>
           {data.latestExpenses.length === 0 ? (
-            <p className="text-sm placeholder-text">No expenses yet.</p>
+            <p className="text-sm placeholder-text">{t.dashboard.noExpensesYet}</p>
           ) : (
             data.latestExpenses.map((exp) => (
               <div key={exp.id} className="grid grid-cols-[1fr_auto] items-center gap-2.5 py-2.5 border-b border-ink/8 last:border-b-0 text-[13px]">
                 <div>
-                  {EXPENSE_CATEGORY_LABEL[exp.category]}{" "}
-                  <span className="placeholder-text">· {exp.event?.title ?? "Company overhead"}</span>
+                  {t.expenseCategories[exp.category]}{" "}
+                  <span className="placeholder-text">· {exp.event?.title ?? t.dashboard.companyOverhead}</span>
                 </div>
                 <div className="font-semibold tabular-nums">{formatCurrency(exp.amount)}</div>
               </div>
@@ -149,18 +155,18 @@ export default async function DashboardPage({
         </div>
         <div className="card px-5 py-4">
           <div className="flex items-baseline justify-between">
-            <div className="heading-label">Balance</div>
+            <div className="heading-label">{t.dashboard.balance}</div>
             <div className="flex gap-3 text-[10px] text-ink/55">
               <span className="flex items-center gap-1.5">
-                <span className="w-2 h-2 rounded-sm bg-ink/35" /> Income
+                <span className="w-2 h-2 rounded-sm bg-ink/35" /> {t.dashboard.income}
               </span>
               <span className="flex items-center gap-1.5">
-                <span className="w-2 h-2 rounded-sm bg-accent" /> Expense
+                <span className="w-2 h-2 rounded-sm bg-accent" /> {t.dashboard.expense}
               </span>
             </div>
           </div>
           {data.monthly.length === 0 ? (
-            <p className="text-sm placeholder-text mt-1.5">Not enough data yet.</p>
+            <p className="text-sm placeholder-text mt-1.5">{t.dashboard.notEnoughData}</p>
           ) : (
             <div className="flex items-end gap-4 h-20 mt-3">
               {data.monthly.map((m) => (
@@ -169,12 +175,12 @@ export default async function DashboardPage({
                     <div
                       className="w-3 rounded-t bg-gradient-to-b from-ink/55 to-ink/15"
                       style={{ height: `${(m.income / maxMonthly) * 100}%` }}
-                      title={`Income ${formatCurrency(m.income)}`}
+                      title={t.dashboard.incomeAmount(formatCurrency(m.income))}
                     />
                     <div
                       className="w-3 rounded-t bg-gradient-to-b from-[#ff5a37] to-accent"
                       style={{ height: `${(m.expense / maxMonthly) * 100}%` }}
-                      title={`Expense ${formatCurrency(m.expense)}`}
+                      title={t.dashboard.expenseAmount(formatCurrency(m.expense))}
                     />
                   </div>
                   <span className="text-[10px] placeholder-text">{m.label}</span>
@@ -188,8 +194,8 @@ export default async function DashboardPage({
   );
 }
 
-function TimelineList({ items }: { items: TimelineItem[] }) {
-  if (items.length === 0) return <p className="text-sm placeholder-text">Nothing on the horizon in the next 60 days.</p>;
+function TimelineList({ items, t }: { items: TimelineItem[]; t: Dictionary }) {
+  if (items.length === 0) return <p className="text-sm placeholder-text">{t.dashboard.nothingOnHorizon}</p>;
 
   const groups: { date: Date; items: typeof items }[] = [];
   for (const item of items) {
@@ -198,7 +204,7 @@ function TimelineList({ items }: { items: TimelineItem[] }) {
     else groups.push({ date: item.date, items: [item] });
   }
 
-  const KIND_LABEL = { build: "Build", start: "Start", milestone: "Milestone" } as const;
+  const KIND_LABEL = { build: t.dashboard.timelineBuild, start: t.dashboard.timelineStart, milestone: t.dashboard.timelineMilestone } as const;
 
   return (
     <div className="flex flex-col">

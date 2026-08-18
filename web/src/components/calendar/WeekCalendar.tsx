@@ -2,6 +2,7 @@ import Link from "next/link";
 import { addDays, dayHeaderLabel, isSameDay, startOfDay, weekDays, assignColumns } from "@/lib/calendar";
 import { EventStatusPill } from "@/components/StatusPill";
 import type { EventStatus } from "@/generated/prisma/enums";
+import type { Dictionary } from "@/lib/i18n";
 
 export type CalendarEvent = {
   id: string;
@@ -35,7 +36,19 @@ function minutesFromGridStart(d: Date) {
   return Math.min(Math.max(min, 0), (GRID_END_HOUR - GRID_START_HOUR) * 60);
 }
 
-export function WeekCalendar({ weekStart, events, eventHref }: { weekStart: Date; events: CalendarEvent[]; eventHref: (id: string) => string }) {
+export function WeekCalendar({
+  weekStart,
+  events,
+  eventHref,
+  t,
+  tStatus,
+}: {
+  weekStart: Date;
+  events: CalendarEvent[];
+  eventHref: (id: string) => string;
+  t: Dictionary["calendar"];
+  tStatus: Dictionary["statusEvent"];
+}) {
   const days = weekDays(weekStart);
   const today = new Date();
 
@@ -72,7 +85,7 @@ export function WeekCalendar({ weekStart, events, eventHref }: { weekStart: Date
       {bars.length > 0 && (
         <div className="grid grid-cols-[44px_repeat(7,minmax(0,1fr))] auto-rows-[24px] gap-y-0.5 py-1.5 border-b-2 border-ink">
           <div className="label" style={{ gridRow: 1, gridColumn: 1 }}>
-            All day
+            {t.allDay}
           </div>
           {bars.map((bar, i) => (
             <Link
@@ -84,7 +97,7 @@ export function WeekCalendar({ weekStart, events, eventHref }: { weekStart: Date
               }`}
               style={{ gridRow: 1, gridColumn: `${bar.colStart + 2} / ${bar.colEnd + 3}` }}
             >
-              {bar.title} — {bar.kind === "main" ? "event days" : "prep / build"}
+              {bar.kind === "main" ? t.eventDaysBar(bar.title) : t.prepBuildBar(bar.title)}
             </Link>
           ))}
         </div>
@@ -141,19 +154,19 @@ export function WeekCalendar({ weekStart, events, eventHref }: { weekStart: Date
       </div>
 
       <div className="flex gap-3.5 flex-wrap mt-2.5">
-        <Legend swatch="bg-ink" label="Event days" />
-        <Legend swatch="bg-ink/14" label="Prep / build / strike" />
-        <Legend swatch="border border-ink/25" label="Milestone" />
+        <Legend swatch="bg-ink" label={t.legendEventDays} />
+        <Legend swatch="bg-ink/14" label={t.legendPrepBuild} />
+        <Legend swatch="border border-ink/25" label={t.legendMilestone} />
       </div>
 
-      {events.length === 0 && <p className="text-sm placeholder-text mt-3">No events this week.</p>}
+      {events.length === 0 && <p className="text-sm placeholder-text mt-3">{t.noEventsThisWeek}</p>}
       {events.length > 0 && (
         <div className="mt-3">
-          <div className="label mb-1">This week&apos;s events</div>
+          <div className="label mb-1">{t.thisWeeksEvents}</div>
           <div className="flex flex-col gap-1">
             {events.map((e) => (
               <Link key={e.id} href={eventHref(e.id)} className="flex items-center gap-2 text-[12px] hover:text-accent">
-                <EventStatusPill status={e.status} />
+                <EventStatusPill status={e.status} t={tStatus} />
                 {e.title}
               </Link>
             ))}

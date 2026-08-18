@@ -3,15 +3,20 @@
 import { useActionState, useEffect } from "react";
 import { quickCreateEventAction, type QuickEventState } from "@/lib/actions/events";
 import { Modal } from "@/components/ui/Modal";
+import type { Dictionary } from "@/lib/dictionary";
 
 const initialState: QuickEventState = {};
+
+type T = Dictionary["events"]["picker"];
 
 export function QuickCreateEventModal({
   onClose,
   onCreated,
+  t,
 }: {
   onClose: () => void;
   onCreated: (event: { id: string; title: string; companyName: string; quotedValue: number }) => void;
+  t: T;
 }) {
   const [state, formAction, pending] = useActionState(quickCreateEventAction, initialState);
 
@@ -22,30 +27,28 @@ export function QuickCreateEventModal({
   }, [state.event]);
 
   return (
-    <Modal title="New event" onClose={onClose}>
-      <p className="text-[10px] placeholder-text mb-3">
-        Just enough to pick it here — add the brief, venues and full client details later from the event page.
-      </p>
+    <Modal title={t.quickCreateTitle} onClose={onClose}>
+      <p className="text-[10px] placeholder-text mb-3">{t.quickCreateHelper}</p>
       <form action={formAction} className="flex flex-col gap-3">
         <label className="flex flex-col gap-1.5">
-          <span className="heading-label">Title</span>
+          <span className="heading-label">{t.titleLabel}</span>
           <input name="title" required autoFocus className="input" />
         </label>
         <label className="flex flex-col gap-1.5">
-          <span className="heading-label">Client contact name</span>
+          <span className="heading-label">{t.clientContactLabel}</span>
           <input name="clientName" required className="input" />
         </label>
         <label className="flex flex-col gap-1.5">
-          <span className="heading-label">Client company</span>
+          <span className="heading-label">{t.clientCompanyLabel}</span>
           <input name="companyName" required className="input" />
         </label>
         <div className="grid grid-cols-2 gap-3">
           <label className="flex flex-col gap-1.5">
-            <span className="heading-label">Start</span>
+            <span className="heading-label">{t.startLabel}</span>
             <input name="startDate" type="datetime-local" required className="input" />
           </label>
           <label className="flex flex-col gap-1.5">
-            <span className="heading-label">End</span>
+            <span className="heading-label">{t.endLabel}</span>
             <input name="endDate" type="datetime-local" required className="input" />
           </label>
         </div>
@@ -54,10 +57,10 @@ export function QuickCreateEventModal({
 
         <div className="flex gap-2 mt-1">
           <button type="submit" disabled={pending} className="btn">
-            {pending ? "Creating…" : "Create event"}
+            {pending ? t.creating : t.createEvent}
           </button>
           <button type="button" onClick={onClose} className="btno">
-            Cancel
+            {t.cancel}
           </button>
         </div>
       </form>

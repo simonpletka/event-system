@@ -1,6 +1,9 @@
 import Link from "next/link";
 import { dayHeaderLabel, isSameDay, weekDays, assignColumns } from "@/lib/calendar";
 import { formatMinutes } from "@/lib/format";
+import type { Dictionary } from "@/lib/i18n";
+
+type T = Dictionary["timeTracker"]["calendarView"];
 
 export type CalendarTimeEntry = {
   id: string;
@@ -22,7 +25,7 @@ function minutesFromGridStart(d: Date) {
   return Math.min(Math.max(min, 0), (GRID_END_HOUR - GRID_START_HOUR) * 60);
 }
 
-export function TimeTrackerCalendar({ weekStart, entries }: { weekStart: Date; entries: CalendarTimeEntry[] }) {
+export function TimeTrackerCalendar({ weekStart, entries, t }: { weekStart: Date; entries: CalendarTimeEntry[]; t: T }) {
   const days = weekDays(weekStart);
   const today = new Date();
   const scheduled = entries.filter((e) => e.startedAt);
@@ -43,7 +46,7 @@ export function TimeTrackerCalendar({ weekStart, entries }: { weekStart: Date; e
 
       {unscheduled.length > 0 && (
         <div className="grid grid-cols-[44px_repeat(7,minmax(0,1fr))] gap-1 py-1.5 border-b-2 border-ink">
-          <div className="label">Unscheduled</div>
+          <div className="label">{t.unscheduled}</div>
           {days.map((day) => {
             const dayEntries = unscheduled.filter((e) => isSameDay(e.date, day));
             return (
@@ -114,7 +117,7 @@ export function TimeTrackerCalendar({ weekStart, entries }: { weekStart: Date; e
         })}
       </div>
 
-      {entries.length === 0 && <p className="text-sm placeholder-text mt-3">No time tracked this week.</p>}
+      {entries.length === 0 && <p className="text-sm placeholder-text mt-3">{t.noTimeThisWeek}</p>}
     </div>
   );
 }

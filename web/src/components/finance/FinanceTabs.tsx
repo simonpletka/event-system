@@ -2,14 +2,16 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { getDictionary, type Locale } from "@/lib/dictionary";
 
-export function FinanceTabs({ counts }: { counts: { quotes: number; invoices: number; expenses: number } }) {
+export function FinanceTabs({ counts, locale }: { counts: { quotes: number; invoices: number; expenses: number }; locale: Locale }) {
   const pathname = usePathname();
+  const t = getDictionary(locale).finance;
   const tabs = [
-    { href: "/finance/quotes", label: `Quotes ${counts.quotes}` },
-    { href: "/finance/invoices", label: `Invoices ${counts.invoices}` },
-    { href: "/finance/expenses", label: `Expenses ${counts.expenses}` },
-    { href: "/finance/reports", label: "Reports" },
+    { href: "/finance/quotes", label: t.quotesTab(counts.quotes) },
+    { href: "/finance/invoices", label: t.invoicesTab(counts.invoices) },
+    { href: "/finance/expenses", label: t.expensesTab(counts.expenses) },
+    { href: "/finance/reports", label: t.reportsTab },
   ];
 
   return (

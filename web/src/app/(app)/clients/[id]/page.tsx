@@ -8,24 +8,27 @@ import { BackLink } from "@/components/BackLink";
 import { EventStatusPill } from "@/components/StatusPill";
 import { ConfirmDeleteButton } from "@/components/ui/ConfirmDeleteButton";
 import { AddContactButton } from "@/components/AddContactModal";
+import { getLocale, getDictionary } from "@/lib/i18n";
 
 export default async function ClientDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const user = await requireUser();
   const { id } = await params;
   const client = await getClientDetail(user, id);
   if (!client) notFound();
+  const t = getDictionary(await getLocale());
+  const tc = t.clients;
 
   const canManage = canManageClients(user);
 
   return (
     <div>
       <div className="sticky top-0 z-20 -mx-6 -mt-5 px-6 pt-5 pb-4 backdrop-blur-2xl bg-gradient-to-b from-bg/80 to-bg/50 border-b border-ink/10">
-        <BackLink href="/clients">Clients</BackLink>
+        <BackLink href="/clients">{tc.backLink}</BackLink>
         <div className="flex justify-between items-end flex-wrap gap-2 mt-2">
           <div className="text-[2.5rem] font-semibold leading-none">{client.name}</div>
           {canManage && (
             <Link href={`/clients/${client.id}/edit`} className="btno">
-              Edit
+              {tc.edit}
             </Link>
           )}
         </div>
@@ -33,8 +36,8 @@ export default async function ClientDetailPage({ params }: { params: Promise<{ i
 
       <div className="grid grid-cols-[1fr_300px] gap-5 mt-5">
         <div>
-          <div className="heading-label">Events ({client.events.length})</div>
-          {client.events.length === 0 && <p className="text-sm placeholder-text mt-2">No events linked yet.</p>}
+          <div className="heading-label">{tc.eventsHeading(client.events.length)}</div>
+          {client.events.length === 0 && <p className="text-sm placeholder-text mt-2">{tc.noEventsLinked}</p>}
           <div className="mt-1.5">
             {client.events.map((e) => (
               <Link
@@ -45,7 +48,7 @@ export default async function ClientDetailPage({ params }: { params: Promise<{ i
                 <div className="font-medium group-hover:text-accent">{e.title}</div>
                 <div className="placeholder-text group-hover:!text-accent">{formatDateRange(e.startDate, e.endDate)}</div>
                 <div className="font-semibold tabular-nums group-hover:text-accent">{formatCurrency(e.quotedValue)}</div>
-                <EventStatusPill status={e.status} />
+                <EventStatusPill status={e.status} t={t.statusEvent} />
               </Link>
             ))}
           </div>
@@ -53,10 +56,10 @@ export default async function ClientDetailPage({ params }: { params: Promise<{ i
           <div className="h-px bg-ink/10 my-5" />
 
           <div className="flex items-center justify-between mb-2">
-            <div className="heading-label">Contacts</div>
-            {canManage && <AddContactButton clientId={client.id} />}
+            <div className="heading-label">{tc.contactsHeading}</div>
+            {canManage && <AddContactButton clientId={client.id} t={tc.addContact} />}
           </div>
-          {client.contacts.length === 0 && <p className="text-sm placeholder-text">No contacts added yet.</p>}
+          {client.contacts.length === 0 && <p className="text-sm placeholder-text">{tc.noContactsAdded}</p>}
           {client.contacts.map((contact) => (
             <div key={contact.id} className="grid grid-cols-[1fr_1fr_1fr_1fr_auto] gap-2.5 items-center py-2.5 px-2.5 border-b border-ink/8 last:border-b-0 text-[13px]">
               <div className="font-medium">{contact.name}</div>
@@ -68,7 +71,7 @@ export default async function ClientDetailPage({ params }: { params: Promise<{ i
                   <input type="hidden" name="id" value={contact.id} />
                   <input type="hidden" name="clientId" value={client.id} />
                   <button type="submit" className="text-[9px] tracking-[0.1em] uppercase placeholder-text hover:text-warning">
-                    Remove
+                    {tc.remove}
                   </button>
                 </form>
               )}
@@ -77,7 +80,7 @@ export default async function ClientDetailPage({ params }: { params: Promise<{ i
         </div>
 
         <div className="card p-5 self-start">
-          <div className="heading-label">Address</div>
+          <div className="heading-label">{tc.addressHeading}</div>
           {client.street || client.city || client.postCode || client.state ? (
             <p className="text-[13px] mt-1.5 leading-relaxed">
               {client.street && <>{client.street}<br /></>}
@@ -94,42 +97,40 @@ export default async function ClientDetailPage({ params }: { params: Promise<{ i
           )}
 
           <div className="h-px bg-ink/8 my-3.5" />
-          <div className="heading-label">IČO</div>
+          <div className="heading-label">{tc.icoHeading}</div>
           <p className="text-[13px] mt-1.5">{client.ico || "—"}</p>
 
           <div className="h-px bg-ink/8 my-3.5" />
-          <div className="heading-label">DIČ</div>
+          <div className="heading-label">{tc.dicHeading}</div>
           <p className="text-[13px] mt-1.5">{client.dic || "—"}</p>
 
           <div className="h-px bg-ink/8 my-3.5" />
-          <div className="heading-label">Invoicing email</div>
+          <div className="heading-label">{tc.invoicingEmailHeading}</div>
           <p className="text-[13px] mt-1.5">{client.invoicingEmail || "—"}</p>
 
           {client.note && (
             <>
               <div className="h-px bg-ink/8 my-3.5" />
-              <div className="heading-label">Note</div>
+              <div className="heading-label">{tc.noteHeading}</div>
               <p className="text-[13px] mt-1.5 whitespace-pre-wrap">{client.note}</p>
             </>
           )}
 
           <div className="h-px bg-ink/8 my-3.5" />
-          <div className="heading-label">Total charged</div>
+          <div className="heading-label">{tc.totalChargedHeading}</div>
           <div className="text-2xl font-semibold tracking-tight mt-1.5">{formatCurrency(client.totalCharged)}</div>
-          <div className="placeholder-text text-[10px] mt-0.5">across {client.events.length} event{client.events.length === 1 ? "" : "s"}</div>
+          <div className="placeholder-text text-[10px] mt-0.5">{tc.acrossEvents(client.events.length)}</div>
 
           {isAdmin(user) && (
             <>
               <div className="h-px bg-ink/8 my-3.5" />
-              <div className="heading-label mb-2">Delete</div>
-              <p className="text-[10px] placeholder-text mb-2.5">
-                Events linked to this client keep their own data — they just lose the link.
-              </p>
+              <div className="heading-label mb-2">{tc.deleteHeading}</div>
+              <p className="text-[10px] placeholder-text mb-2.5">{tc.deleteHelper}</p>
               <ConfirmDeleteButton
                 action={deleteClientAction}
                 fields={{ id: client.id }}
-                label="Delete client"
-                confirmMessage={`Delete "${client.name}"? This can't be undone.`}
+                label={tc.deleteClient}
+                confirmMessage={tc.confirmDelete(client.name)}
                 className="btno !border-warning text-warning w-full text-center"
               />
             </>

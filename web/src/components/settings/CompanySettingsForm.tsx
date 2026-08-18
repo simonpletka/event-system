@@ -4,6 +4,7 @@ import { useActionState, useState } from "react";
 import { updateCompanySettingsAction, type SettingsFormState } from "@/lib/actions/settings";
 import { useAresLookup } from "@/hooks/useAresLookup";
 import { AddressAutocompleteInput } from "@/components/ui/AddressAutocompleteInput";
+import type { Dictionary } from "@/lib/dictionary";
 
 const initialState: SettingsFormState = {};
 
@@ -15,7 +16,6 @@ type Company = {
   isVatPayer: boolean;
   bankAccount: string;
   defaultDueDays: number;
-  accentColor: string;
   logoPath: string | null;
 };
 
@@ -27,11 +27,12 @@ const EMPTY: Company = {
   isVatPayer: true,
   bankAccount: "",
   defaultDueDays: 14,
-  accentColor: "#ec3013",
   logoPath: null,
 };
 
-export function CompanySettingsForm({ defaults }: { defaults: Company | null }) {
+type T = Dictionary["settings"]["company"];
+
+export function CompanySettingsForm({ defaults, t }: { defaults: Company | null; t: T }) {
   const [state, formAction, pending] = useActionState(updateCompanySettingsAction, initialState);
   const initial = defaults ?? EMPTY;
   const [fields, setFields] = useState<Company>(initial);
@@ -53,23 +54,23 @@ export function CompanySettingsForm({ defaults }: { defaults: Company | null }) 
   return (
     <div className="grid grid-cols-[1fr_300px] gap-5 max-w-3xl">
       <form action={formAction} className="card p-5 flex flex-col gap-3">
-        <div className="heading-label">Company details</div>
+        <div className="heading-label">{t.companyDetailsHeading}</div>
         <div className="flex gap-1.5">
-          <input name="ico" placeholder="IČO" value={fields.ico} onChange={(e) => set("ico", e.target.value)} required className="input flex-1" />
+          <input name="ico" placeholder={t.icoPlaceholder} value={fields.ico} onChange={(e) => set("ico", e.target.value)} required className="input flex-1" />
           <button type="button" onClick={loadFromAres} disabled={ares.loading} className="btno whitespace-nowrap">
-            {ares.loading ? "Loading…" : "Load from ARES"}
+            {ares.loading ? t.loadingAres : t.loadFromAres}
           </button>
         </div>
         {ares.error && <p className="text-[11px] text-warning -mt-1">{ares.error}</p>}
-        <input name="name" placeholder="Company name" value={fields.name} onChange={(e) => set("name", e.target.value)} required className="input" />
+        <input name="name" placeholder={t.companyNamePlaceholder} value={fields.name} onChange={(e) => set("name", e.target.value)} required className="input" />
         <AddressAutocompleteInput
           name="address"
-          placeholder="Address"
+          placeholder={t.addressPlaceholder}
           value={fields.address}
           onChange={(v) => set("address", v)}
         />
         <div className="flex gap-1.5 items-center">
-          <input name="dic" placeholder="DIČ" value={fields.dic} onChange={(e) => set("dic", e.target.value)} className="input flex-1" />
+          <input name="dic" placeholder={t.dicPlaceholder} value={fields.dic} onChange={(e) => set("dic", e.target.value)} className="input flex-1" />
           <label className="flex items-center gap-1.5 text-[11px] whitespace-nowrap">
             <input
               name="isVatPayer"
@@ -77,21 +78,21 @@ export function CompanySettingsForm({ defaults }: { defaults: Company | null }) 
               checked={fields.isVatPayer}
               onChange={(e) => set("isVatPayer", e.target.checked)}
             />{" "}
-            VAT payer
+            {t.vatPayerLabel}
           </label>
         </div>
 
-        <div className="heading-label mt-2">Bank</div>
+        <div className="heading-label mt-2">{t.bankHeading}</div>
         <input
           name="bankAccount"
-          placeholder="IBAN"
+          placeholder={t.ibanPlaceholder}
           value={fields.bankAccount}
           onChange={(e) => set("bankAccount", e.target.value)}
           className="input"
         />
-        <span className="text-[9px] placeholder-text -mt-1">Used to render the QR payment code on invoice PDFs.</span>
+        <span className="text-[9px] placeholder-text -mt-1">{t.qrHint}</span>
 
-        <div className="heading-label mt-2">Branding</div>
+        <div className="heading-label mt-2">{t.brandingHeading}</div>
         <div className="flex gap-3 items-start">
           <div className="flex flex-col gap-1.5 flex-1">
             <input
@@ -106,9 +107,7 @@ export function CompanySettingsForm({ defaults }: { defaults: Company | null }) 
               }}
               className="input text-[11px]"
             />
-            <span className="text-[9px] placeholder-text">
-              PNG, JPG or SVG, max 2MB. Used on generated invoice PDFs (SVG shows here but can&apos;t be embedded in the PDF — use PNG/JPG for that).
-            </span>
+            <span className="text-[9px] placeholder-text">{t.logoHelper}</span>
             {fields.logoPath && !removeLogo && (
               <label className="flex items-center gap-1.5 text-[11px]">
                 <input
@@ -120,47 +119,32 @@ export function CompanySettingsForm({ defaults }: { defaults: Company | null }) 
                     setLogoPreview(null);
                   }}
                 />
-                Remove current logo
+                {t.removeLogoLabel}
               </label>
             )}
           </div>
           <div className="w-20 h-20 rounded-xl border border-ink/16 flex items-center justify-center shrink-0 overflow-hidden bg-ink/4">
             {logoPreview ? (
               // eslint-disable-next-line @next/next/no-img-element -- ephemeral blob: preview URL, not a static asset
-              <img src={logoPreview} alt="New logo preview" className="max-w-full max-h-full object-contain" />
+              <img src={logoPreview} alt={t.newLogoPreviewAlt} className="max-w-full max-h-full object-contain" />
             ) : fields.logoPath && !removeLogo ? (
               // eslint-disable-next-line @next/next/no-img-element -- authenticated route, not a static asset next/image can optimize
-              <img src={`/api/uploads/logo/${fields.logoPath}`} alt="Company logo" className="max-w-full max-h-full object-contain" />
+              <img src={`/api/uploads/logo/${fields.logoPath}`} alt={t.companyLogoAlt} className="max-w-full max-h-full object-contain" />
             ) : (
-              <span className="text-[9px] placeholder-text text-center px-1">No logo</span>
+              <span className="text-[9px] placeholder-text text-center px-1">{t.noLogo}</span>
             )}
           </div>
         </div>
-        <label className="flex items-center gap-1.5 text-[11px]">
-          Accent colour
-          <input
-            type="color"
-            value={fields.accentColor}
-            onChange={(e) => set("accentColor", e.target.value)}
-            className="w-8 h-6 rounded-md border border-ink/30 p-0 bg-transparent"
-          />
-          <input
-            name="accentColor"
-            value={fields.accentColor}
-            onChange={(e) => set("accentColor", e.target.value)}
-            className="input w-24 text-[11px]"
-          />
-        </label>
-        <span className="text-[9px] placeholder-text -mt-1">Used for the total-due figure and rules on invoice PDFs.</span>
+        <span className="text-[9px] placeholder-text -mt-1">{t.accentMovedNote}</span>
 
-        <div className="heading-label mt-2">Numbering</div>
+        <div className="heading-label mt-2">{t.numberingHeading}</div>
         <div className="flex gap-1.5">
-          <div className="input opacity-60 flex-1">Events, quotes &amp; invoices — YY-XXX</div>
+          <div className="input opacity-60 flex-1">{t.numberingScheme}</div>
         </div>
         <div className="flex gap-1.5 items-center">
-          <div className="input opacity-60 flex-1">Reused per event · lowest unused number</div>
+          <div className="input opacity-60 flex-1">{t.numberingNote}</div>
           <label className="flex items-center gap-1.5 text-[11px] whitespace-nowrap">
-            Due
+            {t.dueLabel}
             <input
               name="defaultDueDays"
               type="number"
@@ -169,7 +153,7 @@ export function CompanySettingsForm({ defaults }: { defaults: Company | null }) 
               onChange={(e) => set("defaultDueDays", Number(e.target.value) || 1)}
               className="input w-14"
             />
-            days
+            {t.daysLabel}
           </label>
         </div>
 
@@ -178,7 +162,7 @@ export function CompanySettingsForm({ defaults }: { defaults: Company | null }) 
 
         <div className="flex gap-2">
           <button type="submit" disabled={pending} className="btn">
-            {pending ? "Saving…" : "Save changes"}
+            {pending ? t.saving : t.saveChanges}
           </button>
           <button
             type="button"
@@ -190,33 +174,42 @@ export function CompanySettingsForm({ defaults }: { defaults: Company | null }) 
             }}
             className="btno"
           >
-            Cancel
+            {t.cancel}
           </button>
         </div>
       </form>
 
       <div className="card p-5 self-start">
-        <div className="heading-label mb-2">Connected accounts</div>
-        <ConnectedRow label="Google Workspace" note="sign-in + calendar sync" connected={false} />
-        <ConnectedRow label="Calendar for milestones" note="milestone export" connected={false} />
-        <ConnectedRow label="ARES lookup" note="company auto-fill" connected />
-        <p className="text-[10px] placeholder-text mt-3 max-w-xs">
-          ARES is a free public registry, so that one&apos;s live. Google Workspace/Calendar need OAuth credentials
-          that land in a later phase.
-        </p>
+        <div className="heading-label mb-2">{t.connectedAccountsHeading}</div>
+        <ConnectedRow label={t.googleWorkspace} note={t.googleWorkspaceNote} connected={false} activeLabel={t.active} notConnectedLabel={t.notConnected} />
+        <ConnectedRow label={t.calendarMilestones} note={t.calendarMilestonesNote} connected={false} activeLabel={t.active} notConnectedLabel={t.notConnected} />
+        <ConnectedRow label={t.aresLookup} note={t.aresNote} connected activeLabel={t.active} notConnectedLabel={t.notConnected} />
+        <p className="text-[10px] placeholder-text mt-3 max-w-xs">{t.aresExplainer}</p>
       </div>
     </div>
   );
 }
 
-function ConnectedRow({ label, note, connected }: { label: string; note: string; connected: boolean }) {
+function ConnectedRow({
+  label,
+  note,
+  connected,
+  activeLabel,
+  notConnectedLabel,
+}: {
+  label: string;
+  note: string;
+  connected: boolean;
+  activeLabel: string;
+  notConnectedLabel: string;
+}) {
   return (
     <div className="flex items-center justify-between gap-2.5 py-2.5 border-b border-ink/8 last:border-b-0 text-[13px]">
       <div>
         <div>{label}</div>
         <div className="placeholder-text text-[11px] mt-0.5">{note}</div>
       </div>
-      <span className={`tag ${connected ? "tag-positive" : "tag-neutral"}`}>{connected ? "Active" : "Not connected"}</span>
+      <span className={`tag ${connected ? "tag-positive" : "tag-neutral"}`}>{connected ? activeLabel : notConnectedLabel}</span>
     </div>
   );
 }

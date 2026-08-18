@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation";
 import { requireUser } from "@/lib/authz";
 import { prisma } from "@/lib/prisma";
+import { getLocale, getDictionary } from "@/lib/i18n";
 import { EditEntryForm } from "@/components/timetracker/EditEntryForm";
 import { isoDate } from "@/lib/calendar";
 
@@ -11,6 +12,7 @@ function isoTime(d: Date) {
 export default async function EditEntryPage({ params }: { params: Promise<{ id: string }> }) {
   const user = await requireUser();
   const { id } = await params;
+  const t = getDictionary(await getLocale());
 
   const entry = await prisma.timeEntry.findFirst({
     where: { id, userId: user.id },
@@ -20,15 +22,15 @@ export default async function EditEntryPage({ params }: { params: Promise<{ id: 
   if (entry.running) {
     return (
       <div>
-        <h2 className="text-lg font-semibold mb-2">Edit entry</h2>
-        <p className="text-sm placeholder-text">This timer is still running — stop it first from the Tracking tab.</p>
+        <h2 className="text-lg font-semibold mb-2">{t.timeTracker.entryEdit.editEntry}</h2>
+        <p className="text-sm placeholder-text">{t.timeTracker.entryEdit.timerStillRunning}</p>
       </div>
     );
   }
 
   return (
     <div>
-      <h2 className="text-lg font-semibold mb-3">Edit entry</h2>
+      <h2 className="text-lg font-semibold mb-3">{t.timeTracker.entryEdit.editEntry}</h2>
       <EditEntryForm
         id={entry.id}
         eventTitle={entry.event.title}
@@ -38,6 +40,8 @@ export default async function EditEntryPage({ params }: { params: Promise<{ id: 
         phase={entry.phase}
         startTime={entry.startedAt ? isoTime(entry.startedAt) : undefined}
         endTime={entry.endedAt ? isoTime(entry.endedAt) : undefined}
+        t={t.timeTracker.editEntryForm}
+        tPhases={t.phases}
       />
     </div>
   );

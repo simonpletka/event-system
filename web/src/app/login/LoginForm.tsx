@@ -3,17 +3,18 @@
 import { useActionState } from "react";
 import { loginAction, type LoginState } from "@/lib/actions/auth";
 import { PasswordInput } from "@/components/ui/PasswordInput";
+import type { Dictionary } from "@/lib/dictionary";
 
 const initialState: LoginState = {};
 
-export function LoginForm() {
+export function LoginForm({ t }: { t: Dictionary["auth"] }) {
   const [state, formAction, pending] = useActionState(loginAction, initialState);
 
   return (
     <form action={formAction} className="flex flex-col gap-4">
       <div className="flex flex-col gap-1.5">
         <label htmlFor="email" className="heading-label">
-          Email
+          {t.email}
         </label>
         <input
           id="email"
@@ -26,20 +27,20 @@ export function LoginForm() {
       </div>
       <div className="flex flex-col gap-1.5">
         <label htmlFor="password" className="heading-label">
-          Password
+          {t.password}
         </label>
-        <PasswordInput id="password" name="password" required autoComplete="current-password" />
+        <PasswordInput id="password" name="password" required autoComplete="current-password" holdToShowLabel={t.holdToShowPassword} />
       </div>
 
       {state.error && <p className="text-sm text-warning">{state.error}</p>}
 
       <button type="submit" disabled={pending} className="btn mt-2">
-        {pending ? "Signing in…" : "Sign in"}
+        {pending ? t.signingIn : t.signIn}
       </button>
 
       <div className="rule-thin my-2" />
       <button type="button" disabled className="btno opacity-40 cursor-not-allowed">
-        Continue with Google — coming soon
+        {t.continueWithGoogle}
       </button>
     </form>
   );

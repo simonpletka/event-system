@@ -2,6 +2,7 @@ import { requireUser, canManageFinance, eventWhereForUser } from "@/lib/authz";
 import { prisma } from "@/lib/prisma";
 import { getItemCategories } from "@/lib/actions/categories";
 import { QuoteForm } from "@/components/finance/QuoteForm";
+import { getLocale, getDictionary } from "@/lib/i18n";
 
 export default async function NewQuotePage({
   searchParams,
@@ -10,12 +11,14 @@ export default async function NewQuotePage({
 }) {
   const user = await requireUser();
   const params = await searchParams;
+  const locale = await getLocale();
+  const t = getDictionary(locale);
 
   if (!canManageFinance(user)) {
     return (
       <div>
-        <h1 className="text-xl font-semibold border-b-2 border-ink pb-2 mb-4">New quote</h1>
-        <p className="text-sm placeholder-text">You don&apos;t have permission to create quotes.</p>
+        <h1 className="text-xl font-semibold border-b-2 border-ink pb-2 mb-4">{t.finance.quotes.newQuoteH1}</h1>
+        <p className="text-sm placeholder-text">{t.finance.quotes.noPermCreate}</p>
       </div>
     );
   }
@@ -31,8 +34,8 @@ export default async function NewQuotePage({
 
   return (
     <div>
-      <h1 className="text-xl font-semibold border-b-2 border-ink pb-2 mb-4">New quote</h1>
-      <QuoteForm events={events} categories={categoryRows.map((c) => c.name)} initialEventId={params.eventId} />
+      <h1 className="text-xl font-semibold border-b-2 border-ink pb-2 mb-4">{t.finance.quotes.newQuoteH1}</h1>
+      <QuoteForm events={events} categories={categoryRows.map((c) => c.name)} initialEventId={params.eventId} locale={locale} />
     </div>
   );
 }

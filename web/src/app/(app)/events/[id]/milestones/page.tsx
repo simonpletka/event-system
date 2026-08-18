@@ -4,22 +4,23 @@ import { getEventDetail } from "@/lib/queries/events";
 import { formatDateTime } from "@/lib/format";
 import { addMilestoneAction, deleteMilestoneAction } from "@/lib/actions/events";
 import { ConfirmDeleteButton } from "@/components/ui/ConfirmDeleteButton";
+import { getLocale, getDictionary } from "@/lib/i18n";
 
 export default async function MilestonesTab({ params }: { params: Promise<{ id: string }> }) {
   const user = await requireUser();
   const { id } = await params;
   const event = await getEventDetail(user, id);
   if (!event) notFound();
+  const t = getDictionary(await getLocale());
+  const tm = t.events.milestones;
 
   const editable = canEditEvent(user, { ownerId: event.ownerId, memberIds: event.members.map((m) => m.userId) });
 
   return (
     <div className="max-w-xl">
-      <p className="text-[10px] placeholder-text mb-3">
-        Synced to Google Calendar in a later phase — for now milestones live only in this system.
-      </p>
+      <p className="text-[10px] placeholder-text mb-3">{tm.syncHelper}</p>
 
-      {event.milestones.length === 0 && <p className="text-sm placeholder-text">No milestones yet.</p>}
+      {event.milestones.length === 0 && <p className="text-sm placeholder-text">{tm.noMilestones}</p>}
       {event.milestones.map((m) => (
         <div key={m.id} className="grid grid-cols-[110px_1fr_auto] gap-2.5 items-center py-2 border-b border-ink/10 text-[13px]">
           <div className="placeholder-text">{formatDateTime(m.date)}</div>
@@ -28,7 +29,8 @@ export default async function MilestonesTab({ params }: { params: Promise<{ id: 
             <ConfirmDeleteButton
               action={deleteMilestoneAction}
               fields={{ eventId: event.id, milestoneId: m.id }}
-              confirmMessage={`Delete milestone "${m.title}"? This can't be undone.`}
+              confirmMessage={tm.confirmDelete(m.title)}
+              label={t.common.delete}
               className="text-[9px] tracking-[0.1em] uppercase placeholder-text hover:text-warning"
             />
           )}
@@ -39,15 +41,15 @@ export default async function MilestonesTab({ params }: { params: Promise<{ id: 
         <form action={addMilestoneAction} className="flex gap-2 items-end mt-4">
           <input type="hidden" name="eventId" value={event.id} />
           <label className="flex flex-col gap-1.5 flex-1">
-            <span className="heading-label">Title</span>
+            <span className="heading-label">{tm.titleLabel}</span>
             <input name="title" required className="input" />
           </label>
           <label className="flex flex-col gap-1.5">
-            <span className="heading-label">Date</span>
+            <span className="heading-label">{tm.dateLabel}</span>
             <input name="date" type="datetime-local" required className="input" />
           </label>
           <button type="submit" className="btn">
-            Add milestone
+            {tm.addMilestone}
           </button>
         </form>
       )}

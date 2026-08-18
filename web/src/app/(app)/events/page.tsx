@@ -8,6 +8,7 @@ import { WeekCalendar } from "@/components/calendar/WeekCalendar";
 import { WeekNav } from "@/components/calendar/WeekNav";
 import { mondayOf, parseIsoDate } from "@/lib/calendar";
 import { SegmentedTabs } from "@/components/ui/SegmentedTabs";
+import { getLocale, getDictionary, type Dictionary } from "@/lib/i18n";
 import type { EventStatus } from "@/generated/prisma/enums";
 
 const STATUSES: EventStatus[] = [
@@ -27,6 +28,7 @@ export default async function EventsPage({
 }) {
   const user = await requireUser();
   const params = await searchParams;
+  const t = getDictionary(await getLocale());
   const view = params.view === "calendar" ? "calendar" : "table";
 
   if (view === "calendar") {
@@ -36,14 +38,14 @@ export default async function EventsPage({
     return (
       <div>
         <div className="sticky top-0 z-20 -mx-6 -mt-5 px-6 pt-5 pb-4 backdrop-blur-2xl bg-gradient-to-b from-bg/80 to-bg/50 border-b border-ink/10">
-          <ViewHeader canCreate={canCreateEvent(user)} />
+          <ViewHeader canCreate={canCreateEvent(user)} t={t} />
           <div className="flex items-center justify-between gap-2 mt-4 flex-wrap">
-            <ViewSwitch view="calendar" />
-            <WeekNav weekStart={weekStart} hrefFor={(week) => `/events?view=calendar&week=${week}`} />
+            <ViewSwitch view="calendar" t={t} />
+            <WeekNav weekStart={weekStart} hrefFor={(week) => `/events?view=calendar&week=${week}`} todayLabel={t.calendar.today} />
           </div>
         </div>
         <div className="mt-4">
-          <WeekCalendar weekStart={weekStart} events={events} eventHref={(id) => `/events/${id}`} />
+          <WeekCalendar weekStart={weekStart} events={events} eventHref={(id) => `/events/${id}`} t={t.calendar} tStatus={t.statusEvent} />
         </div>
       </div>
     );
@@ -62,22 +64,22 @@ export default async function EventsPage({
   return (
     <div>
       <div className="sticky top-0 z-20 -mx-6 -mt-5 px-6 pt-5 pb-4 backdrop-blur-2xl bg-gradient-to-b from-bg/80 to-bg/50 border-b border-ink/10">
-        <ViewHeader canCreate={canCreateEvent(user)} total={total} activeCount={activeCount} />
+        <ViewHeader canCreate={canCreateEvent(user)} total={total} activeCount={activeCount} t={t} />
 
         <div className="flex items-center justify-between gap-2 mt-4 flex-wrap">
-          <ViewSwitch view="table" />
+          <ViewSwitch view="table" t={t} />
 
           <form method="get" className="flex gap-1.5 flex-wrap items-center">
             <select name="status" defaultValue={filters.status ?? ""} className="btno bg-transparent text-[9px]">
-              <option value="">Status</option>
+              <option value="">{t.events.statusFilter}</option>
               {STATUSES.map((s) => (
                 <option key={s} value={s}>
-                  {s.replace("_", " ")}
+                  {t.statusEvent[s]}
                 </option>
               ))}
             </select>
             <select name="client" defaultValue={filters.client ?? ""} className="btno bg-transparent text-[9px]">
-              <option value="">Client</option>
+              <option value="">{t.events.clientFilter}</option>
               {clients.map((c) => (
                 <option key={c} value={c}>
                   {c}
@@ -85,7 +87,7 @@ export default async function EventsPage({
               ))}
             </select>
             <select name="place" defaultValue={filters.place ?? ""} className="btno bg-transparent text-[9px]">
-              <option value="">Place</option>
+              <option value="">{t.events.placeFilter}</option>
               {places.map((p) => (
                 <option key={p} value={p}>
                   {p}
@@ -95,15 +97,15 @@ export default async function EventsPage({
             <input
               name="q"
               defaultValue={filters.q ?? ""}
-              placeholder="Search…"
+              placeholder={t.common.search}
               className="input text-[9px] py-1.5 w-[110px]"
             />
             <button type="submit" className="btno text-[9px]">
-              Apply
+              {t.events.apply}
             </button>
             {(filters.q || filters.status || filters.client || filters.place) && (
               <Link href="/events" className="text-[9px] placeholder-text hover:text-ink underline underline-offset-2">
-                Clear
+                {t.events.clear}
               </Link>
             )}
           </form>
@@ -111,15 +113,15 @@ export default async function EventsPage({
       </div>
 
       <div className="grid grid-cols-[1.5fr_.9fr_.8fr_.8fr_.9fr_.6fr] gap-2.5 border-b border-ink/14 pb-1.5 mt-5 px-3.5">
-        <span className="heading-label">Event</span>
-        <span className="heading-label">Client</span>
-        <span className="heading-label">Dates ↑</span>
-        <span className="heading-label">Place</span>
-        <span className="heading-label">Status</span>
-        <span className="heading-label">Value</span>
+        <span className="heading-label">{t.events.colEvent}</span>
+        <span className="heading-label">{t.events.clientFilter}</span>
+        <span className="heading-label">{t.events.colDates}</span>
+        <span className="heading-label">{t.events.placeFilter}</span>
+        <span className="heading-label">{t.events.colStatus}</span>
+        <span className="heading-label">{t.events.colValue}</span>
       </div>
 
-      {events.length === 0 && <p className="text-sm placeholder-text mt-4">No events match these filters.</p>}
+      {events.length === 0 && <p className="text-sm placeholder-text mt-4">{t.events.noEventsMatch}</p>}
 
       {events.map((event) => (
         <Link
@@ -137,7 +139,7 @@ export default async function EventsPage({
           <div className="placeholder-text group-hover:!text-accent">{formatDateRange(event.startDate, event.endDate)}</div>
           <div className="placeholder-text group-hover:!text-accent">{event.venues[0]?.name ?? "—"}</div>
           <div>
-            <EventStatusPill status={event.status} />
+            <EventStatusPill status={event.status} t={t.statusEvent} />
           </div>
           <div className="font-semibold tabular-nums group-hover:text-accent">
             {event.quotedValue ? formatCurrency(event.quotedValue) : <span className="placeholder-text font-normal">—</span>}
@@ -146,44 +148,38 @@ export default async function EventsPage({
       ))}
 
       <div className="flex items-center justify-between mt-4 px-3.5">
-        <div className="label">
-          Sorted by date — nearest first · showing {events.length} of {total}
-        </div>
+        <div className="label">{t.events.sortedBy(events.length, total)}</div>
         <a href="#today-row" className="btno text-[9px]">
-          Today
+          {t.events.today}
         </a>
       </div>
     </div>
   );
 }
 
-function ViewHeader({ canCreate, total, activeCount }: { canCreate: boolean; total?: number; activeCount?: number }) {
+function ViewHeader({ canCreate, total, activeCount, t }: { canCreate: boolean; total?: number; activeCount?: number; t: Dictionary }) {
   return (
     <div className="flex items-end justify-between">
       <div>
-        {total !== undefined && (
-          <div className="heading-label">
-            {total} events · {activeCount} active
-          </div>
-        )}
-        <h1 className="text-[28px] font-bold tracking-tight mt-1">Events</h1>
+        {total !== undefined && <div className="heading-label">{t.events.headerCount(total, activeCount ?? 0)}</div>}
+        <h1 className="text-[28px] font-bold tracking-tight mt-1">{t.events.title}</h1>
       </div>
       {canCreate && (
         <Link href="/events/new" className="btn font-semibold">
-          New event
+          {t.events.newEvent}
         </Link>
       )}
     </div>
   );
 }
 
-function ViewSwitch({ view }: { view: "table" | "calendar" }) {
+function ViewSwitch({ view, t }: { view: "table" | "calendar"; t: Dictionary }) {
   return (
     <SegmentedTabs
       active={view}
       options={[
-        { value: "table", label: "Table", href: "/events" },
-        { value: "calendar", label: "Calendar", href: "/events?view=calendar" },
+        { value: "table", label: t.events.viewTable, href: "/events" },
+        { value: "calendar", label: t.events.viewCalendar, href: "/events?view=calendar" },
       ]}
     />
   );

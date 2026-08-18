@@ -422,7 +422,13 @@ model CompanySettings {
   bankAccount    String  @default("") // IBAN; QR code is skipped if empty
   defaultDueDays Int     @default(14)
   logoPath       String? // filename under uploads/logos/, served through an authenticated route like receipts
-  accentColor    String  @default("#ec3013") // hex; used for the invoice PDF's accent instead of the fixed app-theme constant
+  accentColor    String  @default("#ec3013") // hex; drives BOTH the invoice PDF accent and the live app's --color-accent
+  bgColor        String  @default("#131211")
+  surfaceColor   String  @default("#1a1918")
+  inkColor       String  @default("#f3f2f2")
+  positiveColor  String  @default("#2dd4bf")
+  warningColor   String  @default("#dc2626")
+  locale         String  @default("en") // "en" | "cs" — the whole app's UI language, not just this record
 }
 
 // A real client company. Added going forward, not backfilled from existing

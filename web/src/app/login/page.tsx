@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
+import { getLocale, getDictionary } from "@/lib/i18n";
 import { LoginForm } from "./LoginForm";
 
 export default async function LoginPage() {
@@ -12,12 +13,14 @@ export default async function LoginPage() {
     if (current?.active) redirect("/dashboard");
   }
 
+  const t = getDictionary(await getLocale());
+
   return (
     <div className="min-h-screen flex items-center justify-center px-4">
       <div className="w-full max-w-[360px]">
         <div className="text-[11px] font-bold tracking-[0.16em] mb-8">EVENT SYSTEM</div>
-        <h1 className="text-2xl font-semibold mb-6">Sign in</h1>
-        <LoginForm />
+        <h1 className="text-2xl font-semibold mb-6">{t.auth.signIn}</h1>
+        <LoginForm t={t.auth} />
       </div>
     </div>
   );

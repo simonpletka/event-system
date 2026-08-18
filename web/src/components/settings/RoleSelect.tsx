@@ -1,9 +1,7 @@
-const BUILT_IN_ROLES = [
-  { value: "ROLE:ADMIN", label: "Admin" },
-  { value: "ROLE:ACCOUNTANT", label: "Accountant" },
-  { value: "ROLE:PRODUCER", label: "Producer" },
-  { value: "ROLE:MEMBER", label: "Member" },
-];
+import type { Dictionary } from "@/lib/i18n";
+
+type TRoles = Dictionary["roles"];
+type T = Dictionary["settings"]["roleSelect"];
 
 export function RoleSelect({
   name,
@@ -12,6 +10,8 @@ export function RoleSelect({
   className,
   disabled,
   onChange,
+  t,
+  tRoles,
 }: {
   name: string;
   defaultValue: string;
@@ -19,18 +19,27 @@ export function RoleSelect({
   className?: string;
   disabled?: boolean;
   onChange?: () => void;
+  t: T;
+  tRoles: TRoles;
 }) {
+  const builtInRoles = [
+    { value: "ROLE:ADMIN", label: tRoles.ADMIN },
+    { value: "ROLE:ACCOUNTANT", label: tRoles.ACCOUNTANT },
+    { value: "ROLE:PRODUCER", label: tRoles.PRODUCER },
+    { value: "ROLE:MEMBER", label: tRoles.MEMBER },
+  ];
+
   return (
     <select name={name} defaultValue={defaultValue} disabled={disabled} onChange={onChange} className={className}>
-      <optgroup label="Built-in">
-        {BUILT_IN_ROLES.map((r) => (
+      <optgroup label={t.builtInGroup}>
+        {builtInRoles.map((r) => (
           <option key={r.value} value={r.value}>
             {r.label}
           </option>
         ))}
       </optgroup>
       {customRoles.length > 0 && (
-        <optgroup label="Custom">
+        <optgroup label={t.customGroup}>
           {customRoles.map((r) => (
             <option key={r.id} value={`CUSTOM:${r.id}`}>
               {r.name}

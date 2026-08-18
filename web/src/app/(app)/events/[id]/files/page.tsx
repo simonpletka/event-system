@@ -1,7 +1,10 @@
-export default function FilesTab() {
+import { getLocale, getDictionary } from "@/lib/i18n";
+
+export default async function FilesTab() {
+  const t = getDictionary(await getLocale());
   return (
     <div className="max-w-2xl">
-      <p className="text-sm placeholder-text">File storage isn&apos;t built yet — it&apos;s planned for a later phase.</p>
+      <p className="text-sm placeholder-text">{t.events.filesTab.notBuilt}</p>
     </div>
   );
 }

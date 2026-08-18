@@ -2,8 +2,11 @@
 
 import { useState } from "react";
 import { QuickCreateEventModal } from "@/components/QuickCreateEventModal";
+import type { Dictionary } from "@/lib/dictionary";
 
 export type PickableEvent = { id: string; title: string; companyName: string; quotedValue?: number };
+
+type T = Dictionary["events"]["picker"];
 
 export function EventPicker({
   name,
@@ -12,6 +15,7 @@ export function EventPicker({
   required,
   extraOption,
   onSelect,
+  t,
 }: {
   name: string;
   initialEvents: PickableEvent[];
@@ -21,6 +25,7 @@ export function EventPicker({
   extraOption?: { value: string; label: string };
   /** Fired whenever the selected event id changes (incl. right after a quick-create). */
   onSelect?: (eventId: string) => void;
+  t: T;
 }) {
   const [events, setEvents] = useState(initialEvents);
   const [selected, setSelected] = useState(defaultValue ?? "");
@@ -42,7 +47,7 @@ export function EventPicker({
       >
         {!extraOption && (
           <option value="" disabled>
-            Select an event…
+            {t.selectEvent}
           </option>
         )}
         {extraOption && <option value={extraOption.value}>{extraOption.label}</option>}
@@ -53,7 +58,7 @@ export function EventPicker({
         ))}
       </select>
       <button type="button" onClick={() => setModalOpen(true)} className="btno font-semibold text-[9px] whitespace-nowrap">
-        + New event
+        {t.newEventBtn}
       </button>
       {modalOpen && (
         <QuickCreateEventModal
@@ -63,6 +68,7 @@ export function EventPicker({
             select(event.id);
             setModalOpen(false);
           }}
+          t={t}
         />
       )}
     </div>

@@ -24,7 +24,13 @@ export function useConfirmDialog() {
   return ctx;
 }
 
-export function ConfirmDialogProvider({ children }: { children: React.ReactNode }) {
+export function ConfirmDialogProvider({
+  children,
+  defaultLabels = { cancel: "Cancel", confirm: "Confirm", ok: "OK" },
+}: {
+  children: React.ReactNode;
+  defaultLabels?: { cancel: string; confirm: string; ok: string };
+}) {
   const [state, setState] = useState<DialogState | null>(null);
 
   const confirm = useCallback((message: string, options: ConfirmOptions = {}) => {
@@ -78,16 +84,16 @@ export function ConfirmDialogProvider({ children }: { children: React.ReactNode 
             {state.mode === "confirm" ? (
               <div className="flex gap-2 mt-5">
                 <button type="button" className="btn flex-1" autoFocus onClick={() => close(false)}>
-                  {state.options.cancelLabel ?? "Cancel"}
+                  {state.options.cancelLabel ?? defaultLabels.cancel}
                 </button>
                 <button type="button" className="btno flex-1" onClick={() => close(true)}>
-                  {state.options.confirmLabel ?? "Confirm"}
+                  {state.options.confirmLabel ?? defaultLabels.confirm}
                 </button>
               </div>
             ) : (
               <div className="flex justify-end mt-5">
                 <button type="button" className="btn" autoFocus onClick={() => close(false)}>
-                  {state.options.dismissLabel ?? "OK"}
+                  {state.options.dismissLabel ?? defaultLabels.ok}
                 </button>
               </div>
             )}

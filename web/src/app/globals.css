@@ -5,7 +5,10 @@
   --color-surface: #1a1918;
   --color-ink: #f3f2f2;
   --color-accent: #ec3013;
-  --color-accent-hover: #c0250e;
+  /* Derived from --color-accent rather than a separately stored hex, so a
+     user-customized accent (Settings → App settings) always gets a matching
+     hover shade instead of needing a 7th color to pick. */
+  --color-accent-hover: color-mix(in srgb, var(--color-accent) 85%, black);
   /* Orange (--color-accent) stays the general action color — primary
      buttons, active nav/tabs, focus. These two are semantic-only: teal for
      a positive/"good" state (Confirmed, Accepted, Paid — orange's

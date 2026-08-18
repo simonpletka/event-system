@@ -2,11 +2,14 @@ import Link from "next/link";
 import { requireUser, canManageUsers, canManageCompanySettings } from "@/lib/authz";
 import { prisma } from "@/lib/prisma";
 import { getCompanySettings } from "@/lib/queries/finance";
+import { getLocale, getDictionary } from "@/lib/i18n";
+import { getAppColors } from "@/lib/theme";
 import { UsersTable } from "@/components/settings/UsersTable";
 import { CreateUserForm } from "@/components/settings/CreateUserForm";
 import { CompanySettingsForm } from "@/components/settings/CompanySettingsForm";
 import { RoleReferenceTable } from "@/components/settings/RoleReferenceTable";
 import { CategoriesTab } from "@/components/settings/CategoriesTab";
+import { AppSettingsForm } from "@/components/settings/AppSettingsForm";
 import { getItemCategories } from "@/lib/actions/categories";
 
 export default async function SettingsPage({
@@ -16,20 +19,22 @@ export default async function SettingsPage({
 }) {
   const user = await requireUser();
   const params = await searchParams;
+  const locale = await getLocale();
+  const t = getDictionary(locale);
 
   const canUsers = canManageUsers(user);
   const canCompany = canManageCompanySettings(user);
-  const tab = (params.tab as "company" | "users" | "templates") || (canCompany ? "company" : "users");
+  const tab = (params.tab as "company" | "users" | "templates" | "appSettings") || (canCompany ? "company" : "users");
 
   if (!canUsers && !canCompany) {
     return (
       <div>
-        <h1 className="text-xl font-semibold border-b-2 border-ink pb-2 mb-4">Settings</h1>
-        <div className="heading-label mb-1">Signed in as</div>
+        <h1 className="text-xl font-semibold border-b-2 border-ink pb-2 mb-4">{t.settings.title}</h1>
+        <div className="heading-label mb-1">{t.settings.signedInAs}</div>
         <div className="text-sm mb-4">
           {user.name} <span className="placeholder-text">· {user.email} · {user.role}</span>
         </div>
-        <p className="text-sm placeholder-text max-w-prose">You don&apos;t have access to broader settings — that&apos;s Admin/Accountant territory.</p>
+        <p className="text-sm placeholder-text max-w-prose">{t.settings.noAccessMsg}</p>
       </div>
     );
   }
@@ -43,14 +48,15 @@ export default async function SettingsPage({
     canCompany ? getItemCategories() : Promise.resolve([]),
   ]);
   const roleRows = customRoles.map((r) => ({ ...r, userCount: r._count.users }));
+  const colors = getAppColors(company);
 
   return (
     <div>
       <div className="sticky top-0 z-20 -mx-6 -mt-5 px-6 pt-5 pb-2 backdrop-blur-2xl bg-gradient-to-b from-bg/80 to-bg/50 border-b border-ink/10">
         <div className="flex items-end justify-between">
           <div>
-            <div className="heading-label">{users.length ? `${users.length} accounts` : "Company settings"}</div>
-            <h1 className="text-[28px] font-bold tracking-tight mt-1">Settings</h1>
+            <div className="heading-label">{users.length ? t.settings.accountsCount(users.length) : t.settings.companySettingsLabel}</div>
+            <h1 className="text-[28px] font-bold tracking-tight mt-1">{t.settings.title}</h1>
           </div>
         </div>
 
@@ -60,7 +66,7 @@ export default async function SettingsPage({
               href="/settings?tab=company"
               className={`text-[9px] tracking-[0.14em] uppercase pb-2 border-b-2 ${tab === "company" ? "border-accent text-accent" : "border-transparent placeholder-text hover:text-ink"}`}
             >
-              Company
+              {t.settings.tabCompany}
             </Link>
           )}
           {canUsers && (
@@ -68,7 +74,7 @@ export default async function SettingsPage({
               href="/settings?tab=users"
               className={`text-[9px] tracking-[0.14em] uppercase pb-2 border-b-2 ${tab === "users" ? "border-accent text-accent" : "border-transparent placeholder-text hover:text-ink"}`}
             >
-              Users &amp; roles
+              {t.settings.tabUsers}
             </Link>
           )}
           {canCompany && (
@@ -76,28 +82,50 @@ export default async function SettingsPage({
               href="/settings?tab=templates"
               className={`text-[9px] tracking-[0.14em] uppercase pb-2 border-b-2 ${tab === "templates" ? "border-accent text-accent" : "border-transparent placeholder-text hover:text-ink"}`}
             >
-              Templates
+              {t.settings.tabTemplates}
+            </Link>
+          )}
+          {canCompany && (
+            <Link
+              href="/settings?tab=appSettings"
+              className={`text-[9px] tracking-[0.14em] uppercase pb-2 border-b-2 ${tab === "appSettings" ? "border-accent text-accent" : "border-transparent placeholder-text hover:text-ink"}`}
+            >
+              {t.settings.tabAppSettings}
             </Link>
           )}
         </div>
       </div>
 
       <div className="mt-5">
-        {tab === "company" && canCompany && <CompanySettingsForm defaults={company} />}
+        {tab === "company" && canCompany && <CompanySettingsForm defaults={company} t={t.settings.company} />}
         {tab === "users" && canUsers && (
           <div>
-            <CreateUserForm customRoles={customRoles} />
+            <CreateUserForm customRoles={customRoles} locale={locale} tRoles={t.roles} tRoleSelect={t.settings.roleSelect} />
             <div className="rule-thin my-4" />
-            <UsersTable users={users} customRoles={customRoles} currentUserId={user.id} />
+            <UsersTable users={users} customRoles={customRoles} currentUserId={user.id} locale={locale} tRoles={t.roles} />
             <div className="rule-thin my-4" />
-            <RoleReferenceTable customRoles={roleRows} canManage={canUsers} />
+            <RoleReferenceTable customRoles={roleRows} canManage={canUsers} locale={locale} tAccess={t.accessLevels} tRoles={t.roles} />
           </div>
         )}
         {tab === "templates" && canCompany && (
           <div>
-            <div className="heading-label mb-2">Quote</div>
-            <CategoriesTab categories={categories} />
+            <div className="heading-label mb-2">{t.settings.quoteHeading}</div>
+            <CategoriesTab categories={categories} locale={locale} />
           </div>
+        )}
+        {tab === "appSettings" && canCompany && (
+          <AppSettingsForm
+            defaults={{
+              bgColor: colors.bg,
+              surfaceColor: colors.surface,
+              inkColor: colors.ink,
+              accentColor: colors.accent,
+              positiveColor: colors.positive,
+              warningColor: colors.warning,
+              locale,
+            }}
+            t={t.settings.appSettings}
+          />
         )}
       </div>
     </div>

@@ -6,12 +6,15 @@ import { formatCurrency, formatDate, formatMinutes } from "@/lib/format";
 import { QuoteStatusPill, InvoiceStatusPill } from "@/components/StatusPill";
 import { getRunningTimer } from "@/lib/queries/timetracker";
 import { startTimerAction } from "@/lib/actions/timetracker";
+import { getLocale, getDictionary } from "@/lib/i18n";
 
 export default async function EventOverviewPage({ params }: { params: Promise<{ id: string }> }) {
   const user = await requireUser();
   const { id } = await params;
   const event = await getEventDetail(user, id);
   if (!event) notFound();
+  const t = getDictionary(await getLocale());
+  const te = t.events;
 
   const totalExpenses = event.expenses.reduce((s, e) => s + e.amount, 0);
   const totalInvoiced = event.invoices.reduce((s, i) => s + i.total, 0);
@@ -23,18 +26,18 @@ export default async function EventOverviewPage({ params }: { params: Promise<{ 
   return (
     <div className="grid grid-cols-[1fr_280px] gap-5">
       <div>
-        <div className="label">Brief</div>
-        <p className="text-sm mt-1 max-w-prose">{event.brief || <span className="placeholder-text">No brief written yet.</span>}</p>
+        <div className="label">{te.brief}</div>
+        <p className="text-sm mt-1 max-w-prose">{event.brief || <span className="placeholder-text">{te.noBrief}</span>}</p>
 
-        <div className="label mt-3.5">Dates</div>
-        <Row label="Build / prep" value={event.buildDate ? formatDate(event.buildDate, { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" }) : "—"} />
-        <Row label="Event days" value={`${formatDate(event.startDate)} – ${formatDate(event.endDate)}`} />
-        <Row label="Strike" value={event.strikeDate ? formatDate(event.strikeDate, { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" }) : "—"} />
+        <div className="label mt-3.5">{te.dates}</div>
+        <Row label={te.buildPrep} value={event.buildDate ? formatDate(event.buildDate, { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" }) : "—"} />
+        <Row label={te.eventDays} value={`${formatDate(event.startDate)} – ${formatDate(event.endDate)}`} />
+        <Row label={te.strike} value={event.strikeDate ? formatDate(event.strikeDate, { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" }) : "—"} />
 
         <div className="label mt-3.5">
-          Venues ({event.venues.length}) <span className="placeholder-text normal-case tracking-normal">· addresses link to Google Maps</span>
+          {te.venuesCount(event.venues.length)} <span className="placeholder-text normal-case tracking-normal">{te.venuesMapsNote}</span>
         </div>
-        {event.venues.length === 0 && <p className="text-sm placeholder-text mt-1">No venues added yet.</p>}
+        {event.venues.length === 0 && <p className="text-sm placeholder-text mt-1">{te.noVenues}</p>}
         {event.venues.map((v) => (
           <div key={v.id} className="grid grid-cols-[1fr_.8fr_50px] gap-2.5 py-1.5 border-b border-ink/10 text-[13px] items-center">
             <div>{v.name}</div>
@@ -45,18 +48,16 @@ export default async function EventOverviewPage({ params }: { params: Promise<{ 
               rel="noreferrer"
               className="text-[9px] tracking-[0.1em] uppercase hover:text-accent"
             >
-              Map ↗
+              {te.mapLink}
             </a>
           </div>
         ))}
 
-        <div className="label mt-3.5">Client</div>
+        <div className="label mt-3.5">{te.client}</div>
         <div className="grid grid-cols-2 gap-2.5 mt-1 text-[13px]">
           <div className="card p-3">
-            <div className="label mb-1">
-              Contact{event.contacts.length === 1 ? "" : "s"} ({event.contacts.length})
-            </div>
-            {event.contacts.length === 0 && <p className="placeholder-text text-[11px]">None on file.</p>}
+            <div className="label mb-1">{te.contactsCount(event.contacts.length)}</div>
+            {event.contacts.length === 0 && <p className="placeholder-text text-[11px]">{te.noneOnFile}</p>}
             {event.contacts.map((c) => (
               <div key={c.id} className="mb-1.5 last:mb-0">
                 {c.name}
@@ -69,20 +70,20 @@ export default async function EventOverviewPage({ params }: { params: Promise<{ 
             ))}
           </div>
           <div className="card p-3">
-            <div className="label">Company</div>
+            <div className="label">{te.company}</div>
             {event.companyName}
             <div className="placeholder-text text-[11px] mt-0.5">
               {event.companyAddress}
               <br />
-              IČO {event.companyIco || "—"} · DIČ {event.companyDic || "—"}
+              {te.icoDicLine(event.companyIco || "—", event.companyDic || "—")}
             </div>
           </div>
         </div>
 
         <div className="label mt-3.5">
-          Next milestones <span className="placeholder-text normal-case tracking-normal">· full list on the Milestones tab</span>
+          {te.nextMilestones} <span className="placeholder-text normal-case tracking-normal">{te.fullListNote}</span>
         </div>
-        {upcomingMilestones.length === 0 && <p className="text-sm placeholder-text mt-1">No upcoming milestones.</p>}
+        {upcomingMilestones.length === 0 && <p className="text-sm placeholder-text mt-1">{te.noUpcomingMilestones}</p>}
         {upcomingMilestones.map((m) => (
           <div key={m.id} className="grid grid-cols-[70px_1fr] gap-2.5 py-1.5 border-b border-ink/10 text-[13px]">
             <div className="placeholder-text">{formatDate(m.date)}</div>
@@ -93,61 +94,61 @@ export default async function EventOverviewPage({ params }: { params: Promise<{ 
 
       <div className="flex flex-col gap-3">
         <div className="card px-4 py-4">
-          <div className="heading-label">Budget vs actual</div>
+          <div className="heading-label">{te.budgetVsActual}</div>
           <div className="text-2xl font-semibold tracking-tight mt-1">{formatCurrency(event.quotedValue)}</div>
-          <div className="placeholder-text text-[10px]">quoted value</div>
+          <div className="placeholder-text text-[10px]">{te.quotedValue}</div>
           <div className="mt-2">
-            <Row label="Expenses" value={formatCurrency(totalExpenses)} />
-            <Row label="Invoiced" value={formatCurrency(totalInvoiced)} />
-            <Row label="Margin" value={formatCurrency(event.quotedValue - totalExpenses)} strong />
+            <Row label={te.expenses} value={formatCurrency(totalExpenses)} />
+            <Row label={te.invoiced} value={formatCurrency(totalInvoiced)} />
+            <Row label={te.margin} value={formatCurrency(event.quotedValue - totalExpenses)} strong />
           </div>
         </div>
 
         <div className="card px-4 py-4">
-          <div className="heading-label">Time logged</div>
+          <div className="heading-label">{te.timeLogged}</div>
           <div className="text-lg font-semibold mt-1">{formatMinutes(totalMinutes)}</div>
-          <div className="placeholder-text text-[10px]">{uniquePeople.size} people</div>
+          <div className="placeholder-text text-[10px]">{te.peopleCount(uniquePeople.size)}</div>
           {runningTimer?.eventId === event.id ? (
-            <div className="btno block text-center mt-3 opacity-50 cursor-default">Timer running here</div>
+            <div className="btno block text-center mt-3 opacity-50 cursor-default">{te.timerRunningHere}</div>
           ) : (
             <form action={startTimerAction}>
               <input type="hidden" name="eventId" value={event.id} />
               <button type="submit" className="btno block w-full text-center mt-3">
-                Start timer
+                {te.startTimer}
               </button>
             </form>
           )}
         </div>
 
         <div className="card px-4 py-4">
-          <div className="heading-label mb-1.5">Documents</div>
-          {[...event.quotes, ...event.invoices].length === 0 && <p className="text-[12px] placeholder-text">None yet.</p>}
+          <div className="heading-label mb-1.5">{te.documents}</div>
+          {[...event.quotes, ...event.invoices].length === 0 && <p className="text-[12px] placeholder-text">{te.noneYet}</p>}
           {event.quotes.map((q) => (
             <div key={q.id} className="flex justify-between items-center py-1.5 text-[12px]">
-              <span>Quote {q.number}</span>
-              <QuoteStatusPill status={q.status} />
+              <span>{te.quoteNumber(q.number)}</span>
+              <QuoteStatusPill status={q.status} t={t.statusQuote} />
             </div>
           ))}
           {event.invoices.map((inv) => (
             <div key={inv.id} className="flex justify-between items-center py-1.5 text-[12px]">
-              <span>Invoice {inv.number}</span>
-              <InvoiceStatusPill status={inv.status} dueDate={inv.dueDate} paidAt={inv.paidAt} />
+              <span>{te.invoiceNumber(inv.number)}</span>
+              <InvoiceStatusPill status={inv.status} dueDate={inv.dueDate} paidAt={inv.paidAt} t={t.invoicePill} />
             </div>
           ))}
           <Link href={`/events/${event.id}/quotes`} className="btno block text-center mt-3">
-            View quotes & invoices
+            {te.viewQuotesInvoices}
           </Link>
           {canManageFinance(user) && (
             <Link href={`/finance/quotes/new?eventId=${event.id}`} className="btn font-semibold block text-center mt-1.5">
-              New quote for this event
+              {te.newQuoteForEvent}
             </Link>
           )}
         </div>
 
         <div className="card px-4 py-4">
-          <div className="heading-label mb-1.5">Team</div>
+          <div className="heading-label mb-1.5">{te.team}</div>
           <div className="flex gap-1.5 flex-wrap">
-            {event.members.length === 0 && <span className="text-[11px] placeholder-text">Owner only ({event.owner.name})</span>}
+            {event.members.length === 0 && <span className="text-[11px] placeholder-text">{te.ownerOnly(event.owner.name)}</span>}
             {event.members.map((m) => (
               <div
                 key={m.id}

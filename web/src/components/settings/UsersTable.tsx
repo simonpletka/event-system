@@ -3,6 +3,7 @@
 import { useActionState } from "react";
 import Link from "next/link";
 import { toggleCardHolderAction, resetPasswordAction, type SettingsFormState } from "@/lib/actions/settings";
+import { getDictionary, type Dictionary, type Locale } from "@/lib/dictionary";
 
 type User = {
   id: string;
@@ -15,54 +16,57 @@ type User = {
   lastSeenAt: Date | null;
 };
 
-const ROLE_LABEL: Record<string, string> = {
-  ADMIN: "Admin",
-  ACCOUNTANT: "Accountant",
-  PRODUCER: "Producer",
-  MEMBER: "Member",
-};
+type T = Dictionary["settings"]["users"];
+type TRoles = Dictionary["roles"];
 
-function relativeTime(date: Date | null) {
-  if (!date) return "never";
+function relativeTime(date: Date | null, t: T) {
+  if (!date) return t.relativeNever;
   const diffMs = Date.now() - date.getTime();
   const minutes = Math.floor(diffMs / 60000);
-  if (minutes < 1) return "now";
-  if (minutes < 60) return `${minutes} min ago`;
+  if (minutes < 1) return t.relativeNow;
+  if (minutes < 60) return t.relativeMinAgo(minutes);
   const hours = Math.floor(minutes / 60);
-  if (hours < 24) return `${hours} h ago`;
+  if (hours < 24) return t.relativeHAgo(hours);
   const days = Math.floor(hours / 24);
-  if (days === 1) return "yesterday";
-  return `${days} d ago`;
+  if (days === 1) return t.relativeYesterday;
+  return t.relativeDAgo(days);
 }
 
 export function UsersTable({
   users,
   customRoles,
   currentUserId,
+  locale,
+  tRoles,
 }: {
   users: User[];
   customRoles: { id: string; name: string }[];
   currentUserId: string;
+  locale: Locale;
+  tRoles: TRoles;
 }) {
+  const t = getDictionary(locale).settings.users;
   const customRoleName = new Map(customRoles.map((r) => [r.id, r.name]));
+  const roleLabel: Record<string, string> = { ADMIN: tRoles.ADMIN, ACCOUNTANT: tRoles.ACCOUNTANT, PRODUCER: tRoles.PRODUCER, MEMBER: tRoles.MEMBER };
 
   return (
     <div>
       <div className="grid grid-cols-[1.2fr_1.4fr_1fr_.7fr_.8fr_1fr] gap-2.5 border-b border-ink/14 pb-1.5 px-3.5">
-        <span className="heading-label">Name</span>
-        <span className="heading-label">Account</span>
-        <span className="heading-label">Role</span>
-        <span className="heading-label">Company card</span>
-        <span className="heading-label">Last seen</span>
+        <span className="heading-label">{t.colName}</span>
+        <span className="heading-label">{t.colAccount}</span>
+        <span className="heading-label">{t.colRole}</span>
+        <span className="heading-label">{t.colCompanyCard}</span>
+        <span className="heading-label">{t.colLastSeen}</span>
         <span className="heading-label"></span>
       </div>
       {users.map((u) => (
         <UserRow
           key={u.id}
           user={u}
-          roleLabel={u.customRoleId ? (customRoleName.get(u.customRoleId) ?? "Custom") : ROLE_LABEL[u.role]}
+          roleLabel={u.customRoleId ? (customRoleName.get(u.customRoleId) ?? tRoles.custom) : roleLabel[u.role]}
           isSelf={u.id === currentUserId}
-          lastSeenLabel={relativeTime(u.lastSeenAt)}
+          lastSeenLabel={relativeTime(u.lastSeenAt, t)}
+          t={t}
         />
       ))}
     </div>
@@ -74,11 +78,13 @@ function UserRow({
   roleLabel,
   isSelf,
   lastSeenLabel,
+  t,
 }: {
   user: User;
   roleLabel: string;
   isSelf: boolean;
   lastSeenLabel: string;
+  t: T;
 }) {
   const [resetState, resetAction, resetPending] = useActionState<SettingsFormState, FormData>(resetPasswordAction, {});
 
@@ -88,14 +94,14 @@ function UserRow({
     >
       <div className="font-medium">
         {user.name}
-        {isSelf && <span className="label ml-1.5">you</span>}
-        {!user.active && <span className="tag tag-warning ml-1.5">Inactive</span>}
+        {isSelf && <span className="label ml-1.5">{t.youBadge}</span>}
+        {!user.active && <span className="tag tag-warning ml-1.5">{t.inactiveBadge}</span>}
       </div>
       <div className="placeholder-text truncate">{user.email}</div>
       <div className="placeholder-text">{roleLabel}</div>
       <form action={toggleCardHolderAction}>
         <input type="hidden" name="id" value={user.id} />
-        <button type="submit" title="Toggle company card">
+        <button type="submit" title={t.toggleCompanyCardTitle}>
           <span
             className={`w-[18px] h-[18px] rounded-[5px] border flex items-center justify-center ${
               user.isCardHolder ? "bg-accent border-accent" : "border-ink/25 bg-ink/4"
@@ -112,12 +118,12 @@ function UserRow({
       <div className="placeholder-text">{lastSeenLabel}</div>
       <div className="flex gap-2.5 text-[9px] tracking-[0.1em] uppercase flex-wrap">
         <Link href={`/settings/users/${user.id}/edit`} className="placeholder-text hover:text-ink">
-          Edit
+          {t.edit}
         </Link>
         <form action={resetAction}>
           <input type="hidden" name="id" value={user.id} />
           <button type="submit" disabled={resetPending} className="placeholder-text hover:text-ink">
-            Reset password
+            {t.resetPassword}
           </button>
         </form>
       </div>

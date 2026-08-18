@@ -2,6 +2,7 @@ import Link from "next/link";
 import { requireUser } from "@/lib/authz";
 import { getMyTimeTrackerData, getTimeTrackerCalendarData, rangeStart, type TimePeriod } from "@/lib/queries/timetracker";
 import { formatDate, formatMinutes } from "@/lib/format";
+import { getLocale, getDictionary, type Dictionary } from "@/lib/i18n";
 import { ManualEntryForm } from "@/components/timetracker/ManualEntryForm";
 import { RunningTimerBox } from "@/components/timetracker/RunningTimerBox";
 import { DeleteEntryButton } from "@/components/timetracker/DeleteEntryButton";
@@ -9,7 +10,7 @@ import { TimeTrackerCalendar } from "@/components/timetracker/TimeTrackerCalenda
 import { SegmentedTabs } from "@/components/ui/SegmentedTabs";
 import { WeekNav } from "@/components/calendar/WeekNav";
 import { isoDate, mondayOf, parseIsoDate } from "@/lib/calendar";
-import { stepDate, periodLabel, periodNounFor, currentPeriodLabel } from "@/lib/period-nav";
+import { stepDate, periodLabel, currentPeriodLabel } from "@/lib/period-nav";
 
 function trackingHref(params: { view?: string; mode?: string; period?: string; date?: string }) {
   const qs = new URLSearchParams();
@@ -28,6 +29,8 @@ export default async function TrackingPage({
 }) {
   const user = await requireUser();
   const params = await searchParams;
+  const locale = await getLocale();
+  const t = getDictionary(locale);
   const view = params.view === "calendar" ? "calendar" : "list";
   const mode = params.mode === "manual" ? "manual" : "timer";
   const period: TimePeriod = params.period === "day" || params.period === "month" ? params.period : "week";
@@ -45,46 +48,50 @@ export default async function TrackingPage({
     <SegmentedTabs
       active={view}
       options={[
-        { value: "list", label: "List", href: trackingHref({ mode, period, date: params.date }) },
-        { value: "calendar", label: "Calendar", href: trackingHref({ view: "calendar" }) },
+        { value: "list", label: t.timeTracker.tracking.viewList, href: trackingHref({ mode, period, date: params.date }) },
+        { value: "calendar", label: t.timeTracker.tracking.viewCalendar, href: trackingHref({ view: "calendar" }) },
       ]}
     />
   );
 
   const modeOptions = [
-    { value: "timer", label: "Timer", href: trackingHref({ view, mode: "timer", period, date: params.date }) },
-    { value: "manual", label: "Manual", href: trackingHref({ view, mode: "manual", period, date: params.date }) },
+    { value: "timer", label: t.timeTracker.tracking.modeTimer, href: trackingHref({ view, mode: "timer", period, date: params.date }) },
+    { value: "manual", label: t.timeTracker.tracking.modeManual, href: trackingHref({ view, mode: "manual", period, date: params.date }) },
   ];
 
   return (
     <div>
       {runningNormalized ? (
-        <RunningTimerBox running={runningNormalized} events={events} />
+        <RunningTimerBox running={runningNormalized} events={events} locale={locale} />
       ) : (
         <div>
           <div className="mb-3">
             <SegmentedTabs active={mode} options={modeOptions} />
           </div>
-          {mode === "timer" ? <RunningTimerBox running={null} events={events} /> : <ManualEntryForm events={events} />}
+          {mode === "timer" ? (
+            <RunningTimerBox running={null} events={events} locale={locale} />
+          ) : (
+            <ManualEntryForm events={events} t={t.timeTracker.manualForm} tPhases={t.phases} />
+          )}
         </div>
       )}
 
       <div className="flex items-center justify-between gap-2 flex-wrap mt-5">
-        <div className="heading-label">{view === "list" ? "My entries" : "Calendar"}</div>
+        <div className="heading-label">{view === "list" ? t.timeTracker.tracking.myEntries : t.timeTracker.tabOverview}</div>
         {viewSwitch}
       </div>
 
       {view === "calendar" ? (
         <>
           <div className="flex justify-end mt-3">
-            <WeekNav weekStart={weekStart} hrefFor={(week) => `/time-tracker/tracking?view=calendar&week=${week}`} />
+            <WeekNav weekStart={weekStart} hrefFor={(week) => `/time-tracker/tracking?view=calendar&week=${week}`} todayLabel={t.timeTracker.tracking.today} />
           </div>
           <div className="mt-4">
-            <TimeTrackerCalendar weekStart={weekStart} entries={calendarData!.entries} />
+            <TimeTrackerCalendar weekStart={weekStart} entries={calendarData!.entries} t={t.timeTracker.calendarView} />
           </div>
         </>
       ) : (
-        <ListView period={period} anchor={anchor} params={params} listData={listData!} />
+        <ListView period={period} anchor={anchor} params={params} listData={listData!} t={t} />
       )}
     </div>
   );
@@ -95,24 +102,29 @@ function ListView({
   anchor,
   params,
   listData,
+  t,
 }: {
   period: TimePeriod;
   anchor: Date;
   params: Record<string, string | undefined>;
   listData: NonNullable<Awaited<ReturnType<typeof getMyTimeTrackerData>>>;
+  t: Dictionary;
 }) {
   const mode = params.mode === "manual" ? "manual" : "timer";
   const { entries, periodTotals, periodTotalMinutes } = listData;
+  const tt = t.timeTracker.tracking;
 
   const periodOptions = [
-    { value: "day", label: "Day", href: trackingHref({ mode, period: "day" }) },
-    { value: "week", label: "Week", href: trackingHref({ mode, period: "week" }) },
-    { value: "month", label: "Month", href: trackingHref({ mode, period: "month" }) },
+    { value: "day", label: tt.day, href: trackingHref({ mode, period: "day" }) },
+    { value: "week", label: tt.week, href: trackingHref({ mode, period: "week" }) },
+    { value: "month", label: tt.month, href: trackingHref({ mode, period: "month" }) },
   ];
 
   const prevHref = trackingHref({ mode, period, date: isoDate(stepDate(period, anchor, -1)) });
   const nextHref = trackingHref({ mode, period, date: isoDate(stepDate(period, anchor, 1)) });
   const todayHref = trackingHref({ mode, period });
+
+  const periodNoun = tt.periodNoun[period];
 
   return (
     <div className="grid grid-cols-[1fr_280px] gap-5 mt-3">
@@ -128,20 +140,20 @@ function ListView({
               →
             </Link>
             <Link href={todayHref} className="btno">
-              Today
+              {tt.today}
             </Link>
           </div>
         </div>
 
         <div className="grid grid-cols-[56px_1.2fr_1.4fr_.6fr_.5fr] gap-2.5 border-b border-ink/14 pb-1.5 mt-4 px-2.5">
-          <span className="heading-label">Date</span>
-          <span className="heading-label">Event</span>
-          <span className="heading-label">Work</span>
-          <span className="heading-label">Hours</span>
+          <span className="heading-label">{tt.colDate}</span>
+          <span className="heading-label">{tt.colEvent}</span>
+          <span className="heading-label">{tt.colWork}</span>
+          <span className="heading-label">{tt.colHours}</span>
           <span className="heading-label"></span>
         </div>
 
-        {entries.length === 0 && <p className="text-sm placeholder-text mt-3">No entries for this {periodNounFor(period)}.</p>}
+        {entries.length === 0 && <p className="text-sm placeholder-text mt-3">{tt.noEntriesForPeriod(periodNoun)}</p>}
 
         {entries.map((e) => (
           <div
@@ -156,26 +168,28 @@ function ListView({
             <div className="font-semibold">{formatMinutes(e.minutes)}</div>
             <div className="flex gap-2 text-[9px] tracking-[0.1em] uppercase">
               <Link href={`/time-tracker/entries/${e.id}/edit`} className="hover:text-ink placeholder-text">
-                Edit
+                {tt.edit}
               </Link>
-              <DeleteEntryButton id={e.id} />
+              <DeleteEntryButton id={e.id} t={t.timeTracker.deleteEntry} />
             </div>
           </div>
         ))}
-        <div className="label mt-3 px-2.5">Manual and tracked entries look identical in every report.</div>
+        <div className="label mt-3 px-2.5">{tt.manualTrackedNote}</div>
       </div>
 
       <div className="flex flex-col gap-3">
         <div className="card px-4 py-4">
-          <div className="heading-label mb-1.5">{isoDate(rangeStart(period, anchor)) === isoDate(rangeStart(period, new Date())) ? currentPeriodLabel(period) : periodLabel(period, anchor)}</div>
-          {periodTotals.map((t) => (
-            <div key={t.title} className="flex justify-between py-1.5 text-[13px] border-b border-ink/8 last:border-b-0">
-              <div>{t.title}</div>
-              <div className="placeholder-text">{formatMinutes(t.minutes)}</div>
+          <div className="heading-label mb-1.5">
+            {isoDate(rangeStart(period, anchor)) === isoDate(rangeStart(period, new Date())) ? currentPeriodLabel(period, tt) : periodLabel(period, anchor)}
+          </div>
+          {periodTotals.map((pt) => (
+            <div key={pt.title} className="flex justify-between py-1.5 text-[13px] border-b border-ink/8 last:border-b-0">
+              <div>{pt.title}</div>
+              <div className="placeholder-text">{formatMinutes(pt.minutes)}</div>
             </div>
           ))}
           <div className="flex justify-between pt-2 mt-1 border-t border-ink/14 text-[13px] font-semibold">
-            <div>Total</div>
+            <div>{tt.totalLabel}</div>
             <div>{formatMinutes(periodTotalMinutes)}</div>
           </div>
         </div>

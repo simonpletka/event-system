@@ -4,23 +4,28 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { signOutAction } from "@/lib/actions/auth";
 import { TimerWidget } from "@/components/TimerWidget";
-
-const NAV = [
-  { href: "/dashboard", label: "Dashboard" },
-  { href: "/clients", label: "Clients" },
-  { href: "/events", label: "Events" },
-  { href: "/finance", label: "Finance" },
-  { href: "/time-tracker", label: "Time tracker" },
-] as const;
+import type { Dictionary } from "@/lib/dictionary";
 
 export function Sidebar({
   userName,
   running,
+  tNav,
+  tSidebar,
 }: {
   userName: string;
   running: { eventTitle: string; startedAt: string } | null;
+  tNav: Dictionary["nav"];
+  tSidebar: Dictionary["sidebar"];
 }) {
   const pathname = usePathname();
+
+  const NAV = [
+    { href: "/dashboard", label: tNav.dashboard },
+    { href: "/clients", label: tNav.clients },
+    { href: "/events", label: tNav.events },
+    { href: "/finance", label: tNav.finance },
+    { href: "/time-tracker", label: tNav.timeTracker },
+  ];
 
   return (
     <div className="sticky top-3 h-[calc(100vh-24px)] ml-3 shrink-0 glass-panel rounded-2xl shadow-[0_14px_36px_rgba(0,0,0,0.4)] w-[216px] px-4 pt-4 pb-5 flex flex-col gap-4 print-hide font-medium overflow-y-auto">
@@ -39,11 +44,11 @@ export function Sidebar({
 
       <div className="rule-thin" />
 
-      <TimerWidget running={running} />
+      <TimerWidget running={running} t={tSidebar} />
 
       <div className="mt-auto flex flex-col gap-2.5">
         <Link href="/settings" className={`nav-item ${pathname.startsWith("/settings") ? "active" : ""}`}>
-          Settings
+          {tNav.settings}
         </Link>
         <div className="flex items-center justify-between gap-2">
           <div className="flex items-center gap-1.5 min-w-0">
@@ -52,7 +57,7 @@ export function Sidebar({
           </div>
           <form action={signOutAction}>
             <button type="submit" className="text-[9px] tracking-[0.1em] uppercase placeholder-text hover:text-ink">
-              Sign out
+              {tNav.signOut}
             </button>
           </form>
         </div>
