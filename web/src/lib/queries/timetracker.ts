@@ -1,6 +1,9 @@
 import { prisma } from "@/lib/prisma";
 import { eventWhereForUser, type SessionUser } from "@/lib/authz";
+import { startOfDay, addDays, mondayOf } from "@/lib/calendar";
 import type { TimePhase } from "@/generated/prisma/enums";
+
+export type TimePeriod = "day" | "week" | "month";
 
 export async function getRunningTimer(userId: string) {
   return prisma.timeEntry.findFirst({
@@ -9,34 +12,33 @@ export async function getRunningTimer(userId: string) {
   });
 }
 
-function rangeStart(period: "day" | "week" | "month", now = new Date()) {
-  const d = new Date(now);
-  d.setHours(0, 0, 0, 0);
+export function rangeStart(period: TimePeriod, anchor: Date) {
+  const d = startOfDay(anchor);
   if (period === "day") return d;
-  if (period === "week") {
-    const day = (d.getDay() + 6) % 7; // Monday = 0
-    d.setDate(d.getDate() - day);
-    return d;
-  }
+  if (period === "week") return mondayOf(d);
   d.setDate(1);
   return d;
 }
 
-export async function getMyTimeTrackerData(user: SessionUser, period: "day" | "week" | "month") {
-  const now = new Date();
-  const from = rangeStart(period, now);
-  const weekStart = rangeStart("week", now);
+export function rangeEnd(period: TimePeriod, anchor: Date) {
+  const start = rangeStart(period, anchor);
+  if (period === "day") return addDays(start, 1);
+  if (period === "week") return addDays(start, 7);
+  const end = new Date(start);
+  end.setMonth(end.getMonth() + 1);
+  return end;
+}
 
-  const [running, entries, thisWeek, events] = await Promise.all([
+export async function getMyTimeTrackerData(user: SessionUser, period: TimePeriod, anchor: Date) {
+  const from = rangeStart(period, anchor);
+  const to = rangeEnd(period, anchor);
+
+  const [running, entries, events] = await Promise.all([
     getRunningTimer(user.id),
     prisma.timeEntry.findMany({
-      where: { userId: user.id, running: false, date: { gte: from } },
+      where: { userId: user.id, running: false, date: { gte: from, lt: to } },
       include: { event: true },
       orderBy: { date: "desc" },
-    }),
-    prisma.timeEntry.findMany({
-      where: { userId: user.id, running: false, date: { gte: weekStart } },
-      include: { event: { select: { id: true, title: true } } },
     }),
     prisma.event.findMany({
       where: eventWhereForUser(user),
@@ -46,15 +48,32 @@ export async function getMyTimeTrackerData(user: SessionUser, period: "day" | "w
   ]);
 
   const byEvent = new Map<string, { title: string; minutes: number }>();
-  for (const t of thisWeek) {
+  for (const t of entries) {
     const cur = byEvent.get(t.event.id) ?? { title: t.event.title, minutes: 0 };
     cur.minutes += t.minutes;
     byEvent.set(t.event.id, cur);
   }
-  const weekTotals = [...byEvent.values()].sort((a, b) => b.minutes - a.minutes);
-  const weekTotalMinutes = weekTotals.reduce((s, e) => s + e.minutes, 0);
+  const periodTotals = [...byEvent.values()].sort((a, b) => b.minutes - a.minutes);
+  const periodTotalMinutes = periodTotals.reduce((s, e) => s + e.minutes, 0);
 
-  return { running, entries, weekTotals, weekTotalMinutes, events };
+  return { running, entries, periodTotals, periodTotalMinutes, events };
+}
+
+export async function getTimeTrackerCalendarData(user: SessionUser, weekStart: Date) {
+  const weekEnd = addDays(weekStart, 7);
+  const [entries, events] = await Promise.all([
+    prisma.timeEntry.findMany({
+      where: { userId: user.id, running: false, date: { gte: weekStart, lt: weekEnd } },
+      include: { event: { select: { id: true, title: true } } },
+      orderBy: { date: "asc" },
+    }),
+    prisma.event.findMany({
+      where: eventWhereForUser(user),
+      select: { id: true, title: true, companyName: true },
+      orderBy: { title: "asc" },
+    }),
+  ]);
+  return { entries, events };
 }
 
 export async function getCompareEventsData(user: SessionUser, eventIds: string[]) {

@@ -2,6 +2,11 @@ import { notFound } from "next/navigation";
 import { requireUser } from "@/lib/authz";
 import { prisma } from "@/lib/prisma";
 import { EditEntryForm } from "@/components/timetracker/EditEntryForm";
+import { isoDate } from "@/lib/calendar";
+
+function isoTime(d: Date) {
+  return `${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
+}
 
 export default async function EditEntryPage({ params }: { params: Promise<{ id: string }> }) {
   const user = await requireUser();
@@ -27,10 +32,12 @@ export default async function EditEntryPage({ params }: { params: Promise<{ id: 
       <EditEntryForm
         id={entry.id}
         eventTitle={entry.event.title}
-        date={entry.date.toISOString().slice(0, 10)}
+        date={isoDate(entry.date)}
         minutes={entry.minutes}
         description={entry.description}
         phase={entry.phase}
+        startTime={entry.startedAt ? isoTime(entry.startedAt) : undefined}
+        endTime={entry.endedAt ? isoTime(entry.endedAt) : undefined}
       />
     </div>
   );

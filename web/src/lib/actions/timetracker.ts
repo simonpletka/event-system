@@ -61,19 +61,31 @@ export async function stopTimerAction(formData: FormData) {
   revalidatePath("/dashboard");
 }
 
-function computeMinutes(formData: FormData) {
+function combineDateTime(dateStr: string, timeStr: string) {
+  const [y, m, d] = dateStr.split("-").map(Number);
+  const [h, min] = timeStr.split(":").map(Number);
+  return new Date(y, m - 1, d, h, min);
+}
+
+/**
+ * Duration-only manual entries never get startedAt/endedAt (nothing to
+ * position them at on the Calendar view's hourly grid); entries with real
+ * start/end times get both fields set, not just a computed minute count, so
+ * the Calendar view can actually place them.
+ */
+function computeMinutesAndTimes(formData: FormData, dateStr: string) {
   const start = String(formData.get("startTime") ?? "");
   const end = String(formData.get("endTime") ?? "");
   const duration = Number(formData.get("duration") ?? 0);
 
   if (start && end) {
-    const [sh, sm] = start.split(":").map(Number);
-    const [eh, em] = end.split(":").map(Number);
-    const diff = eh * 60 + em - (sh * 60 + sm);
-    if (diff > 0) return diff;
+    const startedAt = combineDateTime(dateStr, start);
+    const endedAt = combineDateTime(dateStr, end);
+    const diff = Math.round((endedAt.getTime() - startedAt.getTime()) / 60000);
+    if (diff > 0) return { minutes: diff, startedAt, endedAt };
   }
-  if (duration > 0) return Math.round(duration);
-  return 0;
+  if (duration > 0) return { minutes: Math.round(duration), startedAt: null, endedAt: null };
+  return { minutes: 0, startedAt: null, endedAt: null };
 }
 
 export async function addManualEntryAction(_prev: TimeFormState, formData: FormData): Promise<TimeFormState> {
@@ -82,9 +94,11 @@ export async function addManualEntryAction(_prev: TimeFormState, formData: FormD
   const date = String(formData.get("date") ?? "");
   const description = String(formData.get("description") ?? "");
   const phase = (formData.get("phase") as TimePhase) || "PLANNING";
-  const minutes = computeMinutes(formData);
-
-  if (!eventId || !date || minutes <= 0) {
+  if (!eventId || !date) {
+    return { error: "Event, date and either a start/end time or a duration are required." };
+  }
+  const { minutes, startedAt, endedAt } = computeMinutesAndTimes(formData, date);
+  if (minutes <= 0) {
     return { error: "Event, date and either a start/end time or a duration are required." };
   }
 
@@ -92,7 +106,7 @@ export async function addManualEntryAction(_prev: TimeFormState, formData: FormD
   if (!event) return { error: "Event not found or not accessible." };
 
   await prisma.timeEntry.create({
-    data: { eventId, userId: user.id, date: new Date(date), minutes, description, phase },
+    data: { eventId, userId: user.id, date: new Date(date), minutes, description, phase, startedAt, endedAt },
   });
 
   revalidatePath("/time-tracker");
@@ -110,12 +124,13 @@ export async function updateManualEntryAction(_prev: TimeFormState, formData: Fo
   const date = String(formData.get("date") ?? "");
   const description = String(formData.get("description") ?? "");
   const phase = (formData.get("phase") as TimePhase) || "PLANNING";
-  const minutes = computeMinutes(formData);
-  if (!date || minutes <= 0) return { error: "Date and either a start/end time or a duration are required." };
+  if (!date) return { error: "Date and either a start/end time or a duration are required." };
+  const { minutes, startedAt, endedAt } = computeMinutesAndTimes(formData, date);
+  if (minutes <= 0) return { error: "Date and either a start/end time or a duration are required." };
 
   await prisma.timeEntry.update({
     where: { id },
-    data: { date: new Date(date), minutes, description, phase },
+    data: { date: new Date(date), minutes, description, phase, startedAt, endedAt },
   });
 
   revalidatePath("/time-tracker");

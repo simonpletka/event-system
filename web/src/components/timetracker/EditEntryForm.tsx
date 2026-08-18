@@ -15,6 +15,8 @@ export function EditEntryForm({
   minutes,
   description,
   phase,
+  startTime,
+  endTime,
 }: {
   id: string;
   eventTitle: string;
@@ -22,6 +24,8 @@ export function EditEntryForm({
   minutes: number;
   description: string;
   phase: TimePhase;
+  startTime?: string;
+  endTime?: string;
 }) {
   const [state, formAction, pending] = useActionState(updateManualEntryAction, initialState);
   const h = Math.floor(minutes / 60);
@@ -46,11 +50,11 @@ export function EditEntryForm({
       <div className="grid grid-cols-2 gap-3">
         <label className="flex flex-col gap-1.5">
           <span className="heading-label">Start time (optional)</span>
-          <input name="startTime" type="time" className="input" />
+          <input name="startTime" type="time" defaultValue={startTime} className="input" />
         </label>
         <label className="flex flex-col gap-1.5">
           <span className="heading-label">End time (optional)</span>
-          <input name="endTime" type="time" className="input" />
+          <input name="endTime" type="time" defaultValue={endTime} className="input" />
         </label>
       </div>
       <span className="text-[9px] placeholder-text -mt-1">Fill start/end to recompute duration precisely; otherwise the duration above is used.</span>
