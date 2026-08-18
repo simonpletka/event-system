@@ -15,31 +15,28 @@ export default async function ClientsPage({
 
   return (
     <div>
-      <div className="flex items-end justify-between border-b-2 border-ink pb-2">
-        <div>
-          <div className="heading-label">{clients.length} clients</div>
-          <h1 className="text-xl font-semibold">Clients</h1>
+      <div className="sticky top-0 z-20 -mx-6 -mt-5 px-6 pt-5 pb-4 backdrop-blur-2xl bg-gradient-to-b from-bg/80 to-bg/50 border-b border-ink/10">
+        <div className="flex items-end justify-between">
+          <div>
+            <div className="heading-label">{clients.length} clients</div>
+            <h1 className="text-[28px] font-bold tracking-tight mt-1">Clients</h1>
+          </div>
+          {canManage && (
+            <Link href="/clients/new" className="btn">
+              New client
+            </Link>
+          )}
         </div>
-        {canManage && (
-          <Link href="/clients/new" className="btn">
-            New client
-          </Link>
-        )}
+
+        <form method="get" className="flex gap-1.5 mt-4">
+          <input name="q" defaultValue={params.q ?? ""} placeholder="Search by name…" className="input text-[12px] py-2 w-[240px]" />
+          <button type="submit" className="btno text-[9px]">
+            Apply
+          </button>
+        </form>
       </div>
 
-      <form method="get" className="flex gap-1.5 mt-3">
-        <input
-          name="q"
-          defaultValue={params.q ?? ""}
-          placeholder="Search by name…"
-          className="border border-ink/35 bg-transparent px-2 py-1.5 text-[9px] w-[220px]"
-        />
-        <button type="submit" className="btno text-[9px]">
-          Apply
-        </button>
-      </form>
-
-      <div className="grid grid-cols-[1.5fr_.8fr_.7fr_.7fr_1fr] gap-2.5 border-b-2 border-ink pb-1.5 mt-3">
+      <div className="grid grid-cols-[1.5fr_.8fr_.7fr_.7fr_1fr] gap-2.5 border-b border-ink/14 pb-1.5 mt-5 px-3.5">
         <span className="heading-label">Company</span>
         <span className="heading-label">IČO</span>
         <span className="heading-label">Contacts</span>
@@ -53,13 +50,13 @@ export default async function ClientsPage({
         <Link
           key={c.id}
           href={`/clients/${c.id}`}
-          className="grid grid-cols-[1.5fr_.8fr_.7fr_.7fr_1fr] gap-2.5 items-center py-2.5 border-b border-ink/13 text-[13px] hover:bg-ink/5"
+          className="group grid grid-cols-[1.5fr_.8fr_.7fr_.7fr_1fr] gap-2.5 items-center py-3 px-3.5 rounded-xl border-b border-ink/8 last:border-b-0 text-[13px] hover:bg-ink/5"
         >
-          <div>{c.name}</div>
-          <div className="placeholder-text">{c.ico || "—"}</div>
-          <div className="placeholder-text">{c.contactCount}</div>
-          <div className="placeholder-text">{c.eventCount}</div>
-          <div>{formatCurrency(c.totalCharged)}</div>
+          <div className="font-medium group-hover:text-accent">{c.name}</div>
+          <div className="placeholder-text group-hover:!text-accent">{c.ico || "—"}</div>
+          <div className="placeholder-text group-hover:!text-accent">{c.contactCount}</div>
+          <div className="placeholder-text group-hover:!text-accent">{c.eventCount}</div>
+          <div className="font-semibold tabular-nums group-hover:text-accent">{formatCurrency(c.totalCharged)}</div>
         </Link>
       ))}
     </div>

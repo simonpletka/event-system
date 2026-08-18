@@ -13,7 +13,7 @@ export default async function EditClientPage({ params }: { params: Promise<{ id:
   return (
     <div>
       <BackLink href={`/clients/${id}`}>{client.name}</BackLink>
-      <h1 className="text-xl font-semibold border-b-2 border-ink pb-2 mb-4">Edit {client.name}</h1>
+      <h1 className="text-[28px] font-bold tracking-tight border-b border-ink/14 pb-4 mb-5 mt-2">Edit {client.name}</h1>
       {!canManageClients(user) ? (
         <p className="text-sm placeholder-text">You don&apos;t have permission to edit clients.</p>
       ) : (

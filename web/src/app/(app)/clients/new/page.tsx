@@ -6,7 +6,7 @@ export default async function NewClientPage() {
 
   return (
     <div>
-      <h1 className="text-xl font-semibold border-b-2 border-ink pb-2 mb-4">New client</h1>
+      <h1 className="text-[28px] font-bold tracking-tight border-b border-ink/14 pb-4 mb-5">New client</h1>
       {!canManageClients(user) ? (
         <p className="text-sm placeholder-text">You don&apos;t have permission to add clients.</p>
       ) : (
