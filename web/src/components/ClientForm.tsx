@@ -45,10 +45,7 @@ export function ClientForm({ defaults, locale }: { defaults: ClientFormDefaults;
     setIco(company.ico);
     setName(company.name);
     setDic(company.dic);
-    // ARES only returns one formatted address line — land it in street and
-    // leave city/postCode/state for the user (or the autocomplete below) to
-    // fill in, same tradeoff CompanySettingsForm makes with its own address field.
-    setAddress((a) => ({ ...a, street: company.address }));
+    setAddress({ street: company.street, city: company.city, postCode: company.postCode, state: company.state });
   }
 
   return (
