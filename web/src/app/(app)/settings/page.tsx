@@ -6,7 +6,6 @@ import { UsersTable } from "@/components/settings/UsersTable";
 import { CreateUserForm } from "@/components/settings/CreateUserForm";
 import { CompanySettingsForm } from "@/components/settings/CompanySettingsForm";
 import { RoleReferenceTable } from "@/components/settings/RoleReferenceTable";
-import { RolesTab } from "@/components/settings/RolesTab";
 import { CategoriesTab } from "@/components/settings/CategoriesTab";
 import { getItemCategories } from "@/lib/actions/categories";
 
@@ -20,7 +19,7 @@ export default async function SettingsPage({
 
   const canUsers = canManageUsers(user);
   const canCompany = canManageCompanySettings(user);
-  const tab = (params.tab as "users" | "roles" | "company" | "categories") || (canUsers ? "users" : "company");
+  const tab = (params.tab as "company" | "users" | "templates") || (canCompany ? "company" : "users");
 
   if (!canUsers && !canCompany) {
     return (
@@ -56,54 +55,50 @@ export default async function SettingsPage({
         </div>
 
         <div className="flex gap-3.5 mt-3">
+          {canCompany && (
+            <Link
+              href="/settings?tab=company"
+              className={`text-[9px] tracking-[0.14em] uppercase pb-2 border-b-2 ${tab === "company" ? "border-accent text-accent" : "border-transparent placeholder-text hover:text-ink"}`}
+            >
+              Company
+            </Link>
+          )}
           {canUsers && (
-            <>
-              <Link
-                href="/settings?tab=users"
-                className={`text-[9px] tracking-[0.14em] uppercase pb-2 border-b-2 ${tab === "users" ? "border-accent text-accent" : "border-transparent placeholder-text hover:text-ink"}`}
-              >
-                Users &amp; roles
-              </Link>
-              <Link
-                href="/settings?tab=roles"
-                className={`text-[9px] tracking-[0.14em] uppercase pb-2 border-b-2 ${tab === "roles" ? "border-accent text-accent" : "border-transparent placeholder-text hover:text-ink"}`}
-              >
-                Custom roles
-              </Link>
-            </>
+            <Link
+              href="/settings?tab=users"
+              className={`text-[9px] tracking-[0.14em] uppercase pb-2 border-b-2 ${tab === "users" ? "border-accent text-accent" : "border-transparent placeholder-text hover:text-ink"}`}
+            >
+              Users &amp; roles
+            </Link>
           )}
           {canCompany && (
-            <>
-              <Link
-                href="/settings?tab=company"
-                className={`text-[9px] tracking-[0.14em] uppercase pb-2 border-b-2 ${tab === "company" ? "border-accent text-accent" : "border-transparent placeholder-text hover:text-ink"}`}
-              >
-                Company
-              </Link>
-              <Link
-                href="/settings?tab=categories"
-                className={`text-[9px] tracking-[0.14em] uppercase pb-2 border-b-2 ${tab === "categories" ? "border-accent text-accent" : "border-transparent placeholder-text hover:text-ink"}`}
-              >
-                Categories
-              </Link>
-            </>
+            <Link
+              href="/settings?tab=templates"
+              className={`text-[9px] tracking-[0.14em] uppercase pb-2 border-b-2 ${tab === "templates" ? "border-accent text-accent" : "border-transparent placeholder-text hover:text-ink"}`}
+            >
+              Templates
+            </Link>
           )}
         </div>
       </div>
 
       <div className="mt-5">
+        {tab === "company" && canCompany && <CompanySettingsForm defaults={company} />}
         {tab === "users" && canUsers && (
           <div>
             <CreateUserForm customRoles={customRoles} />
             <div className="rule-thin my-4" />
             <UsersTable users={users} customRoles={customRoles} currentUserId={user.id} />
             <div className="rule-thin my-4" />
-            <RoleReferenceTable customRoles={roleRows} />
+            <RoleReferenceTable customRoles={roleRows} canManage={canUsers} />
           </div>
         )}
-        {tab === "roles" && canUsers && <RolesTab roles={roleRows} />}
-        {tab === "company" && canCompany && <CompanySettingsForm defaults={company} />}
-        {tab === "categories" && canCompany && <CategoriesTab categories={categories} />}
+        {tab === "templates" && canCompany && (
+          <div>
+            <div className="heading-label mb-2">Quote</div>
+            <CategoriesTab categories={categories} />
+          </div>
+        )}
       </div>
     </div>
   );
