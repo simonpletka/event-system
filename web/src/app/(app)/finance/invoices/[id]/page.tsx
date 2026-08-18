@@ -37,41 +37,43 @@ export default async function InvoiceDetailPage({ params }: { params: Promise<{ 
 
   return (
     <div>
-      <BackLink href="/finance/invoices">Invoices</BackLink>
-      <div className="flex justify-between items-end border-b-2 border-ink pb-2 flex-wrap gap-2">
-        <div>
-          <div className="text-xl font-semibold">Invoice {invoice.number}</div>
-          <div className="placeholder-text text-[11px] mt-0.5">
-            {invoice.event.title} · {invoice.event.companyName} · issued {formatDate(invoice.issuedAt)}, due{" "}
-            {formatDate(invoice.dueDate)}
+      <div className="sticky top-0 z-20 -mx-6 -mt-5 px-6 pt-5 pb-4 backdrop-blur-2xl bg-gradient-to-b from-bg/80 to-bg/50 border-b border-ink/10">
+        <BackLink href="/finance/invoices">Invoices</BackLink>
+        <div className="flex justify-between items-end flex-wrap gap-2 mt-2">
+          <div>
+            <div className="text-[24px] font-bold tracking-tight">Invoice {invoice.number}</div>
+            <div className="placeholder-text text-[12px] mt-1">
+              {invoice.event.title} · {invoice.event.companyName} · issued {formatDate(invoice.issuedAt)}, due{" "}
+              {formatDate(invoice.dueDate)}
+            </div>
           </div>
-        </div>
-        <div className="flex gap-1.5">
-          <span className="btno opacity-40 cursor-not-allowed" title="Email sending isn't wired up yet">
-            Send by mail
-          </span>
-          <DownloadPdfButton pdfUrl={`/api/invoices/${invoice.id}/pdf`} />
-          {canManage && invoice.status !== "PAID" && (
-            <form action={markInvoicePaidAction}>
-              <input type="hidden" name="invoiceId" value={invoice.id} />
-              <button type="submit" className="btn">
-                Mark as paid
-              </button>
-            </form>
-          )}
-          {canManage && canUndoPaid && (
-            <form action={revertInvoicePaidAction}>
-              <input type="hidden" name="invoiceId" value={invoice.id} />
-              <button type="submit" className="btno">
-                Undo mark as paid
-              </button>
-            </form>
-          )}
+          <div className="flex gap-1.5">
+            <span className="btno opacity-40 cursor-not-allowed" title="Email sending isn't wired up yet">
+              Send by mail
+            </span>
+            <DownloadPdfButton pdfUrl={`/api/invoices/${invoice.id}/pdf`} />
+            {canManage && invoice.status !== "PAID" && (
+              <form action={markInvoicePaidAction}>
+                <input type="hidden" name="invoiceId" value={invoice.id} />
+                <button type="submit" className="btn">
+                  Mark as paid
+                </button>
+              </form>
+            )}
+            {canManage && canUndoPaid && (
+              <form action={revertInvoicePaidAction}>
+                <input type="hidden" name="invoiceId" value={invoice.id} />
+                <button type="submit" className="btno">
+                  Undo mark as paid
+                </button>
+              </form>
+            )}
+          </div>
         </div>
       </div>
 
-      <div className="grid grid-cols-[1fr_220px] gap-4 mt-3">
-        <div className="border border-ink/25 p-4 flex flex-col gap-2.5">
+      <div className="grid grid-cols-[1fr_280px] gap-5 mt-5">
+        <div className="card p-5 flex flex-col gap-2.5">
           <div className="flex justify-between items-start">
             <div className="text-sm font-semibold">{company?.name ?? "Company"}</div>
             <div className="text-right">
@@ -167,75 +169,80 @@ export default async function InvoiceDetailPage({ params }: { params: Promise<{ 
           </div>
         </div>
 
-        <div>
-          <div className="label">Payment state</div>
-          <div className={`border p-2 mt-1 ${invoice.status === "PAID" ? "border-ink/25" : overdue ? "border-warning" : "border-ink/25"}`}>
-            <div className="text-sm font-semibold">
+        <div className="flex flex-col gap-3">
+          <div className="card px-4 py-4">
+            <div className="heading-label">Payment state</div>
+            <div className="text-lg font-semibold mt-1">
               {invoice.status === "PAID" ? "Paid" : invoice.status === "PARTLY_PAID" ? "Partly paid" : overdue ? "Overdue" : "Issued"}
             </div>
-            <div className="placeholder-text text-[9px]">
+            <div className="placeholder-text text-[10px]">
               {formatCurrency(invoice.amountPaid, invoice.currency)} of {formatCurrency(invoice.total, invoice.currency)}
               {invoice.paidAt ? ` received ${formatDate(invoice.paidAt)}` : ""}
             </div>
-            <div className="h-1.5 bg-ink/12 mt-1.5">
-              <div className={`h-1.5 ${overdue ? "bg-warning" : "bg-ink"}`} style={{ width: `${progress}%` }} />
+            <div className="h-1.5 rounded-full bg-ink/10 mt-2 overflow-hidden">
+              <div className={`h-full rounded-full ${overdue ? "bg-warning" : "bg-accent"}`} style={{ width: `${progress}%` }} />
             </div>
-          </div>
-          <div className="flex justify-between py-1.5 text-[13px] border-b border-ink/10 mt-1">
-            <div>Due</div>
-            <div className="placeholder-text">{formatDate(invoice.dueDate)}</div>
-          </div>
-          <div className="flex justify-between py-1.5 text-[13px] border-b border-ink/10">
-            <div>Reminder</div>
-            <div className="placeholder-text">not wired up yet</div>
+            <div className="mt-3">
+              <div className="flex justify-between py-1.5 text-[13px] border-b border-ink/8">
+                <div className="text-ink/70">Due</div>
+                <div className="placeholder-text">{formatDate(invoice.dueDate)}</div>
+              </div>
+              <div className="flex justify-between py-1.5 text-[13px]">
+                <div className="text-ink/70">Reminder</div>
+                <div className="placeholder-text">not wired up yet</div>
+              </div>
+            </div>
           </div>
 
           {canManage && remaining > 0 && (
-            <form action={recordPaymentAction} className="flex flex-col gap-1.5 mt-2">
-              <input type="hidden" name="invoiceId" value={invoice.id} />
-              <span className="heading-label">Record payment</span>
-              <input name="amount" type="number" min={1} max={remaining} defaultValue={remaining} className="input" />
-              <input name="note" placeholder="Note (optional)" className="input" />
-              <button type="submit" className="btno">
-                Record payment
-              </button>
-            </form>
+            <div className="card px-4 py-4">
+              <form action={recordPaymentAction} className="flex flex-col gap-2">
+                <input type="hidden" name="invoiceId" value={invoice.id} />
+                <span className="heading-label">Record payment</span>
+                <input name="amount" type="number" min={1} max={remaining} defaultValue={remaining} className="input" />
+                <input name="note" placeholder="Note (optional)" className="input" />
+                <button type="submit" className="btno">
+                  Record payment
+                </button>
+              </form>
+            </div>
           )}
 
-          <div className="rule-thin my-2.5" />
-          <div className="label">Linked</div>
-          <div className="py-1.5 text-[13px]">
-            <Link href={`/events/${invoice.eventId}`} className="hover:text-accent">
-              Event — {invoice.event.title} →
-            </Link>
-          </div>
-          {invoice.quote && (
+          <div className="card px-4 py-4">
+            <div className="heading-label mb-1">Linked</div>
             <div className="py-1.5 text-[13px]">
-              <Link href={`/finance/quotes/${invoice.quote.id}`} className="hover:text-accent">
-                Quote {invoice.quote.number} →
+              <Link href={`/events/${invoice.eventId}`} className="hover:text-accent">
+                Event — {invoice.event.title} →
               </Link>
             </div>
-          )}
-          <div className="py-1.5 text-[13px]">
-            <Link href={`/events/${invoice.eventId}/expenses`} className="hover:text-accent">
-              Expenses on this event →
-            </Link>
+            {invoice.quote && (
+              <div className="py-1.5 text-[13px]">
+                <Link href={`/finance/quotes/${invoice.quote.id}`} className="hover:text-accent">
+                  Quote {invoice.quote.number} →
+                </Link>
+              </div>
+            )}
+            <div className="py-1.5 text-[13px]">
+              <Link href={`/events/${invoice.eventId}/expenses`} className="hover:text-accent">
+                Expenses on this event →
+              </Link>
+            </div>
           </div>
 
-          <div className="rule-thin my-2.5" />
-          <div className="label">History</div>
-          {invoice.history.map((h) => (
-            <div key={h.id} className="grid grid-cols-[52px_1fr] gap-2.5 py-1 text-[9px]">
-              <div className="placeholder-text">{formatDateTime(h.createdAt)}</div>
-              <div>{h.message}</div>
-            </div>
-          ))}
+          <div className="card px-4 py-4">
+            <div className="heading-label mb-1.5">History</div>
+            {invoice.history.map((h) => (
+              <div key={h.id} className="grid grid-cols-[52px_1fr] gap-2.5 py-1.5 text-[10px]">
+                <div className="placeholder-text">{formatDateTime(h.createdAt)}</div>
+                <div className="text-ink/80">{h.message}</div>
+              </div>
+            ))}
+          </div>
 
           {isAdmin(user) && (
-            <>
-              <div className="rule-thin my-2.5" />
-              <div className="label mb-1.5">Delete</div>
-              <p className="text-[10px] placeholder-text mb-2">
+            <div className="card px-4 py-4">
+              <div className="heading-label mb-1.5">Delete</div>
+              <p className="text-[10px] placeholder-text mb-2.5">
                 Removes this invoice, its line items, payment history and PDF permanently.
               </p>
               <ConfirmDeleteButton
@@ -243,8 +250,9 @@ export default async function InvoiceDetailPage({ params }: { params: Promise<{ 
                 fields={{ id: invoice.id }}
                 label="Delete invoice"
                 confirmMessage={`Delete invoice ${invoice.number}? This removes its payment history too and can't be undone.`}
+                className="btno !border-warning text-warning w-full text-center"
               />
-            </>
+            </div>
           )}
         </div>
       </div>

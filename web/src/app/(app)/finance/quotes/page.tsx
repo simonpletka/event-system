@@ -28,7 +28,7 @@ export default async function QuotesPage({
 
   return (
     <div>
-      <div className="flex justify-between items-center gap-2 flex-wrap mt-1">
+      <div className="flex justify-between items-center gap-2 flex-wrap">
         <form method="get" className="flex gap-1.5 flex-wrap items-center">
           <select name="status" defaultValue={filters.status ?? ""} className="btno bg-transparent text-[9px]">
             <option value="">Status ▾</option>
@@ -53,12 +53,7 @@ export default async function QuotesPage({
               </option>
             ))}
           </select>
-          <input
-            name="q"
-            defaultValue={filters.q ?? ""}
-            placeholder="Search…"
-            className="border border-ink/35 bg-transparent px-2 py-1.5 text-[9px] w-[110px]"
-          />
+          <input name="q" defaultValue={filters.q ?? ""} placeholder="Search…" className="input text-[9px] py-1.5 w-[110px]" />
           <button type="submit" className="btno text-[9px]">
             Apply
           </button>
@@ -70,7 +65,7 @@ export default async function QuotesPage({
         )}
       </div>
 
-      <div className="grid grid-cols-[.8fr_1.3fr_1fr_.7fr_.7fr_.8fr_.9fr_1fr] gap-2.5 border-b-2 border-ink pb-1.5 mt-3">
+      <div className="grid grid-cols-[.8fr_1.3fr_1fr_.7fr_.7fr_.8fr_.9fr_1fr] gap-2.5 border-b border-ink/14 pb-1.5 mt-5 px-3.5">
         <span className="heading-label">Number</span>
         <span className="heading-label">Event</span>
         <span className="heading-label">Client</span>
@@ -86,9 +81,9 @@ export default async function QuotesPage({
       {quotes.map((q) => (
         <div
           key={q.id}
-          className="group grid grid-cols-[.8fr_1.3fr_1fr_.7fr_.7fr_.8fr_.9fr_1fr] gap-2.5 items-center py-2.5 border-b border-ink/13 text-[13px] hover:bg-ink/5"
+          className="group grid grid-cols-[.8fr_1.3fr_1fr_.7fr_.7fr_.8fr_.9fr_1fr] gap-2.5 items-center py-3 px-3.5 rounded-xl border-b border-ink/8 last:border-b-0 text-[13px] hover:bg-ink/5"
         >
-          <Link href={`/finance/quotes/${q.id}`} className="group-hover:text-accent">
+          <Link href={`/finance/quotes/${q.id}`} className="font-medium group-hover:text-accent">
             {q.number}
           </Link>
           <Link href={`/finance/quotes/${q.id}`} className="group-hover:text-accent">
@@ -97,7 +92,7 @@ export default async function QuotesPage({
           <div className="placeholder-text group-hover:!text-accent">{q.event.companyName}</div>
           <div className="placeholder-text group-hover:!text-accent">{formatDate(q.issuedAt)}</div>
           <div className="placeholder-text group-hover:!text-accent">{formatDate(q.validUntil)}</div>
-          <div className="group-hover:text-accent">
+          <div className="font-semibold tabular-nums group-hover:text-accent">
             {formatCurrency(q.total, q.currency)}
             {q.currency !== "CZK" && <span className="tag tag-neutral ml-1">{q.currency}</span>}
           </div>
@@ -137,14 +132,14 @@ export default async function QuotesPage({
                 action={deleteQuoteAction}
                 fields={{ id: q.id }}
                 confirmMessage={`Delete quote ${q.number}? This can't be undone.`}
-                className="placeholder-text hover:text-accent"
+                className="placeholder-text hover:text-warning"
               />
             )}
           </div>
         </div>
       ))}
 
-      <div className="flex justify-between mt-3">
+      <div className="flex justify-between mt-4 px-3.5">
         <div className="label">
           Sorted by issue date — newest first · accepted quotes carry their items and client data into the invoice
         </div>

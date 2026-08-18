@@ -22,16 +22,18 @@ export default async function FinanceLayout({ children }: { children: React.Reac
 
   return (
     <div>
-      <div className="flex items-end justify-between border-b-2 border-ink pb-2">
-        <div>
-          <div className="heading-label">{quoteCount + invoiceCount + expenseCount} open documents</div>
-          <h1 className="text-xl font-semibold">Finance</h1>
+      <div className="sticky top-0 z-20 -mx-6 -mt-5 px-6 pt-5 pb-2 backdrop-blur-2xl bg-gradient-to-b from-bg/80 to-bg/50 border-b border-ink/10">
+        <div className="flex items-end justify-between">
+          <div>
+            <div className="heading-label">{quoteCount + invoiceCount + expenseCount} open documents</div>
+            <h1 className="text-[28px] font-bold tracking-tight mt-1">Finance</h1>
+          </div>
+        </div>
+        <div className="mt-3">
+          <FinanceTabs counts={{ quotes: quoteCount, invoices: invoiceCount, expenses: expenseCount }} />
         </div>
       </div>
-      <div className="mt-2.5">
-        <FinanceTabs counts={{ quotes: quoteCount, invoices: invoiceCount, expenses: expenseCount }} />
-      </div>
-      <div className="mt-3.5">{children}</div>
+      <div className="mt-4">{children}</div>
     </div>
   );
 }

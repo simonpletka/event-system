@@ -25,63 +25,65 @@ export default async function QuoteDetailPage({ params }: { params: Promise<{ id
 
   return (
     <div>
-      <BackLink href="/finance/quotes">Quotes</BackLink>
-      <div className="flex justify-between items-end border-b-2 border-ink pb-2 flex-wrap gap-2">
-        <div>
-          <div className="text-xl font-semibold">Quote {quote.number}</div>
-          <div className="placeholder-text text-[11px] mt-0.5">
-            {quote.event.title} · {quote.event.companyName} · issued {formatDate(quote.issuedAt)}, valid until{" "}
-            {formatDate(quote.validUntil)}
+      <div className="sticky top-0 z-20 -mx-6 -mt-5 px-6 pt-5 pb-4 backdrop-blur-2xl bg-gradient-to-b from-bg/80 to-bg/50 border-b border-ink/10">
+        <BackLink href="/finance/quotes">Quotes</BackLink>
+        <div className="flex justify-between items-end flex-wrap gap-2 mt-2">
+          <div>
+            <div className="text-[24px] font-bold tracking-tight">Quote {quote.number}</div>
+            <div className="placeholder-text text-[12px] mt-1">
+              {quote.event.title} · {quote.event.companyName} · issued {formatDate(quote.issuedAt)}, valid until{" "}
+              {formatDate(quote.validUntil)}
+            </div>
           </div>
-        </div>
-        <div className="flex gap-1.5 items-center">
-          <QuoteStatusPill status={quote.status} />
-          <DownloadPdfButton pdfUrl={`/api/quotes/${quote.id}/pdf`} />
-          {canManage && quote.status === "DRAFT" && (
-            <Link href={`/finance/quotes/${quote.id}/edit`} className="btno">
-              Edit
-            </Link>
-          )}
-          {canManage && quote.status === "SENT" && (
-            <>
-              <form action={updateQuoteStatusAction}>
-                <input type="hidden" name="id" value={quote.id} />
-                <input type="hidden" name="status" value="ACCEPTED" />
+          <div className="flex gap-1.5 items-center">
+            <QuoteStatusPill status={quote.status} />
+            <DownloadPdfButton pdfUrl={`/api/quotes/${quote.id}/pdf`} />
+            {canManage && quote.status === "DRAFT" && (
+              <Link href={`/finance/quotes/${quote.id}/edit`} className="btno">
+                Edit
+              </Link>
+            )}
+            {canManage && quote.status === "SENT" && (
+              <>
+                <form action={updateQuoteStatusAction}>
+                  <input type="hidden" name="id" value={quote.id} />
+                  <input type="hidden" name="status" value="ACCEPTED" />
+                  <button type="submit" className="btn">
+                    Mark accepted
+                  </button>
+                </form>
+                <form action={updateQuoteStatusAction}>
+                  <input type="hidden" name="id" value={quote.id} />
+                  <input type="hidden" name="status" value="DECLINED" />
+                  <button type="submit" className="btno">
+                    Mark declined
+                  </button>
+                </form>
+              </>
+            )}
+            {canManage && quote.status === "ACCEPTED" && !alreadyInvoiced && (
+              <form action={convertQuoteToInvoiceAction}>
+                <input type="hidden" name="quoteId" value={quote.id} />
                 <button type="submit" className="btn">
-                  Mark accepted
+                  Convert to invoice →
                 </button>
               </form>
-              <form action={updateQuoteStatusAction}>
+            )}
+            {canManage && quote.status === "DECLINED" && (
+              <form action={duplicateQuoteAction}>
                 <input type="hidden" name="id" value={quote.id} />
-                <input type="hidden" name="status" value="DECLINED" />
-                <button type="submit" className="btno">
-                  Mark declined
+                <button type="submit" className="btn">
+                  Create new (duplicate)
                 </button>
               </form>
-            </>
-          )}
-          {canManage && quote.status === "ACCEPTED" && !alreadyInvoiced && (
-            <form action={convertQuoteToInvoiceAction}>
-              <input type="hidden" name="quoteId" value={quote.id} />
-              <button type="submit" className="btn">
-                Convert to invoice →
-              </button>
-            </form>
-          )}
-          {canManage && quote.status === "DECLINED" && (
-            <form action={duplicateQuoteAction}>
-              <input type="hidden" name="id" value={quote.id} />
-              <button type="submit" className="btn">
-                Create new (duplicate)
-              </button>
-            </form>
-          )}
+            )}
+          </div>
         </div>
       </div>
 
-      <div className="grid grid-cols-[1fr_220px] gap-4 mt-3">
+      <div className="grid grid-cols-[1fr_280px] gap-5 mt-5">
         {/* PDF preview — same content/layout the generated PDF renders, so this box IS the preview. */}
-        <div className="border border-ink/25 p-4 flex flex-col gap-2.5">
+        <div className="card p-5 flex flex-col gap-2.5">
           <div className="flex justify-between items-start">
             <div className="text-sm font-semibold">{company?.name ?? "Company"}</div>
             <div className="text-right">
@@ -165,44 +167,45 @@ export default async function QuoteDetailPage({ params }: { params: Promise<{ id
           </div>
         </div>
 
-        <div>
-          <div className="label">Status</div>
-          <div className={`border p-2 mt-1 ${expired ? "border-warning" : "border-ink/25"}`}>
-            <div className="text-sm font-semibold">{expired ? "Expired" : "Valid"}</div>
-            <div className="placeholder-text text-[9px]">Until {formatDate(quote.validUntil)}</div>
+        <div className="flex flex-col gap-3">
+          <div className="card px-4 py-4">
+            <div className="heading-label">Status</div>
+            <div className={`text-lg font-semibold mt-1 ${expired ? "text-warning" : ""}`}>{expired ? "Expired" : "Valid"}</div>
+            <div className="placeholder-text text-[10px]">Until {formatDate(quote.validUntil)}</div>
           </div>
 
-          <div className="rule-thin my-2.5" />
-          <div className="label">Linked</div>
-          <div className="py-1.5 text-[13px]">
-            <Link href={`/events/${quote.eventId}`} className="hover:text-accent">
-              Event — {quote.event.title} →
-            </Link>
-          </div>
-          {quote.invoices.map((inv) => (
-            <div key={inv.id} className="py-1.5 text-[13px]">
-              <Link href={`/finance/invoices/${inv.id}`} className="hover:text-accent">
-                Invoice {inv.number} →
+          <div className="card px-4 py-4">
+            <div className="heading-label mb-1">Linked</div>
+            <div className="py-1.5 text-[13px]">
+              <Link href={`/events/${quote.eventId}`} className="hover:text-accent">
+                Event — {quote.event.title} →
               </Link>
             </div>
-          ))}
+            {quote.invoices.map((inv) => (
+              <div key={inv.id} className="py-1.5 text-[13px]">
+                <Link href={`/finance/invoices/${inv.id}`} className="hover:text-accent">
+                  Invoice {inv.number} →
+                </Link>
+              </div>
+            ))}
+          </div>
 
-          <div className="rule-thin my-2.5" />
-          <div className="label">Created by</div>
-          <div className="py-1.5 text-[13px]">
-            {quote.createdBy.name}
-            <div className="placeholder-text text-[11px] mt-0.5">
-              {quote.createdBy.email}
-              {quote.createdBy.phone ? ` · ${quote.createdBy.phone}` : ""}
+          <div className="card px-4 py-4">
+            <div className="heading-label mb-1">Created by</div>
+            <div className="py-1.5 text-[13px]">
+              {quote.createdBy.name}
+              <div className="placeholder-text text-[11px] mt-0.5">
+                {quote.createdBy.email}
+                {quote.createdBy.phone ? ` · ${quote.createdBy.phone}` : ""}
+              </div>
+              <div className="placeholder-text text-[11px]">{formatDate(quote.issuedAt)}</div>
             </div>
-            <div className="placeholder-text text-[11px]">{formatDate(quote.issuedAt)}</div>
           </div>
 
           {isAdmin(user) && (
-            <>
-              <div className="rule-thin my-2.5" />
-              <div className="label mb-1.5">Delete</div>
-              <p className="text-[10px] placeholder-text mb-2">
+            <div className="card px-4 py-4">
+              <div className="heading-label mb-1.5">Delete</div>
+              <p className="text-[10px] placeholder-text mb-2.5">
                 Removes this quote and its line items permanently.
                 {alreadyInvoiced ? " The invoice already created from it stays — just loses this link." : ""}
               </p>
@@ -211,8 +214,9 @@ export default async function QuoteDetailPage({ params }: { params: Promise<{ id
                 fields={{ id: quote.id }}
                 label="Delete quote"
                 confirmMessage={`Delete quote ${quote.number}? This can't be undone.`}
+                className="btno !border-warning text-warning w-full text-center"
               />
-            </>
+            </div>
           )}
         </div>
       </div>

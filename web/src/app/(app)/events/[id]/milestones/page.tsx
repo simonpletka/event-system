@@ -29,7 +29,7 @@ export default async function MilestonesTab({ params }: { params: Promise<{ id: 
               action={deleteMilestoneAction}
               fields={{ eventId: event.id, milestoneId: m.id }}
               confirmMessage={`Delete milestone "${m.title}"? This can't be undone.`}
-              className="text-[9px] tracking-[0.1em] uppercase placeholder-text hover:text-accent"
+              className="text-[9px] tracking-[0.1em] uppercase placeholder-text hover:text-warning"
             />
           )}
         </div>

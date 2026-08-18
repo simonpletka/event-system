@@ -23,7 +23,7 @@ export default async function ExpensesPage({
 
   return (
     <div>
-      <div className="flex justify-between items-center gap-2 flex-wrap mt-1">
+      <div className="flex justify-between items-center gap-2 flex-wrap">
         <form method="get" className="flex gap-1.5 flex-wrap items-center">
           <select name="eventId" defaultValue={filters.eventId ?? ""} className="btno bg-transparent text-[9px]">
             <option value="">Event ▾</option>
@@ -51,7 +51,7 @@ export default async function ExpensesPage({
         </Link>
       </div>
 
-      <div className={`grid ${admin ? "grid-cols-[80px_1fr_1fr_1fr_auto_auto_auto_auto]" : "grid-cols-[80px_1fr_1fr_1fr_auto_auto_auto]"} gap-2.5 border-b-2 border-ink pb-1.5 mt-3`}>
+      <div className={`grid ${admin ? "grid-cols-[80px_1fr_1fr_1fr_auto_auto_auto_auto]" : "grid-cols-[80px_1fr_1fr_1fr_auto_auto_auto]"} gap-2.5 border-b border-ink/14 pb-1.5 mt-5 px-3.5`}>
         <span className="heading-label">Date</span>
         <span className="heading-label">Category</span>
         <span className="heading-label">Event</span>
@@ -67,7 +67,7 @@ export default async function ExpensesPage({
       {expenses.map((exp) => (
         <div
           key={exp.id}
-          className={`grid ${admin ? "grid-cols-[80px_1fr_1fr_1fr_auto_auto_auto_auto]" : "grid-cols-[80px_1fr_1fr_1fr_auto_auto_auto]"} gap-2.5 items-center py-2.5 border-b border-ink/13 text-[13px]`}
+          className={`grid ${admin ? "grid-cols-[80px_1fr_1fr_1fr_auto_auto_auto_auto]" : "grid-cols-[80px_1fr_1fr_1fr_auto_auto_auto]"} gap-2.5 items-center py-3 px-3.5 rounded-xl border-b border-ink/8 last:border-b-0 text-[13px] hover:bg-ink/5`}
         >
           <div className="placeholder-text">{formatDate(exp.date)}</div>
           <div>{EXPENSE_CATEGORY_LABEL[exp.category]}</div>
@@ -81,7 +81,7 @@ export default async function ExpensesPage({
             )}
           </div>
           <div className="placeholder-text">{exp.paidBy.name}</div>
-          <div>{formatCurrency(exp.amount)}</div>
+          <div className="font-semibold tabular-nums">{formatCurrency(exp.amount)}</div>
           <div>
             {exp.receiptPath ? (
               <a
@@ -111,13 +111,13 @@ export default async function ExpensesPage({
               action={deleteExpenseAction}
               fields={{ id: exp.id }}
               confirmMessage={`Delete this ${formatCurrency(exp.amount)} expense? This can't be undone.`}
-              className="text-[9px] tracking-[0.1em] uppercase placeholder-text hover:text-accent"
+              className="text-[9px] tracking-[0.1em] uppercase placeholder-text hover:text-warning"
             />
           )}
         </div>
       ))}
 
-      <div className="flex justify-end mt-3">
+      <div className="flex justify-end mt-4 px-3.5">
         <div className="label">
           Total {formatCurrency(total)} · {expenses.length} expenses
         </div>
