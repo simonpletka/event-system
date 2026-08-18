@@ -7,6 +7,7 @@ import { EventStatusPill } from "@/components/StatusPill";
 import { WeekCalendar } from "@/components/calendar/WeekCalendar";
 import { WeekNav } from "@/components/calendar/WeekNav";
 import { mondayOf, parseIsoDate } from "@/lib/calendar";
+import { SegmentedTabs } from "@/components/ui/SegmentedTabs";
 import type { EventStatus } from "@/generated/prisma/enums";
 
 const STATUSES: EventStatus[] = [
@@ -34,12 +35,14 @@ export default async function EventsPage({
 
     return (
       <div>
-        <ViewHeader canCreate={canCreateEvent(user)} />
-        <div className="flex items-center justify-between gap-2 mt-3 pb-2.5 border-b border-ink/20 flex-wrap">
-          <ViewSwitch view="calendar" />
-          <WeekNav weekStart={weekStart} hrefFor={(week) => `/events?view=calendar&week=${week}`} />
+        <div className="sticky top-0 z-20 -mx-6 -mt-5 px-6 pt-5 pb-4 backdrop-blur-2xl bg-gradient-to-b from-bg/80 to-bg/50 border-b border-ink/10">
+          <ViewHeader canCreate={canCreateEvent(user)} />
+          <div className="flex items-center justify-between gap-2 mt-4 flex-wrap">
+            <ViewSwitch view="calendar" />
+            <WeekNav weekStart={weekStart} hrefFor={(week) => `/events?view=calendar&week=${week}`} />
+          </div>
         </div>
-        <div className="mt-2">
+        <div className="mt-4">
           <WeekCalendar weekStart={weekStart} events={events} eventHref={(id) => `/events/${id}`} />
         </div>
       </div>
@@ -58,58 +61,56 @@ export default async function EventsPage({
 
   return (
     <div>
-      <ViewHeader canCreate={canCreateEvent(user)} total={total} activeCount={activeCount} />
+      <div className="sticky top-0 z-20 -mx-6 -mt-5 px-6 pt-5 pb-4 backdrop-blur-2xl bg-gradient-to-b from-bg/80 to-bg/50 border-b border-ink/10">
+        <ViewHeader canCreate={canCreateEvent(user)} total={total} activeCount={activeCount} />
 
-      <div className="flex items-center justify-between gap-2 mt-3 pb-2.5 border-b border-ink/20 flex-wrap">
-        <ViewSwitch view="table" />
+        <div className="flex items-center justify-between gap-2 mt-4 flex-wrap">
+          <ViewSwitch view="table" />
 
-        <form method="get" className="flex gap-1.5 flex-wrap items-center">
-          <select
-            name="status"
-            defaultValue={filters.status ?? ""}
-            className="btno bg-transparent text-[9px]"
-          >
-            <option value="">Status ▾</option>
-            {STATUSES.map((s) => (
-              <option key={s} value={s}>
-                {s.replace("_", " ")}
-              </option>
-            ))}
-          </select>
-          <select name="client" defaultValue={filters.client ?? ""} className="btno bg-transparent text-[9px]">
-            <option value="">Client ▾</option>
-            {clients.map((c) => (
-              <option key={c} value={c}>
-                {c}
-              </option>
-            ))}
-          </select>
-          <select name="place" defaultValue={filters.place ?? ""} className="btno bg-transparent text-[9px]">
-            <option value="">Place ▾</option>
-            {places.map((p) => (
-              <option key={p} value={p}>
-                {p}
-              </option>
-            ))}
-          </select>
-          <input
-            name="q"
-            defaultValue={filters.q ?? ""}
-            placeholder="Search…"
-            className="border border-ink/35 bg-transparent px-2 py-1.5 text-[9px] w-[110px]"
-          />
-          <button type="submit" className="btno text-[9px]">
-            Apply
-          </button>
-          {(filters.q || filters.status || filters.client || filters.place) && (
-            <Link href="/events" className="text-[9px] placeholder-text hover:text-ink underline underline-offset-2">
-              Clear
-            </Link>
-          )}
-        </form>
+          <form method="get" className="flex gap-1.5 flex-wrap items-center">
+            <select name="status" defaultValue={filters.status ?? ""} className="btno bg-transparent text-[9px]">
+              <option value="">Status ▾</option>
+              {STATUSES.map((s) => (
+                <option key={s} value={s}>
+                  {s.replace("_", " ")}
+                </option>
+              ))}
+            </select>
+            <select name="client" defaultValue={filters.client ?? ""} className="btno bg-transparent text-[9px]">
+              <option value="">Client ▾</option>
+              {clients.map((c) => (
+                <option key={c} value={c}>
+                  {c}
+                </option>
+              ))}
+            </select>
+            <select name="place" defaultValue={filters.place ?? ""} className="btno bg-transparent text-[9px]">
+              <option value="">Place ▾</option>
+              {places.map((p) => (
+                <option key={p} value={p}>
+                  {p}
+                </option>
+              ))}
+            </select>
+            <input
+              name="q"
+              defaultValue={filters.q ?? ""}
+              placeholder="Search…"
+              className="input text-[9px] py-1.5 w-[110px]"
+            />
+            <button type="submit" className="btno text-[9px]">
+              Apply
+            </button>
+            {(filters.q || filters.status || filters.client || filters.place) && (
+              <Link href="/events" className="text-[9px] placeholder-text hover:text-ink underline underline-offset-2">
+                Clear
+              </Link>
+            )}
+          </form>
+        </div>
       </div>
 
-      <div className="grid grid-cols-[1.5fr_.9fr_.8fr_.8fr_.9fr_.6fr] gap-2.5 border-b-2 border-ink pb-1.5 mt-1.5">
+      <div className="grid grid-cols-[1.5fr_.9fr_.8fr_.8fr_.9fr_.6fr] gap-2.5 border-b border-ink/14 pb-1.5 mt-5 px-3.5">
         <span className="heading-label">Event</span>
         <span className="heading-label">Client</span>
         <span className="heading-label">Dates ↑</span>
@@ -125,11 +126,11 @@ export default async function EventsPage({
           key={event.id}
           id={event.id === firstUpcomingId ? "today-row" : undefined}
           href={`/events/${event.id}`}
-          className="group grid grid-cols-[1.5fr_.9fr_.8fr_.8fr_.9fr_.6fr] gap-2.5 items-center py-2.5 border-b border-ink/13 text-[13px] hover:bg-ink/5"
+          className="group grid grid-cols-[1.5fr_.9fr_.8fr_.8fr_.9fr_.6fr] gap-2.5 items-center py-3 px-3.5 rounded-xl border-b border-ink/8 last:border-b-0 text-[13px] hover:bg-ink/5"
         >
           <div className="group-hover:text-accent">
             <span className="placeholder-text text-[11px] mr-1 group-hover:!text-accent">{event.number}</span>
-            {event.title}
+            <span className="font-medium">{event.title}</span>
             <div className="label group-hover:!text-accent">{event.milestones[0]?.title ?? "—"}</div>
           </div>
           <div className="placeholder-text group-hover:!text-accent">{event.companyName}</div>
@@ -138,11 +139,13 @@ export default async function EventsPage({
           <div>
             <EventStatusPill status={event.status} />
           </div>
-          <div className="placeholder-text group-hover:!text-accent">{event.quotedValue ? formatCurrency(event.quotedValue) : "—"}</div>
+          <div className="font-semibold tabular-nums group-hover:text-accent">
+            {event.quotedValue ? formatCurrency(event.quotedValue) : <span className="placeholder-text font-normal">—</span>}
+          </div>
         </Link>
       ))}
 
-      <div className="flex items-center justify-between mt-3">
+      <div className="flex items-center justify-between mt-4 px-3.5">
         <div className="label">
           Sorted by date — nearest first · showing {events.length} of {total}
         </div>
@@ -156,14 +159,14 @@ export default async function EventsPage({
 
 function ViewHeader({ canCreate, total, activeCount }: { canCreate: boolean; total?: number; activeCount?: number }) {
   return (
-    <div className="flex items-end justify-between border-b-2 border-ink pb-2">
+    <div className="flex items-end justify-between">
       <div>
         {total !== undefined && (
           <div className="heading-label">
             {total} events · {activeCount} active
           </div>
         )}
-        <h1 className="text-xl font-semibold">Events</h1>
+        <h1 className="text-[28px] font-bold tracking-tight mt-1">Events</h1>
       </div>
       {canCreate && (
         <Link href="/events/new" className="btn">
@@ -176,19 +179,12 @@ function ViewHeader({ canCreate, total, activeCount }: { canCreate: boolean; tot
 
 function ViewSwitch({ view }: { view: "table" | "calendar" }) {
   return (
-    <div className="flex border border-ink">
-      <Link
-        href="/events"
-        className={`text-[9px] tracking-[0.14em] uppercase px-3 py-1.5 ${view === "table" ? "bg-ink text-bg" : ""}`}
-      >
-        Table
-      </Link>
-      <Link
-        href="/events?view=calendar"
-        className={`text-[9px] tracking-[0.14em] uppercase px-3 py-1.5 border-l border-ink ${view === "calendar" ? "bg-ink text-bg" : ""}`}
-      >
-        Calendar
-      </Link>
-    </div>
+    <SegmentedTabs
+      active={view}
+      options={[
+        { value: "table", label: "Table", href: "/events" },
+        { value: "calendar", label: "Calendar", href: "/events?view=calendar" },
+      ]}
+    />
   );
 }

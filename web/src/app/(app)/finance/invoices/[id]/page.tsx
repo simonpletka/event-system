@@ -169,7 +169,7 @@ export default async function InvoiceDetailPage({ params }: { params: Promise<{ 
 
         <div>
           <div className="label">Payment state</div>
-          <div className={`border p-2 mt-1 ${invoice.status === "PAID" ? "border-ink/25" : overdue ? "border-accent" : "border-ink/25"}`}>
+          <div className={`border p-2 mt-1 ${invoice.status === "PAID" ? "border-ink/25" : overdue ? "border-warning" : "border-ink/25"}`}>
             <div className="text-sm font-semibold">
               {invoice.status === "PAID" ? "Paid" : invoice.status === "PARTLY_PAID" ? "Partly paid" : overdue ? "Overdue" : "Issued"}
             </div>
@@ -178,7 +178,7 @@ export default async function InvoiceDetailPage({ params }: { params: Promise<{ 
               {invoice.paidAt ? ` received ${formatDate(invoice.paidAt)}` : ""}
             </div>
             <div className="h-1.5 bg-ink/12 mt-1.5">
-              <div className={`h-1.5 ${overdue ? "bg-accent" : "bg-ink"}`} style={{ width: `${progress}%` }} />
+              <div className={`h-1.5 ${overdue ? "bg-warning" : "bg-ink"}`} style={{ width: `${progress}%` }} />
             </div>
           </div>
           <div className="flex justify-between py-1.5 text-[13px] border-b border-ink/10 mt-1">

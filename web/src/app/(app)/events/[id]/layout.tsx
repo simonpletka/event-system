@@ -26,42 +26,44 @@ export default async function EventDetailLayout({
 
   return (
     <div>
-      <BackLink href="/events">Events</BackLink>
-      <div className="flex justify-between items-end border-b-2 border-ink pb-2 flex-wrap gap-2">
-        <div>
-          <div className="text-xl font-semibold">
-            <span className="placeholder-text font-normal">{event.number}</span> {event.title}
+      <div className="sticky top-0 z-20 -mx-6 -mt-5 px-6 pt-5 pb-2 backdrop-blur-2xl bg-gradient-to-b from-bg/80 to-bg/50 border-b border-ink/10">
+        <BackLink href="/events">Events</BackLink>
+        <div className="flex justify-between items-end flex-wrap gap-2 mt-2">
+          <div>
+            <div className="text-[24px] font-bold tracking-tight">
+              <span className="placeholder-text font-medium">{event.number}</span> {event.title}
+            </div>
+            <div className="placeholder-text text-[12px] mt-1">
+              {event.companyName} · {formatDateRange(event.startDate, event.endDate)}
+              {event.venues[0] ? ` · ${event.venues[0].name}` : ""}
+            </div>
           </div>
-          <div className="placeholder-text text-[11px] mt-0.5">
-            {event.companyName} · {formatDateRange(event.startDate, event.endDate)}
-            {event.venues[0] ? ` · ${event.venues[0].name}` : ""}
+          <div className="flex gap-1.5 items-center">
+            <EventStatusPill status={event.status} />
+            {editable && (
+              <Link href={`/events/${event.id}/edit`} className="btno">
+                Edit event
+              </Link>
+            )}
+            {isAdmin(user) && (
+              <DeleteEventButton
+                action={deleteEventAction}
+                eventId={event.id}
+                eventTitle={event.title}
+                expenseCount={event.expenses.length}
+                invoiceCount={event.invoices.length}
+              />
+            )}
           </div>
         </div>
-        <div className="flex gap-1.5 items-center">
-          <EventStatusPill status={event.status} />
-          {editable && (
-            <Link href={`/events/${event.id}/edit`} className="btno">
-              Edit event
-            </Link>
-          )}
-          {isAdmin(user) && (
-            <DeleteEventButton
-              action={deleteEventAction}
-              eventId={event.id}
-              eventTitle={event.title}
-              expenseCount={event.expenses.length}
-              invoiceCount={event.invoices.length}
-            />
-          )}
-        </div>
+
+        <EventTabs
+          eventId={event.id}
+          counts={{ expenses: event.expenses.length, time: formatMinutes(totalMinutes), docs: event.quotes.length + event.invoices.length }}
+        />
       </div>
 
-      <EventTabs
-        eventId={event.id}
-        counts={{ expenses: event.expenses.length, time: formatMinutes(totalMinutes), docs: event.quotes.length + event.invoices.length }}
-      />
-
-      <div className="mt-3.5">{children}</div>
+      <div className="mt-4">{children}</div>
     </div>
   );
 }

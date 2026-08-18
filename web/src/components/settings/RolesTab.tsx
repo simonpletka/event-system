@@ -90,7 +90,7 @@ function RoleRow({ role }: { role: CustomRoleRow }) {
         <button
           type="button"
           disabled={deletePending}
-          className="placeholder-text hover:text-accent"
+          className="placeholder-text hover:text-warning"
           onClick={async () => {
             const ok = await confirm(`Delete the role "${role.name}"? This can't be undone.`, { confirmLabel: "Delete" });
             if (!ok) return;
@@ -102,7 +102,7 @@ function RoleRow({ role }: { role: CustomRoleRow }) {
           Delete
         </button>
       </div>
-      {deleteState.error && <div className="col-span-6 text-[11px] text-accent mt-1">{deleteState.error}</div>}
+      {deleteState.error && <div className="col-span-6 text-[11px] text-warning mt-1">{deleteState.error}</div>}
     </div>
   );
 }
@@ -125,7 +125,7 @@ function RoleForm({ existing, onDone }: { existing?: CustomRoleRow; onDone: () =
         <AccessField label="Settings" name="settings" options={SETTINGS_ACCESS_OPTIONS} labels={SETTINGS_ACCESS_LABEL} defaultValue={existing?.settings ?? "NONE"} />
       </div>
 
-      {state.error && <p className="text-sm text-accent">{state.error}</p>}
+      {state.error && <p className="text-sm text-warning">{state.error}</p>}
 
       <div className="flex gap-2">
         <button type="submit" disabled={pending} className="btn">

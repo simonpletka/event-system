@@ -25,7 +25,7 @@ export function DeleteEventButton({
     <button
       type="button"
       disabled={pending}
-      className="btno !border-accent text-accent"
+      className="btno !border-warning text-warning"
       onClick={async () => {
         if (expenseCount > 0 || invoiceCount > 0) {
           const parts: string[] = [];

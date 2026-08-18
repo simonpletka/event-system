@@ -38,7 +38,7 @@ export function ManualEntryForm({ events }: { events: { id: string; title: strin
         ))}
       </select>
       <input name="description" placeholder="What was done" className="input" />
-      {state.error && <p className="text-[11px] text-accent">{state.error}</p>}
+      {state.error && <p className="text-[11px] text-warning">{state.error}</p>}
       <button type="submit" disabled={pending} className="btno">
         {pending ? "Adding…" : "Add entry"}
       </button>

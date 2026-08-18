@@ -14,7 +14,7 @@ export function DeleteEntryButton({ id }: { id: string }) {
     <button
       type="button"
       disabled={pending}
-      className="placeholder-text hover:text-accent"
+      className="placeholder-text hover:text-warning"
       onClick={async () => {
         const ok = await confirm("Delete this time entry? This can't be undone.", { confirmLabel: "Delete" });
         if (!ok) return;

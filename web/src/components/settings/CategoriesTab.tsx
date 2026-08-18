@@ -69,7 +69,7 @@ function CategoryRowItem({ category }: { category: CategoryRow }) {
           fields={{ id: category.id }}
           label="Delete"
           confirmMessage={`Delete the category "${category.name}"? Items already tagged with it keep the name as free text.`}
-          className="placeholder-text hover:text-accent"
+          className="placeholder-text hover:text-warning"
         />
       </div>
     </div>
@@ -85,7 +85,7 @@ function AddCategoryForm() {
       <button type="submit" disabled={pending} className="btno text-[9px]">
         {pending ? "Adding…" : "Add"}
       </button>
-      {state.error && <p className="text-[11px] text-accent">{state.error}</p>}
+      {state.error && <p className="text-[11px] text-warning">{state.error}</p>}
     </form>
   );
 }

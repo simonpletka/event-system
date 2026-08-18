@@ -263,10 +263,10 @@ export function EventForm({ defaults, clients }: { defaults: EventFormDefaults; 
           <AddressAutocompleteInput name="companyAddress" value={companyAddress} onChange={setCompanyAddress} />
         </Field>
       </div>
-      {ares.error && <p className="text-[11px] text-accent -mt-3">{ares.error}</p>}
+      {ares.error && <p className="text-[11px] text-warning -mt-3">{ares.error}</p>}
       <p className="text-[10px] placeholder-text -mt-3">Enter the IČO and use &quot;Load from ARES&quot; to fill in the rest.</p>
 
-      {state.error && <p className="text-sm text-accent">{state.error}</p>}
+      {state.error && <p className="text-sm text-warning">{state.error}</p>}
 
       <div className="flex gap-2">
         <button type="submit" disabled={pending} className="btn">

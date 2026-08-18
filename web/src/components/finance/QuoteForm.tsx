@@ -97,10 +97,10 @@ export function QuoteForm({
             required
             value={validUntil}
             onChange={(e) => setValidUntil(e.target.value)}
-            className={`input ${conflict ? "!border-accent text-accent" : ""}`}
+            className={`input ${conflict ? "!border-warning text-warning" : ""}`}
           />
           {conflict && (
-            <span className="text-[9px] text-accent">
+            <span className="text-[9px] text-warning">
               Event starts {formatDate(conflict, { day: "numeric", month: "short", year: "numeric" })} — too close to
               this validity date.
             </span>
@@ -120,7 +120,7 @@ export function QuoteForm({
         Hide individual item prices on the PDF — show only each category&apos;s subtotal and the grand total
       </label>
 
-      {state.error && <p className="text-sm text-accent">{state.error}</p>}
+      {state.error && <p className="text-sm text-warning">{state.error}</p>}
 
       <div className="flex gap-2">
         <button type="submit" disabled={pending} className="btn">

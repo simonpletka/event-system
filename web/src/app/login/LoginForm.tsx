@@ -31,7 +31,7 @@ export function LoginForm() {
         <PasswordInput id="password" name="password" required autoComplete="current-password" />
       </div>
 
-      {state.error && <p className="text-sm text-accent">{state.error}</p>}
+      {state.error && <p className="text-sm text-warning">{state.error}</p>}
 
       <button type="submit" disabled={pending} className="btn mt-2">
         {pending ? "Signing in…" : "Sign in"}

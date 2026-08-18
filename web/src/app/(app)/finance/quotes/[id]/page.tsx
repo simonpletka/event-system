@@ -167,7 +167,7 @@ export default async function QuoteDetailPage({ params }: { params: Promise<{ id
 
         <div>
           <div className="label">Status</div>
-          <div className={`border p-2 mt-1 ${expired ? "border-accent" : "border-ink/25"}`}>
+          <div className={`border p-2 mt-1 ${expired ? "border-warning" : "border-ink/25"}`}>
             <div className="text-sm font-semibold">{expired ? "Expired" : "Valid"}</div>
             <div className="placeholder-text text-[9px]">Until {formatDate(quote.validUntil)}</div>
           </div>

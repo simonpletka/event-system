@@ -33,7 +33,7 @@ export function CreateUserForm({ customRoles }: { customRoles: { id: string; nam
           {pending ? "Creating…" : "Create account"}
         </button>
       </form>
-      {state.error && <p className="text-sm text-accent mt-2">{state.error}</p>}
+      {state.error && <p className="text-sm text-warning mt-2">{state.error}</p>}
       {state.success && <p className="text-sm mt-2 border border-ink/25 p-2 max-w-lg">{state.success}</p>}
     </div>
   );

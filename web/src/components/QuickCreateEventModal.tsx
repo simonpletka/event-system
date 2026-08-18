@@ -50,7 +50,7 @@ export function QuickCreateEventModal({
           </label>
         </div>
 
-        {state.error && <p className="text-sm text-accent">{state.error}</p>}
+        {state.error && <p className="text-sm text-warning">{state.error}</p>}
 
         <div className="flex gap-2 mt-1">
           <button type="submit" disabled={pending} className="btn">

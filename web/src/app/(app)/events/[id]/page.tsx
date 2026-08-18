@@ -21,7 +21,7 @@ export default async function EventOverviewPage({ params }: { params: Promise<{ 
   const runningTimer = await getRunningTimer(user.id);
 
   return (
-    <div className="grid grid-cols-[1fr_190px] gap-4">
+    <div className="grid grid-cols-[1fr_280px] gap-5">
       <div>
         <div className="label">Brief</div>
         <p className="text-sm mt-1 max-w-prose">{event.brief || <span className="placeholder-text">No brief written yet.</span>}</p>
@@ -52,7 +52,7 @@ export default async function EventOverviewPage({ params }: { params: Promise<{ 
 
         <div className="label mt-3.5">Client</div>
         <div className="grid grid-cols-2 gap-2.5 mt-1 text-[13px]">
-          <div className="border border-ink/25 p-2">
+          <div className="card p-3">
             <div className="label mb-1">
               Contact{event.contacts.length === 1 ? "" : "s"} ({event.contacts.length})
             </div>
@@ -68,7 +68,7 @@ export default async function EventOverviewPage({ params }: { params: Promise<{ 
               </div>
             ))}
           </div>
-          <div className="border border-ink/25 p-2">
+          <div className="card p-3">
             <div className="label">Company</div>
             {event.companyName}
             <div className="placeholder-text text-[11px] mt-0.5">
@@ -91,62 +91,73 @@ export default async function EventOverviewPage({ params }: { params: Promise<{ 
         ))}
       </div>
 
-      <div className="border-l border-ink/20 pl-3">
-        <div className="label">Budget vs actual</div>
-        <div className="text-lg font-semibold mt-0.5">{formatCurrency(event.quotedValue)}</div>
-        <div className="placeholder-text text-[9px]">quoted value</div>
-        <Row label="Expenses" value={formatCurrency(totalExpenses)} />
-        <Row label="Invoiced" value={formatCurrency(totalInvoiced)} />
-        <Row label="Margin" value={formatCurrency(event.quotedValue - totalExpenses)} strong />
-
-        <div className="rule-thin my-2.5" />
-        <div className="label">Time logged</div>
-        <div className="text-base font-semibold">{formatMinutes(totalMinutes)}</div>
-        <div className="placeholder-text text-[9px]">{uniquePeople.size} people</div>
-        {runningTimer?.eventId === event.id ? (
-          <div className="btno block text-center mt-2 opacity-50 cursor-default">Timer running here</div>
-        ) : (
-          <form action={startTimerAction}>
-            <input type="hidden" name="eventId" value={event.id} />
-            <button type="submit" className="btno block w-full text-center mt-2">
-              Start timer
-            </button>
-          </form>
-        )}
-
-        <div className="rule-thin my-2.5" />
-        <div className="label">Documents</div>
-        {[...event.quotes, ...event.invoices].length === 0 && <p className="text-[12px] placeholder-text mt-1">None yet.</p>}
-        {event.quotes.map((q) => (
-          <div key={q.id} className="flex justify-between items-center py-1 text-[11px]">
-            <span>Quote {q.number}</span>
-            <QuoteStatusPill status={q.status} />
+      <div className="flex flex-col gap-3">
+        <div className="card px-4 py-4">
+          <div className="heading-label">Budget vs actual</div>
+          <div className="text-2xl font-semibold tracking-tight mt-1">{formatCurrency(event.quotedValue)}</div>
+          <div className="placeholder-text text-[10px]">quoted value</div>
+          <div className="mt-2">
+            <Row label="Expenses" value={formatCurrency(totalExpenses)} />
+            <Row label="Invoiced" value={formatCurrency(totalInvoiced)} />
+            <Row label="Margin" value={formatCurrency(event.quotedValue - totalExpenses)} strong />
           </div>
-        ))}
-        {event.invoices.map((inv) => (
-          <div key={inv.id} className="flex justify-between items-center py-1 text-[11px]">
-            <span>Invoice {inv.number}</span>
-            <InvoiceStatusPill status={inv.status} dueDate={inv.dueDate} paidAt={inv.paidAt} />
-          </div>
-        ))}
-        <Link href={`/events/${event.id}/quotes`} className="btno block text-center mt-2">
-          View quotes & invoices
-        </Link>
-        {canManageFinance(user) && (
-          <Link href={`/finance/quotes/new?eventId=${event.id}`} className="btn block text-center mt-1.5">
-            New quote for this event
-          </Link>
-        )}
+        </div>
 
-        <div className="rule-thin my-2.5" />
-        <div className="label">Team</div>
-        <div className="flex gap-1 mt-1 flex-wrap">
-          {event.members.length === 0 && <span className="text-[11px] placeholder-text">Owner only ({event.owner.name})</span>}
-          {event.members.map((m) => (
-            <div key={m.id} className="w-[18px] h-[18px] bg-ink/10 flex items-center justify-center text-[8px]" title={m.user.name}>
-              {m.user.name.slice(0, 1)}
+        <div className="card px-4 py-4">
+          <div className="heading-label">Time logged</div>
+          <div className="text-lg font-semibold mt-1">{formatMinutes(totalMinutes)}</div>
+          <div className="placeholder-text text-[10px]">{uniquePeople.size} people</div>
+          {runningTimer?.eventId === event.id ? (
+            <div className="btno block text-center mt-3 opacity-50 cursor-default">Timer running here</div>
+          ) : (
+            <form action={startTimerAction}>
+              <input type="hidden" name="eventId" value={event.id} />
+              <button type="submit" className="btno block w-full text-center mt-3">
+                Start timer
+              </button>
+            </form>
+          )}
+        </div>
+
+        <div className="card px-4 py-4">
+          <div className="heading-label mb-1.5">Documents</div>
+          {[...event.quotes, ...event.invoices].length === 0 && <p className="text-[12px] placeholder-text">None yet.</p>}
+          {event.quotes.map((q) => (
+            <div key={q.id} className="flex justify-between items-center py-1.5 text-[12px]">
+              <span>Quote {q.number}</span>
+              <QuoteStatusPill status={q.status} />
             </div>
           ))}
+          {event.invoices.map((inv) => (
+            <div key={inv.id} className="flex justify-between items-center py-1.5 text-[12px]">
+              <span>Invoice {inv.number}</span>
+              <InvoiceStatusPill status={inv.status} dueDate={inv.dueDate} paidAt={inv.paidAt} />
+            </div>
+          ))}
+          <Link href={`/events/${event.id}/quotes`} className="btno block text-center mt-3">
+            View quotes & invoices
+          </Link>
+          {canManageFinance(user) && (
+            <Link href={`/finance/quotes/new?eventId=${event.id}`} className="btn block text-center mt-1.5">
+              New quote for this event
+            </Link>
+          )}
+        </div>
+
+        <div className="card px-4 py-4">
+          <div className="heading-label mb-1.5">Team</div>
+          <div className="flex gap-1.5 flex-wrap">
+            {event.members.length === 0 && <span className="text-[11px] placeholder-text">Owner only ({event.owner.name})</span>}
+            {event.members.map((m) => (
+              <div
+                key={m.id}
+                className="w-[26px] h-[26px] rounded-[9px] bg-ink/10 border border-ink/14 flex items-center justify-center text-[10px] font-semibold"
+                title={m.user.name}
+              >
+                {m.user.name.slice(0, 1)}
+              </div>
+            ))}
+          </div>
         </div>
       </div>
     </div>

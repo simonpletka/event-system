@@ -66,7 +66,7 @@ export function EditUserForm({
           <span className="text-[12px]">Company card holder</span>
         </label>
 
-        {state.error && <p className="text-sm text-accent">{state.error}</p>}
+        {state.error && <p className="text-sm text-warning">{state.error}</p>}
 
         <div className="flex gap-2 mt-1">
           <button type="submit" disabled={pending} className="btn">
@@ -119,7 +119,7 @@ function DeactivateButton({ id }: { id: string }) {
       <button
         type="button"
         disabled={pending}
-        className="btno !border-accent text-accent"
+        className="btno !border-warning text-warning"
         onClick={async () => {
           const ok = await confirm(
             "Deactivate this account? They won't be able to log in — including ending any session they have open right now — but their past records stay intact.",

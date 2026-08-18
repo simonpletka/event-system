@@ -60,7 +60,7 @@ export function CompanySettingsForm({ defaults }: { defaults: Company | null }) 
             {ares.loading ? "Loading…" : "Load from ARES"}
           </button>
         </div>
-        {ares.error && <p className="text-[11px] text-accent -mt-1">{ares.error}</p>}
+        {ares.error && <p className="text-[11px] text-warning -mt-1">{ares.error}</p>}
         <input name="name" placeholder="Company name" value={fields.name} onChange={(e) => set("name", e.target.value)} required className="input" />
         <AddressAutocompleteInput
           name="address"
@@ -174,7 +174,7 @@ export function CompanySettingsForm({ defaults }: { defaults: Company | null }) 
           </label>
         </div>
 
-        {state.error && <p className="text-sm text-accent">{state.error}</p>}
+        {state.error && <p className="text-sm text-warning">{state.error}</p>}
         {state.success && <p className="text-sm">{state.success}</p>}
 
         <div className="flex gap-2">

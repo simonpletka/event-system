@@ -18,7 +18,7 @@ export function ConfirmDeleteButton({
   confirmMessage,
   label = "Delete",
   pendingLabel,
-  className = "btno !border-accent text-accent",
+  className = "btno !border-warning text-warning",
 }: {
   action: (formData: FormData) => void | Promise<void>;
   fields: Record<string, string>;
