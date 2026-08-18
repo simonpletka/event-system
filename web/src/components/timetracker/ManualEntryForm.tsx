@@ -10,8 +10,8 @@ export function ManualEntryForm({ events }: { events: { id: string; title: strin
   const [state, formAction, pending] = useActionState(addManualEntryAction, initialState);
 
   return (
-    <form action={formAction} className="flex flex-col gap-1.5">
-      <div className="label">Manual entry</div>
+    <form action={formAction} className="flex flex-col gap-2">
+      <div className="heading-label mb-0.5">Manual entry</div>
       <select name="eventId" required defaultValue="" className="input">
         <option value="" disabled>
           Event…

@@ -6,11 +6,13 @@ export default async function TimeTrackerLayout({ children }: { children: React.
 
   return (
     <div>
-      <h1 className="text-xl font-semibold border-b-2 border-ink pb-2 mb-3">Time tracker</h1>
-      <div className="pb-2.5 border-b border-ink/20 mb-3.5">
-        <TimeTrackerTabs />
+      <div className="sticky top-0 z-20 -mx-6 -mt-5 px-6 pt-5 pb-2 backdrop-blur-2xl bg-gradient-to-b from-bg/80 to-bg/50 border-b border-ink/10">
+        <h1 className="text-[28px] font-bold tracking-tight">Time tracker</h1>
+        <div className="mt-3">
+          <TimeTrackerTabs />
+        </div>
       </div>
-      {children}
+      <div className="mt-4">{children}</div>
     </div>
   );
 }
