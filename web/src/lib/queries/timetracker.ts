@@ -1,7 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import { eventWhereForUser, type SessionUser } from "@/lib/authz";
-import { startOfDay, addDays, mondayOf } from "@/lib/calendar";
-import type { TimePhase } from "@/generated/prisma/enums";
+import { startOfDay, addDays, mondayOf, dayHeaderLabel, weekDays } from "@/lib/calendar";
 
 export type TimePeriod = "day" | "week" | "month";
 
@@ -61,7 +60,8 @@ export async function getMyTimeTrackerData(user: SessionUser, period: TimePeriod
 
 export async function getTimeTrackerCalendarData(user: SessionUser, weekStart: Date) {
   const weekEnd = addDays(weekStart, 7);
-  const [entries, events] = await Promise.all([
+  const [running, entries, events] = await Promise.all([
+    getRunningTimer(user.id),
     prisma.timeEntry.findMany({
       where: { userId: user.id, running: false, date: { gte: weekStart, lt: weekEnd } },
       include: { event: { select: { id: true, title: true } } },
@@ -73,48 +73,73 @@ export async function getTimeTrackerCalendarData(user: SessionUser, weekStart: D
       orderBy: { title: "asc" },
     }),
   ]);
-  return { entries, events };
+  return { running, entries, events };
 }
 
-export async function getCompareEventsData(user: SessionUser, eventIds: string[]) {
-  if (eventIds.length === 0) return null;
-
-  const events = await prisma.event.findMany({
-    where: { id: { in: eventIds }, ...eventWhereForUser(user) },
-    select: {
-      id: true,
-      title: true,
-      quotedValue: true,
-      members: { select: { userId: true } },
-      timeEntries: {
-        where: { running: false },
-        select: { userId: true, minutes: true, phase: true, user: { select: { name: true } } },
-      },
-    },
+/** Everyone selectable in the Overview person filter — a small internal tool, so visibility isn't scoped further. */
+export async function getOverviewUsers() {
+  return prisma.user.findMany({
+    where: { active: true },
+    select: { id: true, name: true },
+    orderBy: { name: "asc" },
   });
+}
 
-  const perEvent = events.map((e) => {
-    const totalMinutes = e.timeEntries.reduce((s, t) => s + t.minutes, 0);
-    const people = new Set(e.timeEntries.map((t) => t.userId));
-    const costPerHour = totalMinutes > 0 ? Math.round((e.quotedValue / totalMinutes) * 60) : 0;
-    const phaseMinutes: Record<TimePhase, number> = { PLANNING: 0, SUPPLIERS: 0, ON_SITE: 0, WRAP_UP: 0 };
-    for (const t of e.timeEntries) phaseMinutes[t.phase] += t.minutes;
-    return { id: e.id, title: e.title, quotedValue: e.quotedValue, totalMinutes, peopleCount: people.size, costPerHour, phaseMinutes };
-  });
+export type OverviewBucket = { label: string; start: Date; end: Date };
 
-  const personNames = new Map<string, string>();
-  const perPerson = new Map<string, Record<string, number>>();
-  for (const e of events) {
-    for (const t of e.timeEntries) {
-      personNames.set(t.userId, t.user.name);
-      const row = perPerson.get(t.userId) ?? {};
-      row[e.id] = (row[e.id] ?? 0) + t.minutes;
-      perPerson.set(t.userId, row);
-    }
+/**
+ * day → one "Total" bucket (a day-by-day breakdown of a single day makes no
+ * sense; the per-event list carries the detail instead).
+ * week → one bucket per calendar day (Mon..Sun).
+ * month → one bucket per week, clipped to the month's actual [from, to) so
+ * a partial first/last week doesn't pull in days outside the period.
+ */
+export function overviewBuckets(period: TimePeriod, from: Date, to: Date): OverviewBucket[] {
+  if (period === "week") {
+    return weekDays(from).map((d) => ({ label: dayHeaderLabel(d), start: d, end: addDays(d, 1) }));
   }
-  const personRows = [...perPerson.entries()]
-    .map(([userId, minutesByEvent]) => ({ userId, name: personNames.get(userId)!, minutesByEvent }))
-    .sort((a, b) => a.name.localeCompare(b.name));
+  if (period === "month") {
+    const buckets: OverviewBucket[] = [];
+    let cursor = mondayOf(from);
+    let i = 1;
+    while (cursor < to) {
+      const end = addDays(cursor, 7);
+      buckets.push({ label: `Week ${i}`, start: cursor < from ? from : cursor, end: end > to ? to : end });
+      cursor = end;
+      i++;
+    }
+    return buckets;
+  }
+  return [{ label: "Total", start: from, end: to }];
+}
 
-  return { events: perEvent, personRows };
+export async function getOverviewData(selectedUsers: { id: string; name: string }[], period: TimePeriod, anchor: Date) {
+  const from = rangeStart(period, anchor);
+  const to = rangeEnd(period, anchor);
+  const buckets = overviewBuckets(period, from, to);
+
+  if (selectedUsers.length === 0) return { from, to, buckets, people: [] };
+
+  const entries = await prisma.timeEntry.findMany({
+    where: { userId: { in: selectedUsers.map((u) => u.id) }, running: false, date: { gte: from, lt: to } },
+    select: { userId: true, eventId: true, minutes: true, date: true, event: { select: { title: true } } },
+  });
+
+  const people = selectedUsers.map((u) => {
+    const own = entries.filter((e) => e.userId === u.id);
+    const byBucket = buckets.map((b) => own.filter((e) => e.date >= b.start && e.date < b.end).reduce((s, e) => s + e.minutes, 0));
+    const total = own.reduce((s, e) => s + e.minutes, 0);
+
+    const byEvent = new Map<string, { title: string; minutes: number }>();
+    for (const e of own) {
+      const cur = byEvent.get(e.eventId) ?? { title: e.event.title, minutes: 0 };
+      cur.minutes += e.minutes;
+      byEvent.set(e.eventId, cur);
+    }
+    const eventBreakdown = [...byEvent.values()].sort((a, b) => b.minutes - a.minutes);
+
+    return { id: u.id, name: u.name, byBucket, total, eventBreakdown };
+  });
+
+  return { from, to, buckets, people };
 }

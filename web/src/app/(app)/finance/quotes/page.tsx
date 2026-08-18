@@ -31,7 +31,7 @@ export default async function QuotesPage({
       <div className="flex justify-between items-center gap-2 flex-wrap">
         <form method="get" className="flex gap-1.5 flex-wrap items-center">
           <select name="status" defaultValue={filters.status ?? ""} className="btno bg-transparent text-[9px]">
-            <option value="">Status ▾</option>
+            <option value="">Status</option>
             {STATUSES.map((s) => (
               <option key={s} value={s}>
                 {s}
@@ -39,7 +39,7 @@ export default async function QuotesPage({
             ))}
           </select>
           <select name="eventId" defaultValue={filters.eventId ?? ""} className="btno bg-transparent text-[9px]">
-            <option value="">Event ▾</option>
+            <option value="">Event</option>
             {events.map((e) => (
               <option key={e.id} value={e.id}>
                 {e.title}
@@ -59,7 +59,7 @@ export default async function QuotesPage({
           </button>
         </form>
         {canManage && (
-          <Link href="/finance/quotes/new" className="btn">
+          <Link href="/finance/quotes/new" className="btn font-semibold">
             New quote
           </Link>
         )}

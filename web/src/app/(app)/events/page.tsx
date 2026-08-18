@@ -69,7 +69,7 @@ export default async function EventsPage({
 
           <form method="get" className="flex gap-1.5 flex-wrap items-center">
             <select name="status" defaultValue={filters.status ?? ""} className="btno bg-transparent text-[9px]">
-              <option value="">Status ▾</option>
+              <option value="">Status</option>
               {STATUSES.map((s) => (
                 <option key={s} value={s}>
                   {s.replace("_", " ")}
@@ -77,7 +77,7 @@ export default async function EventsPage({
               ))}
             </select>
             <select name="client" defaultValue={filters.client ?? ""} className="btno bg-transparent text-[9px]">
-              <option value="">Client ▾</option>
+              <option value="">Client</option>
               {clients.map((c) => (
                 <option key={c} value={c}>
                   {c}
@@ -85,7 +85,7 @@ export default async function EventsPage({
               ))}
             </select>
             <select name="place" defaultValue={filters.place ?? ""} className="btno bg-transparent text-[9px]">
-              <option value="">Place ▾</option>
+              <option value="">Place</option>
               {places.map((p) => (
                 <option key={p} value={p}>
                   {p}
@@ -169,7 +169,7 @@ function ViewHeader({ canCreate, total, activeCount }: { canCreate: boolean; tot
         <h1 className="text-[28px] font-bold tracking-tight mt-1">Events</h1>
       </div>
       {canCreate && (
-        <Link href="/events/new" className="btn">
+        <Link href="/events/new" className="btn font-semibold">
           New event
         </Link>
       )}

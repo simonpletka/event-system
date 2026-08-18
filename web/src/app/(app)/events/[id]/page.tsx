@@ -138,7 +138,7 @@ export default async function EventOverviewPage({ params }: { params: Promise<{ 
             View quotes & invoices
           </Link>
           {canManageFinance(user) && (
-            <Link href={`/finance/quotes/new?eventId=${event.id}`} className="btn block text-center mt-1.5">
+            <Link href={`/finance/quotes/new?eventId=${event.id}`} className="btn font-semibold block text-center mt-1.5">
               New quote for this event
             </Link>
           )}

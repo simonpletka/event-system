@@ -38,7 +38,7 @@ export default async function InvoicesPage({
             <a href="/api/finance/invoices/export" className="btno">
               Export for accounting
             </a>
-            <Link href="/finance/invoices/new" className="btn">
+            <Link href="/finance/invoices/new" className="btn font-semibold">
               New invoice
             </Link>
           </>
@@ -71,7 +71,7 @@ export default async function InvoicesPage({
         <form method="get" className="flex gap-1.5">
           {filters.bucket && <input type="hidden" name="bucket" value={filters.bucket} />}
           <select name="eventId" defaultValue={filters.eventId ?? ""} className="btno bg-transparent text-[9px]">
-            <option value="">Event ▾</option>
+            <option value="">Event</option>
             {events.map((e) => (
               <option key={e.id} value={e.id}>
                 {e.title}

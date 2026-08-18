@@ -7,7 +7,7 @@ export function TimeTrackerTabs() {
   const pathname = usePathname();
   const tabs = [
     { href: "/time-tracker/tracking", label: "Tracking" },
-    { href: "/time-tracker/compare", label: "Compare events" },
+    { href: "/time-tracker/overview", label: "Overview" },
   ];
 
   return (

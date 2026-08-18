@@ -26,7 +26,7 @@ export default async function ExpensesPage({
       <div className="flex justify-between items-center gap-2 flex-wrap">
         <form method="get" className="flex gap-1.5 flex-wrap items-center">
           <select name="eventId" defaultValue={filters.eventId ?? ""} className="btno bg-transparent text-[9px]">
-            <option value="">Event ▾</option>
+            <option value="">Event</option>
             <option value="overhead">Company overhead</option>
             {events.map((e) => (
               <option key={e.id} value={e.id}>
@@ -35,7 +35,7 @@ export default async function ExpensesPage({
             ))}
           </select>
           <select name="category" defaultValue={filters.category ?? ""} className="btno bg-transparent text-[9px]">
-            <option value="">Category ▾</option>
+            <option value="">Category</option>
             {EXPENSE_CATEGORIES.map((c) => (
               <option key={c} value={c}>
                 {EXPENSE_CATEGORY_LABEL[c]}
@@ -46,7 +46,7 @@ export default async function ExpensesPage({
             Apply
           </button>
         </form>
-        <Link href="/finance/expenses/new" className="btn">
+        <Link href="/finance/expenses/new" className="btn font-semibold">
           New expense
         </Link>
       </div>

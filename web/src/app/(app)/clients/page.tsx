@@ -22,7 +22,7 @@ export default async function ClientsPage({
             <h1 className="text-[28px] font-bold tracking-tight mt-1">Clients</h1>
           </div>
           {canManage && (
-            <Link href="/clients/new" className="btn">
+            <Link href="/clients/new" className="btn font-semibold">
               New client
             </Link>
           )}

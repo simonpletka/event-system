@@ -39,7 +39,7 @@ export default async function DashboardPage({
         <div className="flex items-end justify-between">
           <h1 className="text-[28px] font-bold tracking-tight">Dashboard</h1>
           {canCreateEvent(user) && (
-            <Link href="/events/new" className="btn">
+            <Link href="/events/new" className="btn font-semibold">
               New event
             </Link>
           )}

@@ -52,7 +52,7 @@ export function EventPicker({
           </option>
         ))}
       </select>
-      <button type="button" onClick={() => setModalOpen(true)} className="btno text-[9px] whitespace-nowrap">
+      <button type="button" onClick={() => setModalOpen(true)} className="btno font-semibold text-[9px] whitespace-nowrap">
         + New event
       </button>
       {modalOpen && (
