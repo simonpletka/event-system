@@ -36,7 +36,7 @@ export function Sidebar({
         />
       )}
       <div
-        className={`${pinned ? "shrink-0" : "fixed inset-y-0 left-0 z-50"} w-[190px] border-r-2 border-ink bg-bg px-4 pt-4 pb-5 flex flex-col gap-4 print-hide font-medium transition-transform duration-[240ms] ease-out ${
+        className={`${pinned ? "sticky top-0 h-screen shrink-0" : "fixed inset-y-0 left-0 z-50"} w-[190px] border-r-2 border-ink bg-bg px-4 pt-4 pb-5 flex flex-col gap-4 print-hide font-medium transition-transform duration-[240ms] ease-out overflow-y-auto ${
           visible ? "translate-x-0" : "-translate-x-full"
         }`}
         onMouseEnter={() => setHovering(true)}

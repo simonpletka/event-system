@@ -1,5 +1,6 @@
 "use client";
 
+import { Fragment } from "react";
 import { formatCurrency, type CurrencyCode } from "@/lib/format";
 
 export type LineItem = { description: string; quantity: number; unitPrice: number; vatRate: number; category: string };
@@ -45,7 +46,19 @@ export function LineItemsFields({
           <option key={c} value={c} />
         ))}
       </datalist>
-      <div className="grid grid-cols-[24px_1fr_110px_70px_110px_70px_auto] gap-2 mb-1.5">
+      {/*
+        Header + every item row are children of ONE grid, not separate
+        per-row grids — that's deliberate. Two independent grids sharing
+        the same column template can still end up with different pixel
+        widths per column: the trailing `auto` column sizes to its own
+        row's content, and the header row (empty last cell) vs. an item
+        row (a real "Remove" button) resolved to different `auto` widths,
+        which then pushed every column after Description out of alignment
+        by a growing amount — confirmed from a screenshot showing the drift
+        widening left-to-right. A single shared grid guarantees every
+        column is exactly the same width in every row, header included.
+      */}
+      <div className="grid grid-cols-[24px_1fr_110px_70px_110px_70px_auto] gap-2 items-center">
         <span></span>
         <span className="heading-label">Description</span>
         <span className="heading-label">Category</span>
@@ -53,10 +66,9 @@ export function LineItemsFields({
         <span className="heading-label">Unit price</span>
         <span className="heading-label">VAT %</span>
         <span></span>
-      </div>
-      <div className="flex flex-col gap-2">
+
         {items.map((item, i) => (
-          <div key={i} className="grid grid-cols-[24px_1fr_110px_70px_110px_70px_auto] gap-2 items-center">
+          <Fragment key={i}>
             <div className="flex flex-col">
               <button
                 type="button"
@@ -127,7 +139,7 @@ export function LineItemsFields({
             >
               Remove
             </button>
-          </div>
+          </Fragment>
         ))}
       </div>
       <button type="button" onClick={() => onChange([...items, { ...BLANK_ITEM }])} className="btno mt-2 text-[9px]">
