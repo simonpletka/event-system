@@ -19,6 +19,15 @@ export const metadata: Metadata = {
   description: "Internal event-agency system — events, finance, time tracking.",
 };
 
+// Every route in this app already depends on the session/DB on every
+// request (see authz.ts's requireUser()) — there's nothing here that could
+// ever be usefully static. Forcing dynamic rendering also stops `next
+// build` from trying to prerender /_not-found, which would otherwise run
+// this layout's getCompanySettings() DB call at build time — fatal on a
+// host like Railway where a volume-backed DATABASE_URL only exists once
+// the runtime container starts, not during the build step.
+export const dynamic = "force-dynamic";
+
 export default async function RootLayout({ children }: LayoutProps<"/">) {
   const company = await getCompanySettings();
   const colors = getAppColors(company);
