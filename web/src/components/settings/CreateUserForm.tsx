@@ -27,7 +27,7 @@ export function CreateUserForm({
   return (
     <div className="card px-5 py-4">
       <div className="heading-label mb-2.5">{t.newAccountHeading}</div>
-      <form action={formAction} className="grid grid-cols-[1fr_1fr_150px_100px_auto] gap-2.5 items-end">
+      <form action={formAction} className="grid grid-cols-1 md:grid-cols-[1fr_1fr_150px_100px_auto] gap-2.5 items-end">
         <label className="flex flex-col gap-1.5">
           <span className="heading-label">{t.nameLabel}</span>
           <input name="name" required className="input" />

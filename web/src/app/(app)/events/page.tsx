@@ -8,6 +8,7 @@ import { WeekCalendar } from "@/components/calendar/WeekCalendar";
 import { WeekNav } from "@/components/calendar/WeekNav";
 import { mondayOf, parseIsoDate } from "@/lib/calendar";
 import { SegmentedTabs } from "@/components/ui/SegmentedTabs";
+import { MobileListRow } from "@/components/ui/MobileListRow";
 import { getLocale, getDictionary, type Dictionary } from "@/lib/i18n";
 import type { EventStatus } from "@/generated/prisma/enums";
 
@@ -28,7 +29,8 @@ export default async function EventsPage({
 }) {
   const user = await requireUser();
   const params = await searchParams;
-  const t = getDictionary(await getLocale());
+  const locale = await getLocale();
+  const t = getDictionary(locale);
   const view = params.view === "calendar" ? "calendar" : "table";
 
   if (view === "calendar") {
@@ -37,7 +39,7 @@ export default async function EventsPage({
 
     return (
       <div>
-        <div className="sticky top-0 z-20 -mx-6 -mt-5 px-6 pt-5 pb-4 backdrop-blur-2xl bg-gradient-to-b from-bg/80 to-bg/50 border-b border-ink/10">
+        <div className="sticky top-0 z-20 -mx-6 mt-0 md:-mt-5 px-6 pt-5 pb-4 backdrop-blur-2xl bg-gradient-to-b from-bg/80 to-bg/50 border-b border-ink/10">
           <ViewHeader canCreate={canCreateEvent(user)} t={t} />
           <div className="flex items-center justify-between gap-2 mt-4 flex-wrap">
             <ViewSwitch view="calendar" t={t} />
@@ -45,7 +47,7 @@ export default async function EventsPage({
           </div>
         </div>
         <div className="mt-4">
-          <WeekCalendar weekStart={weekStart} events={events} eventHref={(id) => `/events/${id}`} t={t.calendar} tStatus={t.statusEvent} />
+          <WeekCalendar weekStart={weekStart} events={events} locale={locale} />
         </div>
       </div>
     );
@@ -63,14 +65,14 @@ export default async function EventsPage({
 
   return (
     <div>
-      <div className="sticky top-0 z-20 -mx-6 -mt-5 px-6 pt-5 pb-4 backdrop-blur-2xl bg-gradient-to-b from-bg/80 to-bg/50 border-b border-ink/10">
+      <div className="sticky top-0 z-20 -mx-6 mt-0 md:-mt-5 px-6 pt-5 pb-4 backdrop-blur-2xl bg-gradient-to-b from-bg/80 to-bg/50 border-b border-ink/10">
         <ViewHeader canCreate={canCreateEvent(user)} total={total} activeCount={activeCount} t={t} />
 
         <div className="flex items-center justify-between gap-2 mt-4 flex-wrap">
           <ViewSwitch view="table" t={t} />
 
-          <form method="get" className="flex gap-1.5 flex-wrap items-center">
-            <select name="status" defaultValue={filters.status ?? ""} className="btno bg-transparent text-[9px]">
+          <form method="get" className="flex gap-1.5 items-center flex-nowrap overflow-x-auto pb-1 md:pb-0 md:flex-wrap md:overflow-visible">
+            <select name="status" defaultValue={filters.status ?? ""} className="btno bg-transparent text-[9px] shrink-0">
               <option value="">{t.events.statusFilter}</option>
               {STATUSES.map((s) => (
                 <option key={s} value={s}>
@@ -78,7 +80,7 @@ export default async function EventsPage({
                 </option>
               ))}
             </select>
-            <select name="client" defaultValue={filters.client ?? ""} className="btno bg-transparent text-[9px]">
+            <select name="client" defaultValue={filters.client ?? ""} className="btno bg-transparent text-[9px] shrink-0">
               <option value="">{t.events.clientFilter}</option>
               {clients.map((c) => (
                 <option key={c} value={c}>
@@ -86,7 +88,7 @@ export default async function EventsPage({
                 </option>
               ))}
             </select>
-            <select name="place" defaultValue={filters.place ?? ""} className="btno bg-transparent text-[9px]">
+            <select name="place" defaultValue={filters.place ?? ""} className="btno bg-transparent text-[9px] shrink-0">
               <option value="">{t.events.placeFilter}</option>
               {places.map((p) => (
                 <option key={p} value={p}>
@@ -98,13 +100,13 @@ export default async function EventsPage({
               name="q"
               defaultValue={filters.q ?? ""}
               placeholder={t.common.search}
-              className="input text-[9px] py-1.5 w-[110px]"
+              className="input text-[9px] py-1.5 w-[110px] shrink-0"
             />
-            <button type="submit" className="btno text-[9px]">
+            <button type="submit" className="btno text-[9px] shrink-0">
               {t.events.apply}
             </button>
             {(filters.q || filters.status || filters.client || filters.place) && (
-              <Link href="/events" className="text-[9px] placeholder-text hover:text-ink underline underline-offset-2">
+              <Link href="/events" className="text-[9px] placeholder-text hover:text-ink underline underline-offset-2 shrink-0">
                 {t.events.clear}
               </Link>
             )}
@@ -112,40 +114,56 @@ export default async function EventsPage({
         </div>
       </div>
 
-      <div className="grid grid-cols-[1.5fr_.9fr_.8fr_.8fr_.9fr_.6fr] gap-2.5 border-b border-ink/14 pb-1.5 mt-5 px-3.5">
-        <span className="heading-label">{t.events.colEvent}</span>
-        <span className="heading-label">{t.events.clientFilter}</span>
-        <span className="heading-label">{t.events.colDates}</span>
-        <span className="heading-label">{t.events.placeFilter}</span>
-        <span className="heading-label">{t.events.colStatus}</span>
-        <span className="heading-label">{t.events.colValue}</span>
+      <div className="hidden md:block">
+        <div className="grid grid-cols-[1.5fr_.9fr_.8fr_.8fr_.9fr_.6fr] gap-2.5 border-b border-ink/14 pb-1.5 mt-5 px-3.5">
+          <span className="heading-label">{t.events.colEvent}</span>
+          <span className="heading-label">{t.events.clientFilter}</span>
+          <span className="heading-label">{t.events.colDates}</span>
+          <span className="heading-label">{t.events.placeFilter}</span>
+          <span className="heading-label">{t.events.colStatus}</span>
+          <span className="heading-label">{t.events.colValue}</span>
+        </div>
+
+        {events.map((event) => (
+          <Link
+            key={event.id}
+            id={event.id === firstUpcomingId ? "today-row" : undefined}
+            href={`/events/${event.id}`}
+            className="group grid grid-cols-[1.5fr_.9fr_.8fr_.8fr_.9fr_.6fr] gap-2.5 items-center py-3 px-3.5 rounded-xl border-b border-ink/8 last:border-b-0 text-[13px] hover:bg-ink/5"
+          >
+            <div className="group-hover:text-accent">
+              <span className="placeholder-text text-[11px] mr-1 group-hover:!text-accent">{event.number}</span>
+              <span className="font-medium">{event.title}</span>
+              <div className="label group-hover:!text-accent">{event.milestones[0]?.title ?? "—"}</div>
+            </div>
+            <div className="placeholder-text group-hover:!text-accent">{event.companyName}</div>
+            <div className="placeholder-text group-hover:!text-accent">{formatDateRange(event.startDate, event.endDate)}</div>
+            <div className="placeholder-text group-hover:!text-accent">{event.venues[0]?.name ?? "—"}</div>
+            <div>
+              <EventStatusPill status={event.status} t={t.statusEvent} />
+            </div>
+            <div className="font-semibold tabular-nums group-hover:text-accent">
+              {event.quotedValue ? formatCurrency(event.quotedValue) : <span className="placeholder-text font-normal">—</span>}
+            </div>
+          </Link>
+        ))}
+      </div>
+
+      <div className="md:hidden flex flex-col gap-2 mt-4">
+        {events.map((event) => (
+          <MobileListRow
+            key={event.id}
+            href={`/events/${event.id}`}
+            subLeft={event.number}
+            title={event.title}
+            tag={<EventStatusPill status={event.status} t={t.statusEvent} />}
+            meta={`${event.companyName} · ${formatDateRange(event.startDate, event.endDate)} · ${event.venues[0]?.name ?? "—"}`}
+            trailing={event.quotedValue ? formatCurrency(event.quotedValue) : "—"}
+          />
+        ))}
       </div>
 
       {events.length === 0 && <p className="text-sm placeholder-text mt-4">{t.events.noEventsMatch}</p>}
-
-      {events.map((event) => (
-        <Link
-          key={event.id}
-          id={event.id === firstUpcomingId ? "today-row" : undefined}
-          href={`/events/${event.id}`}
-          className="group grid grid-cols-[1.5fr_.9fr_.8fr_.8fr_.9fr_.6fr] gap-2.5 items-center py-3 px-3.5 rounded-xl border-b border-ink/8 last:border-b-0 text-[13px] hover:bg-ink/5"
-        >
-          <div className="group-hover:text-accent">
-            <span className="placeholder-text text-[11px] mr-1 group-hover:!text-accent">{event.number}</span>
-            <span className="font-medium">{event.title}</span>
-            <div className="label group-hover:!text-accent">{event.milestones[0]?.title ?? "—"}</div>
-          </div>
-          <div className="placeholder-text group-hover:!text-accent">{event.companyName}</div>
-          <div className="placeholder-text group-hover:!text-accent">{formatDateRange(event.startDate, event.endDate)}</div>
-          <div className="placeholder-text group-hover:!text-accent">{event.venues[0]?.name ?? "—"}</div>
-          <div>
-            <EventStatusPill status={event.status} t={t.statusEvent} />
-          </div>
-          <div className="font-semibold tabular-nums group-hover:text-accent">
-            {event.quotedValue ? formatCurrency(event.quotedValue) : <span className="placeholder-text font-normal">—</span>}
-          </div>
-        </Link>
-      ))}
 
       <div className="flex items-center justify-between mt-4 px-3.5">
         <div className="label">{t.events.sortedBy(events.length, total)}</div>

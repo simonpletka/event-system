@@ -49,7 +49,7 @@ export function ExpenseForm({
   return (
     <form ref={formRef} action={formAction} className="max-w-2xl flex flex-col gap-4">
       {isEdit && <input type="hidden" name="id" value={defaults!.id} />}
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <ReceiptInput existingReceiptPath={defaults?.receiptPath} t={t.finance.expenses.receipt} />
         <div className="flex flex-col gap-3">
           <label className="flex flex-col gap-1.5">
@@ -92,7 +92,7 @@ export function ExpenseForm({
         />
       </label>
 
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <label className="flex flex-col gap-1.5">
           <span className="heading-label">{tf.categoryLabel}</span>
           <select name="category" defaultValue={defaults?.category ?? "GENERIC"} className="input">

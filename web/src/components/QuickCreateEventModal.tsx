@@ -42,7 +42,7 @@ export function QuickCreateEventModal({
           <span className="heading-label">{t.clientCompanyLabel}</span>
           <input name="companyName" required className="input" />
         </label>
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
           <label className="flex flex-col gap-1.5">
             <span className="heading-label">{t.startLabel}</span>
             <input name="startDate" type="datetime-local" required className="input" />

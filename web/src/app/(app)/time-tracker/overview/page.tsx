@@ -69,13 +69,13 @@ export default async function OverviewPage({
         </div>
       </div>
 
-      <div className="flex gap-1.5 flex-wrap items-center pb-2.5 mt-4 border-b border-ink/20">
-        <span className="label mr-1">{to.people}</span>
+      <div className="flex gap-1.5 items-center pb-2.5 mt-4 border-b border-ink/20 flex-nowrap overflow-x-auto md:flex-wrap md:overflow-visible">
+        <span className="label mr-1 shrink-0">{to.people}</span>
         {selectedUsers.map((u) => (
           <Link
             key={u.id}
             href={overviewHref({ period, date: params.date, users: selectedIds.filter((id) => id !== u.id).join(",") })}
-            className="btno text-[9px]"
+            className="btno text-[9px] shrink-0"
           >
             {u.name} ×
           </Link>
@@ -100,9 +100,9 @@ export default async function OverviewPage({
 function AddPersonPicker({ options, hrefFor }: { options: { id: string; name: string }[]; hrefFor: (id: string) => string }) {
   if (options.length === 0) return null;
   return (
-    <div className="flex gap-1 flex-wrap">
+    <div className="flex gap-1 flex-nowrap md:flex-wrap shrink-0">
       {options.map((u) => (
-        <Link key={u.id} href={hrefFor(u.id)} className="btno text-[9px]">
+        <Link key={u.id} href={hrefFor(u.id)} className="btno text-[9px] shrink-0">
           + {u.name}
         </Link>
       ))}
@@ -113,54 +113,61 @@ function AddPersonPicker({ options, hrefFor }: { options: { id: string; name: st
 function DayBreakdown({ people, t }: { people: OverviewPerson[]; t: Dictionary }) {
   const to = t.timeTracker.overview;
   return (
-    <div className="grid gap-px mt-3 border border-ink/20" style={{ gridTemplateColumns: `repeat(${people.length}, minmax(0,1fr))` }}>
-      {people.map((p) => (
-        <div key={p.id} className="bg-surface px-3 py-3">
-          <div className="heading-label">{p.name}</div>
-          <div className="text-xl font-semibold tracking-tight mt-0.5">{formatMinutes(p.total)}</div>
-          {p.eventBreakdown.length === 0 ? (
-            <div className="placeholder-text text-[11px] mt-2">{to.noTimeLogged}</div>
-          ) : (
-            <div className="mt-2 flex flex-col gap-1">
-              {p.eventBreakdown.map((e) => (
-                <div key={e.title} className="flex justify-between gap-2 text-[11px]">
-                  <span className="placeholder-text truncate">{e.title}</span>
-                  <span>{formatMinutes(e.minutes)}</span>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-      ))}
+    <div className="overflow-x-auto mt-3">
+      <div
+        className="grid gap-px border border-ink/20"
+        style={{ gridTemplateColumns: `repeat(${people.length}, minmax(140px,1fr))`, minWidth: people.length * 140 }}
+      >
+        {people.map((p) => (
+          <div key={p.id} className="bg-surface px-3 py-3">
+            <div className="heading-label">{p.name}</div>
+            <div className="text-xl font-semibold tracking-tight mt-0.5">{formatMinutes(p.total)}</div>
+            {p.eventBreakdown.length === 0 ? (
+              <div className="placeholder-text text-[11px] mt-2">{to.noTimeLogged}</div>
+            ) : (
+              <div className="mt-2 flex flex-col gap-1">
+                {p.eventBreakdown.map((e) => (
+                  <div key={e.title} className="flex justify-between gap-2 text-[11px]">
+                    <span className="placeholder-text truncate">{e.title}</span>
+                    <span>{formatMinutes(e.minutes)}</span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        ))}
+      </div>
     </div>
   );
 }
 
 function BucketTable({ buckets, people, t }: { buckets: OverviewBucket[]; people: OverviewPerson[]; t: Dictionary }) {
   const to = t.timeTracker.overview;
-  const cols = `1fr repeat(${buckets.length}, .7fr) .7fr`;
+  const cols = `minmax(110px,1fr) repeat(${buckets.length}, minmax(56px,.7fr)) minmax(56px,.7fr)`;
   return (
-    <div className="mt-4">
-      <div className="grid gap-2 border-b-2 border-ink pb-1.5" style={{ gridTemplateColumns: cols }}>
-        <span className="heading-label">{to.colPerson}</span>
-        {buckets.map((b, i) => (
-          <span key={i} className="heading-label text-center">
-            {b.label}
-          </span>
-        ))}
-        <span className="heading-label text-right">{to.colTotal}</span>
-      </div>
-      {people.map((p) => (
-        <div key={p.id} className="grid gap-2 py-2 text-[13px] items-center border-b border-ink/8 last:border-b-0" style={{ gridTemplateColumns: cols }}>
-          <div>{p.name}</div>
-          {p.byBucket.map((m, i) => (
-            <div key={i} className="text-center placeholder-text">
-              {m ? formatMinutes(m) : "—"}
-            </div>
+    <div className="mt-4 overflow-x-auto">
+      <div style={{ minWidth: 110 + buckets.length * 56 + 56 }}>
+        <div className="grid gap-2 border-b-2 border-ink pb-1.5" style={{ gridTemplateColumns: cols }}>
+          <span className="heading-label">{to.colPerson}</span>
+          {buckets.map((b, i) => (
+            <span key={i} className="heading-label text-center">
+              {b.label}
+            </span>
           ))}
-          <div className="text-right font-semibold">{formatMinutes(p.total)}</div>
+          <span className="heading-label text-right">{to.colTotal}</span>
         </div>
-      ))}
+        {people.map((p) => (
+          <div key={p.id} className="grid gap-2 py-2 text-[13px] items-center border-b border-ink/8 last:border-b-0" style={{ gridTemplateColumns: cols }}>
+            <div className="truncate">{p.name}</div>
+            {p.byBucket.map((m, i) => (
+              <div key={i} className="text-center placeholder-text">
+                {m ? formatMinutes(m) : "—"}
+              </div>
+            ))}
+            <div className="text-right font-semibold">{formatMinutes(p.total)}</div>
+          </div>
+        ))}
+      </div>
     </div>
   );
 }

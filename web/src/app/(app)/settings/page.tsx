@@ -52,7 +52,7 @@ export default async function SettingsPage({
 
   return (
     <div>
-      <div className="sticky top-0 z-20 -mx-6 -mt-5 px-6 pt-5 pb-2 backdrop-blur-2xl bg-gradient-to-b from-bg/80 to-bg/50 border-b border-ink/10">
+      <div className="sticky top-0 z-20 -mx-6 mt-0 md:-mt-5 px-6 pt-5 pb-2 backdrop-blur-2xl bg-gradient-to-b from-bg/80 to-bg/50 border-b border-ink/10">
         <div className="flex items-end justify-between">
           <div>
             <div className="heading-label">{users.length ? t.settings.accountsCount(users.length) : t.settings.companySettingsLabel}</div>
@@ -60,11 +60,11 @@ export default async function SettingsPage({
           </div>
         </div>
 
-        <div className="flex gap-3.5 mt-3">
+        <div className="flex gap-3.5 mt-3 flex-nowrap overflow-x-auto pb-1 md:pb-0 md:flex-wrap md:overflow-visible">
           {canCompany && (
             <Link
               href="/settings?tab=company"
-              className={`text-[9px] tracking-[0.14em] uppercase pb-2 border-b-2 ${tab === "company" ? "border-accent text-accent" : "border-transparent placeholder-text hover:text-ink"}`}
+              className={`shrink-0 text-[9px] tracking-[0.14em] uppercase pb-2 border-b-2 ${tab === "company" ? "border-accent text-accent" : "border-transparent placeholder-text hover:text-ink"}`}
             >
               {t.settings.tabCompany}
             </Link>
@@ -72,7 +72,7 @@ export default async function SettingsPage({
           {canUsers && (
             <Link
               href="/settings?tab=users"
-              className={`text-[9px] tracking-[0.14em] uppercase pb-2 border-b-2 ${tab === "users" ? "border-accent text-accent" : "border-transparent placeholder-text hover:text-ink"}`}
+              className={`shrink-0 text-[9px] tracking-[0.14em] uppercase pb-2 border-b-2 ${tab === "users" ? "border-accent text-accent" : "border-transparent placeholder-text hover:text-ink"}`}
             >
               {t.settings.tabUsers}
             </Link>
@@ -80,7 +80,7 @@ export default async function SettingsPage({
           {canCompany && (
             <Link
               href="/settings?tab=templates"
-              className={`text-[9px] tracking-[0.14em] uppercase pb-2 border-b-2 ${tab === "templates" ? "border-accent text-accent" : "border-transparent placeholder-text hover:text-ink"}`}
+              className={`shrink-0 text-[9px] tracking-[0.14em] uppercase pb-2 border-b-2 ${tab === "templates" ? "border-accent text-accent" : "border-transparent placeholder-text hover:text-ink"}`}
             >
               {t.settings.tabTemplates}
             </Link>
@@ -88,7 +88,7 @@ export default async function SettingsPage({
           {canCompany && (
             <Link
               href="/settings?tab=appSettings"
-              className={`text-[9px] tracking-[0.14em] uppercase pb-2 border-b-2 ${tab === "appSettings" ? "border-accent text-accent" : "border-transparent placeholder-text hover:text-ink"}`}
+              className={`shrink-0 text-[9px] tracking-[0.14em] uppercase pb-2 border-b-2 ${tab === "appSettings" ? "border-accent text-accent" : "border-transparent placeholder-text hover:text-ink"}`}
             >
               {t.settings.tabAppSettings}
             </Link>

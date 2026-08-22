@@ -26,14 +26,14 @@ export function EventTabs({
   ];
 
   return (
-    <div className="flex gap-3.5 mt-2.5 border-b border-ink/20 flex-wrap">
+    <div className="flex gap-3.5 mt-2.5 border-b border-ink/20 flex-nowrap overflow-x-auto md:flex-wrap md:overflow-visible">
       {tabs.map((tab) => {
         const active = tab.exact ? pathname === tab.href : pathname.startsWith(tab.href);
         return (
           <Link
             key={tab.href}
             href={tab.href}
-            className={`text-[9px] tracking-[0.14em] uppercase pb-1.5 border-b-2 ${
+            className={`shrink-0 text-[9px] tracking-[0.14em] uppercase pb-1.5 border-b-2 ${
               active ? "border-accent text-accent" : "border-transparent placeholder-text hover:text-ink"
             }`}
           >

@@ -1,8 +1,11 @@
+"use client";
+
+import { useState } from "react";
 import Link from "next/link";
 import { addDays, dayHeaderLabel, isSameDay, startOfDay, weekDays, assignColumns } from "@/lib/calendar";
 import { EventStatusPill } from "@/components/StatusPill";
 import type { EventStatus } from "@/generated/prisma/enums";
-import type { Dictionary } from "@/lib/i18n";
+import { getDictionary, type Locale } from "@/lib/dictionary";
 
 export type CalendarEvent = {
   id: string;
@@ -39,18 +42,25 @@ function minutesFromGridStart(d: Date) {
 export function WeekCalendar({
   weekStart,
   events,
-  eventHref,
-  t,
-  tStatus,
+  locale,
 }: {
   weekStart: Date;
   events: CalendarEvent[];
-  eventHref: (id: string) => string;
-  t: Dictionary["calendar"];
-  tStatus: Dictionary["statusEvent"];
+  locale: Locale;
 }) {
+  const dict = getDictionary(locale);
+  const t = dict.calendar;
+  const tStatus = dict.statusEvent;
+  const eventHref = (id: string) => `/events/${id}`;
   const days = weekDays(weekStart);
   const today = new Date();
+  const todayIdx = days.findIndex((d) => isSameDay(d, today));
+  const [selectedIdx, setSelectedIdx] = useState(todayIdx >= 0 ? todayIdx : 0);
+  const selectedDay = days[selectedIdx];
+
+  function milestonesFor(day: Date) {
+    return events.flatMap((e) => e.milestones.filter((m) => isSameDay(m.date, day)).map((m) => ({ ...m, eventId: e.id, eventTitle: e.title })));
+  }
 
   type AllDayBar = { eventId: string; title: string; status: EventStatus; kind: "prep" | "main"; colStart: number; colEnd: number };
   const bars: AllDayBar[] = [];
@@ -73,6 +83,66 @@ export function WeekCalendar({
 
   return (
     <div>
+      {/* Mobile: a 7-day strip (tap to pick a day) above a single-day agenda list,
+          replacing the desktop hourly grid, which can't survive a 375px viewport. */}
+      <div className="md:hidden">
+        <div className="flex gap-1.5 overflow-x-auto pb-1">
+          {days.map((d, i) => {
+            const [dow, num] = dayHeaderLabel(d).split(" ");
+            const isToday = isSameDay(d, today);
+            const isSelected = i === selectedIdx;
+            return (
+              <button
+                key={d.toISOString()}
+                type="button"
+                onClick={() => setSelectedIdx(i)}
+                className={`shrink-0 w-11 flex flex-col items-center gap-1 rounded-xl py-2 ${
+                  isSelected ? "bg-accent text-ink" : isToday ? "text-accent" : "text-ink/60"
+                }`}
+              >
+                <span className="text-[8.5px] tracking-[0.06em]">{dow}</span>
+                <span className="text-[14px] font-semibold">{num}</span>
+              </button>
+            );
+          })}
+        </div>
+
+        <div className="mt-3 flex flex-col gap-2">
+          {bars
+            .filter((bar) => selectedIdx >= bar.colStart && selectedIdx <= bar.colEnd)
+            .map((bar, i) => (
+              <Link
+                key={`bar-${i}`}
+                href={eventHref(bar.eventId)}
+                className="card flex items-center gap-2.5 px-3.5 py-3"
+              >
+                <span className={`w-[3px] self-stretch rounded ${bar.kind === "main" ? "bg-accent" : "bg-ink/30"}`} />
+                <div className="min-w-0">
+                  <div className="text-[9.5px] font-semibold text-accent">{bar.kind === "main" ? t.allDay : t.legendPrepBuild}</div>
+                  <div className="text-[13.5px] font-semibold truncate">{bar.title}</div>
+                </div>
+              </Link>
+            ))}
+
+          {milestonesFor(selectedDay).map((m) => (
+            <Link key={m.id} href={eventHref(m.eventId)} className="card flex items-center gap-2.5 px-3.5 py-3">
+              <span className="w-[3px] self-stretch rounded bg-ink/30" />
+              <div className="min-w-0">
+                <div className="text-[9.5px] font-semibold text-ink/55">
+                  {String(m.date.getHours()).padStart(2, "0")}:{String(m.date.getMinutes()).padStart(2, "0")}
+                </div>
+                <div className="text-[13.5px] font-semibold truncate">{m.title}</div>
+                <div className="placeholder-text text-[11px] truncate">{m.eventTitle}</div>
+              </div>
+            </Link>
+          ))}
+
+          {bars.filter((bar) => selectedIdx >= bar.colStart && selectedIdx <= bar.colEnd).length === 0 &&
+            milestonesFor(selectedDay).length === 0 && <p className="text-sm placeholder-text">{t.noItemsThisDay}</p>}
+        </div>
+      </div>
+
+      <div className="hidden md:block">
       <div className="grid grid-cols-[44px_repeat(7,minmax(0,1fr))] border-b border-ink/20 pb-1">
         <div />
         {days.map((d) => (
@@ -112,9 +182,7 @@ export function WeekCalendar({
           ))}
         </div>
         {days.map((day) => {
-          const dayMilestones = events.flatMap((e) =>
-            e.milestones.filter((m) => isSameDay(m.date, day)).map((m) => ({ ...m, eventId: e.id, eventTitle: e.title }))
-          );
+          const dayMilestones = milestonesFor(day);
           const placed = assignColumns(
             dayMilestones.map((m) => ({
               ...m,
@@ -157,6 +225,7 @@ export function WeekCalendar({
         <Legend swatch="bg-ink" label={t.legendEventDays} />
         <Legend swatch="bg-ink/14" label={t.legendPrepBuild} />
         <Legend swatch="border border-ink/25" label={t.legendMilestone} />
+      </div>
       </div>
 
       {events.length === 0 && <p className="text-sm placeholder-text mt-3">{t.noEventsThisWeek}</p>}

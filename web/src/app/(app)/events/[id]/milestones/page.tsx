@@ -21,24 +21,45 @@ export default async function MilestonesTab({ params }: { params: Promise<{ id: 
       <p className="text-[10px] placeholder-text mb-3">{tm.syncHelper}</p>
 
       {event.milestones.length === 0 && <p className="text-sm placeholder-text">{tm.noMilestones}</p>}
-      {event.milestones.map((m) => (
-        <div key={m.id} className="grid grid-cols-[110px_1fr_auto] gap-2.5 items-center py-2 border-b border-ink/10 text-[13px]">
-          <div className="placeholder-text">{formatDateTime(m.date)}</div>
-          <div>{m.title}</div>
-          {editable && (
-            <ConfirmDeleteButton
-              action={deleteMilestoneAction}
-              fields={{ eventId: event.id, milestoneId: m.id }}
-              confirmMessage={tm.confirmDelete(m.title)}
-              label={t.common.delete}
-              className="text-[9px] tracking-[0.1em] uppercase placeholder-text hover:text-warning"
-            />
-          )}
-        </div>
-      ))}
+      <div className="hidden md:block">
+        {event.milestones.map((m) => (
+          <div key={m.id} className="grid grid-cols-[110px_1fr_auto] gap-2.5 items-center py-2 border-b border-ink/10 text-[13px]">
+            <div className="placeholder-text">{formatDateTime(m.date)}</div>
+            <div>{m.title}</div>
+            {editable && (
+              <ConfirmDeleteButton
+                action={deleteMilestoneAction}
+                fields={{ eventId: event.id, milestoneId: m.id }}
+                confirmMessage={tm.confirmDelete(m.title)}
+                label={t.common.delete}
+                className="text-[9px] tracking-[0.1em] uppercase placeholder-text hover:text-warning"
+              />
+            )}
+          </div>
+        ))}
+      </div>
+      <div className="md:hidden flex flex-col gap-2">
+        {event.milestones.map((m) => (
+          <div key={m.id} className="flex items-start justify-between gap-2.5 py-2.5 border-b border-ink/10 text-[13px]">
+            <div className="min-w-0">
+              <div className="font-medium">{m.title}</div>
+              <div className="placeholder-text text-[11.5px] mt-0.5">{formatDateTime(m.date)}</div>
+            </div>
+            {editable && (
+              <ConfirmDeleteButton
+                action={deleteMilestoneAction}
+                fields={{ eventId: event.id, milestoneId: m.id }}
+                confirmMessage={tm.confirmDelete(m.title)}
+                label={t.common.delete}
+                className="text-[9px] tracking-[0.1em] uppercase placeholder-text hover:text-warning shrink-0"
+              />
+            )}
+          </div>
+        ))}
+      </div>
 
       {editable && (
-        <form action={addMilestoneAction} className="flex gap-2 items-end mt-4">
+        <form action={addMilestoneAction} className="flex flex-col md:flex-row gap-2 md:items-end mt-4">
           <input type="hidden" name="eventId" value={event.id} />
           <label className="flex flex-col gap-1.5 flex-1">
             <span className="heading-label">{tm.titleLabel}</span>

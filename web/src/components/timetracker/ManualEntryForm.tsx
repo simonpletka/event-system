@@ -16,7 +16,7 @@ export function ManualEntryForm({ events, t, tPhases }: { events: { id: string; 
   return (
     <div className="card p-5">
       <div className="heading-label mb-2">{t.addManualEntry}</div>
-      <form action={formAction} className="grid grid-cols-3 gap-3">
+      <form action={formAction} className="grid grid-cols-1 md:grid-cols-3 gap-3">
         <label className="flex flex-col gap-1.5">
           <span className="heading-label">{t.eventLabel}</span>
           <select name="eventId" required defaultValue="" className="input">
@@ -58,7 +58,7 @@ export function ManualEntryForm({ events, t, tPhases }: { events: { id: string; 
           <input name="duration" type="number" min={1} placeholder={t.minsPlaceholder} className="input" />
         </label>
 
-        <label className="col-span-2 flex flex-col gap-1.5">
+        <label className="md:col-span-2 flex flex-col gap-1.5">
           <span className="heading-label">{t.descriptionLabel}</span>
           <input name="description" placeholder={t.descriptionPlaceholder} className="input" />
         </label>

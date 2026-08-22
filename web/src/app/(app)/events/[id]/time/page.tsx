@@ -42,18 +42,39 @@ export default async function TimeTab({ params }: { params: Promise<{ id: string
 
       <div className="heading-label mt-4 mb-1">{tt.entries}</div>
       {event.timeEntries.length === 0 && <p className="text-sm placeholder-text">{tt.noTimeLoggedYet}</p>}
-      {event.timeEntries.map((entry) => (
-        <div key={entry.id} className="grid grid-cols-[80px_1fr_1fr_auto_auto] gap-2.5 items-center py-2 border-b border-ink/10 text-[13px]">
-          <div className="placeholder-text">{formatDate(entry.date)}</div>
-          <div>{entry.user.name}</div>
-          <div className="placeholder-text">{entry.description || "—"}</div>
-          <div className="label">{t.phases[entry.phase]}</div>
-          <div>
-            {formatMinutes(liveMinutes(entry))}
-            {entry.running && <span className="text-accent"> ●</span>}
+      <div className="hidden md:block">
+        {event.timeEntries.map((entry) => (
+          <div key={entry.id} className="grid grid-cols-[80px_1fr_1fr_auto_auto] gap-2.5 items-center py-2 border-b border-ink/10 text-[13px]">
+            <div className="placeholder-text">{formatDate(entry.date)}</div>
+            <div>{entry.user.name}</div>
+            <div className="placeholder-text">{entry.description || "—"}</div>
+            <div className="label">{t.phases[entry.phase]}</div>
+            <div>
+              {formatMinutes(liveMinutes(entry))}
+              {entry.running && <span className="text-accent"> ●</span>}
+            </div>
           </div>
-        </div>
-      ))}
+        ))}
+      </div>
+      <div className="md:hidden flex flex-col gap-2">
+        {event.timeEntries.map((entry) => (
+          <div key={entry.id} className="flex items-start justify-between gap-2.5 py-2.5 border-b border-ink/10 text-[13px]">
+            <div className="min-w-0">
+              <div className="font-medium">
+                {entry.user.name} <span className="tag tag-neutral ml-1">{t.phases[entry.phase]}</span>
+              </div>
+              <div className="placeholder-text text-[11.5px] mt-0.5">
+                {formatDate(entry.date)}
+                {entry.description ? ` · ${entry.description}` : ""}
+              </div>
+            </div>
+            <div className="font-semibold shrink-0">
+              {formatMinutes(liveMinutes(entry))}
+              {entry.running && <span className="text-accent"> ●</span>}
+            </div>
+          </div>
+        ))}
+      </div>
     </div>
   );
 }

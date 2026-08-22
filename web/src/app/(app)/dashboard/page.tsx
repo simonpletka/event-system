@@ -17,7 +17,8 @@ export default async function DashboardPage({
 }) {
   const user = await requireUser();
   const params = await searchParams;
-  const t = getDictionary(await getLocale());
+  const locale = await getLocale();
+  const t = getDictionary(locale);
   const view = params.view === "timeline" || params.view === "calendar" ? params.view : "list";
   const weekStart = mondayOf(params.week ? parseIsoDate(params.week) : new Date());
 
@@ -36,7 +37,7 @@ export default async function DashboardPage({
 
   return (
     <div>
-      <div className="sticky top-0 z-20 -mx-6 -mt-5 px-6 pt-5 pb-4 backdrop-blur-2xl bg-gradient-to-b from-bg/80 to-bg/50 border-b border-ink/10">
+      <div className="sticky top-0 z-20 -mx-6 mt-0 md:-mt-5 px-6 pt-5 pb-4 backdrop-blur-2xl bg-gradient-to-b from-bg/80 to-bg/50 border-b border-ink/10">
         <div className="flex items-end justify-between">
           <h1 className="text-[28px] font-bold tracking-tight">{t.dashboard.title}</h1>
           {canCreateEvent(user) && (
@@ -61,12 +62,12 @@ export default async function DashboardPage({
       )}
       {view === "calendar" && calendarEvents && (
         <div className="mt-4">
-          <WeekCalendar weekStart={weekStart} events={calendarEvents} eventHref={(id) => `/events/${id}`} t={t.calendar} tStatus={t.statusEvent} />
+          <WeekCalendar weekStart={weekStart} events={calendarEvents} locale={locale} />
         </div>
       )}
 
       <div className="heading-label mt-6 mb-2.5">{t.dashboard.needsAttention}</div>
-      <div className="grid grid-cols-3 gap-3">
+      <div className="flex overflow-x-auto gap-3 -mx-6 px-6 md:mx-0 md:px-0 md:grid md:grid-cols-3 md:overflow-visible">
         <AttentionTile
           icon={ICON_ALERT}
           label={t.dashboard.invoiceOverdue(data.needsAttention.overdueInvoices.count)}
@@ -111,9 +112,13 @@ export default async function DashboardPage({
           {data.upcomingEvents.length === 0 ? (
             <p className="text-sm placeholder-text">{t.dashboard.noUpcomingEvents}</p>
           ) : (
-            <div className="grid grid-cols-3 gap-3">
+            <div className="flex overflow-x-auto gap-3 -mx-6 px-6 md:mx-0 md:px-0 md:grid md:grid-cols-3 md:overflow-visible">
               {data.upcomingEvents.map((event) => (
-                <Link key={event.id} href={`/events/${event.id}`} className="card block overflow-hidden hover:border-ink/35 transition-colors">
+                <Link
+                  key={event.id}
+                  href={`/events/${event.id}`}
+                  className="card block overflow-hidden hover:border-ink/35 transition-colors shrink-0 w-[240px] md:w-auto"
+                >
                   <div className="p-4 flex flex-col gap-2.5">
                     <EventStatusPill status={event.status} t={t.statusEvent} />
                     <div className="text-[15px] font-semibold">{event.title}</div>
@@ -136,7 +141,7 @@ export default async function DashboardPage({
         </>
       )}
 
-      <div className="grid grid-cols-2 gap-3 mt-7">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mt-7">
         <div className="card px-5 py-4">
           <div className="heading-label mb-1.5">{t.dashboard.latestExpenses}</div>
           {data.latestExpenses.length === 0 ? (
@@ -244,7 +249,9 @@ function AttentionTile({
   attention?: boolean;
 }) {
   return (
-    <div className={`card relative overflow-hidden px-5 py-5 flex flex-col gap-3 ${attention ? "border-warning/30" : ""}`}>
+    <div
+      className={`card relative overflow-hidden px-5 py-5 flex flex-col gap-3 shrink-0 w-[160px] md:w-auto ${attention ? "border-warning/30" : ""}`}
+    >
       {attention && <div className="absolute top-0 left-0 right-0 h-0.5 bg-warning" />}
       <div
         className={`w-8 h-8 rounded-[10px] border flex items-center justify-center ${

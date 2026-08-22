@@ -22,14 +22,30 @@ export default async function ExpensesTab({ params }: { params: Promise<{ id: st
         <span className="font-semibold">{formatCurrency(total)}</span>
       </div>
       {event.expenses.length === 0 && <p className="text-sm placeholder-text">{te.noExpensesRecorded}</p>}
-      {event.expenses.map((exp) => (
-        <div key={exp.id} className="grid grid-cols-[80px_1fr_1fr_auto] gap-2.5 items-center py-2 border-b border-ink/10 text-[13px]">
-          <div className="placeholder-text">{formatDate(exp.date)}</div>
-          <div>{t.expenseCategories[exp.category]}</div>
-          <div className="placeholder-text">{exp.paidBy.name}{exp.note ? ` · ${exp.note}` : ""}</div>
-          <div>{formatCurrency(exp.amount)}</div>
-        </div>
-      ))}
+      <div className="hidden md:block">
+        {event.expenses.map((exp) => (
+          <div key={exp.id} className="grid grid-cols-[80px_1fr_1fr_auto] gap-2.5 items-center py-2 border-b border-ink/10 text-[13px]">
+            <div className="placeholder-text">{formatDate(exp.date)}</div>
+            <div>{t.expenseCategories[exp.category]}</div>
+            <div className="placeholder-text">{exp.paidBy.name}{exp.note ? ` · ${exp.note}` : ""}</div>
+            <div>{formatCurrency(exp.amount)}</div>
+          </div>
+        ))}
+      </div>
+      <div className="md:hidden flex flex-col gap-2">
+        {event.expenses.map((exp) => (
+          <div key={exp.id} className="flex items-start justify-between gap-2.5 py-2.5 border-b border-ink/10 text-[13px]">
+            <div className="min-w-0">
+              <div className="font-medium">{t.expenseCategories[exp.category]}</div>
+              <div className="placeholder-text text-[11.5px] mt-0.5">
+                {formatDate(exp.date)} · {exp.paidBy.name}
+                {exp.note ? ` · ${exp.note}` : ""}
+              </div>
+            </div>
+            <div className="font-semibold shrink-0">{formatCurrency(exp.amount)}</div>
+          </div>
+        ))}
+      </div>
     </div>
   );
 }

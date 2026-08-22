@@ -77,7 +77,7 @@ export function QuoteForm({
         </label>
       )}
 
-      <div className="grid grid-cols-3 gap-3">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
         <label className="flex flex-col gap-1.5">
           <span className="heading-label">{tf.statusLabel}</span>
           <select name="status" defaultValue={defaults?.status ?? "DRAFT"} className="input">

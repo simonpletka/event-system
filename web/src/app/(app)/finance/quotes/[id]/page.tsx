@@ -27,7 +27,7 @@ export default async function QuoteDetailPage({ params }: { params: Promise<{ id
 
   return (
     <div>
-      <div className="sticky top-0 z-20 -mx-6 -mt-5 px-6 pt-5 pb-4 backdrop-blur-2xl bg-gradient-to-b from-bg/80 to-bg/50 border-b border-ink/10">
+      <div className="sticky top-0 z-20 -mx-6 mt-0 md:-mt-5 px-6 pt-5 pb-4 backdrop-blur-2xl bg-gradient-to-b from-bg/80 to-bg/50 border-b border-ink/10">
         <BackLink href="/finance/quotes">{t.finance.quotes.backLink}</BackLink>
         <div className="flex justify-between items-end flex-wrap gap-2 mt-2">
           <div>
@@ -82,7 +82,7 @@ export default async function QuoteDetailPage({ params }: { params: Promise<{ id
         </div>
       </div>
 
-      <div className="grid grid-cols-[1fr_280px] gap-5 mt-5">
+      <div className="grid grid-cols-1 md:grid-cols-[1fr_280px] gap-5 mt-5">
         {/* PDF preview — same content/layout the generated PDF renders, so this box IS the preview. */}
         <div className="card p-5 flex flex-col gap-2.5">
           <div className="flex justify-between items-start">
@@ -114,40 +114,44 @@ export default async function QuoteDetailPage({ params }: { params: Promise<{ id
             </div>
           </div>
 
-          {!quote.hideItemPrices && (
-            <div className="grid grid-cols-[2fr_.5fr_.7fr_.5fr_.9fr] gap-2 border-b-2 border-ink pb-1 text-[10px] mt-2">
-              <span className="heading-label">{t.finance.quotes.colItem}</span>
-              <span className="heading-label">{t.finance.quotes.colQty}</span>
-              <span className="heading-label">{t.finance.quotes.colUnit}</span>
-              <span className="heading-label">{t.finance.quotes.colVat}</span>
-              <span className="heading-label text-right">{t.finance.quotes.total}</span>
-            </div>
-          )}
-          {groups.map((g) => (
-            <div key={g.category || "—"}>
-              {g.category && <div className="label mt-2 mb-0.5">{g.category}</div>}
-              {g.items.map((item) =>
-                quote.hideItemPrices ? (
-                  <div key={item.id} className="py-1 text-[11px]">
-                    {item.description}
-                  </div>
-                ) : (
-                  <div key={item.id} className="grid grid-cols-[2fr_.5fr_.7fr_.5fr_.9fr] gap-2 py-1 text-[11px]">
-                    <span>{item.description}</span>
-                    <span className="placeholder-text">{item.quantity}</span>
-                    <span className="placeholder-text">{formatCurrency(item.unitPrice, quote.currency)}</span>
-                    <span className="placeholder-text">{item.vatRate}%</span>
-                    <span className="text-right">{formatCurrency(item.quantity * item.unitPrice, quote.currency)}</span>
-                  </div>
-                )
-              )}
-              {quote.hideItemPrices && g.category && (
-                <div className="flex justify-end text-[11px] font-semibold py-0.5">
-                  {formatCurrency(categoryTotal(g.items), quote.currency)}
+          <div className="overflow-x-auto">
+            <div className="min-w-[440px]">
+              {!quote.hideItemPrices && (
+                <div className="grid grid-cols-[2fr_.5fr_.7fr_.5fr_.9fr] gap-2 border-b-2 border-ink pb-1 text-[10px] mt-2">
+                  <span className="heading-label">{t.finance.quotes.colItem}</span>
+                  <span className="heading-label">{t.finance.quotes.colQty}</span>
+                  <span className="heading-label">{t.finance.quotes.colUnit}</span>
+                  <span className="heading-label">{t.finance.quotes.colVat}</span>
+                  <span className="heading-label text-right">{t.finance.quotes.total}</span>
                 </div>
               )}
+              {groups.map((g) => (
+                <div key={g.category || "—"}>
+                  {g.category && <div className="label mt-2 mb-0.5">{g.category}</div>}
+                  {g.items.map((item) =>
+                    quote.hideItemPrices ? (
+                      <div key={item.id} className="py-1 text-[11px]">
+                        {item.description}
+                      </div>
+                    ) : (
+                      <div key={item.id} className="grid grid-cols-[2fr_.5fr_.7fr_.5fr_.9fr] gap-2 py-1 text-[11px]">
+                        <span>{item.description}</span>
+                        <span className="placeholder-text">{item.quantity}</span>
+                        <span className="placeholder-text">{formatCurrency(item.unitPrice, quote.currency)}</span>
+                        <span className="placeholder-text">{item.vatRate}%</span>
+                        <span className="text-right">{formatCurrency(item.quantity * item.unitPrice, quote.currency)}</span>
+                      </div>
+                    )
+                  )}
+                  {quote.hideItemPrices && g.category && (
+                    <div className="flex justify-end text-[11px] font-semibold py-0.5">
+                      {formatCurrency(categoryTotal(g.items), quote.currency)}
+                    </div>
+                  )}
+                </div>
+              ))}
             </div>
-          ))}
+          </div>
           <div className="flex justify-end items-center gap-6 mt-2 text-[12px]">
             <div>
               <span className="label mr-2">{t.finance.quotes.base}</span>

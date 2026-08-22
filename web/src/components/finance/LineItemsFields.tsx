@@ -63,7 +63,7 @@ export function LineItemsFields({
         widening left-to-right. A single shared grid guarantees every
         column is exactly the same width in every row, header included.
       */}
-      <div className="grid grid-cols-[24px_1fr_110px_70px_110px_70px_auto] gap-2 items-center">
+      <div className="hidden md:grid grid-cols-[24px_1fr_110px_70px_110px_70px_auto] gap-2 items-center">
         <span></span>
         <span className="heading-label">{t.colDescription}</span>
         <span className="heading-label">{t.colCategory}</span>
@@ -147,6 +147,95 @@ export function LineItemsFields({
           </Fragment>
         ))}
       </div>
+
+      {/* Mobile: the 7-column shared grid above can't survive a 375px
+          viewport, so each item becomes its own card instead — same
+          update/move/onChange handlers, just different markup. */}
+      <div className="md:hidden flex flex-col gap-3">
+        {items.map((item, i) => (
+          <div key={i} className="card p-3.5">
+            <div className="flex gap-2 mb-2.5">
+              <input
+                value={item.description}
+                onChange={(e) => update(i, { description: e.target.value })}
+                className="input flex-1"
+                placeholder={t.descriptionPlaceholder}
+              />
+              <div className="flex flex-col gap-0.5 shrink-0">
+                <button
+                  type="button"
+                  onClick={() => move(i, -1)}
+                  disabled={i === 0}
+                  title={t.moveUp}
+                  className="w-[26px] h-5 rounded-md border border-ink/18 flex items-center justify-center text-[11px] leading-none disabled:opacity-20"
+                >
+                  ▲
+                </button>
+                <button
+                  type="button"
+                  onClick={() => move(i, 1)}
+                  disabled={i === items.length - 1}
+                  title={t.moveDown}
+                  className="w-[26px] h-5 rounded-md border border-ink/18 flex items-center justify-center text-[11px] leading-none disabled:opacity-20"
+                >
+                  ▼
+                </button>
+              </div>
+            </div>
+            <input
+              list="line-item-categories"
+              placeholder={t.colCategory}
+              value={item.category}
+              onChange={(e) => update(i, { category: e.target.value })}
+              className="input mb-2.5"
+            />
+            <div className="flex gap-2">
+              <div className="flex-1">
+                <label className="heading-label block mb-1">{t.colQty}</label>
+                <input
+                  type="number"
+                  min={1}
+                  value={item.quantity}
+                  onChange={(e) => update(i, { quantity: Number(e.target.value) || 1 })}
+                  onFocus={(e) => e.target.select()}
+                  className="input"
+                />
+              </div>
+              <div className="flex-1">
+                <label className="heading-label block mb-1">{t.colUnitPrice}</label>
+                <input
+                  type="number"
+                  min={0}
+                  value={item.unitPrice}
+                  onChange={(e) => update(i, { unitPrice: Number(e.target.value) || 0 })}
+                  onFocus={(e) => e.target.select()}
+                  className="input"
+                />
+              </div>
+              <div className="flex-1">
+                <label className="heading-label block mb-1">{t.colVat}</label>
+                <input
+                  type="number"
+                  min={0}
+                  max={100}
+                  value={item.vatRate}
+                  onChange={(e) => update(i, { vatRate: Number(e.target.value) || 0 })}
+                  onFocus={(e) => e.target.select()}
+                  className="input"
+                />
+              </div>
+            </div>
+            <button
+              type="button"
+              onClick={() => onChange(items.filter((_, idx) => idx !== i))}
+              className="btno !border-warning text-warning w-full text-center mt-2.5 text-[9px]"
+            >
+              {t.removeBtn}
+            </button>
+          </div>
+        ))}
+      </div>
+
       <button type="button" onClick={() => onChange([...items, { ...BLANK_ITEM }])} className="btno mt-2 text-[9px]">
         {t.addItem}
       </button>

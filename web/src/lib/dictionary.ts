@@ -147,6 +147,7 @@ const en = {
     prepBuildBar: (title: string) => `${title} — prep / build`,
     thisWeeksEvents: "This week's events",
     noEventsThisWeek: "No events this week.",
+    noItemsThisDay: "Nothing scheduled this day.",
     legendEventDays: "Event days",
     legendPrepBuild: "Prep / build / strike",
     legendMilestone: "Milestone",
@@ -810,6 +811,7 @@ const en = {
     calendarView: {
       unscheduled: "Unscheduled",
       noTimeThisWeek: "No time tracked this week.",
+      noItemsThisDay: "Nothing tracked this day.",
     },
   },
 
@@ -1147,6 +1149,7 @@ const cs: Dictionary = {
     prepBuildBar: (title: string) => `${title} — příprava / stavba`,
     thisWeeksEvents: "Akce tento týden",
     noEventsThisWeek: "Tento týden žádné akce.",
+    noItemsThisDay: "Tento den nic naplánováno.",
     legendEventDays: "Dny akce",
     legendPrepBuild: "Příprava / stavba / bourání",
     legendMilestone: "Milník",
@@ -1813,6 +1816,7 @@ const cs: Dictionary = {
     calendarView: {
       unscheduled: "Nezařazeno",
       noTimeThisWeek: "Tento týden není sledován žádný čas.",
+      noItemsThisDay: "Tento den nic nesledováno.",
     },
   },
 

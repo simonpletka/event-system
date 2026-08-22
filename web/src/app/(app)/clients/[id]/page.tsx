@@ -8,6 +8,7 @@ import { BackLink } from "@/components/BackLink";
 import { EventStatusPill } from "@/components/StatusPill";
 import { ConfirmDeleteButton } from "@/components/ui/ConfirmDeleteButton";
 import { AddContactButton } from "@/components/AddContactModal";
+import { MobileListRow } from "@/components/ui/MobileListRow";
 import { getLocale, getDictionary } from "@/lib/i18n";
 
 export default async function ClientDetailPage({ params }: { params: Promise<{ id: string }> }) {
@@ -22,7 +23,7 @@ export default async function ClientDetailPage({ params }: { params: Promise<{ i
 
   return (
     <div>
-      <div className="sticky top-0 z-20 -mx-6 -mt-5 px-6 pt-5 pb-4 backdrop-blur-2xl bg-gradient-to-b from-bg/80 to-bg/50 border-b border-ink/10">
+      <div className="sticky top-0 z-20 -mx-6 mt-0 md:-mt-5 px-6 pt-5 pb-4 backdrop-blur-2xl bg-gradient-to-b from-bg/80 to-bg/50 border-b border-ink/10">
         <BackLink href="/clients">{tc.backLink}</BackLink>
         <div className="flex justify-between items-end flex-wrap gap-2 mt-2">
           <div className="text-[2.5rem] font-semibold leading-none">{client.name}</div>
@@ -34,11 +35,11 @@ export default async function ClientDetailPage({ params }: { params: Promise<{ i
         </div>
       </div>
 
-      <div className="grid grid-cols-[1fr_300px] gap-5 mt-5">
+      <div className="grid grid-cols-1 md:grid-cols-[1fr_300px] gap-5 mt-5">
         <div>
           <div className="heading-label">{tc.eventsHeading(client.events.length)}</div>
           {client.events.length === 0 && <p className="text-sm placeholder-text mt-2">{tc.noEventsLinked}</p>}
-          <div className="mt-1.5">
+          <div className="hidden md:block mt-1.5">
             {client.events.map((e) => (
               <Link
                 key={e.id}
@@ -53,6 +54,19 @@ export default async function ClientDetailPage({ params }: { params: Promise<{ i
             ))}
           </div>
 
+          <div className="md:hidden flex flex-col gap-2 mt-1.5">
+            {client.events.map((e) => (
+              <MobileListRow
+                key={e.id}
+                href={`/events/${e.id}`}
+                title={e.title}
+                tag={<EventStatusPill status={e.status} t={t.statusEvent} />}
+                meta={formatDateRange(e.startDate, e.endDate)}
+                trailing={formatCurrency(e.quotedValue)}
+              />
+            ))}
+          </div>
+
           <div className="h-px bg-ink/10 my-5" />
 
           <div className="flex items-center justify-between mb-2">
@@ -61,7 +75,10 @@ export default async function ClientDetailPage({ params }: { params: Promise<{ i
           </div>
           {client.contacts.length === 0 && <p className="text-sm placeholder-text">{tc.noContactsAdded}</p>}
           {client.contacts.map((contact) => (
-            <div key={contact.id} className="grid grid-cols-[1fr_1fr_1fr_1fr_auto] gap-2.5 items-center py-2.5 px-2.5 border-b border-ink/8 last:border-b-0 text-[13px]">
+            <div
+              key={contact.id}
+              className="hidden md:grid grid-cols-[1fr_1fr_1fr_1fr_auto] gap-2.5 items-center py-2.5 px-2.5 border-b border-ink/8 last:border-b-0 text-[13px]"
+            >
               <div className="font-medium">{contact.name}</div>
               <div className="placeholder-text">{contact.role || "—"}</div>
               <div className="placeholder-text">{contact.phone || "—"}</div>
@@ -71,6 +88,25 @@ export default async function ClientDetailPage({ params }: { params: Promise<{ i
                   <input type="hidden" name="id" value={contact.id} />
                   <input type="hidden" name="clientId" value={client.id} />
                   <button type="submit" className="text-[9px] tracking-[0.1em] uppercase placeholder-text hover:text-warning">
+                    {tc.remove}
+                  </button>
+                </form>
+              )}
+            </div>
+          ))}
+          {client.contacts.map((contact) => (
+            <div key={`m-${contact.id}`} className="md:hidden flex items-start justify-between gap-2.5 py-3 px-2.5 border-b border-ink/8 last:border-b-0 text-[13px]">
+              <div className="min-w-0">
+                <div className="font-medium">{contact.name}</div>
+                <div className="placeholder-text text-[11.5px] mt-0.5">
+                  {[contact.role, contact.phone, contact.email].filter(Boolean).join(" · ") || "—"}
+                </div>
+              </div>
+              {canManage && (
+                <form action={deleteClientContactAction} className="shrink-0">
+                  <input type="hidden" name="id" value={contact.id} />
+                  <input type="hidden" name="clientId" value={client.id} />
+                  <button type="submit" className="text-[9px] tracking-[0.1em] uppercase placeholder-text hover:text-warning py-1">
                     {tc.remove}
                   </button>
                 </form>

@@ -1,9 +1,10 @@
+"use client";
+
+import { useState } from "react";
 import Link from "next/link";
 import { dayHeaderLabel, isSameDay, weekDays, assignColumns } from "@/lib/calendar";
 import { formatMinutes } from "@/lib/format";
-import type { Dictionary } from "@/lib/i18n";
-
-type T = Dictionary["timeTracker"]["calendarView"];
+import { getDictionary, type Locale } from "@/lib/dictionary";
 
 export type CalendarTimeEntry = {
   id: string;
@@ -25,16 +26,85 @@ function minutesFromGridStart(d: Date) {
   return Math.min(Math.max(min, 0), (GRID_END_HOUR - GRID_START_HOUR) * 60);
 }
 
-export function TimeTrackerCalendar({ weekStart, entries, t }: { weekStart: Date; entries: CalendarTimeEntry[]; t: T }) {
+export function TimeTrackerCalendar({ weekStart, entries, locale }: { weekStart: Date; entries: CalendarTimeEntry[]; locale: Locale }) {
+  const t = getDictionary(locale).timeTracker.calendarView;
   const days = weekDays(weekStart);
   const today = new Date();
+  const todayIdx = days.findIndex((d) => isSameDay(d, today));
+  const [selectedIdx, setSelectedIdx] = useState(todayIdx >= 0 ? todayIdx : 0);
+  const selectedDay = days[selectedIdx];
   const scheduled = entries.filter((e) => e.startedAt);
   const unscheduled = entries.filter((e) => !e.startedAt);
 
   const hours = Array.from({ length: (GRID_END_HOUR - GRID_START_HOUR) / 2 + 1 }, (_, i) => GRID_START_HOUR + i * 2);
 
+  const selectedUnscheduled = unscheduled.filter((e) => isSameDay(e.date, selectedDay));
+  const selectedScheduled = scheduled
+    .filter((e) => isSameDay(e.date, selectedDay))
+    .sort((a, b) => a.startedAt!.getTime() - b.startedAt!.getTime());
+
   return (
     <div>
+      {/* Mobile: a 7-day strip (tap to pick a day) above a single-day agenda,
+          replacing the desktop hourly grid, which can't survive a 375px viewport. */}
+      <div className="md:hidden">
+        <div className="flex gap-1.5 overflow-x-auto pb-1">
+          {days.map((d, i) => {
+            const [dow, num] = dayHeaderLabel(d).split(" ");
+            const isToday = isSameDay(d, today);
+            const isSelected = i === selectedIdx;
+            return (
+              <button
+                key={d.toISOString()}
+                type="button"
+                onClick={() => setSelectedIdx(i)}
+                className={`shrink-0 w-11 flex flex-col items-center gap-1 rounded-xl py-2 ${
+                  isSelected ? "bg-accent text-ink" : isToday ? "text-accent" : "text-ink/60"
+                }`}
+              >
+                <span className="text-[8.5px] tracking-[0.06em]">{dow}</span>
+                <span className="text-[14px] font-semibold">{num}</span>
+              </button>
+            );
+          })}
+        </div>
+
+        <div className="mt-3 flex flex-col gap-2">
+          {selectedUnscheduled.length > 0 && (
+            <div className="text-[9.5px] font-semibold uppercase tracking-[0.08em] text-ink/55 mt-1">{t.unscheduled}</div>
+          )}
+          {selectedUnscheduled.map((e) => (
+            <Link key={e.id} href={`/time-tracker/entries/${e.id}/edit`} className="card flex items-center gap-2.5 px-3.5 py-3">
+              <span className="w-[3px] self-stretch rounded bg-ink/30" />
+              <div className="min-w-0 flex-1">
+                <div className="text-[13.5px] font-semibold truncate">{e.event.title}</div>
+                {e.description && <div className="placeholder-text text-[11px] truncate">{e.description}</div>}
+              </div>
+              <div className="text-[12px] font-semibold shrink-0">{formatMinutes(e.minutes)}</div>
+            </Link>
+          ))}
+
+          {selectedScheduled.map((e) => (
+            <Link key={e.id} href={`/time-tracker/entries/${e.id}/edit`} className="card flex items-center gap-2.5 px-3.5 py-3">
+              <span className="w-[3px] self-stretch rounded bg-accent" />
+              <div className="min-w-0 flex-1">
+                <div className="text-[9.5px] font-semibold text-ink/55">
+                  {String(e.startedAt!.getHours()).padStart(2, "0")}:{String(e.startedAt!.getMinutes()).padStart(2, "0")}
+                </div>
+                <div className="text-[13.5px] font-semibold truncate">{e.event.title}</div>
+                {e.description && <div className="placeholder-text text-[11px] truncate">{e.description}</div>}
+              </div>
+              <div className="text-[12px] font-semibold shrink-0">{formatMinutes(e.minutes)}</div>
+            </Link>
+          ))}
+
+          {selectedUnscheduled.length === 0 && selectedScheduled.length === 0 && (
+            <p className="text-sm placeholder-text">{t.noItemsThisDay}</p>
+          )}
+        </div>
+      </div>
+
+      <div className="hidden md:block">
       <div className="grid grid-cols-[44px_repeat(7,minmax(0,1fr))] border-b border-ink/20 pb-1">
         <div />
         {days.map((d) => (
@@ -115,6 +185,7 @@ export function TimeTrackerCalendar({ weekStart, entries, t }: { weekStart: Date
             </div>
           );
         })}
+      </div>
       </div>
 
       {entries.length === 0 && <p className="text-sm placeholder-text mt-3">{t.noTimeThisWeek}</p>}

@@ -4,6 +4,7 @@ import { getInvoiceList, getInvoiceKpis, type InvoiceListFilters } from "@/lib/q
 import { formatCurrency, formatDate } from "@/lib/format";
 import { InvoiceStatusPill } from "@/components/StatusPill";
 import { DownloadPdfButton } from "@/components/finance/DownloadPdfButton";
+import { MobileListRow } from "@/components/ui/MobileListRow";
 import { getLocale, getDictionary, czCount, type Locale } from "@/lib/i18n";
 
 export default async function InvoicesPage({
@@ -49,7 +50,7 @@ export default async function InvoicesPage({
         )}
       </div>
 
-      <div className="grid grid-cols-4 gap-3 mt-4">
+      <div className="flex overflow-x-auto gap-3 -mx-6 px-6 md:mx-0 md:px-0 md:grid md:grid-cols-4 md:overflow-visible mt-4">
         <KpiCell label={ti.kpiIssuedUnpaid} value={kpis.issuedUnpaid} locale={locale} />
         <KpiCell label={ti.kpiOverdue} value={kpis.overdue} attention locale={locale} />
         <KpiCell label={ti.kpiDue7} value={kpis.dueSoon} locale={locale} />
@@ -57,12 +58,12 @@ export default async function InvoicesPage({
       </div>
 
       <div className="flex items-center justify-between gap-2 flex-wrap mt-4">
-        <div className="flex gap-2 flex-wrap">
+        <div className="flex gap-2 flex-nowrap overflow-x-auto pb-1 md:pb-0 md:flex-wrap md:overflow-visible -mx-6 px-6 md:mx-0 md:px-0">
           {buckets.map((b) => (
             <Link
               key={b.key}
               href={b.key ? `/finance/invoices?bucket=${b.key}` : "/finance/invoices"}
-              className={`text-[11px] font-semibold tracking-[0.04em] px-3.5 py-2 rounded-full border ${
+              className={`shrink-0 text-[11px] font-semibold tracking-[0.04em] px-3.5 py-2 rounded-full border ${
                 (filters.bucket ?? "") === b.key
                   ? "bg-accent border-accent text-ink"
                   : "border-ink/16 bg-ink/4 text-ink/65 hover:text-ink"
@@ -88,47 +89,68 @@ export default async function InvoicesPage({
         </form>
       </div>
 
-      <div className="grid grid-cols-[.8fr_1.2fr_.9fr_.6fr_.6fr_.8fr_1fr_.7fr] gap-2.5 border-b border-ink/14 pb-1.5 mt-5 px-3.5">
-        <span className="heading-label">{ti.colNumber}</span>
-        <span className="heading-label">{ti.colEvent}</span>
-        <span className="heading-label">{ti.colClient}</span>
-        <span className="heading-label">{ti.colIssued}</span>
-        <span className="heading-label">{ti.colDue}</span>
-        <span className="heading-label">{ti.colTotal}</span>
-        <span className="heading-label">{ti.colPayment}</span>
-        <span className="heading-label">{ti.colPdf}</span>
+      <div className="hidden md:block">
+        <div className="grid grid-cols-[.8fr_1.2fr_.9fr_.6fr_.6fr_.8fr_1fr_.7fr] gap-2.5 border-b border-ink/14 pb-1.5 mt-5 px-3.5">
+          <span className="heading-label">{ti.colNumber}</span>
+          <span className="heading-label">{ti.colEvent}</span>
+          <span className="heading-label">{ti.colClient}</span>
+          <span className="heading-label">{ti.colIssued}</span>
+          <span className="heading-label">{ti.colDue}</span>
+          <span className="heading-label">{ti.colTotal}</span>
+          <span className="heading-label">{ti.colPayment}</span>
+          <span className="heading-label">{ti.colPdf}</span>
+        </div>
+
+        {invoices.map((inv) => (
+          <div
+            key={inv.id}
+            className="group grid grid-cols-[.8fr_1.2fr_.9fr_.6fr_.6fr_.8fr_1fr_.7fr] gap-2.5 items-center py-3 px-3.5 rounded-xl border-b border-ink/8 last:border-b-0 text-[13px] hover:bg-ink/5"
+          >
+            <Link href={`/finance/invoices/${inv.id}`} className="font-medium group-hover:text-accent">
+              {inv.number}
+            </Link>
+            <Link href={`/finance/invoices/${inv.id}`} className="group-hover:text-accent">
+              {inv.event.title}
+            </Link>
+            <div className="placeholder-text group-hover:!text-accent">{inv.event.companyName}</div>
+            <div className="placeholder-text group-hover:!text-accent">{formatDate(inv.issuedAt)}</div>
+            <div className="placeholder-text group-hover:!text-accent">{formatDate(inv.dueDate)}</div>
+            <div className="font-semibold tabular-nums group-hover:text-accent">
+              {formatCurrency(inv.total, inv.currency)}
+              {inv.currency !== "CZK" && <span className="tag tag-neutral ml-1">{inv.currency}</span>}
+            </div>
+            <div>
+              <InvoiceStatusPill status={inv.status} dueDate={inv.dueDate} paidAt={inv.paidAt} t={t.invoicePill} />
+            </div>
+            <DownloadPdfButton
+              pdfUrl={`/api/invoices/${inv.id}/pdf`}
+              label={ti.download}
+              className="text-[9px] tracking-[0.1em] uppercase hover:text-accent"
+            />
+          </div>
+        ))}
+      </div>
+
+      <div className="md:hidden flex flex-col gap-2 mt-4">
+        {invoices.map((inv) => (
+          <MobileListRow
+            key={inv.id}
+            href={`/finance/invoices/${inv.id}`}
+            subLeft={inv.number}
+            title={inv.event.title}
+            tag={<InvoiceStatusPill status={inv.status} dueDate={inv.dueDate} paidAt={inv.paidAt} t={t.invoicePill} />}
+            meta={`${inv.event.companyName} · ${ti.colIssued} ${formatDate(inv.issuedAt)} · ${ti.colDue} ${formatDate(inv.dueDate)}`}
+            trailing={
+              <>
+                {formatCurrency(inv.total, inv.currency)}
+                {inv.currency !== "CZK" && <span className="tag tag-neutral ml-1">{inv.currency}</span>}
+              </>
+            }
+          />
+        ))}
       </div>
 
       {invoices.length === 0 && <p className="text-sm placeholder-text mt-4">{ti.noInvoicesMatch}</p>}
-
-      {invoices.map((inv) => (
-        <div
-          key={inv.id}
-          className="group grid grid-cols-[.8fr_1.2fr_.9fr_.6fr_.6fr_.8fr_1fr_.7fr] gap-2.5 items-center py-3 px-3.5 rounded-xl border-b border-ink/8 last:border-b-0 text-[13px] hover:bg-ink/5"
-        >
-          <Link href={`/finance/invoices/${inv.id}`} className="font-medium group-hover:text-accent">
-            {inv.number}
-          </Link>
-          <Link href={`/finance/invoices/${inv.id}`} className="group-hover:text-accent">
-            {inv.event.title}
-          </Link>
-          <div className="placeholder-text group-hover:!text-accent">{inv.event.companyName}</div>
-          <div className="placeholder-text group-hover:!text-accent">{formatDate(inv.issuedAt)}</div>
-          <div className="placeholder-text group-hover:!text-accent">{formatDate(inv.dueDate)}</div>
-          <div className="font-semibold tabular-nums group-hover:text-accent">
-            {formatCurrency(inv.total, inv.currency)}
-            {inv.currency !== "CZK" && <span className="tag tag-neutral ml-1">{inv.currency}</span>}
-          </div>
-          <div>
-            <InvoiceStatusPill status={inv.status} dueDate={inv.dueDate} paidAt={inv.paidAt} t={t.invoicePill} />
-          </div>
-          <DownloadPdfButton
-            pdfUrl={`/api/invoices/${inv.id}/pdf`}
-            label={ti.download}
-            className="text-[9px] tracking-[0.1em] uppercase hover:text-accent"
-          />
-        </div>
-      ))}
 
       <div className="flex justify-between mt-4 px-3.5">
         <div className="label">{ti.sortedByNote}</div>

@@ -87,7 +87,7 @@ export default async function TrackingPage({
             <WeekNav weekStart={weekStart} hrefFor={(week) => `/time-tracker/tracking?view=calendar&week=${week}`} todayLabel={t.timeTracker.tracking.today} />
           </div>
           <div className="mt-4">
-            <TimeTrackerCalendar weekStart={weekStart} entries={calendarData!.entries} t={t.timeTracker.calendarView} />
+            <TimeTrackerCalendar weekStart={weekStart} entries={calendarData!.entries} locale={locale} />
           </div>
         </>
       ) : (
@@ -127,7 +127,7 @@ function ListView({
   const periodNoun = tt.periodNoun[period];
 
   return (
-    <div className="grid grid-cols-[1fr_280px] gap-5 mt-3">
+    <div className="grid grid-cols-1 md:grid-cols-[1fr_280px] gap-5 mt-3">
       <div>
         <div className="flex items-center justify-between gap-2 flex-wrap">
           <SegmentedTabs options={periodOptions} active={period} />
@@ -145,35 +145,58 @@ function ListView({
           </div>
         </div>
 
-        <div className="grid grid-cols-[56px_1.2fr_1.4fr_.6fr_.5fr] gap-2.5 border-b border-ink/14 pb-1.5 mt-4 px-2.5">
-          <span className="heading-label">{tt.colDate}</span>
-          <span className="heading-label">{tt.colEvent}</span>
-          <span className="heading-label">{tt.colWork}</span>
-          <span className="heading-label">{tt.colHours}</span>
-          <span className="heading-label"></span>
+        <div className="hidden md:block">
+          <div className="grid grid-cols-[56px_1.2fr_1.4fr_.6fr_.5fr] gap-2.5 border-b border-ink/14 pb-1.5 mt-4 px-2.5">
+            <span className="heading-label">{tt.colDate}</span>
+            <span className="heading-label">{tt.colEvent}</span>
+            <span className="heading-label">{tt.colWork}</span>
+            <span className="heading-label">{tt.colHours}</span>
+            <span className="heading-label"></span>
+          </div>
+
+          {entries.map((e) => (
+            <div
+              key={e.id}
+              className="grid grid-cols-[56px_1.2fr_1.4fr_.6fr_.5fr] gap-2.5 items-center py-2.5 px-2.5 rounded-lg border-b border-ink/8 last:border-b-0 text-[13px] hover:bg-ink/5"
+            >
+              <div className="placeholder-text">{formatDate(e.date)}</div>
+              <Link href={`/events/${e.eventId}`} className="hover:text-accent">
+                {e.event.title}
+              </Link>
+              <div className="placeholder-text truncate">{e.description || "—"}</div>
+              <div className="font-semibold">{formatMinutes(e.minutes)}</div>
+              <div className="flex gap-2 text-[9px] tracking-[0.1em] uppercase">
+                <Link href={`/time-tracker/entries/${e.id}/edit`} className="hover:text-ink placeholder-text">
+                  {tt.edit}
+                </Link>
+                <DeleteEntryButton id={e.id} t={t.timeTracker.deleteEntry} />
+              </div>
+            </div>
+          ))}
+        </div>
+
+        <div className="md:hidden flex flex-col gap-2 mt-4">
+          {entries.map((e) => (
+            <div key={e.id} className="flex items-start justify-between gap-2.5 py-3 px-2.5 rounded-lg border-b border-ink/8 last:border-b-0 text-[13px]">
+              <div className="min-w-0 flex-1">
+                <div className="placeholder-text text-[10.5px] mb-0.5">{formatDate(e.date)}</div>
+                <Link href={`/events/${e.eventId}`} className="font-semibold hover:text-accent">
+                  {e.event.title}
+                </Link>
+                <div className="placeholder-text text-[11.5px] mt-0.5 truncate">{e.description || "—"}</div>
+                <div className="flex gap-3 text-[9px] tracking-[0.1em] uppercase mt-1.5">
+                  <Link href={`/time-tracker/entries/${e.id}/edit`} className="hover:text-ink placeholder-text">
+                    {tt.edit}
+                  </Link>
+                  <DeleteEntryButton id={e.id} t={t.timeTracker.deleteEntry} />
+                </div>
+              </div>
+              <div className="font-semibold shrink-0">{formatMinutes(e.minutes)}</div>
+            </div>
+          ))}
         </div>
 
         {entries.length === 0 && <p className="text-sm placeholder-text mt-3">{tt.noEntriesForPeriod(periodNoun)}</p>}
-
-        {entries.map((e) => (
-          <div
-            key={e.id}
-            className="grid grid-cols-[56px_1.2fr_1.4fr_.6fr_.5fr] gap-2.5 items-center py-2.5 px-2.5 rounded-lg border-b border-ink/8 last:border-b-0 text-[13px] hover:bg-ink/5"
-          >
-            <div className="placeholder-text">{formatDate(e.date)}</div>
-            <Link href={`/events/${e.eventId}`} className="hover:text-accent">
-              {e.event.title}
-            </Link>
-            <div className="placeholder-text truncate">{e.description || "—"}</div>
-            <div className="font-semibold">{formatMinutes(e.minutes)}</div>
-            <div className="flex gap-2 text-[9px] tracking-[0.1em] uppercase">
-              <Link href={`/time-tracker/entries/${e.id}/edit`} className="hover:text-ink placeholder-text">
-                {tt.edit}
-              </Link>
-              <DeleteEntryButton id={e.id} t={t.timeTracker.deleteEntry} />
-            </div>
-          </div>
-        ))}
         <div className="label mt-3 px-2.5">{tt.manualTrackedNote}</div>
       </div>
 

@@ -64,7 +64,7 @@ export function RoleReferenceTable({
         )}
       </div>
 
-      <div className={`${GRID} border-b border-ink/14 pb-1.5`}>
+      <div className={`hidden md:grid ${GRID} border-b border-ink/14 pb-1.5`}>
         <span className="heading-label">{t.colRole}</span>
         <span className="heading-label">{t.colEvents}</span>
         <span className="heading-label">{t.colQuotesInvoices}</span>
@@ -74,13 +74,24 @@ export function RoleReferenceTable({
       </div>
 
       {builtInRows.map((r) => (
-        <div key={r.role} className={`${GRID} py-2.5 border-b border-ink/8 text-[13px]`}>
+        <div key={r.role} className={`hidden md:grid ${GRID} py-2.5 border-b border-ink/8 text-[13px]`}>
           <div className="font-medium">{r.role}</div>
           <div className="placeholder-text">{r.events}</div>
           <div className="placeholder-text">{r.finance}</div>
           <div className="placeholder-text">{r.expenses}</div>
           <div className="placeholder-text">{r.settings}</div>
           <div></div>
+        </div>
+      ))}
+
+      {builtInRows.map((r) => (
+        <div key={`m-${r.role}`} className="md:hidden py-2.5 border-b border-ink/8 text-[13px]">
+          <div className="font-medium mb-1">{r.role}</div>
+          <div className="placeholder-text text-[11.5px] leading-relaxed">
+            {t.colEvents}: {r.events} · {t.colQuotesInvoices}: {r.finance}
+            <br />
+            {t.colExpenses}: {r.expenses} · {t.colSettings}: {r.settings}
+          </div>
         </div>
       ))}
 
@@ -106,40 +117,61 @@ function RoleRow({ role, canManage, t, tAccess }: { role: CustomRoleRow; canMana
 
   if (editing) return <RoleForm existing={role} onDone={() => setEditing(false)} t={t} tAccess={tAccess} />;
 
+  const doDelete = async () => {
+    const ok = await confirm(t.confirmDelete(role.name), { confirmLabel: t.delete });
+    if (!ok) return;
+    const formData = new FormData();
+    formData.set("id", role.id);
+    startTransition(() => deleteAction(formData));
+  };
+
   return (
-    <div className={`${GRID} py-2.5 border-b border-ink/8 last:border-b-0 text-[13px] items-center`}>
-      <div className="font-medium flex items-center gap-1.5">
-        {role.name} <span className="tag tag-neutral">{t.customTag}</span>
-      </div>
-      <div className="placeholder-text">{tAccess.events[role.events]}</div>
-      <div className="placeholder-text">{tAccess.finance[role.finance]}</div>
-      <div className="placeholder-text">{tAccess.expenses[role.expenses]}</div>
-      <div className="placeholder-text">{tAccess.settings[role.settings]}</div>
-      {canManage ? (
-        <div className="flex gap-2 text-[9px] tracking-[0.1em] uppercase">
-          <button type="button" onClick={() => setEditing(true)} className="placeholder-text hover:text-ink">
-            {t.edit}
-          </button>
-          <button
-            type="button"
-            disabled={deletePending}
-            className="placeholder-text hover:text-warning"
-            onClick={async () => {
-              const ok = await confirm(t.confirmDelete(role.name), { confirmLabel: t.delete });
-              if (!ok) return;
-              const formData = new FormData();
-              formData.set("id", role.id);
-              startTransition(() => deleteAction(formData));
-            }}
-          >
-            {t.delete}
-          </button>
+    <>
+      <div className={`hidden md:grid ${GRID} py-2.5 border-b border-ink/8 last:border-b-0 text-[13px] items-center`}>
+        <div className="font-medium flex items-center gap-1.5">
+          {role.name} <span className="tag tag-neutral">{t.customTag}</span>
         </div>
-      ) : (
-        <div></div>
-      )}
-      {deleteState.error && <div className="col-span-6 text-[11px] text-warning mt-1">{deleteState.error}</div>}
-    </div>
+        <div className="placeholder-text">{tAccess.events[role.events]}</div>
+        <div className="placeholder-text">{tAccess.finance[role.finance]}</div>
+        <div className="placeholder-text">{tAccess.expenses[role.expenses]}</div>
+        <div className="placeholder-text">{tAccess.settings[role.settings]}</div>
+        {canManage ? (
+          <div className="flex gap-2 text-[9px] tracking-[0.1em] uppercase">
+            <button type="button" onClick={() => setEditing(true)} className="placeholder-text hover:text-ink">
+              {t.edit}
+            </button>
+            <button type="button" disabled={deletePending} className="placeholder-text hover:text-warning" onClick={doDelete}>
+              {t.delete}
+            </button>
+          </div>
+        ) : (
+          <div></div>
+        )}
+        {deleteState.error && <div className="col-span-6 text-[11px] text-warning mt-1">{deleteState.error}</div>}
+      </div>
+
+      <div className="md:hidden py-2.5 border-b border-ink/8 last:border-b-0 text-[13px]">
+        <div className="font-medium flex items-center gap-1.5 mb-1">
+          {role.name} <span className="tag tag-neutral">{t.customTag}</span>
+        </div>
+        <div className="placeholder-text text-[11.5px] leading-relaxed">
+          {t.colEvents}: {tAccess.events[role.events]} · {t.colQuotesInvoices}: {tAccess.finance[role.finance]}
+          <br />
+          {t.colExpenses}: {tAccess.expenses[role.expenses]} · {t.colSettings}: {tAccess.settings[role.settings]}
+        </div>
+        {canManage && (
+          <div className="flex gap-2.5 text-[9px] tracking-[0.1em] uppercase mt-2">
+            <button type="button" onClick={() => setEditing(true)} className="placeholder-text hover:text-ink">
+              {t.edit}
+            </button>
+            <button type="button" disabled={deletePending} className="placeholder-text hover:text-warning" onClick={doDelete}>
+              {t.delete}
+            </button>
+          </div>
+        )}
+        {deleteState.error && <div className="text-[11px] text-warning mt-2">{deleteState.error}</div>}
+      </div>
+    </>
   );
 }
 
@@ -154,7 +186,7 @@ function RoleForm({ existing, onDone, t, tAccess }: { existing?: CustomRoleRow; 
         <span className="heading-label">{t.roleNameLabel}</span>
         <input name="name" defaultValue={existing?.name} required className="input max-w-xs" />
       </label>
-      <div className="grid grid-cols-2 gap-3">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
         <AccessField label={t.eventsFieldLabel} name="events" options={EVENTS_ACCESS_OPTIONS} labels={tAccess.events} defaultValue={existing?.events ?? "NONE"} />
         <AccessField label={t.financeFieldLabel} name="finance" options={FINANCE_ACCESS_OPTIONS} labels={tAccess.finance} defaultValue={existing?.finance ?? "NONE"} />
         <AccessField label={t.expensesFieldLabel} name="expenses" options={EXPENSES_ACCESS_OPTIONS} labels={tAccess.expenses} defaultValue={existing?.expenses ?? "NONE"} />

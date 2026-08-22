@@ -45,7 +45,7 @@ export function RunningTimerBox({
     return (
       <div className="card p-5">
         <div className="heading-label mb-2">{t.startATimer}</div>
-        <form action={startTimerAction} className="grid grid-cols-[1fr_160px_1fr_auto] gap-3 items-end">
+        <form action={startTimerAction} className="grid grid-cols-1 md:grid-cols-[1fr_160px_1fr_auto] gap-3 items-end">
           <label className="flex flex-col gap-1.5">
             <span className="heading-label">{t.eventLabel}</span>
             <select name="eventId" required defaultValue="" className="input">
@@ -85,7 +85,7 @@ export function RunningTimerBox({
   const startedLabel = new Intl.DateTimeFormat("en-GB", { hour: "2-digit", minute: "2-digit" }).format(running.startedAt);
 
   return (
-    <div className="card p-5 grid grid-cols-[minmax(0,1.5fr)_200px_auto] gap-6 items-center">
+    <div className="card p-5 grid grid-cols-1 md:grid-cols-[minmax(0,1.5fr)_200px_auto] gap-4 md:gap-6 items-center">
       <form action={stopTimerAction} id="stop-form">
         <div className="heading-label">{t.runningOn}</div>
         <div className="text-[15px] font-semibold mt-1.5">
@@ -105,7 +105,7 @@ export function RunningTimerBox({
         <div className="text-[38px] font-semibold tracking-tight tabular-nums mt-1">{formatElapsed(elapsed)}</div>
         <div className="placeholder-text text-[11px]">{t.startedAt(startedLabel)}</div>
       </div>
-      <div className="flex flex-col gap-2 w-[150px]">
+      <div className="flex flex-col gap-2 w-full md:w-[150px]">
         <button type="submit" form="stop-form" className="btn">
           {t.stopAndSave}
         </button>

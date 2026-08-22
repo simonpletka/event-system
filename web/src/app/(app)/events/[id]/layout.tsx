@@ -29,7 +29,7 @@ export default async function EventDetailLayout({
 
   return (
     <div>
-      <div className="sticky top-0 z-20 -mx-6 -mt-5 px-6 pt-5 pb-2 backdrop-blur-2xl bg-gradient-to-b from-bg/80 to-bg/50 border-b border-ink/10">
+      <div className="sticky top-0 z-20 -mx-6 mt-0 md:-mt-5 px-6 pt-5 pb-2 backdrop-blur-2xl bg-gradient-to-b from-bg/80 to-bg/50 border-b border-ink/10">
         <BackLink href="/events">{t.events.backToEvents}</BackLink>
         <div className="flex justify-between items-end flex-wrap gap-2 mt-2">
           <div>

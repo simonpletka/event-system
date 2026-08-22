@@ -55,7 +55,7 @@ export function InvoiceForm({
         <EventPicker name="eventId" initialEvents={events} required onSelect={handleEventSelect} t={t.events.picker} />
       </label>
 
-      <div className="grid grid-cols-2 gap-3 max-w-xs">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-3 max-w-xs">
         <label className="flex flex-col gap-1.5">
           <span className="heading-label">{tf.dueDateLabel}</span>
           <input name="dueDate" type="date" required defaultValue={defaultDueDate} className="input" />
@@ -82,7 +82,7 @@ export function InvoiceForm({
         {tf.hideItemPricesLabel}
       </label>
 
-      <div className="grid grid-cols-3 gap-3 max-w-md">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-3 max-w-md">
         <label className="flex flex-col gap-1.5">
           <span className="heading-label">{tf.discountLabel}</span>
           <select

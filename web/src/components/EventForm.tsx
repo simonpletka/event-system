@@ -102,7 +102,7 @@ export function EventForm({ defaults, clients, locale }: { defaults: EventFormDe
         <textarea name="brief" defaultValue={defaults.brief} rows={3} className="input" />
       </Field>
 
-      <div className="grid grid-cols-2 gap-3">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
         <Field label={tf.statusLabel}>
           <select name="status" defaultValue={defaults.status} className="input">
             {STATUS_KEYS.map((s) => (
@@ -118,7 +118,7 @@ export function EventForm({ defaults, clients, locale }: { defaults: EventFormDe
       </div>
 
       <div className="heading-label">{tf.datesHeading}</div>
-      <div className="grid grid-cols-2 gap-3">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
         <Field label={tf.buildPrepLabel}>
           <input name="buildDate" type="datetime-local" defaultValue={toDateTimeLocal(defaults.buildDate)} className="input" />
         </Field>
@@ -151,7 +151,7 @@ export function EventForm({ defaults, clients, locale }: { defaults: EventFormDe
         <div className="heading-label mb-1.5">{tf.venuesHeading}</div>
         <div className="flex flex-col gap-2">
           {venues.map((v, i) => (
-            <div key={i} className="grid grid-cols-[1fr_1fr_1fr_auto] gap-2 items-start">
+            <div key={i} className="grid grid-cols-1 md:grid-cols-[1fr_1fr_1fr_auto] gap-2 items-start">
               <input
                 name="venueName"
                 placeholder={tf.venueName}
@@ -201,7 +201,7 @@ export function EventForm({ defaults, clients, locale }: { defaults: EventFormDe
         <p className="text-[10px] placeholder-text mb-2">{tf.contactNote}</p>
         <div className="flex flex-col gap-2">
           {contacts.map((c, i) => (
-            <div key={i} className="grid grid-cols-[1fr_1fr_1fr_auto] gap-2 items-start">
+            <div key={i} className="grid grid-cols-1 md:grid-cols-[1fr_1fr_1fr_auto] gap-2 items-start">
               <input
                 name="contactName"
                 placeholder={tf.contactName}
@@ -230,7 +230,7 @@ export function EventForm({ defaults, clients, locale }: { defaults: EventFormDe
         </button>
       </div>
 
-      <div className="grid grid-cols-2 gap-3">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
         <Field label={tf.icoLabel}>
           <div className="flex gap-1.5">
             <input

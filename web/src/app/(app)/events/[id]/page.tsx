@@ -24,7 +24,7 @@ export default async function EventOverviewPage({ params }: { params: Promise<{ 
   const runningTimer = await getRunningTimer(user.id);
 
   return (
-    <div className="grid grid-cols-[1fr_280px] gap-5">
+    <div className="grid grid-cols-1 md:grid-cols-[1fr_280px] gap-5">
       <div>
         <div className="label">{te.brief}</div>
         <p className="text-sm mt-1 max-w-prose">{event.brief || <span className="placeholder-text">{te.noBrief}</span>}</p>

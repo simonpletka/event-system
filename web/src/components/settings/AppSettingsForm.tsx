@@ -37,7 +37,7 @@ export function AppSettingsForm({ defaults, t }: { defaults: AppSettings; t: T }
   ];
 
   return (
-    <div className="grid grid-cols-[1fr_300px] gap-5 max-w-3xl">
+    <div className="grid grid-cols-1 md:grid-cols-[1fr_300px] gap-5 max-w-3xl">
       <form action={formAction} className="card p-5 flex flex-col gap-3">
         <div className="heading-label">{t.coloursHeading}</div>
         <p className="text-[10px] placeholder-text -mt-1 max-w-prose">{t.coloursIntro}</p>
