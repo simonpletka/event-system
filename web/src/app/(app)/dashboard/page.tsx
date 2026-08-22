@@ -2,12 +2,14 @@ import Link from "next/link";
 import { requireUser, canCreateEvent } from "@/lib/authz";
 import { getDashboardData, getDashboardTimeline, type TimelineItem } from "@/lib/queries/dashboard";
 import { getWeekCalendarData } from "@/lib/queries/calendar";
-import { formatCurrency, formatDate, formatDateRange } from "@/lib/format";
+import { formatCurrency, formatCompactCurrency, formatDate, formatDateRange, niceAxisMax } from "@/lib/format";
 import { EventStatusPill } from "@/components/StatusPill";
 import { WeekCalendar } from "@/components/calendar/WeekCalendar";
 import { WeekNav } from "@/components/calendar/WeekNav";
 import { isSameDay, mondayOf, parseIsoDate } from "@/lib/calendar";
 import { SegmentedTabs } from "@/components/ui/SegmentedTabs";
+import { ChartAxisGrid } from "@/components/ui/ChartAxisGrid";
+import { INCOME_CHART_COLOR } from "@/lib/chart-colors";
 import { getLocale, getDictionary, type Dictionary } from "@/lib/i18n";
 
 export default async function DashboardPage({
@@ -28,6 +30,8 @@ export default async function DashboardPage({
     view === "calendar" ? getWeekCalendarData(user, weekStart) : Promise.resolve(null),
   ]);
   const maxMonthly = Math.max(1, ...data.monthly.flatMap((m) => [m.income, m.expense]));
+  const axisMax = niceAxisMax(maxMonthly);
+  const axisTicks = [axisMax, axisMax * 0.75, axisMax * 0.5, axisMax * 0.25, 0].map((v) => formatCompactCurrency(v));
 
   const viewOptions = [
     { value: "list", label: t.dashboard.viewList, href: "/dashboard" },
@@ -141,7 +145,7 @@ export default async function DashboardPage({
         </>
       )}
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mt-7">
+      <div className="mt-7">
         <div className="card px-5 py-4">
           <div className="heading-label mb-1.5">{t.dashboard.latestExpenses}</div>
           {data.latestExpenses.length === 0 ? (
@@ -158,40 +162,78 @@ export default async function DashboardPage({
             ))
           )}
         </div>
-        <div className="card px-5 py-4">
-          <div className="flex items-baseline justify-between">
-            <div className="heading-label">{t.dashboard.balance}</div>
-            <div className="flex gap-3 text-[10px] text-ink/55">
+      </div>
+
+      <div className="mt-5">
+        <div className="card px-6 py-5">
+          <div className="flex items-start justify-between flex-wrap gap-3">
+            <div>
+              <div className="heading-label">{t.dashboard.balance}</div>
+              {data.monthly.length > 0 && (
+                <div className="text-[12.5px] placeholder-text mt-1">{t.dashboard.balanceSubtitle(data.monthly.length)}</div>
+              )}
+            </div>
+            <div className="flex gap-4 text-[12px] text-ink/70">
               <span className="flex items-center gap-1.5">
-                <span className="w-2 h-2 rounded-sm bg-ink/35" /> {t.dashboard.income}
+                <span className="w-2.5 h-2.5 rounded-sm" style={{ background: INCOME_CHART_COLOR }} /> {t.dashboard.income}
               </span>
               <span className="flex items-center gap-1.5">
-                <span className="w-2 h-2 rounded-sm bg-accent" /> {t.dashboard.expense}
+                <span className="w-2.5 h-2.5 rounded-sm bg-accent" /> {t.dashboard.expense}
               </span>
             </div>
           </div>
+
           {data.monthly.length === 0 ? (
-            <p className="text-sm placeholder-text mt-1.5">{t.dashboard.notEnoughData}</p>
+            <p className="text-sm placeholder-text mt-3">{t.dashboard.notEnoughData}</p>
           ) : (
-            <div className="flex items-end gap-4 h-20 mt-3">
-              {data.monthly.map((m) => (
-                <div key={m.label} className="flex flex-col items-center gap-1.5 h-full justify-end">
-                  <div className="flex items-end gap-1 h-16">
-                    <div
-                      className="w-3 rounded-t bg-gradient-to-b from-ink/55 to-ink/15"
-                      style={{ height: `${(m.income / maxMonthly) * 100}%` }}
-                      title={t.dashboard.incomeAmount(formatCurrency(m.income))}
-                    />
-                    <div
-                      className="w-3 rounded-t bg-gradient-to-b from-[#ff5a37] to-accent"
-                      style={{ height: `${(m.expense / maxMonthly) * 100}%` }}
-                      title={t.dashboard.expenseAmount(formatCurrency(m.expense))}
-                    />
-                  </div>
-                  <span className="text-[10px] placeholder-text">{m.label}</span>
+            <>
+              <div className="relative h-56 mt-6">
+                <ChartAxisGrid ticks={axisTicks} />
+                <div className="absolute left-[74px] right-1 top-0 bottom-0 flex items-end justify-between gap-1.5">
+                  {data.monthly.map((m, i) => {
+                    const isLast = i === data.monthly.length - 1;
+                    return (
+                      <div key={m.label} className="flex items-end gap-1.5" style={{ height: 224 }}>
+                        <div className="flex flex-col items-center justify-end" style={{ height: "100%" }}>
+                          {isLast && (
+                            <span className="text-[10.5px] font-semibold tabular-nums text-ink whitespace-nowrap mb-1">
+                              {formatCurrency(m.income)}
+                            </span>
+                          )}
+                          <div
+                            className="w-4 rounded-t"
+                            style={{ height: `${(m.income / axisMax) * 100}%`, background: INCOME_CHART_COLOR }}
+                            title={t.dashboard.incomeAmount(formatCurrency(m.income))}
+                          />
+                        </div>
+                        <div className="flex flex-col items-center justify-end" style={{ height: "100%" }}>
+                          {isLast && (
+                            <span className="text-[10.5px] font-semibold tabular-nums text-ink whitespace-nowrap mb-1">
+                              {formatCurrency(m.expense)}
+                            </span>
+                          )}
+                          <div
+                            className="w-4 rounded-t bg-accent"
+                            style={{ height: `${(m.expense / axisMax) * 100}%` }}
+                            title={t.dashboard.expenseAmount(formatCurrency(m.expense))}
+                          />
+                        </div>
+                      </div>
+                    );
+                  })}
                 </div>
-              ))}
-            </div>
+              </div>
+              <div className="flex ml-[74px] mr-1 justify-between mt-2.5">
+                {data.monthly.map((m, i) => (
+                  <span
+                    key={m.label}
+                    className={`text-[11.5px] flex-1 text-center ${i === data.monthly.length - 1 ? "font-semibold text-ink" : "placeholder-text"}`}
+                  >
+                    {m.label}
+                  </span>
+                ))}
+              </div>
+            </>
           )}
         </div>
       </div>

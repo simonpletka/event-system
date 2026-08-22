@@ -1,12 +1,14 @@
 import Link from "next/link";
 import { requireUser } from "@/lib/authz";
 import { getOverviewData, getOverviewUsers, type TimePeriod } from "@/lib/queries/timetracker";
-import { formatMinutes } from "@/lib/format";
+import { formatMinutes, niceAxisMax } from "@/lib/format";
 import { getLocale, getDictionary, type Dictionary } from "@/lib/i18n";
 import { SegmentedTabs } from "@/components/ui/SegmentedTabs";
+import { ChartAxisGrid } from "@/components/ui/ChartAxisGrid";
 import { DateJumpPicker } from "@/components/timetracker/DateJumpPicker";
 import { isoDate, parseIsoDate } from "@/lib/calendar";
 import { stepDate, periodLabel } from "@/lib/period-nav";
+import { categoricalColor } from "@/lib/chart-colors";
 
 type OverviewPerson = Awaited<ReturnType<typeof getOverviewData>>["people"][number];
 type OverviewBucket = Awaited<ReturnType<typeof getOverviewData>>["buckets"][number];
@@ -144,30 +146,78 @@ function DayBreakdown({ people, t }: { people: OverviewPerson[]; t: Dictionary }
 function BucketTable({ buckets, people, t }: { buckets: OverviewBucket[]; people: OverviewPerson[]; t: Dictionary }) {
   const to = t.timeTracker.overview;
   const cols = `minmax(110px,1fr) repeat(${buckets.length}, minmax(56px,.7fr)) minmax(56px,.7fr)`;
+  const axisMax = niceAxisMax(Math.max(1, ...people.flatMap((p) => p.byBucket)));
+  const axisTicks = [axisMax, axisMax * 0.75, axisMax * 0.5, axisMax * 0.25, 0].map((m) => formatMinutes(m));
+
   return (
-    <div className="mt-4 overflow-x-auto">
-      <div style={{ minWidth: 110 + buckets.length * 56 + 56 }}>
-        <div className="grid gap-2 border-b-2 border-ink pb-1.5" style={{ gridTemplateColumns: cols }}>
-          <span className="heading-label">{to.colPerson}</span>
-          {buckets.map((b, i) => (
-            <span key={i} className="heading-label text-center">
-              {b.label}
-            </span>
-          ))}
-          <span className="heading-label text-right">{to.colTotal}</span>
-        </div>
-        {people.map((p) => (
-          <div key={p.id} className="grid gap-2 py-2 text-[13px] items-center border-b border-ink/8 last:border-b-0" style={{ gridTemplateColumns: cols }}>
-            <div className="truncate">{p.name}</div>
-            {p.byBucket.map((m, i) => (
-              <div key={i} className="text-center placeholder-text">
-                {m ? formatMinutes(m) : "—"}
-              </div>
+    <>
+      <div className="card px-5 py-4 mt-4">
+        <div className="flex items-start justify-between flex-wrap gap-3">
+          <div className="heading-label">{to.chartTitle}</div>
+          <div className="flex gap-4 flex-wrap justify-end">
+            {people.map((p, i) => (
+              <span key={p.id} className="flex items-center gap-1.5 text-[12px] text-ink/72">
+                <span className="w-2.5 h-2.5 rounded-sm shrink-0" style={{ background: categoricalColor(i) }} />
+                {p.name}
+              </span>
             ))}
-            <div className="text-right font-semibold">{formatMinutes(p.total)}</div>
           </div>
-        ))}
+        </div>
+        <div className="overflow-x-auto">
+          <div className="relative h-56 mt-5" style={{ minWidth: 74 + buckets.length * 60 }}>
+            <ChartAxisGrid ticks={axisTicks} />
+            <div className="absolute left-[74px] right-1 top-0 bottom-0 flex items-end justify-between gap-2">
+              {buckets.map((b, bi) => (
+                <div key={bi} className="flex items-end justify-center gap-1" style={{ height: 224 }}>
+                  {people.map((p, pi) => (
+                    <div
+                      key={p.id}
+                      className="w-3 rounded-t"
+                      style={{ height: `${(p.byBucket[bi] / axisMax) * 100}%`, background: categoricalColor(pi) }}
+                      title={`${p.name} · ${b.label} · ${formatMinutes(p.byBucket[bi])}`}
+                    />
+                  ))}
+                </div>
+              ))}
+            </div>
+          </div>
+          <div className="flex ml-[74px] mr-1 justify-between mt-2.5" style={{ minWidth: buckets.length * 60 }}>
+            {buckets.map((b, i) => (
+              <span key={i} className="text-[11.5px] placeholder-text flex-1 text-center">
+                {b.label}
+              </span>
+            ))}
+          </div>
+        </div>
       </div>
-    </div>
+
+      <div className="mt-4 overflow-x-auto">
+        <div style={{ minWidth: 110 + buckets.length * 56 + 56 }}>
+          <div className="grid gap-2 border-b-2 border-ink pb-1.5" style={{ gridTemplateColumns: cols }}>
+            <span className="heading-label">{to.colPerson}</span>
+            {buckets.map((b, i) => (
+              <span key={i} className="heading-label text-center">
+                {b.label}
+              </span>
+            ))}
+            <span className="heading-label text-right">{to.colTotal}</span>
+          </div>
+          {people.map((p, pi) => (
+            <div key={p.id} className="grid gap-2 py-2 text-[13px] items-center border-b border-ink/8 last:border-b-0" style={{ gridTemplateColumns: cols }}>
+              <div className="truncate flex items-center gap-2">
+                <span className="w-2.5 h-2.5 rounded-sm shrink-0" style={{ background: categoricalColor(pi) }} />
+                {p.name}
+              </div>
+              {p.byBucket.map((m, i) => (
+                <div key={i} className="text-center placeholder-text">
+                  {m ? formatMinutes(m) : "—"}
+                </div>
+              ))}
+              <div className="text-right font-semibold">{formatMinutes(p.total)}</div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </>
   );
 }

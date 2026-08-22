@@ -122,5 +122,5 @@ function buildMonthlyBalance(
   for (const inv of invoices) touch(inv.issuedAt).income += inv.total;
   for (const exp of expenses) touch(exp.date).expense += exp.amount;
 
-  return [...months.values()].sort((a, b) => a.order - b.order).slice(-4);
+  return [...months.values()].sort((a, b) => a.order - b.order).slice(-6);
 }

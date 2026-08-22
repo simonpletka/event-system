@@ -49,6 +49,25 @@ export function formatClientAddress(c: { street: string; city: string; postCode:
   return [c.street, cityLine, c.state].filter(Boolean).join(", ");
 }
 
+/** Short axis-label form ("45 tis. Kč") for chart gridlines, where the full formatCurrency would be too wide. */
+export function formatCompactCurrency(amount: number, currency: CurrencyCode = "CZK") {
+  return new Intl.NumberFormat(CURRENCY_LOCALE[currency], {
+    style: "currency",
+    currency,
+    notation: "compact",
+    maximumFractionDigits: 1,
+  }).format(amount);
+}
+
+/** Rounds a chart's max value up to a "nice" gridline ceiling (1/2/5/10 × a power of ten) so axis labels land on round numbers. */
+export function niceAxisMax(max: number): number {
+  if (max <= 0) return 100;
+  const magnitude = Math.pow(10, Math.floor(Math.log10(max)));
+  const residual = max / magnitude;
+  const step = residual <= 1 ? 1 : residual <= 2 ? 2 : residual <= 5 ? 5 : 10;
+  return step * magnitude;
+}
+
 export function formatMinutes(minutes: number) {
   const h = Math.floor(minutes / 60);
   const m = minutes % 60;
