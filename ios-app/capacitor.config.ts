@@ -15,7 +15,13 @@ const config: CapacitorConfig = {
     cleartext: false,
   },
   ios: {
-    contentInset: "always",
+    // "never" — not "always". The web app already handles the safe area
+    // itself via viewport-fit=cover + env(safe-area-inset-*) (MobileNav's
+    // bottom padding, MobileTopBar's top padding). "always" makes
+    // WKWebView's own scrollView *also* auto-insert safe-area insets on
+    // top of that, double-applying them — this is what was making the
+    // fixed-position bottom tab bar sit in the wrong place.
+    contentInset: "never",
   },
 };
 

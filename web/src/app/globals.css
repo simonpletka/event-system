@@ -30,7 +30,21 @@
   --font-sans: var(--font-neue-regrade);
 }
 
+/* Defensive backstop against horizontal scroll/pan. Every genuinely wide
+   element in the app (line-item tables, report charts, week calendars) is
+   already wrapped in its own overflow-x-auto container gated behind a
+   md: breakpoint, so nothing here should ever legitimately be wider than
+   the viewport on mobile — but WKWebView (the iOS app shell) rubber-bands
+   the whole page horizontally on even a stray 1px of overflow, which reads
+   to a user as "the screen doesn't fit, I have to scroll left/right." A
+   plain browser tab never needed this because it doesn't bounce-scroll the
+   same way. */
+html {
+  overflow-x: hidden;
+}
+
 body {
+  overflow-x: hidden;
   background:
     radial-gradient(ellipse 1100px 620px at 12% -8%, color-mix(in srgb, var(--color-accent) 11%, transparent), transparent 60%),
     radial-gradient(ellipse 900px 520px at 92% -4%, color-mix(in srgb, var(--color-ink) 6%, transparent), transparent 55%),
