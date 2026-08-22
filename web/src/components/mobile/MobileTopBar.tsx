@@ -23,7 +23,10 @@ export function MobileTopBar({
 
   return (
     <>
-      <div className="md:hidden -mx-6 -mt-5 mb-3 px-6 py-3 flex items-center justify-between print-hide">
+      <div
+        className="md:hidden -mx-6 -mt-5 mb-3 px-6 py-3 flex items-center justify-between print-hide"
+        style={{ paddingTop: "calc(0.75rem + env(safe-area-inset-top))" }}
+      >
         <span className="text-[10px] font-bold tracking-[0.14em]">EVENT SYSTEM</span>
         <button
           type="button"
@@ -46,7 +49,10 @@ export function MobileTopBar({
             onClick={() => setOpen(false)}
             className="absolute inset-0 bg-bg/70"
           />
-          <div className="absolute left-0 right-0 bottom-0 glass-panel rounded-t-[22px] border-b-0 shadow-[0_-14px_36px_rgba(0,0,0,0.5)] px-4 pt-2.5 pb-6">
+          <div
+            className="absolute left-0 right-0 bottom-0 glass-panel rounded-t-[22px] border-b-0 shadow-[0_-14px_36px_rgba(0,0,0,0.5)] px-4 pt-2.5 pb-6"
+            style={{ paddingBottom: "calc(1.5rem + env(safe-area-inset-bottom))" }}
+          >
             <div className="w-9 h-1 rounded-full bg-ink/20 mx-auto mb-4" />
 
             <div className="flex items-center gap-3 pb-4 mb-2.5 border-b border-ink/10">

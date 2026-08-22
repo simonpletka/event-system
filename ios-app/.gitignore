@@ -1,0 +1,14 @@
+node_modules/
+
+# Xcode user-specific state and build output — the ios/ project itself
+# (App.xcodeproj, Assets.xcassets, Package.swift, Info.plist) IS meant to
+# be committed, this only excludes machine-local churn.
+ios/App/App.xcodeproj/xcuserdata/
+ios/App/App.xcodeproj/project.xcworkspace/xcuserdata/
+ios/App/Pods/
+ios/DerivedData/
+**/.DS_Store
+
+# generated PWA icons that npm run icons also emits as a side effect —
+# not part of the iOS build, harmless but no need to commit
+icons/
