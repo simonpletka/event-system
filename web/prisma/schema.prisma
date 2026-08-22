@@ -112,6 +112,7 @@ enum InvoiceEventType {
   PAID_REVERTED
   EMAILED
   REMINDER_SENT
+  DRIVE_EXPORT_FAILED
 }
 
 enum DiscountType {

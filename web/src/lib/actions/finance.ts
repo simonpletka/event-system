@@ -6,9 +6,11 @@ import { prisma } from "@/lib/prisma";
 import { requireUser, canManageFinance, canAddExpense, canPickOtherPayer, canEditExpense, eventWhereForUser, isAdmin } from "@/lib/authz";
 import { nextQuoteNumber, nextInvoiceNumber, variableSymbolFor } from "@/lib/document-number";
 import { saveReceipt, deleteReceipt } from "@/lib/uploads";
-import { getInvoiceDetail, getCompanySettings } from "@/lib/queries/finance";
+import { getInvoiceDetail, getQuoteDetail, getCompanySettings } from "@/lib/queries/finance";
 import { buildInvoicePdfBuffer } from "@/lib/pdf/build-invoice-pdf";
+import { buildQuotePdfBuffer } from "@/lib/pdf/build-quote-pdf";
 import { sendEmail, renderEmailTemplate, EmailNotConfiguredError } from "@/lib/email";
+import { tryUploadFinanceDocument } from "@/lib/gdrive";
 import { formatCurrency, formatDate } from "@/lib/format";
 import type { ExpenseCategory, QuoteStatus, Currency, DiscountType } from "@/generated/prisma/enums";
 
@@ -159,8 +161,25 @@ export async function updateQuoteStatusAction(formData: FormData) {
 
   await prisma.quote.update({ where: { id }, data: { status } });
 
+  if (status === "ACCEPTED") await exportQuoteToDrive(user, id);
+
   revalidatePath(`/finance/quotes/${id}`);
   revalidatePath("/finance/quotes");
+}
+
+/** Best-effort — a Google Drive hiccup should never block a quote actually being marked accepted. */
+async function exportQuoteToDrive(user: Awaited<ReturnType<typeof requireUser>>, quoteId: string) {
+  const full = await getQuoteDetail(user, quoteId);
+  if (!full) return;
+  const company = await getCompanySettings();
+  const buffer = await buildQuotePdfBuffer(full, company, "en");
+  await tryUploadFinanceDocument({
+    category: "quotes",
+    year: full.event.startDate.getFullYear(),
+    filename: `${full.number}-quote.pdf`,
+    buffer,
+    mimeType: "application/pdf",
+  });
 }
 
 /**
@@ -399,8 +418,35 @@ export async function markInvoicePaidAction(formData: FormData) {
     }),
   ]);
 
+  await exportInvoiceToDrive(user, invoiceId);
+
   revalidatePath(`/finance/invoices/${invoiceId}`);
   revalidatePath("/finance/invoices");
+}
+
+/**
+ * Best-effort — a Google Drive hiccup should never block an invoice actually being marked paid.
+ * Only a real failure gets logged to the invoice's History panel; "not configured yet" is the
+ * expected state until GOOGLE_SERVICE_ACCOUNT_JSON_BASE64/GDRIVE_FINANCE_ROOT_FOLDER_ID are set,
+ * so logging that on every single paid invoice before then would just be noise.
+ */
+async function exportInvoiceToDrive(user: Awaited<ReturnType<typeof requireUser>>, invoiceId: string) {
+  const full = await getInvoiceDetail(user, invoiceId);
+  if (!full) return;
+  const company = await getCompanySettings();
+  const buffer = await buildInvoicePdfBuffer(full, company, "en");
+  const result = await tryUploadFinanceDocument({
+    category: "invoices-issued",
+    year: full.event.startDate.getFullYear(),
+    filename: `${full.number}-invoice.pdf`,
+    buffer,
+    mimeType: "application/pdf",
+  });
+  if (!result.ok && !result.error.startsWith("Google Drive export isn't configured yet")) {
+    await prisma.invoiceEvent
+      .create({ data: { invoiceId, type: "DRIVE_EXPORT_FAILED", message: `Google Drive export failed: ${result.error}`, userId: user.id } })
+      .catch(() => {});
+  }
 }
 
 /**
@@ -475,7 +521,7 @@ export async function createExpenseAction(_prev: FinanceFormState, formData: For
     return { error: "Amount, date and category are required." };
   }
 
-  let event: { ownerId: string; members: { userId: string }[] } | null = null;
+  let event: { ownerId: string; number: string; members: { userId: string }[] } | null = null;
   if (eventId) {
     event = await prisma.event.findFirst({
       where: { id: eventId, ...eventWhereForUser(user) },
@@ -513,12 +559,32 @@ export async function createExpenseAction(_prev: FinanceFormState, formData: For
     data: { eventId, paidById, amount, date: new Date(date), category, note, receiptPath },
   });
 
+  if (receipt instanceof File && receipt.size > 0) await exportExpenseReceiptToDrive(receipt, event?.number ?? null, date);
+
   revalidatePath("/finance/expenses");
   revalidatePath("/dashboard");
   if (eventId) revalidatePath(`/events/${eventId}`);
 
   if (formData.get("again") === "1") return { success: true };
   redirect("/finance/expenses");
+}
+
+/**
+ * Best-effort — a Google Drive hiccup should never block an expense actually being saved.
+ * Event-linked expenses go in as "<event number>-<original filename>"; company-overhead
+ * expenses (no event) get a date-based name instead, per the user's explicit choice, so
+ * nothing is silently skipped just for having no event to name it after.
+ */
+async function exportExpenseReceiptToDrive(receipt: File, eventNumber: string | null, dateStr: string) {
+  const buffer = Buffer.from(await receipt.arrayBuffer());
+  const idPart = eventNumber ?? `OVERHEAD_${dateStr}`;
+  await tryUploadFinanceDocument({
+    category: "invoices-received",
+    year: new Date(dateStr).getFullYear(),
+    filename: `${idPart}-${receipt.name}`,
+    buffer,
+    mimeType: receipt.type || "application/octet-stream",
+  });
 }
 
 export async function updateExpenseAction(_prev: FinanceFormState, formData: FormData): Promise<FinanceFormState> {
@@ -544,7 +610,7 @@ export async function updateExpenseAction(_prev: FinanceFormState, formData: For
     return { error: "Amount, date and category are required." };
   }
 
-  let event: { ownerId: string; members: { userId: string }[] } | null = null;
+  let event: { ownerId: string; number: string; members: { userId: string }[] } | null = null;
   if (eventId) {
     event = await prisma.event.findFirst({
       where: { id: eventId, ...eventWhereForUser(user) },
@@ -567,12 +633,14 @@ export async function updateExpenseAction(_prev: FinanceFormState, formData: For
   }
 
   let receiptPath = existing.receiptPath;
+  let newReceipt: File | null = null;
   const receipt = formData.get("receipt");
   if (receipt instanceof File && receipt.size > 0) {
     try {
       const newPath = await saveReceipt(receipt);
       if (existing.receiptPath) await deleteReceipt(existing.receiptPath);
       receiptPath = newPath;
+      newReceipt = receipt;
     } catch (e) {
       return { error: e instanceof Error ? e.message : "Could not save receipt." };
     }
@@ -585,6 +653,8 @@ export async function updateExpenseAction(_prev: FinanceFormState, formData: For
     where: { id },
     data: { eventId, paidById, amount, date: new Date(date), category, note, receiptPath },
   });
+
+  if (newReceipt) await exportExpenseReceiptToDrive(newReceipt, event?.number ?? null, date);
 
   revalidatePath("/finance/expenses");
   revalidatePath("/dashboard");
