@@ -38,13 +38,21 @@
    the whole page horizontally on even a stray 1px of overflow, which reads
    to a user as "the screen doesn't fit, I have to scroll left/right." A
    plain browser tab never needed this because it doesn't bounce-scroll the
-   same way. */
+   same way.
+   `clip`, not `hidden` — this is load-bearing, not a style choice. Per the
+   CSS overflow spec, if overflow-x is anything other than `visible` while
+   overflow-y is left at its default `visible`, the UA silently promotes
+   overflow-y to `auto` too, turning html/body into their own scroll
+   containers — which broke the sidebar's `position: sticky` (it sticks to
+   the nearest scroll-container ancestor, and that was no longer reliably
+   the viewport). `clip` doesn't establish a scroll container at all, so it
+   clips horizontal overflow without touching vertical scroll behavior. */
 html {
-  overflow-x: hidden;
+  overflow-x: clip;
 }
 
 body {
-  overflow-x: hidden;
+  overflow-x: clip;
   background:
     radial-gradient(ellipse 1100px 620px at 12% -8%, color-mix(in srgb, var(--color-accent) 11%, transparent), transparent 60%),
     radial-gradient(ellipse 900px 520px at 92% -4%, color-mix(in srgb, var(--color-ink) 6%, transparent), transparent 55%),
