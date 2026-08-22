@@ -131,7 +131,9 @@ export const getInvoiceDetail = cache(async function getInvoiceDetail(user: Sess
   return prisma.invoice.findFirst({
     where: { id, ...invoiceWhereForUser(user) },
     include: {
-      event: true,
+      // client + contacts are only needed to resolve who an invoice email goes to
+      // (Client.invoicingEmail first, else the event's first contact with an email).
+      event: { include: { client: true, contacts: { orderBy: { sortOrder: "asc" } } } },
       quote: true,
       items: { orderBy: { sortOrder: "asc" } },
       payments: { include: { recordedBy: true }, orderBy: { date: "desc" } },

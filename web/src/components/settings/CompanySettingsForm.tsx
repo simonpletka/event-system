@@ -39,6 +39,7 @@ export function CompanySettingsForm({ defaults, t }: { defaults: Company | null;
   const [removeLogo, setRemoveLogo] = useState(false);
   const [logoPreview, setLogoPreview] = useState<string | null>(null);
   const [logoInputKey, setLogoInputKey] = useState(0);
+  const [logoFileName, setLogoFileName] = useState<string | null>(null);
   const ares = useAresLookup();
 
   function set<K extends keyof Company>(key: K, value: Company[K]) {
@@ -95,7 +96,14 @@ export function CompanySettingsForm({ defaults, t }: { defaults: Company | null;
         <div className="heading-label mt-2">{t.brandingHeading}</div>
         <div className="flex gap-3 items-start">
           <div className="flex flex-col gap-1.5 flex-1">
+            <div className="flex items-center gap-2">
+              <label htmlFor="logo-upload" className="btno cursor-pointer">
+                {t.chooseFile}
+              </label>
+              {logoFileName && <span className="text-[11px] placeholder-text truncate">{logoFileName}</span>}
+            </div>
             <input
+              id="logo-upload"
               key={logoInputKey}
               name="logo"
               type="file"
@@ -104,8 +112,9 @@ export function CompanySettingsForm({ defaults, t }: { defaults: Company | null;
                 const file = e.target.files?.[0];
                 setRemoveLogo(false);
                 setLogoPreview(file ? URL.createObjectURL(file) : null);
+                setLogoFileName(file ? file.name : null);
               }}
-              className="input text-[11px]"
+              className="sr-only"
             />
             <span className="text-[9px] placeholder-text">{t.logoHelper}</span>
             {fields.logoPath && !removeLogo && (
@@ -170,6 +179,7 @@ export function CompanySettingsForm({ defaults, t }: { defaults: Company | null;
               setFields(initial);
               setRemoveLogo(false);
               setLogoPreview(null);
+              setLogoFileName(null);
               setLogoInputKey((k) => k + 1);
             }}
             className="btno"

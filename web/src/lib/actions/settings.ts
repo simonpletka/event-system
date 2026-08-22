@@ -282,3 +282,38 @@ export async function updateAppSettingsAction(_prev: SettingsFormState, formData
   revalidatePath("/", "layout");
   return { success: getDictionary(locale).settings.appSettings.savedMsg };
 }
+
+export async function updateInvoiceEmailingSettingsAction(
+  _prev: SettingsFormState,
+  formData: FormData
+): Promise<SettingsFormState> {
+  const user = await requireUser();
+  if (!canManageCompanySettings(user)) return { error: "You don't have permission to edit invoice emailing settings." };
+
+  const invoiceEmailSubject = String(formData.get("invoiceEmailSubject") ?? "").trim();
+  const invoiceEmailBody = String(formData.get("invoiceEmailBody") ?? "");
+  const reminderEmailSubject = String(formData.get("reminderEmailSubject") ?? "").trim();
+  const reminderEmailBody = String(formData.get("reminderEmailBody") ?? "");
+  if (!invoiceEmailSubject || !invoiceEmailBody.trim() || !reminderEmailSubject || !reminderEmailBody.trim()) {
+    return { error: "Every subject and body is required." };
+  }
+
+  await prisma.companySettings.upsert({
+    where: { id: "singleton" },
+    create: {
+      id: "singleton",
+      name: "",
+      address: "",
+      ico: "",
+      dic: "",
+      invoiceEmailSubject,
+      invoiceEmailBody,
+      reminderEmailSubject,
+      reminderEmailBody,
+    },
+    update: { invoiceEmailSubject, invoiceEmailBody, reminderEmailSubject, reminderEmailBody },
+  });
+
+  revalidatePath("/settings");
+  return { success: getDictionary(await getLocale()).settings.invoiceEmailing.savedMsg };
+}

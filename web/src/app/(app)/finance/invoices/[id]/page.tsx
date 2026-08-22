@@ -3,10 +3,18 @@ import { notFound } from "next/navigation";
 import { requireUser, canManageFinance, isAdmin } from "@/lib/authz";
 import { getInvoiceDetail, getCompanySettings } from "@/lib/queries/finance";
 import { formatCurrency, formatDate, formatDateTime } from "@/lib/format";
-import { recordPaymentAction, markInvoicePaidAction, revertInvoicePaidAction, deleteInvoiceAction } from "@/lib/actions/finance";
+import {
+  recordPaymentAction,
+  markInvoicePaidAction,
+  revertInvoicePaidAction,
+  deleteInvoiceAction,
+  sendInvoiceEmailAction,
+  sendInvoiceReminderAction,
+} from "@/lib/actions/finance";
 import { BackLink } from "@/components/BackLink";
 import { ConfirmDeleteButton } from "@/components/ui/ConfirmDeleteButton";
 import { DownloadPdfButton } from "@/components/finance/DownloadPdfButton";
+import { SendInvoiceEmailButton } from "@/components/finance/SendInvoiceEmailButton";
 import { groupItemsByCategory, categoryTotal } from "@/lib/line-items";
 import { getLocale, getDictionary } from "@/lib/i18n";
 
@@ -49,10 +57,16 @@ export default async function InvoiceDetailPage({ params }: { params: Promise<{ 
               {ti.metaLine(invoice.event.title, invoice.event.companyName, formatDate(invoice.issuedAt), formatDate(invoice.dueDate))}
             </div>
           </div>
-          <div className="flex gap-1.5">
-            <span className="btno opacity-40 cursor-not-allowed" title={ti.emailNotWired}>
-              {ti.sendByMail}
-            </span>
+          <div className="flex gap-1.5 items-start">
+            {canManage && (
+              <SendInvoiceEmailButton
+                invoiceId={invoice.id}
+                action={sendInvoiceEmailAction}
+                label={ti.sendInvoice}
+                pendingLabel={ti.sending}
+                className="btno"
+              />
+            )}
             <DownloadPdfButton pdfUrl={`/api/invoices/${invoice.id}/pdf`} label={t.finance.downloadPdf.downloadPdf} />
             {canManage && invoice.status !== "PAID" && (
               <form action={markInvoicePaidAction}>
@@ -192,11 +206,26 @@ export default async function InvoiceDetailPage({ params }: { params: Promise<{ 
                 <div className="text-ink/70">{ti.dueLabel}</div>
                 <div className="placeholder-text">{formatDate(invoice.dueDate)}</div>
               </div>
+              <div className="flex justify-between py-1.5 text-[13px] border-b border-ink/8">
+                <div className="text-ink/70">{ti.sentLabel}</div>
+                <div className="placeholder-text">{invoice.sentAt ? ti.sentOn(formatDate(invoice.sentAt)) : ti.notSentYet}</div>
+              </div>
               <div className="flex justify-between py-1.5 text-[13px]">
                 <div className="text-ink/70">{ti.reminderLabel}</div>
-                <div className="placeholder-text">{ti.notWiredYet}</div>
+                <div className="placeholder-text">{invoice.lastReminderAt ? ti.reminderSentOn(formatDate(invoice.lastReminderAt)) : ti.noReminderSent}</div>
               </div>
             </div>
+            {canManage && overdue && (
+              <div className="mt-2">
+                <SendInvoiceEmailButton
+                  invoiceId={invoice.id}
+                  action={sendInvoiceReminderAction}
+                  label={ti.sendReminder}
+                  pendingLabel={ti.sending}
+                  className="btno w-full text-center"
+                />
+              </div>
+            )}
           </div>
 
           {canManage && remaining > 0 && (

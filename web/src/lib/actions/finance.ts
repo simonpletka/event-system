@@ -6,6 +6,10 @@ import { prisma } from "@/lib/prisma";
 import { requireUser, canManageFinance, canAddExpense, canPickOtherPayer, canEditExpense, eventWhereForUser, isAdmin } from "@/lib/authz";
 import { nextQuoteNumber, nextInvoiceNumber, variableSymbolFor } from "@/lib/document-number";
 import { saveReceipt, deleteReceipt } from "@/lib/uploads";
+import { getInvoiceDetail, getCompanySettings } from "@/lib/queries/finance";
+import { buildInvoicePdfBuffer } from "@/lib/pdf/build-invoice-pdf";
+import { sendEmail, renderEmailTemplate, EmailNotConfiguredError } from "@/lib/email";
+import { formatCurrency, formatDate } from "@/lib/format";
 import type { ExpenseCategory, QuoteStatus, Currency, DiscountType } from "@/generated/prisma/enums";
 
 export type FinanceFormState = { error?: string; success?: boolean };
@@ -605,4 +609,121 @@ export async function deleteExpenseAction(formData: FormData) {
   revalidatePath("/finance/expenses");
   revalidatePath("/dashboard");
   if (expense.eventId) revalidatePath(`/events/${expense.eventId}`);
+}
+
+// --- Invoice emailing ---
+
+export type EmailActionState = { error?: string; success?: string };
+
+/** Client.invoicingEmail first (the field meant for this), else the event's first contact with an email on file. */
+function resolveInvoiceRecipient(invoice: NonNullable<Awaited<ReturnType<typeof getInvoiceDetail>>>): string | null {
+  const clientEmail = invoice.event.client?.invoicingEmail.trim();
+  if (clientEmail) return clientEmail;
+  const contact = invoice.event.contacts.find((c) => c.email.trim());
+  return contact ? contact.email.trim() : null;
+}
+
+async function loadInvoiceForEmail(user: Awaited<ReturnType<typeof requireUser>>, invoiceId: string) {
+  const invoice = await getInvoiceDetail(user, invoiceId);
+  if (!invoice) return { error: "Invoice not found." } as const;
+  const to = resolveInvoiceRecipient(invoice);
+  if (!to) {
+    return {
+      error: "No email address on file for this client — add one on the event's contacts, or set the client's invoicing email.",
+    } as const;
+  }
+  return { invoice, to } as const;
+}
+
+export async function sendInvoiceEmailAction(_prev: EmailActionState, formData: FormData): Promise<EmailActionState> {
+  const user = await requireUser();
+  if (!canManageFinance(user)) return { error: "You don't have permission to do that." };
+
+  const invoiceId = String(formData.get("invoiceId"));
+  const loaded = await loadInvoiceForEmail(user, invoiceId);
+  if ("error" in loaded) return { error: loaded.error };
+  const { invoice, to } = loaded;
+
+  const company = await getCompanySettings();
+  const vars = {
+    invoiceNumber: invoice.number,
+    companyName: company?.name ?? "",
+    clientName: invoice.event.companyName,
+    eventTitle: invoice.event.title,
+    amount: formatCurrency(invoice.total - invoice.amountPaid, invoice.currency),
+    dueDate: formatDate(invoice.dueDate),
+  };
+  const subject = renderEmailTemplate(company?.invoiceEmailSubject ?? "Invoice {{invoiceNumber}}", vars);
+  const body = renderEmailTemplate(company?.invoiceEmailBody ?? "", vars);
+
+  try {
+    const pdf = await buildInvoicePdfBuffer(invoice, company, "en");
+    await sendEmail({
+      to,
+      subject,
+      text: body,
+      attachments: [{ filename: `invoice-${invoice.number}.pdf`, content: pdf, contentType: "application/pdf" }],
+    });
+  } catch (err) {
+    return { error: err instanceof EmailNotConfiguredError ? err.message : "Couldn't send the email — check the SMTP settings and try again." };
+  }
+
+  await prisma.$transaction([
+    prisma.invoice.update({ where: { id: invoiceId }, data: { sentAt: new Date() } }),
+    prisma.invoiceEvent.create({
+      data: { invoiceId, type: "EMAILED", message: `Emailed to ${to} — ${user.name}`, userId: user.id },
+    }),
+  ]);
+
+  revalidatePath(`/finance/invoices/${invoiceId}`);
+  return { success: `Sent to ${to}.` };
+}
+
+export async function sendInvoiceReminderAction(_prev: EmailActionState, formData: FormData): Promise<EmailActionState> {
+  const user = await requireUser();
+  if (!canManageFinance(user)) return { error: "You don't have permission to do that." };
+
+  const invoiceId = String(formData.get("invoiceId"));
+  const loaded = await loadInvoiceForEmail(user, invoiceId);
+  if ("error" in loaded) return { error: loaded.error };
+  const { invoice, to } = loaded;
+
+  const overdue = invoice.status !== "PAID" && invoice.dueDate < new Date();
+  if (!overdue) return { error: "This invoice isn't overdue — nothing to remind about." };
+  const daysOverdue = Math.max(1, Math.floor((Date.now() - invoice.dueDate.getTime()) / 86_400_000));
+
+  const company = await getCompanySettings();
+  const vars = {
+    invoiceNumber: invoice.number,
+    companyName: company?.name ?? "",
+    clientName: invoice.event.companyName,
+    eventTitle: invoice.event.title,
+    amount: formatCurrency(invoice.total - invoice.amountPaid, invoice.currency),
+    dueDate: formatDate(invoice.dueDate),
+    daysOverdue: String(daysOverdue),
+  };
+  const subject = renderEmailTemplate(company?.reminderEmailSubject ?? "Reminder: invoice {{invoiceNumber}}", vars);
+  const body = renderEmailTemplate(company?.reminderEmailBody ?? "", vars);
+
+  try {
+    const pdf = await buildInvoicePdfBuffer(invoice, company, "en");
+    await sendEmail({
+      to,
+      subject,
+      text: body,
+      attachments: [{ filename: `invoice-${invoice.number}.pdf`, content: pdf, contentType: "application/pdf" }],
+    });
+  } catch (err) {
+    return { error: err instanceof EmailNotConfiguredError ? err.message : "Couldn't send the email — check the SMTP settings and try again." };
+  }
+
+  await prisma.$transaction([
+    prisma.invoice.update({ where: { id: invoiceId }, data: { lastReminderAt: new Date() } }),
+    prisma.invoiceEvent.create({
+      data: { invoiceId, type: "REMINDER_SENT", message: `Reminder emailed to ${to} — ${user.name}`, userId: user.id },
+    }),
+  ]);
+
+  revalidatePath(`/finance/invoices/${invoiceId}`);
+  return { success: `Reminder sent to ${to}.` };
 }

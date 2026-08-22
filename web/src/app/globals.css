@@ -129,6 +129,7 @@ body {
 }
 .btn {
   font-size: 10px;
+  font-weight: 600;
   letter-spacing: 0.14em;
   text-transform: uppercase;
   padding: 8px 14px;
@@ -146,6 +147,7 @@ body {
 }
 .btno {
   font-size: 10px;
+  font-weight: 600;
   letter-spacing: 0.14em;
   text-transform: uppercase;
   padding: 8px 14px;

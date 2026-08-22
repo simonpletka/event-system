@@ -177,6 +177,7 @@ const en = {
     noExpensesYet: "No expenses yet.",
     companyOverhead: "Company overhead",
     balance: "Balance",
+    balanceSubtitle: (n: number) => `Income vs. expenses · last ${n} months`,
     income: "Income",
     expense: "Expense",
     notEnoughData: "Not enough data yet.",
@@ -522,15 +523,16 @@ const en = {
       colPdf: "PDF",
       noInvoicesMatch: "No invoices match this filter.",
       download: "Download",
-      sortedByNote: "Sorted by due date · overdue first · email reminders aren't wired up yet",
+      sortedByNote: "Sorted by due date · overdue first",
       showingOfTotal: (count: number, total: number) => `Showing ${count} of ${total}`,
 
       backLink: "Invoices",
       invoiceN: (n: string) => `Invoice ${n}`,
       metaLine: (title: string, company: string, issued: string, due: string) =>
         `${title} · ${company} · issued ${issued}, due ${due}`,
-      sendByMail: "Send by mail",
-      emailNotWired: "Email sending isn't wired up yet",
+      sendInvoice: "Send invoice",
+      sending: "Sending…",
+      sentOn: (date: string) => `Sent ${date}`,
       markAsPaid: "Mark as paid",
       undoMarkPaid: "Undo mark as paid",
       companyFallback: "Company",
@@ -554,8 +556,12 @@ const en = {
       amountOfTotal: (paid: string, total: string) => `${paid} of ${total}`,
       receivedOn: (date: string) => ` received ${date}`,
       dueLabel: "Due",
+      sentLabel: "Invoice sent",
+      notSentYet: "Not sent yet",
       reminderLabel: "Reminder",
-      notWiredYet: "not wired up yet",
+      noReminderSent: "No reminder sent yet",
+      reminderSentOn: (date: string) => `Sent ${date}`,
+      sendReminder: "Send reminder",
       recordPaymentHeading: "Record payment",
       notePlaceholder: "Note (optional)",
       recordPaymentBtn: "Record payment",
@@ -747,6 +753,7 @@ const en = {
       noTimeLogged: "No time logged.",
       colPerson: "Person",
       colTotal: "Total",
+      chartTitle: "Hours logged",
     },
 
     entryEdit: {
@@ -824,6 +831,7 @@ const en = {
     tabCompany: "Company",
     tabUsers: "Users & roles",
     tabTemplates: "Templates",
+    tabInvoiceEmailing: "Invoice emailing",
     tabAppSettings: "App settings",
     quoteHeading: "Quote",
 
@@ -872,6 +880,7 @@ const en = {
       ibanPlaceholder: "IBAN",
       qrHint: "Used to render the QR payment code on invoice PDFs.",
       brandingHeading: "Branding",
+      chooseFile: "Choose file",
       logoHelper:
         "PNG, JPG or SVG, max 2MB. Used on generated invoice PDFs (SVG shows here but can't be embedded in the PDF — use PNG/JPG for that).",
       removeLogoLabel: "Remove current logo",
@@ -899,6 +908,24 @@ const en = {
       aresExplainer:
         "ARES is a free public registry, so that one's live. Google Workspace/Calendar need OAuth credentials that land in a later phase.",
       savedMsg: "Company settings saved.",
+    },
+
+    invoiceEmailing: {
+      heading: "Invoice emailing",
+      intro:
+        "The text used when an invoice is emailed from its detail page — with \"Send invoice\" and, once it's overdue, \"Send reminder\". The invoice PDF is attached automatically; no need to mention it in the body.",
+      tokensHint: (tokens: string) => `Available placeholders: ${tokens}`,
+      tokensHintReminderExtra: "· {{daysOverdue}} (reminder only)",
+      sendTemplateHeading: "Invoice email",
+      reminderTemplateHeading: "Reminder email",
+      subjectLabel: "Subject",
+      bodyLabel: "Body",
+      saving: "Saving…",
+      saveChanges: "Save changes",
+      cancel: "Cancel",
+      savedMsg: "Invoice emailing templates saved.",
+      smtpNote:
+        "Sending needs SMTP_HOST, SMTP_USER and SMTP_PASS set in the server's environment variables — this page only edits the wording.",
     },
 
     appSettings: {
@@ -1179,6 +1206,7 @@ const cs: Dictionary = {
     noExpensesYet: "Zatím žádné výdaje.",
     companyOverhead: "Firemní režie",
     balance: "Bilance",
+    balanceSubtitle: (n: number) => `Příjmy a výdaje · posledních ${n} měsíců`,
     income: "Příjmy",
     expense: "Výdaj",
     notEnoughData: "Zatím nedostatek dat.",
@@ -1527,15 +1555,16 @@ const cs: Dictionary = {
       colPdf: "PDF",
       noInvoicesMatch: "Žádné faktury neodpovídají filtru.",
       download: "Stáhnout",
-      sortedByNote: "Seřazeno podle splatnosti · nejdříve po splatnosti · e-mailové připomínky zatím nejsou zapojené",
+      sortedByNote: "Seřazeno podle splatnosti · nejdříve po splatnosti",
       showingOfTotal: (count: number, total: number) => `Zobrazeno ${count} z ${total}`,
 
       backLink: "Faktury",
       invoiceN: (n: string) => `Faktura ${n}`,
       metaLine: (title: string, company: string, issued: string, due: string) =>
         `${title} · ${company} · vystaveno ${issued}, splatnost ${due}`,
-      sendByMail: "Odeslat e-mailem",
-      emailNotWired: "Odesílání e-mailů zatím není zapojené",
+      sendInvoice: "Odeslat fakturu",
+      sending: "Odesílání…",
+      sentOn: (date: string) => `Odesláno ${date}`,
       markAsPaid: "Označit jako zaplacenou",
       undoMarkPaid: "Vrátit označení zaplaceno",
       companyFallback: "Firma",
@@ -1559,8 +1588,12 @@ const cs: Dictionary = {
       amountOfTotal: (paid: string, total: string) => `${paid} z ${total}`,
       receivedOn: (date: string) => ` přijato ${date}`,
       dueLabel: "Splatnost",
+      sentLabel: "Faktura odeslána",
+      notSentYet: "Zatím neodesláno",
       reminderLabel: "Připomínka",
-      notWiredYet: "zatím nezapojeno",
+      noReminderSent: "Zatím žádná odeslaná připomínka",
+      reminderSentOn: (date: string) => `Odesláno ${date}`,
+      sendReminder: "Odeslat připomínku",
       recordPaymentHeading: "Zaznamenat platbu",
       notePlaceholder: "Poznámka (nepovinné)",
       recordPaymentBtn: "Zaznamenat platbu",
@@ -1752,6 +1785,7 @@ const cs: Dictionary = {
       noTimeLogged: "Není zaznamenán žádný čas.",
       colPerson: "Osoba",
       colTotal: "Celkem",
+      chartTitle: "Odpracované hodiny",
     },
 
     entryEdit: {
@@ -1829,6 +1863,7 @@ const cs: Dictionary = {
     tabCompany: "Firma",
     tabUsers: "Uživatelé a role",
     tabTemplates: "Šablony",
+    tabInvoiceEmailing: "E-maily faktur",
     tabAppSettings: "Nastavení aplikace",
     quoteHeading: "Nabídka",
 
@@ -1877,6 +1912,7 @@ const cs: Dictionary = {
       ibanPlaceholder: "IBAN",
       qrHint: "Používá se pro vygenerování QR platebního kódu na fakturách PDF.",
       brandingHeading: "Branding",
+      chooseFile: "Vybrat soubor",
       logoHelper:
         "PNG, JPG nebo SVG, max. 2 MB. Používá se na vygenerovaných fakturách PDF (SVG se zde zobrazí, ale nelze ho vložit do PDF — použijte PNG/JPG).",
       removeLogoLabel: "Odstranit aktuální logo",
@@ -1904,6 +1940,24 @@ const cs: Dictionary = {
       aresExplainer:
         "ARES je bezplatný veřejný rejstřík, takže to už funguje. Google Workspace/Kalendář potřebují OAuth přihlašovací údaje, které přibudou později.",
       savedMsg: "Nastavení firmy uloženo.",
+    },
+
+    invoiceEmailing: {
+      heading: "E-maily faktur",
+      intro:
+        "Text použitý při odeslání faktury z její detailní stránky — tlačítky „Odeslat fakturu“ a po splatnosti „Odeslat připomínku“. PDF faktury se přiloží automaticky, není třeba ho zmiňovat v textu.",
+      tokensHint: (tokens: string) => `Dostupné zástupné symboly: ${tokens}`,
+      tokensHintReminderExtra: "· {{daysOverdue}} (pouze připomínka)",
+      sendTemplateHeading: "E-mail s fakturou",
+      reminderTemplateHeading: "E-mail s připomínkou",
+      subjectLabel: "Předmět",
+      bodyLabel: "Text",
+      saving: "Ukládání…",
+      saveChanges: "Uložit změny",
+      cancel: "Zrušit",
+      savedMsg: "Šablony e-mailů faktur uloženy.",
+      smtpNote:
+        "Odesílání vyžaduje proměnné SMTP_HOST, SMTP_USER a SMTP_PASS nastavené v prostředí serveru — tato stránka upravuje jen text.",
     },
 
     appSettings: {

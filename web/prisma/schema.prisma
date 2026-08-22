@@ -110,6 +110,8 @@ enum InvoiceEventType {
   PAYMENT_RECORDED
   MARKED_PAID
   PAID_REVERTED
+  EMAILED
+  REMINDER_SENT
 }
 
 enum DiscountType {
@@ -362,6 +364,8 @@ model Invoice {
   hideItemPrices Boolean       @default(true) // see Quote.hideItemPrices
   discountType   DiscountType  @default(NONE)
   discountValue  Int           @default(0) // percent (0-100) if PERCENT, minor-currency amount if FIXED
+  sentAt         DateTime? // last time the invoice itself was emailed (resending updates this)
+  lastReminderAt DateTime? // last time an overdue reminder was emailed
 
   items    InvoiceItem[]
   payments Payment[]
@@ -429,6 +433,13 @@ model CompanySettings {
   positiveColor  String  @default("#2dd4bf")
   warningColor   String  @default("#dc2626")
   locale         String  @default("en") // "en" | "cs" — the whole app's UI language, not just this record
+
+  // Editable templates for the invoice "Send"/"Send reminder" buttons (Settings → Invoice emailing).
+  // Plain-text with {{token}} placeholders — see src/lib/email.ts's EMAIL_TEMPLATE_TOKENS for the list.
+  invoiceEmailSubject  String @default("Invoice {{invoiceNumber}} from {{companyName}}")
+  invoiceEmailBody     String @default("Hi {{clientName}},\n\nPlease find attached invoice {{invoiceNumber}} for {{eventTitle}}, totaling {{amount}}, due {{dueDate}}.\n\nThank you,\n{{companyName}}")
+  reminderEmailSubject String @default("Reminder: invoice {{invoiceNumber}} is overdue")
+  reminderEmailBody    String @default("Hi {{clientName}},\n\nThis is a friendly reminder that invoice {{invoiceNumber}} for {{eventTitle}}, totaling {{amount}}, was due {{dueDate}} ({{daysOverdue}} days ago) and is still unpaid.\n\nThe invoice is attached again for your convenience.\n\nThank you,\n{{companyName}}")
 }
 
 // A real client company. Added going forward, not backfilled from existing

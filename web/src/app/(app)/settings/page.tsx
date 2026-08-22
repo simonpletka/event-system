@@ -10,6 +10,13 @@ import { CompanySettingsForm } from "@/components/settings/CompanySettingsForm";
 import { RoleReferenceTable } from "@/components/settings/RoleReferenceTable";
 import { CategoriesTab } from "@/components/settings/CategoriesTab";
 import { AppSettingsForm } from "@/components/settings/AppSettingsForm";
+import { InvoiceEmailingForm } from "@/components/settings/InvoiceEmailingForm";
+import {
+  DEFAULT_INVOICE_EMAIL_SUBJECT,
+  DEFAULT_INVOICE_EMAIL_BODY,
+  DEFAULT_REMINDER_EMAIL_SUBJECT,
+  DEFAULT_REMINDER_EMAIL_BODY,
+} from "@/lib/email-templates";
 import { getItemCategories } from "@/lib/actions/categories";
 
 export default async function SettingsPage({
@@ -24,7 +31,8 @@ export default async function SettingsPage({
 
   const canUsers = canManageUsers(user);
   const canCompany = canManageCompanySettings(user);
-  const tab = (params.tab as "company" | "users" | "templates" | "appSettings") || (canCompany ? "company" : "users");
+  const tab =
+    (params.tab as "company" | "users" | "templates" | "invoiceEmailing" | "appSettings") || (canCompany ? "company" : "users");
 
   if (!canUsers && !canCompany) {
     return (
@@ -87,6 +95,14 @@ export default async function SettingsPage({
           )}
           {canCompany && (
             <Link
+              href="/settings?tab=invoiceEmailing"
+              className={`shrink-0 text-[9px] tracking-[0.14em] uppercase pb-2 border-b-2 ${tab === "invoiceEmailing" ? "border-accent text-accent" : "border-transparent placeholder-text hover:text-ink"}`}
+            >
+              {t.settings.tabInvoiceEmailing}
+            </Link>
+          )}
+          {canCompany && (
+            <Link
               href="/settings?tab=appSettings"
               className={`shrink-0 text-[9px] tracking-[0.14em] uppercase pb-2 border-b-2 ${tab === "appSettings" ? "border-accent text-accent" : "border-transparent placeholder-text hover:text-ink"}`}
             >
@@ -112,6 +128,17 @@ export default async function SettingsPage({
             <div className="heading-label mb-2">{t.settings.quoteHeading}</div>
             <CategoriesTab categories={categories} locale={locale} />
           </div>
+        )}
+        {tab === "invoiceEmailing" && canCompany && (
+          <InvoiceEmailingForm
+            defaults={{
+              invoiceEmailSubject: company?.invoiceEmailSubject ?? DEFAULT_INVOICE_EMAIL_SUBJECT,
+              invoiceEmailBody: company?.invoiceEmailBody ?? DEFAULT_INVOICE_EMAIL_BODY,
+              reminderEmailSubject: company?.reminderEmailSubject ?? DEFAULT_REMINDER_EMAIL_SUBJECT,
+              reminderEmailBody: company?.reminderEmailBody ?? DEFAULT_REMINDER_EMAIL_BODY,
+            }}
+            locale={locale}
+          />
         )}
         {tab === "appSettings" && canCompany && (
           <AppSettingsForm
