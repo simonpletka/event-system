@@ -1,5 +1,10 @@
 # Event System — iOS app shell
 
+> **Status: experimental, development stopped.** This wrapper isn't
+> maintained going forward — see the root `README.md` for the current
+> state of the project. Left in place as-is in case it's picked back up
+> later; nothing in `web/` depends on it.
+
 A thin native wrapper (Capacitor) around the live web app. It does **not**
 bundle a copy of the site — `capacitor.config.ts`'s `server.url` points the
 app's `WKWebView` straight at the Railway-hosted URL, so every screen, every
