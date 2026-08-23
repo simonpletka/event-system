@@ -44,7 +44,7 @@ export function RunningTimerBox({
   if (!running) {
     return (
       <div className="card p-5">
-        <div className="heading-label mb-2">{t.startATimer}</div>
+        <div className="heading-label !text-[12px] mb-2">{t.startATimer}</div>
         <form action={startTimerAction} className="grid grid-cols-1 md:grid-cols-[1fr_160px_1fr_auto] gap-3 items-end">
           <label className="flex flex-col gap-1.5">
             <span className="heading-label">{t.eventLabel}</span>

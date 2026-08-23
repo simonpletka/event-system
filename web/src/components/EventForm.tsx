@@ -117,7 +117,7 @@ export function EventForm({ defaults, clients, locale }: { defaults: EventFormDe
         </Field>
       </div>
 
-      <div className="heading-label">{tf.datesHeading}</div>
+      <div className="heading-label !text-[12px]">{tf.datesHeading}</div>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
         <Field label={tf.buildPrepLabel}>
           <input name="buildDate" type="datetime-local" defaultValue={toDateTimeLocal(defaults.buildDate)} className="input" />
@@ -148,7 +148,7 @@ export function EventForm({ defaults, clients, locale }: { defaults: EventFormDe
       </div>
 
       <div>
-        <div className="heading-label mb-1.5">{tf.venuesHeading}</div>
+        <div className="heading-label !text-[12px] mb-1.5">{tf.venuesHeading}</div>
         <div className="flex flex-col gap-2">
           {venues.map((v, i) => (
             <div key={i} className="grid grid-cols-1 md:grid-cols-[1fr_1fr_1fr_auto] gap-2 items-start">
@@ -179,7 +179,7 @@ export function EventForm({ defaults, clients, locale }: { defaults: EventFormDe
         </button>
       </div>
 
-      <div className="heading-label">{tf.clientHeading}</div>
+      <div className="heading-label !text-[12px]">{tf.clientHeading}</div>
       <Field label={tf.linkedClientLabel}>
         <ClientPicker
           initialClients={clients}
@@ -197,7 +197,7 @@ export function EventForm({ defaults, clients, locale }: { defaults: EventFormDe
         />
       </Field>
       <div>
-        <div className="heading-label mb-1.5">{tf.contactPeopleHeading}</div>
+        <div className="heading-label !text-[12px] mb-1.5">{tf.contactPeopleHeading}</div>
         <p className="text-[10px] placeholder-text mb-2">{tf.contactNote}</p>
         <div className="flex flex-col gap-2">
           {contacts.map((c, i) => (

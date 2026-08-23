@@ -77,7 +77,7 @@ export default async function TrackingPage({
       )}
 
       <div className="flex items-center justify-between gap-2 flex-wrap mt-5">
-        <div className="heading-label">{view === "list" ? t.timeTracker.tracking.myEntries : t.timeTracker.tabOverview}</div>
+        <div className="heading-label !text-[12px]">{view === "list" ? t.timeTracker.tracking.myEntries : t.timeTracker.tabOverview}</div>
         {viewSwitch}
       </div>
 
@@ -202,7 +202,7 @@ function ListView({
 
       <div className="flex flex-col gap-3">
         <div className="card px-4 py-4">
-          <div className="heading-label mb-1.5">
+          <div className="heading-label !text-[12px] mb-1.5">
             {isoDate(rangeStart(period, anchor)) === isoDate(rangeStart(period, new Date())) ? currentPeriodLabel(period, tt) : periodLabel(period, anchor)}
           </div>
           {periodTotals.map((pt) => (

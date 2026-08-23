@@ -94,7 +94,7 @@ export default async function EventOverviewPage({ params }: { params: Promise<{ 
 
       <div className="flex flex-col gap-3">
         <div className="card px-4 py-4">
-          <div className="heading-label">{te.budgetVsActual}</div>
+          <div className="heading-label !text-[12px]">{te.budgetVsActual}</div>
           <div className="text-2xl font-semibold tracking-tight mt-1">{formatCurrency(event.quotedValue)}</div>
           <div className="placeholder-text text-[10px]">{te.quotedValue}</div>
           <div className="mt-2">
@@ -105,7 +105,7 @@ export default async function EventOverviewPage({ params }: { params: Promise<{ 
         </div>
 
         <div className="card px-4 py-4">
-          <div className="heading-label">{te.timeLogged}</div>
+          <div className="heading-label !text-[12px]">{te.timeLogged}</div>
           <div className="text-lg font-semibold mt-1">{formatMinutes(totalMinutes)}</div>
           <div className="placeholder-text text-[10px]">{te.peopleCount(uniquePeople.size)}</div>
           {runningTimer?.eventId === event.id ? (
@@ -121,7 +121,7 @@ export default async function EventOverviewPage({ params }: { params: Promise<{ 
         </div>
 
         <div className="card px-4 py-4">
-          <div className="heading-label mb-1.5">{te.documents}</div>
+          <div className="heading-label !text-[12px] mb-1.5">{te.documents}</div>
           {[...event.quotes, ...event.invoices].length === 0 && <p className="text-[12px] placeholder-text">{te.noneYet}</p>}
           {event.quotes.map((q) => (
             <div key={q.id} className="flex justify-between items-center py-1.5 text-[12px]">
@@ -146,7 +146,7 @@ export default async function EventOverviewPage({ params }: { params: Promise<{ 
         </div>
 
         <div className="card px-4 py-4">
-          <div className="heading-label mb-1.5">{te.team}</div>
+          <div className="heading-label !text-[12px] mb-1.5">{te.team}</div>
           <div className="flex gap-1.5 flex-wrap">
             {event.members.length === 0 && <span className="text-[11px] placeholder-text">{te.ownerOnly(event.owner.name)}</span>}
             {event.members.map((m) => (

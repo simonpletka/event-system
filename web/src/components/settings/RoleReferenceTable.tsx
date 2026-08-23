@@ -56,7 +56,7 @@ export function RoleReferenceTable({
   return (
     <div className="card px-3.5 py-3.5">
       <div className="flex items-center justify-between mb-2">
-        <div className="heading-label">{t.whatEachRoleCanReach}</div>
+        <div className="heading-label !text-[12px]">{t.whatEachRoleCanReach}</div>
         {canManage && !creating && (
           <button type="button" onClick={() => setCreating(true)} className="btno text-[9px]">
             {t.newRoleBtn}
@@ -97,7 +97,7 @@ export function RoleReferenceTable({
 
       {(customRoles.length > 0 || creating) && (
         <div className="pt-2.5 pb-1">
-          <div className="heading-label">{t.customRolesHeading}</div>
+          <div className="heading-label !text-[12px]">{t.customRolesHeading}</div>
         </div>
       )}
 

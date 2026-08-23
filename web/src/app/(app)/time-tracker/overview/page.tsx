@@ -153,7 +153,7 @@ function BucketTable({ buckets, people, t }: { buckets: OverviewBucket[]; people
     <>
       <div className="card px-5 py-4 mt-4">
         <div className="flex items-start justify-between flex-wrap gap-3">
-          <div className="heading-label">{to.chartTitle}</div>
+          <div className="heading-label !text-[12px]">{to.chartTitle}</div>
           <div className="flex gap-4 flex-wrap justify-end">
             {people.map((p, i) => (
               <span key={p.id} className="flex items-center gap-1.5 text-[12px] text-ink/72">

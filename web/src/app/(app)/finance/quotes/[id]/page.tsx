@@ -11,11 +11,27 @@ import { DownloadPdfButton } from "@/components/finance/DownloadPdfButton";
 import { groupItemsByCategory, categoryTotal } from "@/lib/line-items";
 import { getLocale, getDictionary } from "@/lib/i18n";
 import { addressLines, clientAddressLines, DEFAULT_ACCENT } from "@/lib/pdf/shared";
+import { DocumentPreviewScaler } from "@/components/finance/DocumentPreviewScaler";
+import { SegmentedTabs } from "@/components/ui/SegmentedTabs";
+import type { Locale } from "@/lib/dictionary";
 
-export default async function QuoteDetailPage({ params }: { params: Promise<{ id: string }> }) {
+export default async function QuoteDetailPage({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ id: string }>;
+  searchParams: Promise<{ previewLang?: string }>;
+}) {
   const user = await requireUser();
   const { id } = await params;
   const t = getDictionary(await getLocale());
+  // The preview card's own language toggle — independent of the app's UI
+  // language (t drives the rest of this page). Defaults to whatever the
+  // app is currently set to.
+  const { previewLang } = await searchParams;
+  const appLocale = await getLocale();
+  const activePreviewLang: Locale = previewLang === "cs" || previewLang === "en" ? previewLang : appLocale;
+  const pq = getDictionary(activePreviewLang).finance.quotes;
   const [quote, company] = await Promise.all([getQuoteDetail(user, id), getCompanySettings()]);
   if (!quote) notFound();
 
@@ -89,130 +105,153 @@ export default async function QuoteDetailPage({ params }: { params: Promise<{ id
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-[1fr_280px] gap-5 mt-5">
-        {/* PDF preview — same content/layout the generated PDF renders, so this box IS the preview. */}
-        <div className="card p-6 md:p-8 flex flex-col gap-2.5">
-          <div className="flex justify-between items-start">
-            <div className="text-[40px] leading-[0.85] font-bold tracking-tight lowercase">{t.finance.quotes.quoteLabel}</div>
-            <div className="flex flex-col items-end gap-1">
-              {company?.logoPath ? (
-                // eslint-disable-next-line @next/next/no-img-element -- authenticated route, not a static asset next/image can optimize
-                <img src={`/api/uploads/logo/${company.logoPath}`} alt="" className="w-7 h-7 object-contain" />
-              ) : (
-                <div
-                  className="w-5 h-5 rounded-[5px] flex items-center justify-center text-[10px] font-bold text-white"
-                  style={{ backgroundColor: accent }}
-                >
-                  {(company?.name ?? t.finance.quotes.companyFallback).charAt(0).toUpperCase()}
-                </div>
-              )}
-              <div className="text-[10px] font-bold">{company?.name ?? t.finance.quotes.companyFallback}</div>
-            </div>
+        <div className="min-w-0">
+          <div className="flex justify-end mb-2">
+            <SegmentedTabs
+              options={[
+                { value: "cs", label: "CZ", href: "?previewLang=cs" },
+                { value: "en", label: "EN", href: "?previewLang=en" },
+              ]}
+              active={activePreviewLang}
+            />
           </div>
+          {/* Built at the mockup's literal 794px page width for exact fidelity, then scaled to fit the card via DocumentPreviewScaler — so it's a 1:1 reproduction the user sees whole, not a strip they scroll sideways through. */}
+          <div className="card p-8 min-w-0">
+          <DocumentPreviewScaler width={794}>
+          <div className="w-[794px] h-[1123px] pt-[16px] flex flex-col gap-2.5">
+            <div className="flex justify-between items-start">
+              <div className="text-[154px] leading-[0.8] font-bold tracking-[-4px] lowercase pb-[14px]">
+                {pq.quoteLabel}
+              </div>
+              <div className="flex flex-col items-end gap-[6px] pt-[8px]">
+                {company?.logoPath ? (
+                  // eslint-disable-next-line @next/next/no-img-element -- authenticated route, not a static asset next/image can optimize
+                  <img src={`/api/uploads/logo/${company.logoPath}`} alt="" className="w-[34px] h-[34px] object-contain" />
+                ) : (
+                  <div
+                    className="w-[34px] h-[34px] rounded-[8px] flex items-center justify-center text-[14px] font-bold text-white"
+                    style={{ backgroundColor: accent }}
+                  >
+                    {(company?.name ?? pq.companyFallback).charAt(0).toUpperCase()}
+                  </div>
+                )}
+                <div className="text-[12px] font-bold">{company?.name ?? pq.companyFallback}</div>
+              </div>
+            </div>
 
-          <div className="flex justify-between items-start mt-4">
-            <div className="text-[13px] leading-[1.4]">
+            {/* Extra top clearance vs. the invoice's 38px — "quote"/"nabídka" both carry a descender ("q") or a tall diacritic ("í") the tighter invoice wordmark ("invoice") never hits, so the same margin let this row clip into the wordmark. Wordmark itself is untouched; only this row and everything after it moved down. */}
+            <div className="flex justify-between items-start mt-[60px] text-[19px] leading-[1.35]">
               <div>
-                {t.finance.quotes.colIssued} {formatDate(quote.issuedAt)}
+                <div>
+                  {pq.colIssued} {formatDate(quote.issuedAt)}
+                </div>
+                <div>
+                  {pq.colValidTo} {formatDate(quote.validUntil)}
+                </div>
+              </div>
+              <div className="text-[19px] font-bold">{quote.number}</div>
+            </div>
+
+            <div className="grid grid-cols-[29%_29%_38%] gap-[32px] mt-[40px] mb-[28px]">
+              <div>
+                <div className="label mb-[5px] !text-[8px] !tracking-[1px]">{pq.supplier}</div>
+                <div className="font-bold text-[11px] mb-[3px]">{company?.name}</div>
+                {supplierAddressLines.map((line) => (
+                  <div key={line} className="placeholder-text text-[9.5px] leading-[1.5]">
+                    {line}
+                  </div>
+                ))}
+                <div className="placeholder-text text-[9.5px] leading-[1.5] mt-[3px]">{`IČO ${company?.ico} · DIČ ${company?.dic}`}</div>
               </div>
               <div>
-                {t.finance.quotes.colValidTo} {formatDate(quote.validUntil)}
+                <div className="label mb-[5px] !text-[8px] !tracking-[1px]">{pq.customer}</div>
+                <div className="font-bold text-[11px] mb-[3px]">{quote.event.companyName}</div>
+                {customerAddressLines.map((line) => (
+                  <div key={line} className="placeholder-text text-[9.5px] leading-[1.5]">
+                    {line}
+                  </div>
+                ))}
+                <div className="placeholder-text text-[9.5px] leading-[1.5] mt-[3px]">{`IČO ${quote.event.companyIco || "—"} · DIČ ${quote.event.companyDic || "—"}`}</div>
+              </div>
+              <div>
+                <div className="label mb-[5px] !text-[8px] !tracking-[1px]">{pq.createdByHeading}</div>
+                <div className="font-bold text-[13px] mb-[3px]">{quote.createdBy.name}</div>
+                {quote.createdBy.email && (
+                  <div className="placeholder-text text-[10px] leading-[1.6]">{quote.createdBy.email}</div>
+                )}
+                {quote.createdBy.phone && (
+                  <div className="placeholder-text text-[10px] leading-[1.6]">{quote.createdBy.phone}</div>
+                )}
               </div>
             </div>
-            <div className="text-[13px] font-bold">{quote.number}</div>
-          </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-[11px] mt-5">
             <div>
-              <div className="label mb-1">{t.finance.quotes.supplier}</div>
-              <div className="font-semibold">{company?.name}</div>
-              {supplierAddressLines.map((line) => (
-                <div key={line} className="placeholder-text">
-                  {line}
-                </div>
-              ))}
-              <div className="placeholder-text mt-1">{`IČO ${company?.ico} · DIČ ${company?.dic}`}</div>
-            </div>
-            <div>
-              <div className="label mb-1">{t.finance.quotes.customer}</div>
-              <div className="font-semibold">{quote.event.companyName}</div>
-              {customerAddressLines.map((line) => (
-                <div key={line} className="placeholder-text">
-                  {line}
-                </div>
-              ))}
-              <div className="placeholder-text mt-1">{`IČO ${quote.event.companyIco || "—"} · DIČ ${quote.event.companyDic || "—"}`}</div>
-            </div>
-            <div>
-              <div className="label mb-1">{t.finance.quotes.createdByHeading}</div>
-              <div className="font-semibold text-[13px]">{quote.createdBy.name}</div>
-              {quote.createdBy.email && <div className="placeholder-text text-[10px]">{quote.createdBy.email}</div>}
-              {quote.createdBy.phone && <div className="placeholder-text text-[10px]">{quote.createdBy.phone}</div>}
-            </div>
-          </div>
-
-          <div className="overflow-x-auto">
-            <div className="min-w-[440px]">
               {!quote.hideItemPrices && (
-                <div className="grid grid-cols-[2fr_.5fr_.7fr_.5fr_.9fr] gap-2 border-b-2 border-ink pb-1 text-[10px] mt-2">
-                  <span className="heading-label">{t.finance.quotes.colItem}</span>
-                  <span className="heading-label">{t.finance.quotes.colQty}</span>
-                  <span className="heading-label">{t.finance.quotes.colUnit}</span>
-                  <span className="heading-label">{t.finance.quotes.colVat}</span>
-                  <span className="heading-label text-right">{t.finance.quotes.total}</span>
+                <div className="grid grid-cols-[2fr_.5fr_.7fr_.5fr_.9fr] gap-2 border-b-2 border-ink pb-[6px] text-[8px] tracking-[0.6px]">
+                  <span className="heading-label !text-[8px]">{pq.colItem}</span>
+                  <span className="heading-label !text-[8px]">{pq.colQty}</span>
+                  <span className="heading-label !text-[8px]">{pq.colUnit}</span>
+                  <span className="heading-label !text-[8px]">{pq.colVat}</span>
+                  <span className="heading-label !text-[8px] text-right">{pq.total}</span>
                 </div>
               )}
               {groups.map((g) => (
                 <div key={g.category || "—"}>
-                  {g.category && <div className="label mt-2 mb-0.5">{g.category}</div>}
+                  {g.category && <div className="label !text-[8px] !tracking-[1px] mt-[28px] mb-[4px]">{g.category}</div>}
                   {g.items.map((item) =>
                     quote.hideItemPrices ? (
-                      <div key={item.id} className="py-1 text-[11px]">
+                      <div key={item.id} className="py-[5px] text-[10.5px] border-b border-ink/8">
                         {item.description}
                       </div>
                     ) : (
-                      <div key={item.id} className="grid grid-cols-[2fr_.5fr_.7fr_.5fr_.9fr] gap-2 py-1 text-[11px]">
+                      <div
+                        key={item.id}
+                        className="grid grid-cols-[2fr_.5fr_.7fr_.5fr_.9fr] gap-2 py-[7px] text-[10.5px] border-b border-ink/8 items-center"
+                      >
                         <span>{item.description}</span>
-                        <span className="placeholder-text">{item.quantity}</span>
-                        <span className="placeholder-text">{formatCurrency(item.unitPrice, quote.currency)}</span>
-                        <span className="placeholder-text">{item.vatRate}%</span>
+                        <span className="placeholder-text text-right">{item.quantity}</span>
+                        <span className="placeholder-text text-right">{formatCurrency(item.unitPrice, quote.currency)}</span>
+                        <span className="placeholder-text text-right">{item.vatRate}%</span>
                         <span className="text-right">{formatCurrency(item.quantity * item.unitPrice, quote.currency)}</span>
                       </div>
                     )
                   )}
                   {quote.hideItemPrices && g.category && (
-                    <div className="flex justify-end text-[11px] font-semibold py-0.5">
+                    <div className="flex justify-end text-[10px] font-bold mt-[3px] mb-[10px]">
                       {formatCurrency(categoryTotal(g.items), quote.currency)}
                     </div>
                   )}
                 </div>
               ))}
             </div>
+            <div className="flex justify-end items-center gap-[36px] mt-[24px] text-[11px]">
+              <div className="text-right">
+                <span className="label !text-[8px] !tracking-[1px] block">{pq.base}</span>
+                <span className="mt-[3px] block">{formatCurrency(base, quote.currency)}</span>
+              </div>
+              <div className="text-right">
+                <span className="label !text-[8px] !tracking-[1px] block">{pq.vat}</span>
+                <span className="mt-[3px] block">{formatCurrency(vat, quote.currency)}</span>
+              </div>
+              <div className="text-right">
+                <span className="label !text-[8px] !tracking-[1px] block">{pq.total}</span>
+                <span className="font-bold text-[22px] mt-[3px] block" style={{ color: accent }}>
+                  {formatCurrency(base + vat, quote.currency)}
+                </span>
+              </div>
+            </div>
+            <div className="flex-1" />
+            <div className="placeholder-text text-[9.5px] leading-[1.5] pt-[16px] border-t border-ink/10">
+              {pq.renderedNote(formatDate(quote.validUntil))}
+            </div>
           </div>
-          <div className="flex justify-end items-center gap-6 mt-2 text-[12px]">
-            <div>
-              <span className="label mr-2">{t.finance.quotes.base}</span>
-              {formatCurrency(base, quote.currency)}
-            </div>
-            <div>
-              <span className="label mr-2">{t.finance.quotes.vat}</span>
-              {formatCurrency(vat, quote.currency)}
-            </div>
-            <div className="flex items-center gap-1.5">
-              <span className="label mr-1">{t.finance.quotes.total}</span>
-              <span className="font-bold text-base" style={{ color: accent }}>
-                {formatCurrency(base + vat, quote.currency)}
-              </span>
-              <span className="tag tag-neutral">{quote.currency}</span>
-            </div>
-          </div>
-          <div className="placeholder-text text-[9px] mt-auto pt-4 border-t border-ink/10">
-            {t.finance.quotes.renderedNote(formatDate(quote.validUntil))}
+          </DocumentPreviewScaler>
           </div>
         </div>
 
         <div className="flex flex-col gap-3">
           <div className="card px-4 py-4">
-            <div className="heading-label">{t.finance.quotes.statusHeading}</div>
+            <div className="heading-label !text-[12px]">{t.finance.quotes.statusHeading}</div>
             <div className={`text-lg font-semibold mt-1 ${expired ? "text-warning" : ""}`}>
               {expired ? t.finance.quotes.expired : t.finance.quotes.valid}
             </div>
@@ -220,7 +259,7 @@ export default async function QuoteDetailPage({ params }: { params: Promise<{ id
           </div>
 
           <div className="card px-4 py-4">
-            <div className="heading-label mb-1">{t.finance.quotes.linkedHeading}</div>
+            <div className="heading-label !text-[12px] mb-1">{t.finance.quotes.linkedHeading}</div>
             <div className="py-1.5 text-[13px]">
               <Link href={`/events/${quote.eventId}`} className="hover:text-accent">
                 {t.finance.quotes.eventLink(quote.event.title)}
@@ -236,7 +275,7 @@ export default async function QuoteDetailPage({ params }: { params: Promise<{ id
           </div>
 
           <div className="card px-4 py-4">
-            <div className="heading-label mb-1">{t.finance.quotes.createdByHeading}</div>
+            <div className="heading-label !text-[12px] mb-1">{t.finance.quotes.createdByHeading}</div>
             <div className="py-1.5 text-[13px]">
               {quote.createdBy.name}
               <div className="placeholder-text text-[11px] mt-0.5">
@@ -249,7 +288,7 @@ export default async function QuoteDetailPage({ params }: { params: Promise<{ id
 
           {isAdmin(user) && (
             <div className="card px-4 py-4">
-              <div className="heading-label mb-1.5">{t.finance.quotes.deleteHeading}</div>
+              <div className="heading-label !text-[12px] mb-1.5">{t.finance.quotes.deleteHeading}</div>
               <p className="text-[10px] placeholder-text mb-2.5">
                 {t.finance.quotes.removesNote}
                 {alreadyInvoiced ? ` ${t.finance.quotes.invoiceStaysNote}` : ""}

@@ -106,68 +106,80 @@ export function clientAddressLines(client: { street: string; city: string; postC
   return [client.street, cityLine, client.state].filter(Boolean);
 }
 
+// The mockup's canvas is a 794×1123 CSS-px artboard — exactly A4 at 96 DPI
+// (794px = 8.27in × 96). The PDF page is A4 in points (595.28pt = 8.27in ×
+// 72). Both represent the identical physical page, so every mockup pixel
+// value converts to points via the exact 96→72 DPI ratio: pt = px × 0.75.
+// Every number below is that literal conversion of a real value read out of
+// the mockup's own .dc.html source — not approximated or eyeballed.
 export const sharedStyles = StyleSheet.create({
-  page: { padding: 36, fontSize: 10, color: INK, backgroundColor: BG },
+  page: { paddingTop: 42, paddingRight: 42, paddingBottom: 48, paddingLeft: 42, fontSize: 10, color: INK, backgroundColor: BG },
 
   // Big lowercase wordmark header: doc word on the left, logo/initial chip + supplier name top-right.
   headerRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "flex-start" },
-  wordmark: { fontSize: 56, fontWeight: 700, lineHeight: 0.85, letterSpacing: -1.5 },
-  headerSupplier: { alignItems: "flex-end", gap: 3 },
+  wordmark: { fontSize: 115.5, fontWeight: 700, lineHeight: 0.8, letterSpacing: -3, paddingBottom: 10.5 },
+  headerSupplier: { alignItems: "flex-end", gap: 4.5, paddingTop: 6 },
   initialChip: {
-    width: 20,
-    height: 20,
-    borderRadius: 5,
+    width: 25.5,
+    height: 25.5,
+    borderRadius: 6,
     alignItems: "center",
     justifyContent: "center",
   },
-  initialChipText: { fontSize: 10, fontWeight: 700, color: "#ffffff" },
-  headerSupplierName: { fontSize: 10, fontWeight: 700 },
-  logoImage: { width: 28, height: 28, objectFit: "contain" },
+  initialChipText: { fontSize: 10.5, fontWeight: 700, color: "#ffffff" },
+  headerSupplierName: { fontSize: 9, fontWeight: 700 },
+  logoImage: { width: 25.5, height: 25.5, objectFit: "contain" },
 
   // Big date/doc-number row, replacing the old thin rule + small docLabel.
-  bigDateRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "flex-start", marginTop: 16 },
+  bigDateRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "flex-start", marginTop: 28.5 },
   bigDateStack: { flexDirection: "column" },
-  bigDateLine: { fontSize: 12, lineHeight: 1.35 },
-  bigDocNumber: { fontSize: 12, fontWeight: 700 },
+  bigDateLine: { fontSize: 14.25, lineHeight: 1.35 },
+  bigDocNumber: { fontSize: 14.25, fontWeight: 700 },
 
-  partiesRow: { flexDirection: "row", marginTop: 20, marginBottom: 16, gap: 14 },
-  partyBlockNarrow: { width: "24%" },
-  partyBlockWide: { width: "29%" },
-  label: { fontSize: 8, letterSpacing: 1, textTransform: "uppercase", color: MUTED, marginBottom: 3 },
-  partyName: { fontSize: 11, fontWeight: 700, marginBottom: 2 },
-  partyLine: { fontSize: 9, color: LINE, lineHeight: 1.45 },
+  // Shared row shell — each document supplies its own `gap` (invoice 18pt / quote 24pt in the mockup).
+  partiesRow: { flexDirection: "row", marginTop: 30, marginBottom: 21 },
+  partyBlockNarrow: { width: "24%" }, // invoice: supplier/customer
+  partyBlockWide: { width: "29%" }, // quote: supplier/customer
+  createdByBlock: { width: "38%" }, // quote: created-by
+  label: { fontSize: 6, letterSpacing: 0.75, textTransform: "uppercase", color: MUTED, marginBottom: 3.75 },
+  partyName: { fontSize: 8.25, fontWeight: 700, marginBottom: 2.25 },
+  partyLine: { fontSize: 7.125, color: LINE, lineHeight: 1.5 },
 
   // Invoice-only: payment-details column (text) beside its own QR column.
   paymentBlock: { width: "32%" },
   qrBlock: { width: "14%" },
-  qrBox: { backgroundColor: RULE, borderRadius: 6, padding: 5, width: 52, alignSelf: "flex-start" },
-  qrImageSmall: { width: 42, height: 42 },
-  qrCaptionText: { fontSize: 7, color: MUTED, marginTop: 4, lineHeight: 1.3 },
+  qrBox: { backgroundColor: RULE, borderRadius: 6, padding: 4.5, alignSelf: "flex-start" },
+  qrImageSmall: { width: 48, height: 48 },
+  qrCaptionText: { fontSize: 6, color: MUTED, marginTop: 3.75, lineHeight: 1.4 },
 
-  table: { marginTop: 8 },
+  // No marginTop here — partiesRow's own marginBottom (21pt, above) is the
+  // mockup's only gap between the parties row and the item table.
+  table: {},
   tableHeaderRow: {
     flexDirection: "row",
-    borderBottomWidth: 2,
+    borderBottomWidth: 1.5,
     borderBottomColor: RULE,
-    paddingBottom: 4,
-    marginBottom: 4,
+    paddingBottom: 4.5,
+    marginBottom: 4.5,
   },
-  tableRow: { flexDirection: "row", paddingVertical: 4, borderBottomWidth: 1, borderBottomColor: ROW_BORDER },
+  tableRow: { flexDirection: "row", paddingVertical: 5.25, borderBottomWidth: 0.75, borderBottomColor: ROW_BORDER },
+  tableCell: { fontSize: 7.875 },
   colDesc: { width: "46%" },
   colQty: { width: "12%", textAlign: "right" },
   colUnit: { width: "16%", textAlign: "right" },
   colVat: { width: "10%", textAlign: "right" },
   colTotal: { width: "16%", textAlign: "right" },
-  th: { fontSize: 8, letterSpacing: 0.6, textTransform: "uppercase", color: MUTED },
-  summaryRow: { flexDirection: "row", justifyContent: "flex-end", marginTop: 12, gap: 24 },
+  th: { fontSize: 6, letterSpacing: 0.45, textTransform: "uppercase", color: MUTED },
+  categoryLabel: { fontSize: 6, letterSpacing: 0.75, textTransform: "uppercase", color: MUTED, marginTop: 21, marginBottom: 3 },
+  categorySubtotal: { fontSize: 7.5, fontWeight: 700, textAlign: "right", marginTop: 2.25, marginBottom: 7.5 },
+  summaryRow: { flexDirection: "row", justifyContent: "flex-end", marginTop: 18, gap: 27 },
   summaryBlock: { alignItems: "flex-end" },
-  summaryValue: { fontSize: 10 },
-  toPayValue: { fontSize: 14, fontWeight: 700 },
+  summaryValue: { fontSize: 8.25, marginTop: 2.25 },
+  toPayValue: { fontSize: 16.5, fontWeight: 700, marginTop: 2.25 },
   footerRow: {
-    marginTop: 40,
     paddingTop: 12,
-    borderTopWidth: 1,
+    borderTopWidth: 0.75,
     borderTopColor: ROW_BORDER,
   },
-  footerText: { fontSize: 8, color: MUTED },
+  footerText: { fontSize: 7.125, color: LINE, lineHeight: 1.5 },
 });

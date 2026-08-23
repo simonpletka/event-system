@@ -59,7 +59,7 @@ export function CompanySettingsForm({ defaults, t }: { defaults: Company | null;
   return (
     <div className="grid grid-cols-1 md:grid-cols-[1fr_300px] gap-5 max-w-3xl">
       <form action={formAction} className="card p-5 flex flex-col gap-3">
-        <div className="heading-label">{t.companyDetailsHeading}</div>
+        <div className="heading-label !text-[12px]">{t.companyDetailsHeading}</div>
         <div className="flex gap-1.5">
           <input name="ico" placeholder={t.icoPlaceholder} value={fields.ico} onChange={(e) => set("ico", e.target.value)} required className="input flex-1" />
           <button type="button" onClick={loadFromAres} disabled={ares.loading} className="btno whitespace-nowrap">
@@ -87,7 +87,7 @@ export function CompanySettingsForm({ defaults, t }: { defaults: Company | null;
           </label>
         </div>
 
-        <div className="heading-label mt-2">{t.bankHeading}</div>
+        <div className="heading-label !text-[12px] mt-2">{t.bankHeading}</div>
         <input
           name="accountNumber"
           placeholder={t.accountNumberPlaceholder}
@@ -112,7 +112,7 @@ export function CompanySettingsForm({ defaults, t }: { defaults: Company | null;
         <span className="text-[9px] placeholder-text -mt-1">{t.qrHint}</span>
         <span className="text-[9px] placeholder-text">{t.bankDetailsHint}</span>
 
-        <div className="heading-label mt-2">{t.brandingHeading}</div>
+        <div className="heading-label !text-[12px] mt-2">{t.brandingHeading}</div>
         <div className="flex gap-3 items-start">
           <div className="flex flex-col gap-1.5 flex-1">
             <div className="flex items-center gap-2">
@@ -165,7 +165,7 @@ export function CompanySettingsForm({ defaults, t }: { defaults: Company | null;
         </div>
         <span className="text-[9px] placeholder-text -mt-1">{t.accentMovedNote}</span>
 
-        <div className="heading-label mt-2">{t.numberingHeading}</div>
+        <div className="heading-label !text-[12px] mt-2">{t.numberingHeading}</div>
         <div className="flex gap-1.5">
           <div className="input opacity-60 flex-1">{t.numberingScheme}</div>
         </div>
@@ -209,7 +209,7 @@ export function CompanySettingsForm({ defaults, t }: { defaults: Company | null;
       </form>
 
       <div className="card p-5 self-start">
-        <div className="heading-label mb-2">{t.connectedAccountsHeading}</div>
+        <div className="heading-label !text-[12px] mb-2">{t.connectedAccountsHeading}</div>
         <ConnectedRow label={t.googleWorkspace} note={t.googleWorkspaceNote} connected={false} activeLabel={t.active} notConnectedLabel={t.notConnected} />
         <ConnectedRow label={t.calendarMilestones} note={t.calendarMilestonesNote} connected={false} activeLabel={t.active} notConnectedLabel={t.notConnected} />
         <ConnectedRow label={t.aresLookup} note={t.aresNote} connected activeLabel={t.active} notConnectedLabel={t.notConnected} />

@@ -32,7 +32,7 @@ export default async function TimeTab({ params }: { params: Promise<{ id: string
         <span className="font-semibold">{formatMinutes(totalMinutes)}</span>
       </div>
 
-      <div className="heading-label mb-1">{tt.byPerson}</div>
+      <div className="heading-label !text-[12px] mb-1">{tt.byPerson}</div>
       {[...byPerson.values()].map((p) => (
         <div key={p.name} className="flex justify-between py-1.5 border-b border-ink/10 text-[13px]">
           <div>{p.name}</div>
@@ -40,7 +40,7 @@ export default async function TimeTab({ params }: { params: Promise<{ id: string
         </div>
       ))}
 
-      <div className="heading-label mt-4 mb-1">{tt.entries}</div>
+      <div className="heading-label !text-[12px] mt-4 mb-1">{tt.entries}</div>
       {event.timeEntries.length === 0 && <p className="text-sm placeholder-text">{tt.noTimeLoggedYet}</p>}
       <div className="hidden md:block">
         {event.timeEntries.map((entry) => (

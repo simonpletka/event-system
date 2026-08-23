@@ -125,7 +125,7 @@ export default async function SettingsPage({
         )}
         {tab === "templates" && canCompany && (
           <div>
-            <div className="heading-label mb-2">{t.settings.quoteHeading}</div>
+            <div className="heading-label !text-[12px] mb-2">{t.settings.quoteHeading}</div>
             <CategoriesTab categories={categories} locale={locale} />
           </div>
         )}

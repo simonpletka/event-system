@@ -70,7 +70,7 @@ export default async function DashboardPage({
         </div>
       )}
 
-      <div className="heading-label mt-6 mb-2.5">{t.dashboard.needsAttention}</div>
+      <div className="heading-label !text-[12px] mt-6 mb-2.5">{t.dashboard.needsAttention}</div>
       <div className="flex overflow-x-auto gap-3 -mx-6 px-6 md:mx-0 md:px-0 md:grid md:grid-cols-3 md:overflow-visible">
         <AttentionTile
           icon={ICON_ALERT}
@@ -111,7 +111,7 @@ export default async function DashboardPage({
       {view === "list" && (
         <>
           <div className="flex items-baseline justify-between mt-7 mb-2.5">
-            <div className="heading-label">{t.dashboard.upcomingEvents}</div>
+            <div className="heading-label !text-[12px]">{t.dashboard.upcomingEvents}</div>
           </div>
           {data.upcomingEvents.length === 0 ? (
             <p className="text-sm placeholder-text">{t.dashboard.noUpcomingEvents}</p>
@@ -146,8 +146,8 @@ export default async function DashboardPage({
       )}
 
       <div className="mt-7">
-        <div className="card px-5 py-4">
-          <div className="heading-label mb-1.5">{t.dashboard.latestExpenses}</div>
+        <Link href="/finance/expenses" className="card group block px-5 py-4 hover:bg-ink/5 transition-colors">
+          <div className="heading-label !text-[12px] mb-1.5 group-hover:!text-accent">{t.dashboard.latestExpenses}</div>
           {data.latestExpenses.length === 0 ? (
             <p className="text-sm placeholder-text">{t.dashboard.noExpensesYet}</p>
           ) : (
@@ -161,14 +161,14 @@ export default async function DashboardPage({
               </div>
             ))
           )}
-        </div>
+        </Link>
       </div>
 
       <div className="mt-5">
         <div className="card px-6 py-5">
           <div className="flex items-start justify-between flex-wrap gap-3">
             <div>
-              <div className="heading-label">{t.dashboard.balance}</div>
+              <div className="heading-label !text-[12px]">{t.dashboard.balance}</div>
               {data.monthly.length > 0 && (
                 <div className="text-[12.5px] placeholder-text mt-1">{t.dashboard.balanceSubtitle(data.monthly.length)}</div>
               )}

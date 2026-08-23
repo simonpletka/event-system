@@ -56,7 +56,7 @@ export function Sidebar({
             <span className="text-[10px] truncate">{userName}</span>
           </div>
           <form action={signOutAction}>
-            <button type="submit" className="text-[9px] tracking-[0.1em] uppercase placeholder-text hover:text-ink">
+            <button type="submit" className="cursor-pointer text-[9px] tracking-[0.1em] uppercase placeholder-text hover:text-ink">
               {tNav.signOut}
             </button>
           </form>

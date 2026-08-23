@@ -87,7 +87,7 @@ export function InvoicePdf({
           <Text style={styles.bigDocNumber}>{invoiceNumber}</Text>
         </View>
 
-        <View style={styles.partiesRow}>
+        <View style={[styles.partiesRow, { gap: 18 }]}>
           <View style={styles.partyBlockNarrow}>
             <Text style={styles.label}>{t.supplier}</Text>
             <Text style={styles.partyName}>{supplier.name}</Text>
@@ -96,7 +96,7 @@ export function InvoicePdf({
                 {line}
               </Text>
             ))}
-            <Text style={[styles.partyLine, { marginTop: 3 }]}>
+            <Text style={[styles.partyLine, { marginTop: 2.25 }]}>
               IČO {supplier.ico} · DIČ {supplier.dic}
             </Text>
             {!supplier.isVatPayer && <Text style={styles.partyLine}>{t.notVatPayer}</Text>}
@@ -109,7 +109,7 @@ export function InvoicePdf({
                 {line}
               </Text>
             ))}
-            <Text style={[styles.partyLine, { marginTop: 3 }]}>
+            <Text style={[styles.partyLine, { marginTop: 2.25 }]}>
               IČO {customer.ico || "—"} · DIČ {customer.dic || "—"}
             </Text>
           </View>
@@ -158,26 +158,24 @@ export function InvoicePdf({
           )}
           {groups.map((g, gi) => (
             <View key={gi}>
-              {g.category ? <Text style={[styles.label, { marginTop: 6 }]}>{g.category}</Text> : null}
+              {g.category ? <Text style={styles.categoryLabel}>{g.category}</Text> : null}
               {g.items.map((item, i) =>
                 hideItemPrices ? (
-                  <Text key={i} style={[styles.tableRow, { paddingVertical: 3 }]}>
+                  <Text key={i} style={[styles.tableRow, styles.tableCell, { paddingVertical: 3.75 }]}>
                     {item.description}
                   </Text>
                 ) : (
                   <View key={i} style={styles.tableRow}>
-                    <Text style={styles.colDesc}>{item.description}</Text>
-                    <Text style={styles.colQty}>{item.quantity}</Text>
-                    <Text style={styles.colUnit}>{money(item.unitPrice, currency)}</Text>
-                    <Text style={styles.colVat}>{item.vatRate}%</Text>
-                    <Text style={styles.colTotal}>{money(item.quantity * item.unitPrice, currency)}</Text>
+                    <Text style={[styles.tableCell, styles.colDesc]}>{item.description}</Text>
+                    <Text style={[styles.tableCell, styles.colQty]}>{item.quantity}</Text>
+                    <Text style={[styles.tableCell, styles.colUnit]}>{money(item.unitPrice, currency)}</Text>
+                    <Text style={[styles.tableCell, styles.colVat]}>{item.vatRate}%</Text>
+                    <Text style={[styles.tableCell, styles.colTotal]}>{money(item.quantity * item.unitPrice, currency)}</Text>
                   </View>
                 )
               )}
               {hideItemPrices && g.category ? (
-                <Text style={{ fontSize: 9, fontWeight: 700, textAlign: "right" }}>
-                  {money(categoryTotal(g.items), currency)}
-                </Text>
+                <Text style={styles.categorySubtotal}>{money(categoryTotal(g.items), currency)}</Text>
               ) : null}
             </View>
           ))}
@@ -203,6 +201,8 @@ export function InvoicePdf({
             <Text style={[styles.toPayValue, { color: accent }]}>{money(total, currency)}</Text>
           </View>
         </View>
+
+        <View style={{ flex: 1 }} />
 
         <View style={styles.footerRow}>
           <Text style={styles.footerText}>{t.invoiceThanks}</Text>

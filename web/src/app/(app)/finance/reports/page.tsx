@@ -67,7 +67,7 @@ export default async function ReportsPage({
         <div className="grid grid-cols-1 md:grid-cols-[1.35fr_1fr] gap-4 mt-4">
           <div className="card px-4 py-4">
             <div className="flex items-start justify-between flex-wrap gap-2">
-              <div className="label mb-2">{tr.chartTitle}</div>
+              <div className="label !text-[12px] mb-2">{tr.chartTitle}</div>
               <div className="flex gap-3.5">
                 <Legend color={INCOME_CHART_COLOR} label={tr.legendIncome} />
                 <Legend swatch="bg-accent" label={tr.legendExpenses} />
@@ -101,7 +101,7 @@ export default async function ReportsPage({
           </div>
 
           <div className="card px-4 py-4">
-            <div className="label mb-1">{tr.breakdown}</div>
+            <div className="label !text-[12px] mb-1">{tr.breakdown}</div>
             <div className="hidden md:block">
               <div className="grid grid-cols-[1fr_.7fr_.7fr_.6fr] gap-2 border-b-2 border-ink pb-1">
                 <span className="heading-label">{tr.colMonth}</span>
@@ -131,7 +131,7 @@ export default async function ReportsPage({
             </div>
 
             <div className="rule-thin my-3" />
-            <div className="label mb-1.5">{tr.topCategories}</div>
+            <div className="label !text-[12px] mb-1.5">{tr.topCategories}</div>
             {report.topCategories.map(([cat, value], i) => (
               <div key={cat} className="flex flex-col gap-1 py-1.5">
                 <div className="flex items-center justify-between text-[13px]">

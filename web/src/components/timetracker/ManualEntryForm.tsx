@@ -15,7 +15,7 @@ export function ManualEntryForm({ events, t, tPhases }: { events: { id: string; 
 
   return (
     <div className="card p-5">
-      <div className="heading-label mb-2">{t.addManualEntry}</div>
+      <div className="heading-label !text-[12px] mb-2">{t.addManualEntry}</div>
       <form action={formAction} className="grid grid-cols-1 md:grid-cols-3 gap-3">
         <label className="flex flex-col gap-1.5">
           <span className="heading-label">{t.eventLabel}</span>

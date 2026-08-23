@@ -59,7 +59,8 @@ export function QuotePdf({
           </View>
         </View>
 
-        <View style={styles.bigDateRow}>
+        {/* Extra top clearance vs. the invoice's shared 28.5pt — "quote"/"nabídka" carry a descender ("q") or a tall diacritic ("í") the invoice wordmark never hits, so the shared margin let this row clip into the wordmark. Wordmark itself untouched; only this row and everything after it moved down. */}
+        <View style={[styles.bigDateRow, { marginTop: 45 }]}>
           <View style={styles.bigDateStack}>
             <Text style={styles.bigDateLine}>
               {t.issued} {date(issuedAt, lang)}
@@ -71,7 +72,7 @@ export function QuotePdf({
           <Text style={styles.bigDocNumber}>{quoteNumber}</Text>
         </View>
 
-        <View style={styles.partiesRow}>
+        <View style={[styles.partiesRow, { gap: 24 }]}>
           <View style={styles.partyBlockWide}>
             <Text style={styles.label}>{t.supplier}</Text>
             <Text style={styles.partyName}>{supplier.name}</Text>
@@ -80,7 +81,7 @@ export function QuotePdf({
                 {line}
               </Text>
             ))}
-            <Text style={[styles.partyLine, { marginTop: 3 }]}>
+            <Text style={[styles.partyLine, { marginTop: 2.25 }]}>
               IČO {supplier.ico} · DIČ {supplier.dic}
             </Text>
             {!supplier.isVatPayer && <Text style={styles.partyLine}>{t.notVatPayer}</Text>}
@@ -93,15 +94,19 @@ export function QuotePdf({
                 {line}
               </Text>
             ))}
-            <Text style={[styles.partyLine, { marginTop: 3 }]}>
+            <Text style={[styles.partyLine, { marginTop: 2.25 }]}>
               IČO {customer.ico || "—"} · DIČ {customer.dic || "—"}
             </Text>
           </View>
-          <View style={styles.partyBlockWide}>
+          <View style={styles.createdByBlock}>
             <Text style={styles.label}>{t.createdBy}</Text>
-            <Text style={[styles.partyName, { fontSize: 13 }]}>{createdBy.name}</Text>
-            {createdBy.email ? <Text style={[styles.partyLine, { fontSize: 10 }]}>{createdBy.email}</Text> : null}
-            {createdBy.phone ? <Text style={[styles.partyLine, { fontSize: 10 }]}>{createdBy.phone}</Text> : null}
+            <Text style={[styles.partyName, { fontSize: 9.75 }]}>{createdBy.name}</Text>
+            {createdBy.email ? (
+              <Text style={[styles.partyLine, { fontSize: 7.5, lineHeight: 1.6 }]}>{createdBy.email}</Text>
+            ) : null}
+            {createdBy.phone ? (
+              <Text style={[styles.partyLine, { fontSize: 7.5, lineHeight: 1.6 }]}>{createdBy.phone}</Text>
+            ) : null}
           </View>
         </View>
 
@@ -117,26 +122,24 @@ export function QuotePdf({
           )}
           {groups.map((g, gi) => (
             <View key={gi}>
-              {g.category ? <Text style={[styles.label, { marginTop: 6 }]}>{g.category}</Text> : null}
+              {g.category ? <Text style={styles.categoryLabel}>{g.category}</Text> : null}
               {g.items.map((item, i) =>
                 hideItemPrices ? (
-                  <Text key={i} style={[styles.tableRow, { paddingVertical: 3 }]}>
+                  <Text key={i} style={[styles.tableRow, styles.tableCell, { paddingVertical: 3.75 }]}>
                     {item.description}
                   </Text>
                 ) : (
                   <View key={i} style={styles.tableRow}>
-                    <Text style={styles.colDesc}>{item.description}</Text>
-                    <Text style={styles.colQty}>{item.quantity}</Text>
-                    <Text style={styles.colUnit}>{money(item.unitPrice, currency)}</Text>
-                    <Text style={styles.colVat}>{item.vatRate}%</Text>
-                    <Text style={styles.colTotal}>{money(item.quantity * item.unitPrice, currency)}</Text>
+                    <Text style={[styles.tableCell, styles.colDesc]}>{item.description}</Text>
+                    <Text style={[styles.tableCell, styles.colQty]}>{item.quantity}</Text>
+                    <Text style={[styles.tableCell, styles.colUnit]}>{money(item.unitPrice, currency)}</Text>
+                    <Text style={[styles.tableCell, styles.colVat]}>{item.vatRate}%</Text>
+                    <Text style={[styles.tableCell, styles.colTotal]}>{money(item.quantity * item.unitPrice, currency)}</Text>
                   </View>
                 )
               )}
               {hideItemPrices && g.category ? (
-                <Text style={{ fontSize: 9, fontWeight: 700, textAlign: "right" }}>
-                  {money(categoryTotal(g.items), currency)}
-                </Text>
+                <Text style={styles.categorySubtotal}>{money(categoryTotal(g.items), currency)}</Text>
               ) : null}
             </View>
           ))}
@@ -156,6 +159,8 @@ export function QuotePdf({
             <Text style={[styles.toPayValue, { color: accent }]}>{money(total, currency)}</Text>
           </View>
         </View>
+
+        <View style={{ flex: 1 }} />
 
         <View style={styles.footerRow}>
           <Text style={styles.footerText}>{t.quoteValidUntil(date(validUntil, lang))}</Text>

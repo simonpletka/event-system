@@ -28,7 +28,7 @@ export function InvoiceEmailingForm({ defaults, locale }: { defaults: Templates;
   return (
     <form ref={formRef} action={formAction} className="card p-5 flex flex-col gap-4 max-w-2xl">
       <div>
-        <div className="heading-label">{t.heading}</div>
+        <div className="heading-label !text-[12px]">{t.heading}</div>
         <p className="text-[10px] placeholder-text mt-1 max-w-prose">{t.intro}</p>
       </div>
 

@@ -39,7 +39,7 @@ export function AppSettingsForm({ defaults, t }: { defaults: AppSettings; t: T }
   return (
     <div className="grid grid-cols-1 md:grid-cols-[1fr_300px] gap-5 max-w-3xl">
       <form action={formAction} className="card p-5 flex flex-col gap-3">
-        <div className="heading-label">{t.coloursHeading}</div>
+        <div className="heading-label !text-[12px]">{t.coloursHeading}</div>
         <p className="text-[10px] placeholder-text -mt-1 max-w-prose">{t.coloursIntro}</p>
 
         <div className="flex flex-col gap-3 mt-1">
@@ -89,7 +89,7 @@ export function AppSettingsForm({ defaults, t }: { defaults: AppSettings; t: T }
           {t.resetToDefaults}
         </button>
 
-        <div className="heading-label mt-2">{t.languageHeading}</div>
+        <div className="heading-label !text-[12px] mt-2">{t.languageHeading}</div>
         <div className="flex gap-4">
           <label className="flex items-center gap-1.5 text-[13px]">
             <input type="radio" name="locale" value="en" checked={fields.locale === "en"} onChange={() => set("locale", "en")} />
@@ -116,7 +116,7 @@ export function AppSettingsForm({ defaults, t }: { defaults: AppSettings; t: T }
       </form>
 
       <div className="card p-5 self-start">
-        <div className="heading-label mb-2">{t.previewHeading}</div>
+        <div className="heading-label !text-[12px] mb-2">{t.previewHeading}</div>
         <p className="text-[10px] placeholder-text max-w-xs">{t.previewNote}</p>
       </div>
     </div>

@@ -15,16 +15,34 @@ import { BackLink } from "@/components/BackLink";
 import { ConfirmDeleteButton } from "@/components/ui/ConfirmDeleteButton";
 import { DownloadPdfButton } from "@/components/finance/DownloadPdfButton";
 import { SendInvoiceEmailButton } from "@/components/finance/SendInvoiceEmailButton";
+import { DocumentPreviewScaler } from "@/components/finance/DocumentPreviewScaler";
+import { SegmentedTabs } from "@/components/ui/SegmentedTabs";
 import { groupItemsByCategory, categoryTotal } from "@/lib/line-items";
 import { getLocale, getDictionary } from "@/lib/i18n";
+import type { Locale } from "@/lib/dictionary";
 import { addressLines, clientAddressLines, DEFAULT_ACCENT } from "@/lib/pdf/shared";
 import { getInvoiceQrDataUrl, FALLBACK_SUPPLIER } from "@/lib/pdf/build-invoice-pdf";
 
-export default async function InvoiceDetailPage({ params }: { params: Promise<{ id: string }> }) {
+export default async function InvoiceDetailPage({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ id: string }>;
+  searchParams: Promise<{ previewLang?: string }>;
+}) {
   const user = await requireUser();
   const { id } = await params;
   const t = getDictionary(await getLocale());
   const ti = t.finance.invoices;
+  // The preview card's own language toggle — independent of the app's UI
+  // language (t/ti drive the rest of this page). Defaults to whatever the
+  // app is currently set to, same as the PDF's own EN/CZ chooser defaults
+  // to English unless picked — here the natural default is "whatever
+  // language you're already using the app in", not a fixed language.
+  const { previewLang } = await searchParams;
+  const appLocale = await getLocale();
+  const activePreviewLang: Locale = previewLang === "cs" || previewLang === "en" ? previewLang : appLocale;
+  const pt = getDictionary(activePreviewLang).finance.invoices;
   const [invoice, company] = await Promise.all([getInvoiceDetail(user, id), getCompanySettings()]);
   if (!invoice) notFound();
 
@@ -98,155 +116,179 @@ export default async function InvoiceDetailPage({ params }: { params: Promise<{ 
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-[1fr_280px] gap-5 mt-5">
-        <div className="card p-6 md:p-8 flex flex-col gap-2.5">
-          <div className="flex justify-between items-start">
-            <div className="text-[40px] leading-[0.85] font-bold tracking-tight lowercase">{ti.invoiceLabel}</div>
-            <div className="flex flex-col items-end gap-1">
-              {company?.logoPath ? (
-                // eslint-disable-next-line @next/next/no-img-element -- authenticated route, not a static asset next/image can optimize
-                <img src={`/api/uploads/logo/${company.logoPath}`} alt="" className="w-7 h-7 object-contain" />
-              ) : (
-                <div
-                  className="w-5 h-5 rounded-[5px] flex items-center justify-center text-[10px] font-bold text-white"
-                  style={{ backgroundColor: accent }}
-                >
-                  {(company?.name ?? ti.companyFallback).charAt(0).toUpperCase()}
-                </div>
-              )}
-              <div className="text-[10px] font-bold">{company?.name ?? ti.companyFallback}</div>
-            </div>
+        <div className="min-w-0">
+          <div className="flex justify-end mb-2">
+            <SegmentedTabs
+              options={[
+                { value: "cs", label: "CZ", href: "?previewLang=cs" },
+                { value: "en", label: "EN", href: "?previewLang=en" },
+              ]}
+              active={activePreviewLang}
+            />
           </div>
+          {/* Built at the mockup's literal 794px page width for exact fidelity, then scaled to fit the card via DocumentPreviewScaler — so it's a 1:1 reproduction the user sees whole, not a strip they scroll sideways through. */}
+          <div className="card p-8 min-w-0">
+          <DocumentPreviewScaler width={794}>
+          <div className="w-[794px] h-[1123px] pt-[16px] flex flex-col gap-2.5">
+            <div className="flex justify-between items-start">
+              <div className="text-[154px] leading-[0.8] font-bold tracking-[-4px] lowercase pb-[14px]">{pt.invoiceLabel}</div>
+              <div className="flex flex-col items-end gap-[6px] pt-[8px]">
+                {company?.logoPath ? (
+                  // eslint-disable-next-line @next/next/no-img-element -- authenticated route, not a static asset next/image can optimize
+                  <img src={`/api/uploads/logo/${company.logoPath}`} alt="" className="w-[34px] h-[34px] object-contain" />
+                ) : (
+                  <div
+                    className="w-[34px] h-[34px] rounded-[8px] flex items-center justify-center text-[14px] font-bold text-white"
+                    style={{ backgroundColor: accent }}
+                  >
+                    {(company?.name ?? pt.companyFallback).charAt(0).toUpperCase()}
+                  </div>
+                )}
+                <div className="text-[12px] font-bold">{company?.name ?? pt.companyFallback}</div>
+              </div>
+            </div>
 
-          <div className="flex justify-between items-start mt-4">
-            <div className="text-[13px] leading-[1.4]">
+            <div className="flex justify-between items-start mt-[38px] text-[19px] leading-[1.35]">
               <div>
-                {ti.issued} {formatDate(invoice.issuedAt)}
+                <div>
+                  {pt.issued} {formatDate(invoice.issuedAt)}
+                </div>
+                <div>
+                  {pt.dueLabel} {formatDate(invoice.dueDate)}
+                </div>
+              </div>
+              <div className="text-[19px] font-bold">{invoice.number}</div>
+            </div>
+
+            <div className="grid grid-cols-[24%_24%_32%_14%] gap-[24px] mt-[40px] mb-[28px]">
+              <div>
+                <div className="label mb-[5px] !text-[8px] !tracking-[1px]">{pt.supplier}</div>
+                <div className="font-bold text-[11px] mb-[3px]">{company?.name}</div>
+                {supplierAddressLines.map((line) => (
+                  <div key={line} className="placeholder-text text-[9.5px] leading-[1.5]">
+                    {line}
+                  </div>
+                ))}
+                <div className="placeholder-text text-[9.5px] leading-[1.5] mt-[3px]">{`IČO ${company?.ico} · DIČ ${company?.dic}`}</div>
               </div>
               <div>
-                {ti.dueLabel} {formatDate(invoice.dueDate)}
+                <div className="label mb-[5px] !text-[8px] !tracking-[1px]">{pt.customer}</div>
+                <div className="font-bold text-[11px] mb-[3px]">{invoice.event.companyName}</div>
+                {customerAddressLines.map((line) => (
+                  <div key={line} className="placeholder-text text-[9.5px] leading-[1.5]">
+                    {line}
+                  </div>
+                ))}
+                <div className="placeholder-text text-[9.5px] leading-[1.5] mt-[3px]">{`IČO ${invoice.event.companyIco || "—"} · DIČ ${invoice.event.companyDic || "—"}`}</div>
+              </div>
+              <div className="break-words">
+                <div className="label mb-[5px] !text-[8px] !tracking-[1px]">{pt.paymentDetails}</div>
+                {supplier.accountNumber && (
+                  <div className="placeholder-text text-[9.5px] leading-[1.5]">
+                    {pt.accountNumber} {supplier.accountNumber}
+                  </div>
+                )}
+                {supplier.bankAccount && (
+                  <div className="placeholder-text text-[9.5px] leading-[1.5] break-all">{supplier.bankAccount}</div>
+                )}
+                {supplier.swiftBic && (
+                  <div className="placeholder-text text-[9.5px] leading-[1.5]">
+                    {pt.swift} {supplier.swiftBic}
+                  </div>
+                )}
+                <div className="placeholder-text text-[9.5px] leading-[1.5]">
+                  {pt.variableSymbolLabel} {invoice.variableSymbol}
+                </div>
+              </div>
+              <div>
+                <div className="label mb-[5px] !text-[8px] !tracking-[1px]">{pt.qrPlatba}</div>
+                {qrDataUrl ? (
+                  <>
+                    {/* eslint-disable-next-line @next/next/no-img-element -- a data: URL, not a static asset */}
+                    <img src={qrDataUrl} alt="" className="w-[64px] h-[64px] rounded-[8px] bg-[#f3f2f2] p-[6px]" />
+                    <div className="placeholder-text text-[8px] leading-[1.4] mt-[5px]">{pt.scanToPay}</div>
+                  </>
+                ) : (
+                  <div className="placeholder-text text-[8px] leading-[1.4]">
+                    {invoice.currency !== "CZK" ? "—" : pt.scanToPay}
+                  </div>
+                )}
               </div>
             </div>
-            <div className="text-[13px] font-bold">{invoice.number}</div>
-          </div>
 
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-[11px] mt-5">
             <div>
-              <div className="label mb-1">{ti.supplier}</div>
-              <div className="font-semibold">{company?.name}</div>
-              {supplierAddressLines.map((line) => (
-                <div key={line} className="placeholder-text">
-                  {line}
-                </div>
-              ))}
-              <div className="placeholder-text mt-1">{`IČO ${company?.ico} · DIČ ${company?.dic}`}</div>
-            </div>
-            <div>
-              <div className="label mb-1">{ti.customer}</div>
-              <div className="font-semibold">{invoice.event.companyName}</div>
-              {customerAddressLines.map((line) => (
-                <div key={line} className="placeholder-text">
-                  {line}
-                </div>
-              ))}
-              <div className="placeholder-text mt-1">{`IČO ${invoice.event.companyIco || "—"} · DIČ ${invoice.event.companyDic || "—"}`}</div>
-            </div>
-            <div className="break-words">
-              <div className="label mb-1">{ti.paymentDetails}</div>
-              {supplier.accountNumber && (
-                <div className="placeholder-text">
-                  {ti.accountNumber} {supplier.accountNumber}
-                </div>
-              )}
-              {supplier.bankAccount && <div className="placeholder-text break-all">{supplier.bankAccount}</div>}
-              {supplier.swiftBic && (
-                <div className="placeholder-text">
-                  {ti.swift} {supplier.swiftBic}
-                </div>
-              )}
-              <div className="placeholder-text">
-                {ti.variableSymbolLabel} {invoice.variableSymbol}
-              </div>
-            </div>
-            <div>
-              <div className="label mb-1">{ti.qrPlatba}</div>
-              {qrDataUrl ? (
-                <>
-                  {/* eslint-disable-next-line @next/next/no-img-element -- a data: URL, not a static asset */}
-                  <img src={qrDataUrl} alt="" className="w-14 h-14 rounded-md bg-[#f3f2f2] p-1" />
-                  <div className="placeholder-text mt-1">{ti.scanToPay}</div>
-                </>
-              ) : (
-                <div className="placeholder-text">{invoice.currency !== "CZK" ? "—" : ti.scanToPay}</div>
-              )}
-            </div>
-          </div>
-
-          <div className="overflow-x-auto">
-            <div className="min-w-[440px]">
               {!invoice.hideItemPrices && (
-                <div className="grid grid-cols-[2fr_.5fr_.7fr_.5fr_.9fr] gap-2 border-b-2 border-ink pb-1 text-[10px] mt-2">
-                  <span className="heading-label">{ti.colItem}</span>
-                  <span className="heading-label">{ti.colQty}</span>
-                  <span className="heading-label">{ti.colUnit}</span>
-                  <span className="heading-label">{ti.colVat}</span>
-                  <span className="heading-label text-right">{t.finance.quotes.total}</span>
+                <div className="grid grid-cols-[2fr_.5fr_.7fr_.5fr_.9fr] gap-2 border-b-2 border-ink pb-[6px] text-[8px] tracking-[0.6px]">
+                  <span className="heading-label !text-[8px]">{pt.colItem}</span>
+                  <span className="heading-label !text-[8px]">{pt.colQty}</span>
+                  <span className="heading-label !text-[8px]">{pt.colUnit}</span>
+                  <span className="heading-label !text-[8px]">{pt.colVat}</span>
+                  <span className="heading-label !text-[8px] text-right">{pt.total}</span>
                 </div>
               )}
               {groups.map((g) => (
                 <div key={g.category || "—"}>
-                  {g.category && <div className="label mt-2 mb-0.5">{g.category}</div>}
+                  {g.category && <div className="label !text-[8px] !tracking-[1px] mt-[28px] mb-[4px]">{g.category}</div>}
                   {g.items.map((item) =>
                     invoice.hideItemPrices ? (
-                      <div key={item.id} className="py-1 text-[11px]">
+                      <div key={item.id} className="py-[5px] text-[10.5px] border-b border-ink/8">
                         {item.description}
                       </div>
                     ) : (
-                      <div key={item.id} className="grid grid-cols-[2fr_.5fr_.7fr_.5fr_.9fr] gap-2 py-1 text-[11px]">
+                      <div
+                        key={item.id}
+                        className="grid grid-cols-[2fr_.5fr_.7fr_.5fr_.9fr] gap-2 py-[7px] text-[10.5px] border-b border-ink/8 items-center"
+                      >
                         <span>{item.description}</span>
-                        <span className="placeholder-text">{item.quantity}</span>
-                        <span className="placeholder-text">{formatCurrency(item.unitPrice, invoice.currency)}</span>
-                        <span className="placeholder-text">{item.vatRate}%</span>
+                        <span className="placeholder-text text-right">{item.quantity}</span>
+                        <span className="placeholder-text text-right">{formatCurrency(item.unitPrice, invoice.currency)}</span>
+                        <span className="placeholder-text text-right">{item.vatRate}%</span>
                         <span className="text-right">{formatCurrency(item.quantity * item.unitPrice, invoice.currency)}</span>
                       </div>
                     )
                   )}
                   {invoice.hideItemPrices && g.category && (
-                    <div className="flex justify-end text-[11px] font-semibold py-0.5">
+                    <div className="flex justify-end text-[10px] font-bold mt-[3px] mb-[10px]">
                       {formatCurrency(categoryTotal(g.items), invoice.currency)}
                     </div>
                   )}
                 </div>
               ))}
             </div>
-          </div>
-          <div className="flex justify-end items-center gap-6 mt-2 text-[12px]">
-            <div>
-              <span className="label mr-2">{ti.base}</span>
-              {formatCurrency(base, invoice.currency)}
-            </div>
-            <div>
-              <span className="label mr-2">{ti.vat}</span>
-              {formatCurrency(vat, invoice.currency)}
-            </div>
-            {discountAmount > 0 && (
-              <div>
-                <span className="label mr-2">{ti.discount}</span>-{formatCurrency(discountAmount, invoice.currency)}
+            <div className="flex justify-end items-center gap-[36px] mt-[24px] text-[11px]">
+              <div className="text-right">
+                <span className="label !text-[8px] !tracking-[1px] block">{pt.base}</span>
+                <span className="mt-[3px] block">{formatCurrency(base, invoice.currency)}</span>
               </div>
-            )}
-            <div className="flex items-center gap-1.5">
-              <span className="label mr-1">{ti.toPay}</span>
-              <span className="font-bold text-base" style={{ color: accent }}>
-                {formatCurrency(invoice.total, invoice.currency)}
-              </span>
-              <span className="tag tag-neutral">{invoice.currency}</span>
+              <div className="text-right">
+                <span className="label !text-[8px] !tracking-[1px] block">{pt.vat}</span>
+                <span className="mt-[3px] block">{formatCurrency(vat, invoice.currency)}</span>
+              </div>
+              {discountAmount > 0 && (
+                <div className="text-right">
+                  <span className="label !text-[8px] !tracking-[1px] block">{pt.discount}</span>
+                  <span className="mt-[3px] block">-{formatCurrency(discountAmount, invoice.currency)}</span>
+                </div>
+              )}
+              <div className="text-right">
+                <span className="label !text-[8px] !tracking-[1px] block">{pt.toPay}</span>
+                <span className="font-bold text-[22px] mt-[3px] block" style={{ color: accent }}>
+                  {formatCurrency(invoice.total, invoice.currency)}
+                </span>
+              </div>
+            </div>
+            <div className="flex-1" />
+            <div className="placeholder-text text-[9.5px] leading-[1.5] pt-[16px] border-t border-ink/10">
+              {pt.invoiceThanks}
             </div>
           </div>
-          <div className="placeholder-text text-[9px] mt-auto pt-4 border-t border-ink/10">{ti.invoiceThanks}</div>
+          </DocumentPreviewScaler>
+          </div>
         </div>
 
         <div className="flex flex-col gap-3">
           <div className="card px-4 py-4">
-            <div className="heading-label">{ti.paymentStateHeading}</div>
+            <div className="heading-label !text-[12px]">{ti.paymentStateHeading}</div>
             <div className="text-lg font-semibold mt-1">
               {invoice.status === "PAID" ? ti.paid : invoice.status === "PARTLY_PAID" ? ti.partlyPaid : overdue ? ti.overdue : ti.issued}
             </div>
@@ -288,7 +330,7 @@ export default async function InvoiceDetailPage({ params }: { params: Promise<{ 
             <div className="card px-4 py-4">
               <form action={recordPaymentAction} className="flex flex-col gap-2">
                 <input type="hidden" name="invoiceId" value={invoice.id} />
-                <span className="heading-label">{ti.recordPaymentHeading}</span>
+                <span className="heading-label !text-[12px]">{ti.recordPaymentHeading}</span>
                 <input name="amount" type="number" min={1} max={remaining} defaultValue={remaining} className="input" />
                 <input name="note" placeholder={ti.notePlaceholder} className="input" />
                 <button type="submit" className="btno">
@@ -299,7 +341,7 @@ export default async function InvoiceDetailPage({ params }: { params: Promise<{ 
           )}
 
           <div className="card px-4 py-4">
-            <div className="heading-label mb-1">{ti.linkedHeading}</div>
+            <div className="heading-label !text-[12px] mb-1">{ti.linkedHeading}</div>
             <div className="py-1.5 text-[13px]">
               <Link href={`/events/${invoice.eventId}`} className="hover:text-accent">
                 {ti.eventLink(invoice.event.title)}
@@ -320,7 +362,7 @@ export default async function InvoiceDetailPage({ params }: { params: Promise<{ 
           </div>
 
           <div className="card px-4 py-4">
-            <div className="heading-label mb-1.5">{ti.historyHeading}</div>
+            <div className="heading-label !text-[12px] mb-1.5">{ti.historyHeading}</div>
             {invoice.history.map((h) => (
               <div key={h.id} className="grid grid-cols-[52px_1fr] gap-2.5 py-1.5 text-[10px]">
                 <div className="placeholder-text">{formatDateTime(h.createdAt)}</div>
@@ -331,7 +373,7 @@ export default async function InvoiceDetailPage({ params }: { params: Promise<{ 
 
           {isAdmin(user) && (
             <div className="card px-4 py-4">
-              <div className="heading-label mb-1.5">{ti.deleteHeading}</div>
+              <div className="heading-label !text-[12px] mb-1.5">{ti.deleteHeading}</div>
               <p className="text-[10px] placeholder-text mb-2.5">{ti.removesNote}</p>
               <ConfirmDeleteButton
                 action={deleteInvoiceAction}

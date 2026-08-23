@@ -37,40 +37,8 @@ export default async function ClientDetailPage({ params }: { params: Promise<{ i
 
       <div className="grid grid-cols-1 md:grid-cols-[1fr_300px] gap-5 mt-5">
         <div>
-          <div className="heading-label">{tc.eventsHeading(client.events.length)}</div>
-          {client.events.length === 0 && <p className="text-sm placeholder-text mt-2">{tc.noEventsLinked}</p>}
-          <div className="hidden md:block mt-1.5">
-            {client.events.map((e) => (
-              <Link
-                key={e.id}
-                href={`/events/${e.id}`}
-                className="group grid grid-cols-[1.4fr_1fr_.8fr_.8fr] gap-2.5 items-center py-2.5 px-2.5 rounded-lg border-b border-ink/8 last:border-b-0 text-[13px] hover:bg-ink/5"
-              >
-                <div className="font-medium group-hover:text-accent">{e.title}</div>
-                <div className="placeholder-text group-hover:!text-accent">{formatDateRange(e.startDate, e.endDate)}</div>
-                <div className="font-semibold tabular-nums group-hover:text-accent">{formatCurrency(e.quotedValue)}</div>
-                <EventStatusPill status={e.status} t={t.statusEvent} />
-              </Link>
-            ))}
-          </div>
-
-          <div className="md:hidden flex flex-col gap-2 mt-1.5">
-            {client.events.map((e) => (
-              <MobileListRow
-                key={e.id}
-                href={`/events/${e.id}`}
-                title={e.title}
-                tag={<EventStatusPill status={e.status} t={t.statusEvent} />}
-                meta={formatDateRange(e.startDate, e.endDate)}
-                trailing={formatCurrency(e.quotedValue)}
-              />
-            ))}
-          </div>
-
-          <div className="h-px bg-ink/10 my-5" />
-
           <div className="flex items-center justify-between mb-2">
-            <div className="heading-label">{tc.contactsHeading}</div>
+            <div className="heading-label !text-[12px]">{tc.contactsHeading}</div>
             {canManage && <AddContactButton clientId={client.id} t={tc.addContact} />}
           </div>
           {client.contacts.length === 0 && <p className="text-sm placeholder-text">{tc.noContactsAdded}</p>}
@@ -113,6 +81,38 @@ export default async function ClientDetailPage({ params }: { params: Promise<{ i
               )}
             </div>
           ))}
+
+          <div className="h-px bg-ink/10 my-5" />
+
+          <div className="heading-label !text-[12px]">{tc.eventsHeading(client.events.length)}</div>
+          {client.events.length === 0 && <p className="text-sm placeholder-text mt-2">{tc.noEventsLinked}</p>}
+          <div className="hidden md:block mt-1.5">
+            {client.events.map((e) => (
+              <Link
+                key={e.id}
+                href={`/events/${e.id}`}
+                className="group grid grid-cols-[1.4fr_1fr_.8fr_.8fr] gap-2.5 items-center py-2.5 px-2.5 rounded-lg border-b border-ink/8 last:border-b-0 text-[13px] hover:bg-ink/5"
+              >
+                <div className="font-semibold group-hover:text-accent">{e.title}</div>
+                <div className="placeholder-text group-hover:!text-accent">{formatDateRange(e.startDate, e.endDate)}</div>
+                <div className="font-semibold tabular-nums group-hover:text-accent">{formatCurrency(e.quotedValue)}</div>
+                <EventStatusPill status={e.status} t={t.statusEvent} />
+              </Link>
+            ))}
+          </div>
+
+          <div className="md:hidden flex flex-col gap-2 mt-1.5">
+            {client.events.map((e) => (
+              <MobileListRow
+                key={e.id}
+                href={`/events/${e.id}`}
+                title={e.title}
+                tag={<EventStatusPill status={e.status} t={t.statusEvent} />}
+                meta={formatDateRange(e.startDate, e.endDate)}
+                trailing={formatCurrency(e.quotedValue)}
+              />
+            ))}
+          </div>
         </div>
 
         <div className="card p-5 self-start">
@@ -160,7 +160,7 @@ export default async function ClientDetailPage({ params }: { params: Promise<{ i
           {isAdmin(user) && (
             <>
               <div className="h-px bg-ink/8 my-3.5" />
-              <div className="heading-label mb-2">{tc.deleteHeading}</div>
+              <div className="heading-label !text-[12px] mb-2">{tc.deleteHeading}</div>
               <p className="text-[10px] placeholder-text mb-2.5">{tc.deleteHelper}</p>
               <ConfirmDeleteButton
                 action={deleteClientAction}

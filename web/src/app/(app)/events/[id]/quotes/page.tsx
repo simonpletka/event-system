@@ -17,7 +17,7 @@ export default async function QuotesTab({ params }: { params: Promise<{ id: stri
 
   return (
     <div className="max-w-2xl">
-      <div className="heading-label mb-1">{tq.quotesHeading}</div>
+      <div className="heading-label !text-[12px] mb-1">{tq.quotesHeading}</div>
       {event.quotes.length === 0 && <p className="text-sm placeholder-text">{tq.noQuotesYet}</p>}
       <div className="hidden md:block">
         {event.quotes.map((q) => (
@@ -46,7 +46,7 @@ export default async function QuotesTab({ params }: { params: Promise<{ id: stri
         ))}
       </div>
 
-      <div className="heading-label mt-4 mb-1">{tq.invoicesHeading}</div>
+      <div className="heading-label !text-[12px] mt-4 mb-1">{tq.invoicesHeading}</div>
       {event.invoices.length === 0 && <p className="text-sm placeholder-text">{tq.noInvoicesYet}</p>}
       <div className="hidden md:block">
         {event.invoices.map((inv) => (
