@@ -44,7 +44,7 @@ export default async function TimeTab({ params }: { params: Promise<{ id: string
       {event.timeEntries.length === 0 && <p className="text-sm placeholder-text">{tt.noTimeLoggedYet}</p>}
       <div className="hidden md:block">
         {event.timeEntries.map((entry) => (
-          <div key={entry.id} className="grid grid-cols-[80px_1fr_1fr_auto_auto] gap-2.5 items-center py-2.5 border-b border-ink/10 text-[13px]">
+          <div key={entry.id} className="grid grid-cols-[80px_1fr_1fr_auto_auto] gap-2.5 items-center py-2.5 border-b border-ink/10 text-[14px]">
             <div className="placeholder-text">{formatDate(entry.date)}</div>
             <div>{entry.user.name}</div>
             <div className="placeholder-text">{entry.description || "—"}</div>

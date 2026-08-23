@@ -358,6 +358,10 @@ Two deliberate exclusions, both already-documented elsewhere in this file: the i
 
 Verified live in the browser across a representative sample: Events table, Finance → Invoices, Finance → Reports (Overview's monthly breakdown, switched to By event), Clients list, Settings → Users & roles (both the users table and the role-reference table), and a real New Quote form's line-items grid — confirmed in every case the header text is visibly bolder/larger and rows are roomier, with column alignment intact (checked the line-items grid specifically, since a prior bug there was exactly about header/row column-width drift). Clean `npm run build` + `npm run lint`; dev DB reseeded back to empty afterward.
 
+**Table row text bumped +1px too, immediate follow-up to the above.** Every desktop table row's body text went from `text-[13px]` to `text-[14px]` — the exact same ~18-table set the header/row-height pass just above touched, same exclusions and for the same reasons: the PDF-preview line-items tables (pixel-matched to the mockup) and `LineItemsFields.tsx`'s row text (governed by the shared `.input` class's own `font-size: 13px`, used by every text input app-wide — bumping it there would have silently resized every form field in the app, not just this one table's rows) were both left untouched. Mobile-only `md:hidden` card rows were also left alone, consistent with the previous pass having only ever touched desktop table rows.
+
+Verified live in the browser: Events table and Settings → Users & roles both confirmed at the larger row text with column alignment intact (the Events table's "Autumn Conference 2026" row correctly wrapped its venue text onto two lines at the new size, which is expected). Clean `npm run build` + `npm run lint`; dev DB reseeded back to empty afterward.
+
 ## Environment
 
 This machine had **no Node.js, npm, Homebrew, Docker, or working Postgres** when the project started (MacPorts is present but broken — OS/platform mismatch). Network access works.

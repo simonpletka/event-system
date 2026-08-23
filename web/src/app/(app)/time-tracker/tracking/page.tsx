@@ -157,7 +157,7 @@ function ListView({
           {entries.map((e) => (
             <div
               key={e.id}
-              className="grid grid-cols-[56px_1.2fr_1.4fr_.6fr_.5fr] gap-2.5 items-center py-3 px-2.5 rounded-lg border-b border-ink/8 last:border-b-0 text-[13px] hover:bg-ink/5"
+              className="grid grid-cols-[56px_1.2fr_1.4fr_.6fr_.5fr] gap-2.5 items-center py-3 px-2.5 rounded-lg border-b border-ink/8 last:border-b-0 text-[14px] hover:bg-ink/5"
             >
               <div className="placeholder-text">{formatDate(e.date)}</div>
               <Link href={`/events/${e.eventId}`} className="hover:text-accent">
