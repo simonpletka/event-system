@@ -63,7 +63,7 @@ export function LineItemsFields({
         widening left-to-right. A single shared grid guarantees every
         column is exactly the same width in every row, header included.
       */}
-      <div className="hidden md:grid grid-cols-[24px_1fr_110px_70px_110px_70px_auto] gap-2 items-center">
+      <div className="hidden md:grid grid-cols-[24px_1fr_110px_70px_110px_70px_auto] gap-2 items-center [&>.heading-label]:font-bold [&>.heading-label]:!text-[9px]">
         <span></span>
         <span className="heading-label">{t.colDescription}</span>
         <span className="heading-label">{t.colCategory}</span>

@@ -115,7 +115,7 @@ export default async function EventsPage({
       </div>
 
       <div className="hidden md:block">
-        <div className="grid grid-cols-[1.5fr_.9fr_.8fr_.8fr_.9fr_.6fr] gap-2.5 border-b border-ink/14 pb-1.5 mt-5 px-3.5">
+        <div className="grid grid-cols-[1.5fr_.9fr_.8fr_.8fr_.9fr_.6fr] gap-2.5 border-b border-ink/14 pb-1.5 mt-5 px-3.5 [&_.heading-label]:font-bold [&_.heading-label]:!text-[9px]">
           <span className="heading-label">{t.events.colEvent}</span>
           <span className="heading-label">{t.events.clientFilter}</span>
           <span className="heading-label">{t.events.colDates}</span>
@@ -129,7 +129,7 @@ export default async function EventsPage({
             key={event.id}
             id={event.id === firstUpcomingId ? "today-row" : undefined}
             href={`/events/${event.id}`}
-            className="group grid grid-cols-[1.5fr_.9fr_.8fr_.8fr_.9fr_.6fr] gap-2.5 items-center py-3 px-3.5 rounded-xl border-b border-ink/8 last:border-b-0 text-[13px] hover:bg-ink/5"
+            className="group grid grid-cols-[1.5fr_.9fr_.8fr_.8fr_.9fr_.6fr] gap-2.5 items-center py-3.5 px-3.5 rounded-xl border-b border-ink/8 last:border-b-0 text-[13px] hover:bg-ink/5"
           >
             <div className="group-hover:text-accent">
               <span className="placeholder-text text-[11px] mr-1 group-hover:!text-accent">{event.number}</span>

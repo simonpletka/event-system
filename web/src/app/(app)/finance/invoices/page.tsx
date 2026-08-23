@@ -90,7 +90,7 @@ export default async function InvoicesPage({
       </div>
 
       <div className="hidden md:block">
-        <div className="grid grid-cols-[.8fr_1.2fr_.9fr_.6fr_.6fr_.8fr_1fr_.7fr] gap-2.5 border-b border-ink/14 pb-1.5 mt-5 px-3.5">
+        <div className="grid grid-cols-[.8fr_1.2fr_.9fr_.6fr_.6fr_.8fr_1fr_.7fr] gap-2.5 border-b border-ink/14 pb-1.5 mt-5 px-3.5 [&_.heading-label]:font-bold [&_.heading-label]:!text-[9px]">
           <span className="heading-label">{ti.colNumber}</span>
           <span className="heading-label">{ti.colEvent}</span>
           <span className="heading-label">{ti.colClient}</span>
@@ -104,7 +104,7 @@ export default async function InvoicesPage({
         {invoices.map((inv) => (
           <div
             key={inv.id}
-            className="group grid grid-cols-[.8fr_1.2fr_.9fr_.6fr_.6fr_.8fr_1fr_.7fr] gap-2.5 items-center py-3 px-3.5 rounded-xl border-b border-ink/8 last:border-b-0 text-[13px] hover:bg-ink/5"
+            className="group grid grid-cols-[.8fr_1.2fr_.9fr_.6fr_.6fr_.8fr_1fr_.7fr] gap-2.5 items-center py-3.5 px-3.5 rounded-xl border-b border-ink/8 last:border-b-0 text-[13px] hover:bg-ink/5"
           >
             <Link href={`/finance/invoices/${inv.id}`} className="font-medium group-hover:text-accent">
               {inv.number}

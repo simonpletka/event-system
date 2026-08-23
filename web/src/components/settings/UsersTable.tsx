@@ -51,7 +51,7 @@ export function UsersTable({
 
   return (
     <div>
-      <div className="hidden md:grid grid-cols-[1.2fr_1.4fr_1fr_.7fr_.8fr_1fr] gap-2.5 border-b border-ink/14 pb-1.5 px-3.5">
+      <div className="hidden md:grid grid-cols-[1.2fr_1.4fr_1fr_.7fr_.8fr_1fr] gap-2.5 border-b border-ink/14 pb-1.5 px-3.5 [&_.heading-label]:font-bold [&_.heading-label]:!text-[9px]">
         <span className="heading-label">{t.colName}</span>
         <span className="heading-label">{t.colAccount}</span>
         <span className="heading-label">{t.colRole}</span>
@@ -124,7 +124,7 @@ function UserRow({
   return (
     <>
       <div
-        className={`hidden md:grid grid-cols-[1.2fr_1.4fr_1fr_.7fr_.8fr_1fr] gap-2.5 items-center py-3 px-3.5 rounded-xl border-b border-ink/8 last:border-b-0 text-[13px] ${!user.active ? "opacity-50" : ""}`}
+        className={`hidden md:grid grid-cols-[1.2fr_1.4fr_1fr_.7fr_.8fr_1fr] gap-2.5 items-center py-3.5 px-3.5 rounded-xl border-b border-ink/8 last:border-b-0 text-[13px] ${!user.active ? "opacity-50" : ""}`}
       >
         <div className="font-medium">
           {user.name}

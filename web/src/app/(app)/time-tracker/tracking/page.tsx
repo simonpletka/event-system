@@ -146,7 +146,7 @@ function ListView({
         </div>
 
         <div className="hidden md:block">
-          <div className="grid grid-cols-[56px_1.2fr_1.4fr_.6fr_.5fr] gap-2.5 border-b border-ink/14 pb-1.5 mt-4 px-2.5">
+          <div className="grid grid-cols-[56px_1.2fr_1.4fr_.6fr_.5fr] gap-2.5 border-b border-ink/14 pb-1.5 mt-4 px-2.5 [&_.heading-label]:font-bold [&_.heading-label]:!text-[9px]">
             <span className="heading-label">{tt.colDate}</span>
             <span className="heading-label">{tt.colEvent}</span>
             <span className="heading-label">{tt.colWork}</span>
@@ -157,7 +157,7 @@ function ListView({
           {entries.map((e) => (
             <div
               key={e.id}
-              className="grid grid-cols-[56px_1.2fr_1.4fr_.6fr_.5fr] gap-2.5 items-center py-2.5 px-2.5 rounded-lg border-b border-ink/8 last:border-b-0 text-[13px] hover:bg-ink/5"
+              className="grid grid-cols-[56px_1.2fr_1.4fr_.6fr_.5fr] gap-2.5 items-center py-3 px-2.5 rounded-lg border-b border-ink/8 last:border-b-0 text-[13px] hover:bg-ink/5"
             >
               <div className="placeholder-text">{formatDate(e.date)}</div>
               <Link href={`/events/${e.eventId}`} className="hover:text-accent">

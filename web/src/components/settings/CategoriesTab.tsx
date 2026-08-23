@@ -18,7 +18,7 @@ export function CategoriesTab({ categories, locale }: { categories: CategoryRow[
       <p className="text-[10px] placeholder-text mb-3 max-w-prose">{t.helperText}</p>
 
       <div className="card p-3.5">
-        <div className="grid grid-cols-[1fr_auto] gap-2.5 border-b border-ink/14 pb-1.5">
+        <div className="grid grid-cols-[1fr_auto] gap-2.5 border-b border-ink/14 pb-1.5 [&_.heading-label]:font-bold [&_.heading-label]:!text-[9px]">
           <span className="heading-label">{t.colName}</span>
           <span className="heading-label"></span>
         </div>
@@ -42,7 +42,7 @@ function CategoryRowItem({ category, t }: { category: CategoryRow; t: T }) {
     return (
       <form
         action={renameCategoryAction}
-        className="grid grid-cols-[1fr_auto] gap-2.5 items-center py-2 border-b border-ink/13"
+        className="grid grid-cols-[1fr_auto] gap-2.5 items-center py-2.5 border-b border-ink/13"
         onSubmit={() => setEditing(false)}
       >
         <input type="hidden" name="id" value={category.id} />
@@ -60,7 +60,7 @@ function CategoryRowItem({ category, t }: { category: CategoryRow; t: T }) {
   }
 
   return (
-    <div className="grid grid-cols-[1fr_auto] gap-2.5 items-center py-2.5 border-b border-ink/13 text-[13px]">
+    <div className="grid grid-cols-[1fr_auto] gap-2.5 items-center py-3 border-b border-ink/13 text-[13px]">
       <div>{category.name}</div>
       <div className="flex gap-2 text-[9px] tracking-[0.1em] uppercase">
         <button type="button" onClick={() => setEditing(true)} className="placeholder-text hover:text-ink">

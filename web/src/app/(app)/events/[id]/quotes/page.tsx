@@ -24,7 +24,7 @@ export default async function QuotesTab({ params }: { params: Promise<{ id: stri
           <Link
             key={q.id}
             href={`/finance/quotes/${q.id}`}
-            className="grid grid-cols-[1fr_1fr_1fr_auto] gap-2.5 items-center py-2 border-b border-ink/10 text-[13px] hover:bg-ink/5"
+            className="grid grid-cols-[1fr_1fr_1fr_auto] gap-2.5 items-center py-2.5 border-b border-ink/10 text-[13px] hover:bg-ink/5"
           >
             <div>{q.number}</div>
             <div className="placeholder-text">{formatDate(q.issuedAt)}</div>
@@ -53,7 +53,7 @@ export default async function QuotesTab({ params }: { params: Promise<{ id: stri
           <Link
             key={inv.id}
             href={`/finance/invoices/${inv.id}`}
-            className="grid grid-cols-[1fr_1fr_1fr_auto] gap-2.5 items-center py-2 border-b border-ink/10 text-[13px] hover:bg-ink/5"
+            className="grid grid-cols-[1fr_1fr_1fr_auto] gap-2.5 items-center py-2.5 border-b border-ink/10 text-[13px] hover:bg-ink/5"
           >
             <div>{inv.number}</div>
             <div className="placeholder-text">{tq.dueDate(formatDate(inv.dueDate))}</div>

@@ -45,7 +45,7 @@ export default async function ClientDetailPage({ params }: { params: Promise<{ i
           {client.contacts.map((contact) => (
             <div
               key={contact.id}
-              className="hidden md:grid grid-cols-[1fr_1fr_1fr_1fr_auto] gap-2.5 items-center py-2.5 px-2.5 border-b border-ink/8 last:border-b-0 text-[13px]"
+              className="hidden md:grid grid-cols-[1fr_1fr_1fr_1fr_auto] gap-2.5 items-center py-3.5 px-2.5 border-b border-ink/8 last:border-b-0 text-[13px]"
             >
               <div className="font-medium">{contact.name}</div>
               <div className="placeholder-text">{contact.role || "—"}</div>
@@ -91,7 +91,7 @@ export default async function ClientDetailPage({ params }: { params: Promise<{ i
               <Link
                 key={e.id}
                 href={`/events/${e.id}`}
-                className="group grid grid-cols-[1.4fr_1fr_.8fr_.8fr] gap-2.5 items-center py-2.5 px-2.5 rounded-lg border-b border-ink/8 last:border-b-0 text-[13px] hover:bg-ink/5"
+                className="group grid grid-cols-[1.4fr_1fr_.8fr_.8fr] gap-2.5 items-center py-3.5 px-2.5 rounded-lg border-b border-ink/8 last:border-b-0 text-[13px] hover:bg-ink/5"
               >
                 <div className="font-semibold group-hover:text-accent">{e.title}</div>
                 <div className="placeholder-text group-hover:!text-accent">{formatDateRange(e.startDate, e.endDate)}</div>

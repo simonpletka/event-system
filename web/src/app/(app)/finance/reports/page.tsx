@@ -103,14 +103,14 @@ export default async function ReportsPage({
           <div className="card px-4 py-4">
             <div className="label !text-[12px] mb-1">{tr.breakdown}</div>
             <div className="hidden md:block">
-              <div className="grid grid-cols-[1fr_.7fr_.7fr_.6fr] gap-2 border-b-2 border-ink pb-1">
+              <div className="grid grid-cols-[1fr_.7fr_.7fr_.6fr] gap-2 border-b-2 border-ink pb-1 [&_.heading-label]:font-bold [&_.heading-label]:!text-[9px]">
                 <span className="heading-label">{tr.colMonth}</span>
                 <span className="heading-label">{tr.colIncome}</span>
                 <span className="heading-label">{tr.colExpenses}</span>
                 <span className="heading-label">{tr.colBalance}</span>
               </div>
               {report.byMonth.map((m) => (
-                <div key={m.month} className="grid grid-cols-[1fr_.7fr_.7fr_.6fr] gap-2 py-1.5 text-[13px]">
+                <div key={m.month} className="grid grid-cols-[1fr_.7fr_.7fr_.6fr] gap-2 py-2 text-[13px]">
                   <div>{MONTHS[m.month]}</div>
                   <div className="placeholder-text">{formatCurrency(m.income)}</div>
                   <div className="placeholder-text">{formatCurrency(m.expense)}</div>
@@ -151,7 +151,7 @@ export default async function ReportsPage({
       {view === "event" && (
         <div className="mt-4">
           <div className="hidden md:block">
-            <div className="grid grid-cols-[1fr_.8fr_.8fr_.7fr] gap-2.5 border-b-2 border-ink pb-1.5">
+            <div className="grid grid-cols-[1fr_.8fr_.8fr_.7fr] gap-2.5 border-b-2 border-ink pb-1.5 [&_.heading-label]:font-bold [&_.heading-label]:!text-[9px]">
               <span className="heading-label">{tr.colEvent}</span>
               <span className="heading-label">{tr.colIncome}</span>
               <span className="heading-label">{tr.colExpenses}</span>
@@ -161,7 +161,7 @@ export default async function ReportsPage({
               <Link
                 key={e.id}
                 href={`/events/${e.id}`}
-                className="grid grid-cols-[1fr_.8fr_.8fr_.7fr] gap-2.5 items-center py-2.5 border-b border-ink/13 text-[13px] hover:bg-ink/5"
+                className="grid grid-cols-[1fr_.8fr_.8fr_.7fr] gap-2.5 items-center py-3 border-b border-ink/13 text-[13px] hover:bg-ink/5"
               >
                 <div>{e.title}</div>
                 <div className="placeholder-text">{formatCurrency(e.income)}</div>
@@ -190,13 +190,13 @@ export default async function ReportsPage({
       {view === "category" && (
         <div className="mt-4 max-w-xl">
           <div className="hidden md:block">
-            <div className="grid grid-cols-[1fr_100px_.6fr] gap-2.5 border-b-2 border-ink pb-1.5">
+            <div className="grid grid-cols-[1fr_100px_.6fr] gap-2.5 border-b-2 border-ink pb-1.5 [&_.heading-label]:font-bold [&_.heading-label]:!text-[9px]">
               <span className="heading-label">{tr.colCategory}</span>
               <span className="heading-label"></span>
               <span className="heading-label">{tr.colTotal}</span>
             </div>
             {report.topCategories.map(([cat, value], i) => (
-              <div key={cat} className="grid grid-cols-[1fr_100px_.6fr] gap-2.5 items-center py-2.5 border-b border-ink/13 text-[13px]">
+              <div key={cat} className="grid grid-cols-[1fr_100px_.6fr] gap-2.5 items-center py-3 border-b border-ink/13 text-[13px]">
                 <div className="flex items-center gap-2">
                   <span className="w-2.5 h-2.5 rounded-sm shrink-0" style={{ background: categoryColor(i) }} />
                   {t.expenseCategories[cat as keyof typeof t.expenseCategories]}

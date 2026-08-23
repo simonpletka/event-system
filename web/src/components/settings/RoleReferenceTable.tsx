@@ -64,7 +64,7 @@ export function RoleReferenceTable({
         )}
       </div>
 
-      <div className={`hidden md:grid ${GRID} border-b border-ink/14 pb-1.5`}>
+      <div className={`hidden md:grid ${GRID} border-b border-ink/14 pb-1.5 [&_.heading-label]:font-bold [&_.heading-label]:!text-[9px]`}>
         <span className="heading-label">{t.colRole}</span>
         <span className="heading-label">{t.colEvents}</span>
         <span className="heading-label">{t.colQuotesInvoices}</span>
@@ -74,7 +74,7 @@ export function RoleReferenceTable({
       </div>
 
       {builtInRows.map((r) => (
-        <div key={r.role} className={`hidden md:grid ${GRID} py-2.5 border-b border-ink/8 text-[13px]`}>
+        <div key={r.role} className={`hidden md:grid ${GRID} py-3 border-b border-ink/8 text-[13px]`}>
           <div className="font-medium">{r.role}</div>
           <div className="placeholder-text">{r.events}</div>
           <div className="placeholder-text">{r.finance}</div>
@@ -127,7 +127,7 @@ function RoleRow({ role, canManage, t, tAccess }: { role: CustomRoleRow; canMana
 
   return (
     <>
-      <div className={`hidden md:grid ${GRID} py-2.5 border-b border-ink/8 last:border-b-0 text-[13px] items-center`}>
+      <div className={`hidden md:grid ${GRID} py-3 border-b border-ink/8 last:border-b-0 text-[13px] items-center`}>
         <div className="font-medium flex items-center gap-1.5">
           {role.name} <span className="tag tag-neutral">{t.customTag}</span>
         </div>

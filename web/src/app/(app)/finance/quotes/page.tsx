@@ -76,7 +76,7 @@ export default async function QuotesPage({
       </div>
 
       <div className="hidden md:block">
-        <div className="grid grid-cols-[.8fr_1.3fr_1fr_.7fr_.7fr_.8fr_.9fr_1fr] gap-2.5 border-b border-ink/14 pb-1.5 mt-5 px-3.5">
+        <div className="grid grid-cols-[.8fr_1.3fr_1fr_.7fr_.7fr_.8fr_.9fr_1fr] gap-2.5 border-b border-ink/14 pb-1.5 mt-5 px-3.5 [&_.heading-label]:font-bold [&_.heading-label]:!text-[9px]">
           <span className="heading-label">{t.finance.quotes.colNumber}</span>
           <span className="heading-label">{t.finance.quotes.colEvent}</span>
           <span className="heading-label">{t.finance.quotes.colClient}</span>
@@ -90,7 +90,7 @@ export default async function QuotesPage({
         {quotes.map((q) => (
           <div
             key={q.id}
-            className="group grid grid-cols-[.8fr_1.3fr_1fr_.7fr_.7fr_.8fr_.9fr_1fr] gap-2.5 items-center py-3 px-3.5 rounded-xl border-b border-ink/8 last:border-b-0 text-[13px] hover:bg-ink/5"
+            className="group grid grid-cols-[.8fr_1.3fr_1fr_.7fr_.7fr_.8fr_.9fr_1fr] gap-2.5 items-center py-3.5 px-3.5 rounded-xl border-b border-ink/8 last:border-b-0 text-[13px] hover:bg-ink/5"
           >
             <Link href={`/finance/quotes/${q.id}`} className="font-medium group-hover:text-accent">
               {q.number}

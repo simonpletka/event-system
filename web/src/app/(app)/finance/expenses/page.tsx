@@ -59,7 +59,7 @@ export default async function ExpensesPage({
 
       <div className="hidden md:block">
         <div
-          className={`grid ${admin ? "grid-cols-[80px_1fr_1fr_1fr_auto_auto_auto_auto]" : "grid-cols-[80px_1fr_1fr_1fr_auto_auto_auto]"} gap-2.5 border-b border-ink/14 pb-1.5 mt-5 px-3.5`}
+          className={`grid ${admin ? "grid-cols-[80px_1fr_1fr_1fr_auto_auto_auto_auto]" : "grid-cols-[80px_1fr_1fr_1fr_auto_auto_auto]"} gap-2.5 border-b border-ink/14 pb-1.5 mt-5 px-3.5 [&_.heading-label]:font-bold [&_.heading-label]:!text-[9px]`}
         >
           <span className="heading-label">{te.colDate}</span>
           <span className="heading-label">{te.colCategory}</span>
@@ -74,7 +74,7 @@ export default async function ExpensesPage({
         {expenses.map((exp) => (
           <div
             key={exp.id}
-            className={`grid ${admin ? "grid-cols-[80px_1fr_1fr_1fr_auto_auto_auto_auto]" : "grid-cols-[80px_1fr_1fr_1fr_auto_auto_auto]"} gap-2.5 items-center py-3 px-3.5 rounded-xl border-b border-ink/8 last:border-b-0 text-[13px] hover:bg-ink/5`}
+            className={`grid ${admin ? "grid-cols-[80px_1fr_1fr_1fr_auto_auto_auto_auto]" : "grid-cols-[80px_1fr_1fr_1fr_auto_auto_auto]"} gap-2.5 items-center py-3.5 px-3.5 rounded-xl border-b border-ink/8 last:border-b-0 text-[13px] hover:bg-ink/5`}
           >
             <div className="placeholder-text">{formatDate(exp.date)}</div>
             <div>{t.expenseCategories[exp.category]}</div>

@@ -41,7 +41,7 @@ export default async function ClientsPage({
       </div>
 
       <div className="hidden md:block">
-        <div className="grid grid-cols-[1.5fr_.8fr_.7fr_.7fr_1fr] gap-2.5 border-b border-ink/14 pb-1.5 mt-5 px-3.5">
+        <div className="grid grid-cols-[1.5fr_.8fr_.7fr_.7fr_1fr] gap-2.5 border-b border-ink/14 pb-1.5 mt-5 px-3.5 [&_.heading-label]:font-bold [&_.heading-label]:!text-[9px]">
           <span className="heading-label">{tc.colCompany}</span>
           <span className="heading-label">{tc.colIco}</span>
           <span className="heading-label">{tc.colContacts}</span>
@@ -53,7 +53,7 @@ export default async function ClientsPage({
           <Link
             key={c.id}
             href={`/clients/${c.id}`}
-            className="group grid grid-cols-[1.5fr_.8fr_.7fr_.7fr_1fr] gap-2.5 items-center py-3 px-3.5 rounded-xl border-b border-ink/8 last:border-b-0 text-[13px] hover:bg-ink/5"
+            className="group grid grid-cols-[1.5fr_.8fr_.7fr_.7fr_1fr] gap-2.5 items-center py-3.5 px-3.5 rounded-xl border-b border-ink/8 last:border-b-0 text-[13px] hover:bg-ink/5"
           >
             <div className="font-medium group-hover:text-accent">{c.name}</div>
             <div className="placeholder-text group-hover:!text-accent">{c.ico || "—"}</div>
