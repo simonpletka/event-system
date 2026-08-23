@@ -14,7 +14,7 @@ export default async function NewEventPage() {
     <div>
       <h1 className="text-xl font-semibold border-b-2 border-ink pb-2 mb-4">{t.events.newEventH1}</h1>
       {!canCreateEvent(user) ? (
-        <p className="text-sm placeholder-text">{t.events.noPermCreate}</p>
+        <p className="text-lg font-semibold text-ink">{t.events.noPermCreate}</p>
       ) : (
         <EventForm
           clients={clients}

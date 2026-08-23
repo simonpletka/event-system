@@ -14,7 +14,7 @@ export default async function EditUserPage({ params }: { params: Promise<{ id: s
     return (
       <div>
         <h1 className="text-xl font-semibold border-b-2 border-ink pb-2 mb-4">{t.settings.users.editAccount}</h1>
-        <p className="text-sm placeholder-text">{t.settings.users.noPermManageUsers}</p>
+        <p className="text-lg font-semibold text-ink">{t.settings.users.noPermManageUsers}</p>
       </div>
     );
   }

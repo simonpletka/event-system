@@ -17,7 +17,7 @@ export default async function NewInvoicePage() {
     return (
       <div>
         <h1 className="text-xl font-semibold border-b-2 border-ink pb-2 mb-4">{ti.newInvoiceH1}</h1>
-        <p className="text-sm placeholder-text">{ti.noPermCreate}</p>
+        <p className="text-lg font-semibold text-ink">{ti.noPermCreate}</p>
       </div>
     );
   }

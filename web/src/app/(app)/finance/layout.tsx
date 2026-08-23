@@ -12,7 +12,7 @@ export default async function FinanceLayout({ children }: { children: React.Reac
     return (
       <div>
         <h1 className="text-xl font-semibold border-b-2 border-ink pb-2 mb-4">{t.finance.title}</h1>
-        <p className="text-sm placeholder-text">{t.finance.noAccess}</p>
+        <p className="text-lg font-semibold text-ink">{t.finance.noAccess}</p>
       </div>
     );
   }

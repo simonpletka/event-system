@@ -20,7 +20,7 @@ export default async function EditEventPage({ params }: { params: Promise<{ id: 
     <div>
       <h1 className="text-xl font-semibold border-b-2 border-ink pb-2 mb-4">{t.events.editEventH1}</h1>
       {!editable ? (
-        <p className="text-sm placeholder-text">{t.events.noPermEdit}</p>
+        <p className="text-lg font-semibold text-ink">{t.events.noPermEdit}</p>
       ) : (
         <EventForm
           clients={clients}

@@ -17,7 +17,7 @@ export default async function EditQuotePage({ params }: { params: Promise<{ id: 
     return (
       <div>
         <h1 className="text-xl font-semibold border-b-2 border-ink pb-2 mb-4">{t.finance.quotes.editQuote}</h1>
-        <p className="text-sm placeholder-text">
+        <p className="text-lg font-semibold text-ink">
           {quote.status !== "DRAFT" ? t.finance.quotes.onlyDraftEditable : t.finance.quotes.noPermEdit}
         </p>
       </div>

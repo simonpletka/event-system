@@ -348,6 +348,10 @@ Verified live in the browser with a technique that avoids the multi-tab cookie-s
 
 Verified live in the browser: saved a General-tab profile edit and confirmed "Account details saved." now renders in bold teal, matching the same visual weight the app already gives `text-warning` error text elsewhere.
 
+**"No permission" access-denied messages made noticeably larger app-wide.** All 10 occurrences of the pattern (a page whose create/edit action a role lacks permission for renders a one-line explanation instead of the real form) shared the exact same tiny, low-contrast styling — `text-sm placeholder-text` (14px, 40%-opacity ink) — easy to miss, especially next to a bold `<h1>` page title sitting right above it. Bumped every one to `text-lg font-semibold text-ink` (18px, full-opacity, semibold) across `clients/new`, `clients/[id]/edit`, `settings/users/[id]/edit`, `finance/layout.tsx` (the section-wide "no Finance access" case), `finance/invoices/new`, `finance/quotes/new`, `finance/quotes/[id]/edit` (both its "not a draft" and "no permission" branches), `finance/expenses/[id]/edit`, `events/new`, and `events/[id]/edit`. Deliberately not colored as a warning/error (`text-warning`) — this isn't something wrong, it's a normal access boundary — just made genuinely legible instead of the previous barely-there gray.
+
+Verified live in the browser: logged in as Producer (no Finance-create access) and confirmed `/finance/invoices/new` now shows "You don't have permission to create invoices." at a clearly larger, bolder, full-contrast size. Clean `npm run build` + `npm run lint`; dev DB reseeded back to empty afterward.
+
 ## Environment
 
 This machine had **no Node.js, npm, Homebrew, Docker, or working Postgres** when the project started (MacPorts is present but broken — OS/platform mismatch). Network access works.

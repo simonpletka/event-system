@@ -18,7 +18,7 @@ export default async function NewQuotePage({
     return (
       <div>
         <h1 className="text-xl font-semibold border-b-2 border-ink pb-2 mb-4">{t.finance.quotes.newQuoteH1}</h1>
-        <p className="text-sm placeholder-text">{t.finance.quotes.noPermCreate}</p>
+        <p className="text-lg font-semibold text-ink">{t.finance.quotes.noPermCreate}</p>
       </div>
     );
   }
