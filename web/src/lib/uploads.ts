@@ -98,3 +98,43 @@ export async function readLogoAsDataUrl(filename: string): Promise<string | null
     return null;
   }
 }
+
+const AVATAR_ROOT = path.join(DATA_ROOT, "uploads", "avatars");
+const AVATAR_TYPES: Record<string, string> = {
+  "image/png": "png",
+  "image/jpeg": "jpg",
+  "image/webp": "webp",
+};
+const MAX_AVATAR_BYTES = 3 * 1024 * 1024;
+
+export async function saveAvatar(file: File): Promise<string | null> {
+  if (!file || file.size === 0) return null;
+  if (file.size > MAX_AVATAR_BYTES) throw new Error("Photo is too large (max 3MB).");
+  const ext = AVATAR_TYPES[file.type];
+  if (!ext) throw new Error("Photo must be a PNG, JPG or WEBP file.");
+
+  await mkdir(AVATAR_ROOT, { recursive: true });
+  const filename = `${randomUUID()}.${ext}`;
+  const buffer = Buffer.from(await file.arrayBuffer());
+  await writeFile(path.join(AVATAR_ROOT, filename), buffer);
+  return filename;
+}
+
+export async function deleteAvatar(filename: string) {
+  const safe = path.basename(filename);
+  await unlink(path.join(AVATAR_ROOT, safe)).catch(() => {});
+}
+
+const AVATAR_CONTENT_TYPES: Record<string, string> = {
+  png: "image/png",
+  jpg: "image/jpeg",
+  webp: "image/webp",
+};
+
+export async function readAvatar(filename: string) {
+  const safe = path.basename(filename);
+  const ext = safe.split(".").pop() ?? "";
+  const contentType = AVATAR_CONTENT_TYPES[ext] ?? "application/octet-stream";
+  const buffer = await readFile(path.join(AVATAR_ROOT, safe));
+  return { buffer, contentType };
+}

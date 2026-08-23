@@ -8,11 +8,13 @@ import type { Dictionary } from "@/lib/dictionary";
 
 export function Sidebar({
   userName,
+  avatarUrl,
   running,
   tNav,
   tSidebar,
 }: {
   userName: string;
+  avatarUrl: string | null;
   running: { eventTitle: string; startedAt: string } | null;
   tNav: Dictionary["nav"];
   tSidebar: Dictionary["sidebar"];
@@ -52,7 +54,12 @@ export function Sidebar({
         </Link>
         <div className="flex items-center justify-between gap-2">
           <div className="flex items-center gap-1.5 min-w-0">
-            <div className="w-5 h-5 shrink-0 bg-ink/10" />
+            {avatarUrl ? (
+              // eslint-disable-next-line @next/next/no-img-element -- authenticated route, not a static asset next/image can optimize
+              <img src={avatarUrl} alt="" className="w-5 h-5 shrink-0 rounded-full object-cover" />
+            ) : (
+              <div className="w-5 h-5 shrink-0 bg-ink/10" />
+            )}
             <span className="text-[10px] truncate">{userName}</span>
           </div>
           <form action={signOutAction}>

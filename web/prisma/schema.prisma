@@ -144,6 +144,8 @@ model User {
   active       Boolean   @default(true) // deactivated accounts can't log in; history is kept, not deleted
   createdAt    DateTime  @default(now())
   lastSeenAt   DateTime?
+  avatarPath   String? // Settings → General profile photo, same disk-storage pattern as CompanySettings.logoPath
+  locale       String? // "en" | "cs"; null inherits CompanySettings.locale — per-account override, see getLocale()
 
   customRoleId String?
   customRole   CustomRole? @relation(fields: [customRoleId], references: [id])

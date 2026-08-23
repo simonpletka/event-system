@@ -9,11 +9,13 @@ import type { Dictionary } from "@/lib/dictionary";
 
 export function MobileTopBar({
   userName,
+  avatarUrl,
   running,
   tNav,
   tSidebar,
 }: {
   userName: string;
+  avatarUrl: string | null;
   running: { eventTitle: string; startedAt: string } | null;
   tNav: Dictionary["nav"];
   tSidebar: Dictionary["sidebar"];
@@ -56,12 +58,17 @@ export function MobileTopBar({
             <div className="w-9 h-1 rounded-full bg-ink/20 mx-auto mb-4" />
 
             <div className="flex items-center gap-3 pb-4 mb-2.5 border-b border-ink/10">
-              <div className="w-11 h-11 rounded-full bg-ink/10 border border-ink/18 flex items-center justify-center shrink-0">
-                <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-ink/70">
-                  <circle cx="12" cy="8.3" r="3.8" />
-                  <path d="M4.3 20.4c0-4.1 3.4-6.6 7.7-6.6s7.7 2.5 7.7 6.6" />
-                </svg>
-              </div>
+              {avatarUrl ? (
+                // eslint-disable-next-line @next/next/no-img-element -- authenticated route, not a static asset next/image can optimize
+                <img src={avatarUrl} alt="" className="w-11 h-11 rounded-full object-cover shrink-0" />
+              ) : (
+                <div className="w-11 h-11 rounded-full bg-ink/10 border border-ink/18 flex items-center justify-center shrink-0">
+                  <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-ink/70">
+                    <circle cx="12" cy="8.3" r="3.8" />
+                    <path d="M4.3 20.4c0-4.1 3.4-6.6 7.7-6.6s7.7 2.5 7.7 6.6" />
+                  </svg>
+                </div>
+              )}
               <span className="text-[14.5px] font-semibold truncate">{userName}</span>
             </div>
 

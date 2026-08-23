@@ -4,6 +4,7 @@ import localFont from "next/font/local";
 import "./globals.css";
 import { getCompanySettings } from "@/lib/queries/finance";
 import { getAppColors, colorsToCssVars } from "@/lib/theme";
+import { getLocale } from "@/lib/i18n";
 import { CapacitorBridge } from "@/components/mobile/CapacitorBridge";
 
 // Licensed font (commercial use allowed — see src/fonts/neue-regrade/LICENSE.txt).
@@ -41,9 +42,8 @@ export const viewport: Viewport = {
 export const dynamic = "force-dynamic";
 
 export default async function RootLayout({ children }: LayoutProps<"/">) {
-  const company = await getCompanySettings();
+  const [company, locale] = await Promise.all([getCompanySettings(), getLocale()]);
   const colors = getAppColors(company);
-  const locale = company?.locale === "cs" ? "cs" : "en";
 
   return (
     <html

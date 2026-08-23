@@ -1,11 +1,12 @@
 import Link from "next/link";
-import { requireUser, canManageUsers, canManageCompanySettings } from "@/lib/authz";
+import { requireUser, canManageUsers, canManageCompanySettings, getFreshUserFields } from "@/lib/authz";
 import { prisma } from "@/lib/prisma";
 import { getCompanySettings } from "@/lib/queries/finance";
 import { getLocale, getDictionary } from "@/lib/i18n";
 import { getAppColors } from "@/lib/theme";
 import { UsersTable } from "@/components/settings/UsersTable";
 import { CreateUserForm } from "@/components/settings/CreateUserForm";
+import { GeneralSettingsForm } from "@/components/settings/GeneralSettingsForm";
 import { CompanySettingsForm } from "@/components/settings/CompanySettingsForm";
 import { RoleReferenceTable } from "@/components/settings/RoleReferenceTable";
 import { CategoriesTab } from "@/components/settings/CategoriesTab";
@@ -32,43 +33,40 @@ export default async function SettingsPage({
   const canUsers = canManageUsers(user);
   const canCompany = canManageCompanySettings(user);
   const tab =
-    (params.tab as "company" | "users" | "templates" | "invoiceEmailing" | "appSettings") || (canCompany ? "company" : "users");
+    (params.tab as "general" | "company" | "users" | "templates" | "invoiceEmailing" | "appSettings") || "general";
 
-  if (!canUsers && !canCompany) {
-    return (
-      <div>
-        <h1 className="text-xl font-semibold border-b-2 border-ink pb-2 mb-4">{t.settings.title}</h1>
-        <div className="heading-label mb-1">{t.settings.signedInAs}</div>
-        <div className="text-sm mb-4">
-          {user.name} <span className="placeholder-text">· {user.email} · {user.role}</span>
-        </div>
-        <p className="text-sm placeholder-text max-w-prose">{t.settings.noAccessMsg}</p>
-      </div>
-    );
-  }
-
-  const [users, company, customRoles, categories] = await Promise.all([
+  const [users, company, customRoles, categories, freshUser] = await Promise.all([
     canUsers ? prisma.user.findMany({ orderBy: { name: "asc" } }) : Promise.resolve([]),
     getCompanySettings(),
     canUsers
       ? prisma.customRole.findMany({ orderBy: { name: "asc" }, include: { _count: { select: { users: true } } } })
       : Promise.resolve([]),
     canCompany ? getItemCategories() : Promise.resolve([]),
+    getFreshUserFields(user.id),
   ]);
   const roleRows = customRoles.map((r) => ({ ...r, userCount: r._count.users }));
   const colors = getAppColors(company);
+  const companyLocale = company?.locale === "cs" ? "cs" : "en";
 
   return (
     <div>
       <div className="sticky top-0 z-20 -mx-6 mt-0 md:-mt-5 px-6 pt-5 pb-2 backdrop-blur-2xl bg-gradient-to-b from-bg/80 to-bg/50 border-b border-ink/10">
         <div className="flex items-end justify-between">
           <div>
-            <div className="heading-label">{users.length ? t.settings.accountsCount(users.length) : t.settings.companySettingsLabel}</div>
+            <div className="heading-label">
+              {canUsers ? t.settings.accountsCount(users.length) : canCompany ? t.settings.companySettingsLabel : t.settings.general.accountHeading}
+            </div>
             <h1 className="text-[28px] font-bold tracking-tight mt-1">{t.settings.title}</h1>
           </div>
         </div>
 
         <div className="flex gap-3.5 mt-3 flex-nowrap overflow-x-auto pb-1 md:pb-0 md:flex-wrap md:overflow-visible">
+          <Link
+            href="/settings?tab=general"
+            className={`shrink-0 text-[9px] tracking-[0.14em] uppercase pb-2 border-b-2 ${tab === "general" ? "border-accent text-accent" : "border-transparent placeholder-text hover:text-ink"}`}
+          >
+            {t.settings.tabGeneral}
+          </Link>
           {canCompany && (
             <Link
               href="/settings?tab=company"
@@ -113,6 +111,19 @@ export default async function SettingsPage({
       </div>
 
       <div className="mt-5">
+        {tab === "general" && (
+          <GeneralSettingsForm
+            defaults={{
+              name: freshUser?.name ?? user.name ?? "",
+              email: freshUser?.email ?? user.email ?? "",
+              phone: freshUser?.phone ?? "",
+              avatarPath: freshUser?.avatarPath ?? null,
+            }}
+            companyLocale={companyLocale}
+            currentLocale={freshUser?.locale === "cs" || freshUser?.locale === "en" ? freshUser.locale : null}
+            locale={locale}
+          />
+        )}
         {tab === "company" && canCompany && <CompanySettingsForm defaults={company} t={t.settings.company} />}
         {tab === "users" && canUsers && (
           <div>

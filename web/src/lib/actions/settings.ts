@@ -5,7 +5,7 @@ import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
 import { requireUser, canManageUsers, canManageCompanySettings } from "@/lib/authz";
-import { saveLogo, deleteLogo } from "@/lib/uploads";
+import { saveLogo, deleteLogo, saveAvatar, deleteAvatar } from "@/lib/uploads";
 import { getLocale, getDictionary } from "@/lib/i18n";
 import type { Role, EventsAccess, FinanceAccess, ExpensesAccess, SettingsAccess } from "@/generated/prisma/enums";
 
@@ -318,4 +318,86 @@ export async function updateInvoiceEmailingSettingsAction(
 
   revalidatePath("/settings");
   return { success: getDictionary(await getLocale()).settings.invoiceEmailing.savedMsg };
+}
+
+// --- Settings → General (self-service, every account) ---
+
+export async function updateOwnProfileAction(_prev: SettingsFormState, formData: FormData): Promise<SettingsFormState> {
+  const user = await requireUser();
+  const t = getDictionary(await getLocale()).settings.general;
+
+  const firstName = String(formData.get("firstName") ?? "").trim();
+  const lastName = String(formData.get("lastName") ?? "").trim();
+  // Kept as one `name` column (unchanged everywhere else it's read/displayed
+  // — Users table, "Created by", event owner, team dots, timers, etc.) —
+  // first/last only exist as this form's own split of that single field,
+  // best-effort-rejoined on save, not a schema change.
+  const name = `${firstName} ${lastName}`.trim();
+  const email = String(formData.get("email") ?? "").trim().toLowerCase();
+  const phone = String(formData.get("phone") ?? "").trim();
+  const removeAvatar = formData.get("removeAvatar") === "on";
+  const avatarFile = formData.get("avatar");
+
+  if (!name || !email) return { error: t.nameEmailRequired };
+
+  const existing = await prisma.user.findUnique({ where: { email } });
+  if (existing && existing.id !== user.id) return { error: t.emailInUse };
+
+  const current = await prisma.user.findUnique({ where: { id: user.id }, select: { avatarPath: true } });
+  let avatarPath = current?.avatarPath ?? null;
+  try {
+    if (removeAvatar && avatarPath) {
+      await deleteAvatar(avatarPath);
+      avatarPath = null;
+    } else if (avatarFile instanceof File && avatarFile.size > 0) {
+      const saved = await saveAvatar(avatarFile);
+      if (saved) {
+        if (avatarPath) await deleteAvatar(avatarPath);
+        avatarPath = saved;
+      }
+    }
+  } catch (e) {
+    return { error: e instanceof Error ? e.message : t.photoSaveFailed };
+  }
+
+  await prisma.user.update({ where: { id: user.id }, data: { name, email, phone, avatarPath } });
+
+  // Name/email/avatar show in the sidebar and mobile top bar on every route.
+  revalidatePath("/", "layout");
+  return { success: t.profileSavedMsg };
+}
+
+export async function updateOwnPasswordAction(_prev: SettingsFormState, formData: FormData): Promise<SettingsFormState> {
+  const user = await requireUser();
+  const t = getDictionary(await getLocale()).settings.general;
+
+  const currentPassword = String(formData.get("currentPassword") ?? "");
+  const newPassword = String(formData.get("newPassword") ?? "");
+  const confirmPassword = String(formData.get("confirmPassword") ?? "");
+
+  if (newPassword.length < 8) return { error: t.passwordTooShort };
+  if (newPassword !== confirmPassword) return { error: t.passwordMismatch };
+
+  const current = await prisma.user.findUnique({ where: { id: user.id } });
+  if (!current) return { error: t.accountNotFound };
+
+  const valid = await bcrypt.compare(currentPassword, current.passwordHash);
+  if (!valid) return { error: t.currentPasswordWrong };
+
+  const passwordHash = await bcrypt.hash(newPassword, 10);
+  await prisma.user.update({ where: { id: user.id }, data: { passwordHash } });
+
+  return { success: t.passwordSavedMsg };
+}
+
+export async function updateOwnLanguageAction(_prev: SettingsFormState, formData: FormData): Promise<SettingsFormState> {
+  const user = await requireUser();
+  const raw = String(formData.get("locale") ?? "default");
+  const locale = raw === "en" || raw === "cs" ? raw : null;
+
+  await prisma.user.update({ where: { id: user.id }, data: { locale } });
+
+  // Every route reads locale via getLocale() on every render, not just /settings.
+  revalidatePath("/", "layout");
+  return { success: getDictionary(await getLocale()).settings.general.languageSavedMsg };
 }

@@ -16,6 +16,24 @@ export type SessionUser = {
 };
 
 /**
+ * The DB-truth fields that can go stale on the JWT-backed `SessionUser`
+ * between logins — `active` (deactivation), plus everything the new
+ * self-service General settings tab lets someone change about their own
+ * account (name/email/phone/avatar/locale never get written back into the
+ * session token). One shared `cache()`-wrapped lookup rather than a
+ * separate ad-hoc query in `requireUser()`, `getLocale()`, and the app
+ * layout's avatar/name display — all three want a fresh User row for the
+ * current session's id within the same request, and `cache()` dedupes by
+ * function+args, so calling this from all three collapses to one query.
+ */
+export const getFreshUserFields = cache(async function getFreshUserFields(id: string) {
+  return prisma.user.findUnique({
+    where: { id },
+    select: { active: true, name: true, email: true, phone: true, avatarPath: true, locale: true },
+  });
+});
+
+/**
  * Every server action/page that touches protected data calls this first.
  * Per Next's own guidance for the proxy/middleware convention, auth checks
  * belong in each server function rather than a single global gate.
@@ -34,7 +52,7 @@ export const requireUser = cache(async function requireUser(): Promise<SessionUs
   const session = await auth();
   if (!session?.user) redirect("/login");
 
-  const current = await prisma.user.findUnique({ where: { id: session.user.id }, select: { active: true } });
+  const current = await getFreshUserFields(session.user.id);
   if (!current?.active) redirect("/login");
 
   return session.user;
