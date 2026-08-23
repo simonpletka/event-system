@@ -111,7 +111,7 @@ export function ExpenseForm({
       </div>
 
       {state.error && <p className="text-sm text-accent">{state.error}</p>}
-      {state.success && <p className="text-sm">{tf.savedMsg}</p>}
+      {state.success && <p className="text-sm text-positive font-bold">{tf.savedMsg}</p>}
 
       <div className="flex gap-2 pt-3 border-t-2 border-ink">
         <button type="submit" disabled={pending} className="btn">

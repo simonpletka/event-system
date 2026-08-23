@@ -49,7 +49,7 @@ export function CreateUserForm({
         </button>
       </form>
       {state.error && <p className="text-sm text-warning mt-2">{state.error}</p>}
-      {state.success && <p className="text-sm mt-2 border border-ink/25 rounded-lg p-2.5 max-w-lg">{state.success}</p>}
+      {state.success && <p className="text-sm text-positive font-bold mt-2 border border-ink/25 rounded-lg p-2.5 max-w-lg">{state.success}</p>}
     </div>
   );
 }

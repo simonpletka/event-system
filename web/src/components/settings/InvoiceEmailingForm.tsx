@@ -65,7 +65,7 @@ export function InvoiceEmailingForm({ defaults, locale }: { defaults: Templates;
       <p className="text-[9px] placeholder-text -mt-1">{t.smtpNote}</p>
 
       {state.error && <p className="text-sm text-warning">{state.error}</p>}
-      {state.success && <p className="text-sm">{state.success}</p>}
+      {state.success && <p className="text-sm text-positive font-bold">{state.success}</p>}
 
       <div className="flex gap-2">
         <button type="submit" disabled={pending} className="btn">

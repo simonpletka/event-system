@@ -29,7 +29,18 @@ export type SessionUser = {
 export const getFreshUserFields = cache(async function getFreshUserFields(id: string) {
   return prisma.user.findUnique({
     where: { id },
-    select: { active: true, name: true, email: true, phone: true, avatarPath: true, locale: true },
+    select: {
+      active: true,
+      name: true,
+      email: true,
+      phone: true,
+      avatarPath: true,
+      locale: true,
+      role: true,
+      isCardHolder: true,
+      customRoleId: true,
+      customRole: { select: { events: true, finance: true, expenses: true, settings: true } },
+    },
   });
 });
 
@@ -38,15 +49,20 @@ export const getFreshUserFields = cache(async function getFreshUserFields(id: st
  * Per Next's own guidance for the proxy/middleware convention, auth checks
  * belong in each server function rather than a single global gate.
  *
- * Also re-checks `active` against the DB on every call (not just at login) —
- * a deactivated account's JWT would otherwise stay valid until it expires,
- * which defeats the point of "remove this member". Just redirects rather
- * than also clearing the cookie: `signOut()` mutates cookies, which Next
- * only allows from a Server Action or Route Handler, not mid-render here —
- * the login page's own active-check (see login/page.tsx) is what actually
- * stops the stale cookie from bouncing them back to /dashboard. Wrapped in
- * `cache()` so a single request's several `requireUser()` calls (layout +
- * page, etc.) only hit the DB once.
+ * Builds the returned `SessionUser` entirely from a fresh DB row rather
+ * than trusting the JWT's `role`/`isCardHolder`/`customRole` — those are
+ * only written into the token once, at sign-in (see `auth.ts`'s `jwt`
+ * callback), so an admin editing *someone else's* role/custom-role/card-flag
+ * while that person has an existing session previously had no effect until
+ * they logged out and back in. Re-checking `active` against the DB on every
+ * call already existed for the same reason (a deactivated account's JWT
+ * would otherwise stay valid until it expires) — this extends that same
+ * "the token is a cache, not the source of truth" fix to every other
+ * permission-relevant field. `id`/`name`/`email` still come from the fresh
+ * row too, for consistency, though those were already re-fetched
+ * separately wherever they're actually displayed (see `(app)/layout.tsx`).
+ * Wrapped in `cache()` so a single request's several `requireUser()` calls
+ * (layout + page, etc.) only hit the DB once.
  */
 export const requireUser = cache(async function requireUser(): Promise<SessionUser> {
   const session = await auth();
@@ -55,7 +71,14 @@ export const requireUser = cache(async function requireUser(): Promise<SessionUs
   const current = await getFreshUserFields(session.user.id);
   if (!current?.active) redirect("/login");
 
-  return session.user;
+  return {
+    id: session.user.id,
+    name: current.name,
+    email: current.email,
+    role: current.role,
+    isCardHolder: current.isCardHolder,
+    customRole: current.customRoleId && current.customRole ? current.customRole : null,
+  };
 });
 
 type Permissions = { events: EventsAccess; finance: FinanceAccess; expenses: ExpensesAccess; settings: SettingsAccess };

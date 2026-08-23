@@ -114,7 +114,7 @@ function ResetPasswordButton({ id, t }: { id: string; t: T }) {
       <button type="submit" disabled={pending} className="btno">
         {pending ? t.generating : t.generateNewPassword}
       </button>
-      {state.success && <p className="text-sm mt-2 border border-ink/25 p-2 max-w-xs">{state.success}</p>}
+      {state.success && <p className="text-sm text-positive font-bold mt-2 border border-ink/25 p-2 max-w-xs">{state.success}</p>}
     </form>
   );
 }

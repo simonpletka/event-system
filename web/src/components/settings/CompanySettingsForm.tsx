@@ -186,7 +186,7 @@ export function CompanySettingsForm({ defaults, t }: { defaults: Company | null;
         </div>
 
         {state.error && <p className="text-sm text-warning">{state.error}</p>}
-        {state.success && <p className="text-sm">{state.success}</p>}
+        {state.success && <p className="text-sm text-positive font-bold">{state.success}</p>}
 
         <div className="flex gap-2">
           <button type="submit" disabled={pending} className="btn">

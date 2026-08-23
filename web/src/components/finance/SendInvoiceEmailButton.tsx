@@ -27,7 +27,7 @@ export function SendInvoiceEmailButton({
         {pending ? pendingLabel : label}
       </button>
       {state.error && <p className="text-[10px] text-warning max-w-[220px]">{state.error}</p>}
-      {state.success && <p className="text-[10px] placeholder-text">{state.success}</p>}
+      {state.success && <p className="text-[10px] text-positive font-bold">{state.success}</p>}
     </form>
   );
 }

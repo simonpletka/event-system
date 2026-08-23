@@ -128,7 +128,7 @@ export function GeneralSettingsForm({
         </div>
 
         {profileState.error && <p className="text-sm text-warning">{profileState.error}</p>}
-        {profileState.success && <p className="text-sm">{profileState.success}</p>}
+        {profileState.success && <p className="text-sm text-positive font-bold">{profileState.success}</p>}
 
         <button type="submit" disabled={profilePending} className="btn self-start mt-1">
           {profilePending ? t.saving : t.saveChanges}
@@ -159,7 +159,7 @@ export function GeneralSettingsForm({
         </div>
 
         {passwordState.error && <p className="text-sm text-warning">{passwordState.error}</p>}
-        {passwordState.success && <p className="text-sm">{passwordState.success}</p>}
+        {passwordState.success && <p className="text-sm text-positive font-bold">{passwordState.success}</p>}
 
         <button type="submit" disabled={passwordPending} className="btn self-start mt-1">
           {passwordPending ? t.changingPassword : t.changePassword}
@@ -190,7 +190,7 @@ export function GeneralSettingsForm({
         </div>
 
         {languageState.error && <p className="text-sm text-warning">{languageState.error}</p>}
-        {languageState.success && <p className="text-sm">{languageState.success}</p>}
+        {languageState.success && <p className="text-sm text-positive font-bold">{languageState.success}</p>}
 
         <button type="submit" disabled={languagePending} className="btn self-start mt-1">
           {languagePending ? t.saving : t.saveLanguage}

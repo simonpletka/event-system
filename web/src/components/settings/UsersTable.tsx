@@ -136,7 +136,7 @@ function UserRow({
         {cardToggle}
         <div className="placeholder-text">{lastSeenLabel}</div>
         {actions}
-        {resetState.success && <div className="col-span-6 text-[11px] border border-ink/25 rounded-lg p-2 mt-1">{resetState.success}</div>}
+        {resetState.success && <div className="col-span-6 text-[11px] text-positive font-bold border border-ink/25 rounded-lg p-2 mt-1">{resetState.success}</div>}
       </div>
 
       <div className={`md:hidden py-3 px-3.5 rounded-xl border-b border-ink/8 last:border-b-0 text-[13px] ${!user.active ? "opacity-50" : ""}`}>
@@ -155,7 +155,7 @@ function UserRow({
           {cardToggle}
         </div>
         <div className="mt-2.5">{actions}</div>
-        {resetState.success && <div className="text-[11px] border border-ink/25 rounded-lg p-2 mt-2">{resetState.success}</div>}
+        {resetState.success && <div className="text-[11px] text-positive font-bold border border-ink/25 rounded-lg p-2 mt-2">{resetState.success}</div>}
       </div>
     </>
   );
