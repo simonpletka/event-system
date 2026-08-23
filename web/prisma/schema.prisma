@@ -425,6 +425,8 @@ model CompanySettings {
   dic            String
   isVatPayer     Boolean @default(true)
   bankAccount    String  @default("") // IBAN; QR code is skipped if empty
+  accountNumber  String  @default("") // local-format account number (e.g. "123456789/0300"); shown on invoice PDFs and split into ISDOC's account ID/bank-code pair
+  swiftBic       String  @default("") // SWIFT/BIC; shown on invoice PDFs and in the embedded ISDOC's BankAccount/BIC
   defaultDueDays Int     @default(14)
   logoPath       String? // filename under uploads/logos/, served through an authenticated route like receipts
   accentColor    String  @default("#ec3013") // hex; drives BOTH the invoice PDF accent and the live app's --color-accent

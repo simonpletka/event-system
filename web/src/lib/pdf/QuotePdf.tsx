@@ -11,11 +11,12 @@ export type QuotePdfProps = {
   currency: CurrencyCode;
   lang: PdfLang;
   hideItemPrices: boolean;
-  supplier: { name: string; address: string; ico: string; dic: string; isVatPayer: boolean };
-  customer: { name: string; address: string; ico: string; dic: string };
+  supplier: { name: string; addressLines: string[]; ico: string; dic: string; isVatPayer: boolean };
+  customer: { name: string; addressLines: string[]; ico: string; dic: string };
   items: { description: string; quantity: number; unitPrice: number; vatRate: number; category: string }[];
   logoDataUrl: string | null;
   accentColor: string;
+  createdBy: { name: string; email: string; phone: string };
 };
 
 export function QuotePdf({
@@ -30,6 +31,7 @@ export function QuotePdf({
   items,
   logoDataUrl,
   accentColor,
+  createdBy,
 }: QuotePdfProps) {
   const t = pdfLabels(lang);
   const fontFamily = registerAppFont();
@@ -43,41 +45,63 @@ export function QuotePdf({
     <Document>
       <Page size="A4" style={[styles.page, { fontFamily }]}>
         <View style={styles.headerRow}>
-          <View>
-            {/* eslint-disable-next-line jsx-a11y/alt-text -- @react-pdf/renderer's Image has no alt prop; this renders to PDF, not the DOM */}
-            {logoDataUrl ? <Image src={logoDataUrl} style={styles.logoImage} /> : null}
-            <Text style={styles.companyName}>{supplier.name}</Text>
-          </View>
-          <View>
-            <Text style={styles.docLabel}>{t.quote}</Text>
-            <Text style={styles.docNumber}>{quoteNumber}</Text>
+          <Text style={styles.wordmark}>{t.quote.toLowerCase()}</Text>
+          <View style={styles.headerSupplier}>
+            {logoDataUrl ? (
+              // eslint-disable-next-line jsx-a11y/alt-text -- @react-pdf/renderer's Image has no alt prop; this renders to PDF, not the DOM
+              <Image src={logoDataUrl} style={styles.logoImage} />
+            ) : (
+              <View style={[styles.initialChip, { backgroundColor: accent }]}>
+                <Text style={styles.initialChipText}>{supplier.name.charAt(0).toUpperCase()}</Text>
+              </View>
+            )}
+            <Text style={styles.headerSupplierName}>{supplier.name}</Text>
           </View>
         </View>
-        <View style={styles.rule} />
+
+        <View style={styles.bigDateRow}>
+          <View style={styles.bigDateStack}>
+            <Text style={styles.bigDateLine}>
+              {t.issued} {date(issuedAt, lang)}
+            </Text>
+            <Text style={styles.bigDateLine}>
+              {t.validUntil} {date(validUntil, lang)}
+            </Text>
+          </View>
+          <Text style={styles.bigDocNumber}>{quoteNumber}</Text>
+        </View>
 
         <View style={styles.partiesRow}>
-          <View style={styles.partyBlock}>
+          <View style={styles.partyBlockWide}>
             <Text style={styles.label}>{t.supplier}</Text>
             <Text style={styles.partyName}>{supplier.name}</Text>
-            <Text style={styles.partyLine}>{supplier.address}</Text>
-            <Text style={styles.partyLine}>
+            {supplier.addressLines.map((line, i) => (
+              <Text key={i} style={styles.partyLine}>
+                {line}
+              </Text>
+            ))}
+            <Text style={[styles.partyLine, { marginTop: 3 }]}>
               IČO {supplier.ico} · DIČ {supplier.dic}
             </Text>
             {!supplier.isVatPayer && <Text style={styles.partyLine}>{t.notVatPayer}</Text>}
           </View>
-          <View style={styles.partyBlock}>
+          <View style={styles.partyBlockWide}>
             <Text style={styles.label}>{t.customer}</Text>
             <Text style={styles.partyName}>{customer.name}</Text>
-            <Text style={styles.partyLine}>{customer.address}</Text>
-            <Text style={styles.partyLine}>
+            {customer.addressLines.map((line, i) => (
+              <Text key={i} style={styles.partyLine}>
+                {line}
+              </Text>
+            ))}
+            <Text style={[styles.partyLine, { marginTop: 3 }]}>
               IČO {customer.ico || "—"} · DIČ {customer.dic || "—"}
             </Text>
-            <Text style={[styles.partyLine, { marginTop: 6 }]}>
-              {t.issued} {date(issuedAt, lang)}
-            </Text>
-            <Text style={styles.partyLine}>
-              {t.validUntil} {date(validUntil, lang)}
-            </Text>
+          </View>
+          <View style={styles.partyBlockWide}>
+            <Text style={styles.label}>{t.createdBy}</Text>
+            <Text style={[styles.partyName, { fontSize: 13 }]}>{createdBy.name}</Text>
+            {createdBy.email ? <Text style={[styles.partyLine, { fontSize: 10 }]}>{createdBy.email}</Text> : null}
+            {createdBy.phone ? <Text style={[styles.partyLine, { fontSize: 10 }]}>{createdBy.phone}</Text> : null}
           </View>
         </View>
 

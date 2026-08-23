@@ -15,6 +15,8 @@ type Company = {
   dic: string;
   isVatPayer: boolean;
   bankAccount: string;
+  accountNumber: string;
+  swiftBic: string;
   defaultDueDays: number;
   logoPath: string | null;
 };
@@ -26,6 +28,8 @@ const EMPTY: Company = {
   dic: "",
   isVatPayer: true,
   bankAccount: "",
+  accountNumber: "",
+  swiftBic: "",
   defaultDueDays: 14,
   logoPath: null,
 };
@@ -85,13 +89,28 @@ export function CompanySettingsForm({ defaults, t }: { defaults: Company | null;
 
         <div className="heading-label mt-2">{t.bankHeading}</div>
         <input
+          name="accountNumber"
+          placeholder={t.accountNumberPlaceholder}
+          value={fields.accountNumber}
+          onChange={(e) => set("accountNumber", e.target.value)}
+          className="input"
+        />
+        <input
           name="bankAccount"
           placeholder={t.ibanPlaceholder}
           value={fields.bankAccount}
           onChange={(e) => set("bankAccount", e.target.value)}
           className="input"
         />
+        <input
+          name="swiftBic"
+          placeholder={t.swiftPlaceholder}
+          value={fields.swiftBic}
+          onChange={(e) => set("swiftBic", e.target.value)}
+          className="input"
+        />
         <span className="text-[9px] placeholder-text -mt-1">{t.qrHint}</span>
+        <span className="text-[9px] placeholder-text">{t.bankDetailsHint}</span>
 
         <div className="heading-label mt-2">{t.brandingHeading}</div>
         <div className="flex gap-3 items-start">

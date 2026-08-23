@@ -55,18 +55,69 @@ export function pdfDate(d: Date, lang: PdfLang = "en") {
   }).format(d);
 }
 
+/**
+ * Best-effort visual split of a free-text address into up to 3 display
+ * lines. The app doesn't store a structured address for a Company or an
+ * Event's embedded company fields (only the separate Client model does —
+ * see formatClientAddress) — most of these strings were entered through
+ * the Photon autocomplete though, which formats as "street, postcode city,
+ * state", so splitting on commas usually reproduces the intended rows.
+ * Overflow past 3 segments is folded into the last line rather than
+ * dropped. Purely a rendering-layer convenience, not real structured data.
+ */
+export function addressLines(address: string): string[] {
+  const parts = address
+    .split(",")
+    .map((p) => p.trim())
+    .filter(Boolean);
+  if (parts.length <= 3) return parts;
+  return [parts[0], parts[1], parts.slice(2).join(", ")];
+}
+
+/** Structured address lines for a linked Client — matches formatClientAddress's row grouping. */
+export function clientAddressLines(client: { street: string; city: string; postCode: string; state: string }): string[] {
+  const cityLine = [client.postCode, client.city].filter(Boolean).join(" ");
+  return [client.street, cityLine, client.state].filter(Boolean);
+}
+
 export const sharedStyles = StyleSheet.create({
   page: { padding: 36, fontSize: 10, color: INK },
+
+  // Big lowercase wordmark header: doc word on the left, logo/initial chip + supplier name top-right.
   headerRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "flex-start" },
-  companyName: { fontSize: 14, fontWeight: 700 },
-  docLabel: { fontSize: 8, letterSpacing: 1, textTransform: "uppercase", color: "#666", textAlign: "right" },
-  docNumber: { fontSize: 13, fontWeight: 700, textAlign: "right" },
-  rule: { height: 2, backgroundColor: INK, marginVertical: 12 },
-  partiesRow: { flexDirection: "row", justifyContent: "space-between", marginBottom: 16 },
-  partyBlock: { width: "48%" },
+  wordmark: { fontSize: 56, fontWeight: 700, lineHeight: 0.85, letterSpacing: -1.5 },
+  headerSupplier: { alignItems: "flex-end", gap: 3 },
+  initialChip: {
+    width: 20,
+    height: 20,
+    borderRadius: 5,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  initialChipText: { fontSize: 10, fontWeight: 700, color: "#ffffff" },
+  headerSupplierName: { fontSize: 10, fontWeight: 700 },
+  logoImage: { width: 28, height: 28, objectFit: "contain" },
+
+  // Big date/doc-number row, replacing the old thin rule + small docLabel.
+  bigDateRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "flex-start", marginTop: 16 },
+  bigDateStack: { flexDirection: "column" },
+  bigDateLine: { fontSize: 12, lineHeight: 1.35 },
+  bigDocNumber: { fontSize: 12, fontWeight: 700 },
+
+  partiesRow: { flexDirection: "row", marginTop: 20, marginBottom: 16, gap: 14 },
+  partyBlockNarrow: { width: "24%" },
+  partyBlockWide: { width: "29%" },
   label: { fontSize: 8, letterSpacing: 1, textTransform: "uppercase", color: "#666", marginBottom: 3 },
   partyName: { fontSize: 11, fontWeight: 700, marginBottom: 2 },
-  partyLine: { fontSize: 9, color: "#444" },
+  partyLine: { fontSize: 9, color: "#444", lineHeight: 1.45 },
+
+  // Invoice-only: payment-details column (text) beside its own QR column.
+  paymentBlock: { width: "32%" },
+  qrBlock: { width: "14%" },
+  qrBox: { backgroundColor: "#f3f2f2", borderRadius: 6, padding: 5, width: 52, alignSelf: "flex-start" },
+  qrImageSmall: { width: 42, height: 42 },
+  qrCaptionText: { fontSize: 7, color: "#666", marginTop: 4, lineHeight: 1.3 },
+
   table: { marginTop: 8 },
   tableHeaderRow: {
     flexDirection: "row",
@@ -86,16 +137,11 @@ export const sharedStyles = StyleSheet.create({
   summaryBlock: { alignItems: "flex-end" },
   summaryValue: { fontSize: 10 },
   toPayValue: { fontSize: 14, fontWeight: 700 },
-  logoImage: { width: 40, height: 40, objectFit: "contain", marginBottom: 4 },
   footerRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "flex-end",
     marginTop: 40,
     paddingTop: 12,
     borderTopWidth: 1,
     borderTopColor: "#ddd",
   },
-  footerText: { fontSize: 8, color: "#666", width: "70%" },
-  qrImage: { width: 72, height: 72 },
+  footerText: { fontSize: 8, color: "#666" },
 });

@@ -210,6 +210,8 @@ export async function updateCompanySettingsAction(
   const dic = String(formData.get("dic") ?? "").trim();
   const isVatPayer = formData.get("isVatPayer") === "on";
   const bankAccount = String(formData.get("bankAccount") ?? "").trim();
+  const accountNumber = String(formData.get("accountNumber") ?? "").trim();
+  const swiftBic = String(formData.get("swiftBic") ?? "").trim();
   const defaultDueDays = Math.max(1, Number(formData.get("defaultDueDays")) || 14);
   const removeLogo = formData.get("removeLogo") === "on";
   const logoFile = formData.get("logo");
@@ -236,8 +238,8 @@ export async function updateCompanySettingsAction(
 
   await prisma.companySettings.upsert({
     where: { id: "singleton" },
-    create: { id: "singleton", name, address, ico, dic, isVatPayer, bankAccount, defaultDueDays, logoPath },
-    update: { name, address, ico, dic, isVatPayer, bankAccount, defaultDueDays, logoPath },
+    create: { id: "singleton", name, address, ico, dic, isVatPayer, bankAccount, accountNumber, swiftBic, defaultDueDays, logoPath },
+    update: { name, address, ico, dic, isVatPayer, bankAccount, accountNumber, swiftBic, defaultDueDays, logoPath },
   });
 
   revalidatePath("/settings");

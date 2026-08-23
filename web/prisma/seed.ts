@@ -71,6 +71,8 @@ async function main() {
       dic: "CZ09112233",
       isVatPayer: true,
       bankAccount: "CZ6503000000001234567890",
+      accountNumber: "1234567890/0300",
+      swiftBic: "AGBACZPP",
       defaultDueDays: 14,
     },
   });

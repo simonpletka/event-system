@@ -877,8 +877,11 @@ const en = {
       dicPlaceholder: "DIČ",
       vatPayerLabel: "VAT payer",
       bankHeading: "Bank",
+      accountNumberPlaceholder: "Account number (e.g. 123456789/0300)",
       ibanPlaceholder: "IBAN",
+      swiftPlaceholder: "SWIFT/BIC",
       qrHint: "Used to render the QR payment code on invoice PDFs.",
+      bankDetailsHint: "Account number, IBAN and SWIFT/BIC all appear on invoice PDFs and the embedded ISDOC data.",
       brandingHeading: "Branding",
       chooseFile: "Choose file",
       logoHelper:
@@ -1909,8 +1912,11 @@ const cs: Dictionary = {
       dicPlaceholder: "DIČ",
       vatPayerLabel: "Plátce DPH",
       bankHeading: "Banka",
+      accountNumberPlaceholder: "Číslo účtu (např. 123456789/0300)",
       ibanPlaceholder: "IBAN",
+      swiftPlaceholder: "SWIFT/BIC",
       qrHint: "Používá se pro vygenerování QR platebního kódu na fakturách PDF.",
+      bankDetailsHint: "Číslo účtu, IBAN a SWIFT/BIC se zobrazují na fakturách PDF a ve vloženém ISDOC souboru.",
       brandingHeading: "Branding",
       chooseFile: "Vybrat soubor",
       logoHelper:

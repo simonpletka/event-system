@@ -7,7 +7,7 @@ import type { Dictionary } from "@/lib/dictionary";
 
 const initialState: LoginState = {};
 
-export function LoginForm({ t }: { t: Dictionary["auth"] }) {
+export function LoginForm({ t, defaultEmail }: { t: Dictionary["auth"]; defaultEmail?: string }) {
   const [state, formAction, pending] = useActionState(loginAction, initialState);
 
   return (
@@ -22,6 +22,7 @@ export function LoginForm({ t }: { t: Dictionary["auth"] }) {
           type="email"
           required
           autoComplete="username"
+          defaultValue={defaultEmail}
           className="bg-transparent border border-ink/35 px-3 py-2 text-sm outline-none focus:border-ink"
         />
       </div>

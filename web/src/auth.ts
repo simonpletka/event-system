@@ -6,8 +6,14 @@ import type { EventsAccess, FinanceAccess, ExpensesAccess, SettingsAccess } from
 
 type CustomRolePermissions = { events: EventsAccess; finance: FinanceAccess; expenses: ExpensesAccess; settings: SettingsAccess } | null;
 
+// Fixed 8-hour session lifetime: updateAge (24h, the NextAuth default) is
+// longer than maxAge, so a session is never silently refreshed/extended
+// mid-use — it expires exactly 8h after login regardless of activity, and
+// the next request's requireUser() (which re-checks against the DB on
+// every call) naturally bounces the user to /login once the JWT's `exp`
+// has passed. No separate inactivity timer needed.
 export const { handlers, signIn, signOut, auth } = NextAuth({
-  session: { strategy: "jwt" },
+  session: { strategy: "jwt", maxAge: 8 * 60 * 60 },
   pages: { signIn: "/login" },
   providers: [
     Credentials({

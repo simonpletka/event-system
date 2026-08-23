@@ -14,8 +14,17 @@ export type InvoicePdfProps = {
   lang: PdfLang;
   hideItemPrices: boolean;
   discountType: DiscountType;
-  supplier: { name: string; address: string; ico: string; dic: string; bankAccount: string; isVatPayer: boolean };
-  customer: { name: string; address: string; ico: string; dic: string };
+  supplier: {
+    name: string;
+    addressLines: string[];
+    ico: string;
+    dic: string;
+    bankAccount: string;
+    accountNumber: string;
+    swiftBic: string;
+    isVatPayer: boolean;
+  };
+  customer: { name: string; addressLines: string[]; ico: string; dic: string };
   items: { description: string; quantity: number; unitPrice: number; vatRate: number; category: string }[];
   total: number;
   qrDataUrl: string | null;
@@ -52,42 +61,88 @@ export function InvoicePdf({
     <Document>
       <Page size="A4" style={[styles.page, { fontFamily }]}>
         <View style={styles.headerRow}>
-          <View>
-            {/* eslint-disable-next-line jsx-a11y/alt-text -- @react-pdf/renderer's Image has no alt prop; this renders to PDF, not the DOM */}
-            {logoDataUrl ? <Image src={logoDataUrl} style={styles.logoImage} /> : null}
-            <Text style={styles.companyName}>{supplier.name}</Text>
-          </View>
-          <View>
-            <Text style={styles.docLabel}>{t.invoice}</Text>
-            <Text style={styles.docNumber}>{invoiceNumber}</Text>
+          <Text style={styles.wordmark}>{t.invoice.toLowerCase()}</Text>
+          <View style={styles.headerSupplier}>
+            {logoDataUrl ? (
+              // eslint-disable-next-line jsx-a11y/alt-text -- @react-pdf/renderer's Image has no alt prop; this renders to PDF, not the DOM
+              <Image src={logoDataUrl} style={styles.logoImage} />
+            ) : (
+              <View style={[styles.initialChip, { backgroundColor: accent }]}>
+                <Text style={styles.initialChipText}>{supplier.name.charAt(0).toUpperCase()}</Text>
+              </View>
+            )}
+            <Text style={styles.headerSupplierName}>{supplier.name}</Text>
           </View>
         </View>
-        <View style={styles.rule} />
 
-        <View style={styles.partiesRow}>
-          <View style={styles.partyBlock}>
-            <Text style={styles.label}>{t.supplier}</Text>
-            <Text style={styles.partyName}>{supplier.name}</Text>
-            <Text style={styles.partyLine}>{supplier.address}</Text>
-            <Text style={styles.partyLine}>
-              IČO {supplier.ico} · DIČ {supplier.dic}
-            </Text>
-            {supplier.bankAccount ? <Text style={styles.partyLine}>{supplier.bankAccount}</Text> : null}
-            {!supplier.isVatPayer && <Text style={styles.partyLine}>{t.notVatPayer}</Text>}
-          </View>
-          <View style={styles.partyBlock}>
-            <Text style={styles.label}>{t.customer}</Text>
-            <Text style={styles.partyName}>{customer.name}</Text>
-            <Text style={styles.partyLine}>{customer.address}</Text>
-            <Text style={styles.partyLine}>
-              IČO {customer.ico || "—"} · DIČ {customer.dic || "—"}
-            </Text>
-            <Text style={[styles.partyLine, { marginTop: 6 }]}>
+        <View style={styles.bigDateRow}>
+          <View style={styles.bigDateStack}>
+            <Text style={styles.bigDateLine}>
               {t.issued} {date(issuedAt, lang)}
             </Text>
-            <Text style={styles.partyLine}>
+            <Text style={styles.bigDateLine}>
               {t.due} {date(dueDate, lang)}
             </Text>
+          </View>
+          <Text style={styles.bigDocNumber}>{invoiceNumber}</Text>
+        </View>
+
+        <View style={styles.partiesRow}>
+          <View style={styles.partyBlockNarrow}>
+            <Text style={styles.label}>{t.supplier}</Text>
+            <Text style={styles.partyName}>{supplier.name}</Text>
+            {supplier.addressLines.map((line, i) => (
+              <Text key={i} style={styles.partyLine}>
+                {line}
+              </Text>
+            ))}
+            <Text style={[styles.partyLine, { marginTop: 3 }]}>
+              IČO {supplier.ico} · DIČ {supplier.dic}
+            </Text>
+            {!supplier.isVatPayer && <Text style={styles.partyLine}>{t.notVatPayer}</Text>}
+          </View>
+          <View style={styles.partyBlockNarrow}>
+            <Text style={styles.label}>{t.customer}</Text>
+            <Text style={styles.partyName}>{customer.name}</Text>
+            {customer.addressLines.map((line, i) => (
+              <Text key={i} style={styles.partyLine}>
+                {line}
+              </Text>
+            ))}
+            <Text style={[styles.partyLine, { marginTop: 3 }]}>
+              IČO {customer.ico || "—"} · DIČ {customer.dic || "—"}
+            </Text>
+          </View>
+          <View style={styles.paymentBlock}>
+            <Text style={styles.label}>{t.paymentDetails}</Text>
+            {supplier.accountNumber ? (
+              <Text style={styles.partyLine}>
+                {t.accountNumber} {supplier.accountNumber}
+              </Text>
+            ) : null}
+            {supplier.bankAccount ? <Text style={styles.partyLine}>{supplier.bankAccount}</Text> : null}
+            {supplier.swiftBic ? (
+              <Text style={styles.partyLine}>
+                {t.swift} {supplier.swiftBic}
+              </Text>
+            ) : null}
+            <Text style={styles.partyLine}>
+              {t.variableSymbol} {variableSymbol}
+            </Text>
+          </View>
+          <View style={styles.qrBlock}>
+            <Text style={styles.label}>{t.qrPlatba}</Text>
+            {qrDataUrl ? (
+              <>
+                <View style={styles.qrBox}>
+                  {/* eslint-disable-next-line jsx-a11y/alt-text -- @react-pdf/renderer's Image has no alt prop; this renders to PDF, not the DOM */}
+                  <Image src={qrDataUrl} style={styles.qrImageSmall} />
+                </View>
+                <Text style={styles.qrCaptionText}>{t.scanToPay}</Text>
+              </>
+            ) : (
+              <Text style={styles.qrCaptionText}>{currency !== "CZK" ? t.qrCzkOnly : t.noBankAccount}</Text>
+            )}
           </View>
         </View>
 
@@ -150,12 +205,7 @@ export function InvoicePdf({
         </View>
 
         <View style={styles.footerRow}>
-          <Text style={styles.footerText}>
-            {t.variableSymbol} {variableSymbol}
-            {qrDataUrl ? ` · ${t.scanToPay}` : currency !== "CZK" ? ` · ${t.qrCzkOnly}` : ` · ${t.noBankAccount}`}
-          </Text>
-          {/* eslint-disable-next-line jsx-a11y/alt-text -- @react-pdf/renderer's Image has no alt prop; this renders to PDF, not the DOM */}
-          {qrDataUrl ? <Image src={qrDataUrl} style={styles.qrImage} /> : null}
+          <Text style={styles.footerText}>{t.invoiceThanks}</Text>
         </View>
       </Page>
     </Document>

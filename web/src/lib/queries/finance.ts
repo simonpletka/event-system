@@ -64,7 +64,12 @@ export async function getQuoteList(user: SessionUser, filters: QuoteListFilters)
 export const getQuoteDetail = cache(async function getQuoteDetail(user: SessionUser, id: string) {
   return prisma.quote.findFirst({
     where: { id, ...quoteWhereForUser(user) },
-    include: { event: true, items: { orderBy: { sortOrder: "asc" } }, invoices: true, createdBy: true },
+    include: {
+      event: { include: { client: true } },
+      items: { orderBy: { sortOrder: "asc" } },
+      invoices: true,
+      createdBy: true,
+    },
   });
 });
 

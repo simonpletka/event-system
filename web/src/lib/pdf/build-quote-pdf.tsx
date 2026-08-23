@@ -3,6 +3,7 @@ import type { getQuoteDetail, getCompanySettings } from "@/lib/queries/finance";
 import { readLogoAsDataUrl } from "@/lib/uploads";
 import { QuotePdf } from "@/lib/pdf/QuotePdf";
 import type { PdfLang } from "@/lib/pdf/i18n";
+import { addressLines, clientAddressLines } from "@/lib/pdf/shared";
 
 type QuoteDetail = NonNullable<Awaited<ReturnType<typeof getQuoteDetail>>>;
 type Company = Awaited<ReturnType<typeof getCompanySettings>>;
@@ -12,6 +13,9 @@ export async function buildQuotePdfBuffer(quote: QuoteDetail, company: Company, 
   const supplier = company ?? { name: "Company", address: "", ico: "", dic: "", isVatPayer: true };
   const logoDataUrl = company?.logoPath ? await readLogoAsDataUrl(company.logoPath) : null;
 
+  const client = quote.event.client;
+  const customerAddressLines = client ? clientAddressLines(client) : addressLines(quote.event.companyAddress);
+
   return renderToBuffer(
     <QuotePdf
       quoteNumber={quote.number}
@@ -20,10 +24,10 @@ export async function buildQuotePdfBuffer(quote: QuoteDetail, company: Company, 
       currency={quote.currency}
       lang={lang}
       hideItemPrices={quote.hideItemPrices}
-      supplier={supplier}
+      supplier={{ ...supplier, addressLines: addressLines(supplier.address) }}
       customer={{
         name: quote.event.companyName,
-        address: quote.event.companyAddress,
+        addressLines: customerAddressLines,
         ico: quote.event.companyIco,
         dic: quote.event.companyDic,
       }}
@@ -36,6 +40,7 @@ export async function buildQuotePdfBuffer(quote: QuoteDetail, company: Company, 
       }))}
       logoDataUrl={logoDataUrl}
       accentColor={company?.accentColor || "#ec3013"}
+      createdBy={{ name: quote.createdBy.name, email: quote.createdBy.email, phone: quote.createdBy.phone }}
     />
   );
 }
