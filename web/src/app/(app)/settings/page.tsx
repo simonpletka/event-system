@@ -46,7 +46,6 @@ export default async function SettingsPage({
   ]);
   const roleRows = customRoles.map((r) => ({ ...r, userCount: r._count.users }));
   const colors = getAppColors(company);
-  const companyLocale = company?.locale === "cs" ? "cs" : "en";
 
   return (
     <div>
@@ -119,7 +118,6 @@ export default async function SettingsPage({
               phone: freshUser?.phone ?? "",
               avatarPath: freshUser?.avatarPath ?? null,
             }}
-            companyLocale={companyLocale}
             currentLocale={freshUser?.locale === "cs" || freshUser?.locale === "en" ? freshUser.locale : null}
             locale={locale}
           />
@@ -160,7 +158,6 @@ export default async function SettingsPage({
               accentColor: colors.accent,
               positiveColor: colors.positive,
               warningColor: colors.warning,
-              locale,
             }}
             t={t.settings.appSettings}
           />

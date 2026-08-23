@@ -14,15 +14,13 @@ const initialState: SettingsFormState = {};
 
 export function GeneralSettingsForm({
   defaults,
-  companyLocale,
   currentLocale,
   locale,
 }: {
   defaults: { name: string; email: string; phone: string; avatarPath: string | null };
-  companyLocale: Locale;
-  /** The user's own stored override, or null if they're inheriting the company default. */
+  /** The user's own stored language choice — always resolves to a real language now that there's no "company default" option; falls back to `locale` below only for an account that's never saved one yet. */
   currentLocale: Locale | null;
-  /** The app's currently-resolved locale, for this component's own labels — not the same thing as `currentLocale`/`companyLocale` above. */
+  /** The app's currently-resolved locale, for this component's own labels — not the same thing as `currentLocale` above. */
   locale: Locale;
 }) {
   const t = getDictionary(locale).settings.general;
@@ -39,7 +37,7 @@ export function GeneralSettingsForm({
   const [removeAvatar, setRemoveAvatar] = useState(false);
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
   const [avatarFileName, setAvatarFileName] = useState<string | null>(null);
-  const [languageChoice, setLanguageChoice] = useState<"default" | Locale>(currentLocale ?? "default");
+  const [languageChoice, setLanguageChoice] = useState<Locale>(currentLocale ?? locale);
   // React's own "adjusting state when a prop changes" pattern — setState
   // during render, not in an effect (which the project's eslint config
   // forbids for exactly this reason: it'd cost an extra commit). Re-syncs
@@ -52,7 +50,7 @@ export function GeneralSettingsForm({
   const [prevCurrentLocale, setPrevCurrentLocale] = useState(currentLocale);
   if (currentLocale !== prevCurrentLocale) {
     setPrevCurrentLocale(currentLocale);
-    setLanguageChoice(currentLocale ?? "default");
+    setLanguageChoice(currentLocale ?? locale);
   }
 
   return (
@@ -177,20 +175,10 @@ export function GeneralSettingsForm({
             changes underneath it via a server-triggered refresh (confirmed by
             inspecting the live DOM — internal state was correct, but the
             native `.checked` property stayed on the old radio) — remounting
-            these three inputs from scratch sidesteps that instead of fighting
+            these two inputs from scratch sidesteps that instead of fighting
             it. Scoped to just this div, not the whole form, so it doesn't
             reset `languageState` and blow away the success/error message. */}
-        <div key={currentLocale ?? "default"} className="flex flex-col gap-2">
-          <label className="flex items-center gap-1.5 text-[13px]">
-            <input
-              type="radio"
-              name="locale"
-              value="default"
-              defaultChecked={languageChoice === "default"}
-              onChange={() => setLanguageChoice("default")}
-            />
-            {t.useCompanyDefault(companyLocale === "cs" ? t.czech : t.english)}
-          </label>
+        <div key={currentLocale ?? locale} className="flex flex-col gap-2">
           <label className="flex items-center gap-1.5 text-[13px]">
             <input type="radio" name="locale" value="en" defaultChecked={languageChoice === "en"} onChange={() => setLanguageChoice("en")} />
             {t.english}

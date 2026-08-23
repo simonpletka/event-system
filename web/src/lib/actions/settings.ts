@@ -262,8 +262,6 @@ export async function updateAppSettingsAction(_prev: SettingsFormState, formData
     if (!HEX_COLOR.test(value)) return { error: "Every colour must be a hex value like #ec3013." };
   }
 
-  const locale = formData.get("locale") === "cs" ? "cs" : "en";
-
   await prisma.companySettings.upsert({
     where: { id: "singleton" },
     create: {
@@ -273,16 +271,15 @@ export async function updateAppSettingsAction(_prev: SettingsFormState, formData
       ico: "",
       dic: "",
       ...colors,
-      locale,
     },
-    update: { ...colors, locale },
+    update: colors,
   });
 
-  // Colors/locale are read by the root layout on every route, not just
-  // /settings, so the whole shell needs revalidating for the change to
-  // show up immediately rather than on the next unrelated navigation.
+  // Colors are read by the root layout on every route, not just /settings,
+  // so the whole shell needs revalidating for the change to show up
+  // immediately rather than on the next unrelated navigation.
   revalidatePath("/", "layout");
-  return { success: getDictionary(locale).settings.appSettings.savedMsg };
+  return { success: getDictionary(await getLocale()).settings.appSettings.savedMsg };
 }
 
 export async function updateInvoiceEmailingSettingsAction(

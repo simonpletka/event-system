@@ -3,7 +3,7 @@
 import { useActionState, useState } from "react";
 import { updateAppSettingsAction, type SettingsFormState } from "@/lib/actions/settings";
 import { DEFAULT_COLORS } from "@/lib/theme";
-import type { Locale, Dictionary } from "@/lib/dictionary";
+import type { Dictionary } from "@/lib/dictionary";
 
 const initialState: SettingsFormState = {};
 
@@ -14,7 +14,6 @@ type AppSettings = {
   accentColor: string;
   positiveColor: string;
   warningColor: string;
-  locale: Locale;
 };
 
 type T = Dictionary["settings"]["appSettings"];
@@ -88,19 +87,6 @@ export function AppSettingsForm({ defaults, t }: { defaults: AppSettings; t: T }
         >
           {t.resetToDefaults}
         </button>
-
-        <div className="heading-label !text-[12px] mt-2">{t.languageHeading}</div>
-        <div className="flex gap-4">
-          <label className="flex items-center gap-1.5 text-[13px]">
-            <input type="radio" name="locale" value="en" checked={fields.locale === "en"} onChange={() => set("locale", "en")} />
-            {t.english}
-          </label>
-          <label className="flex items-center gap-1.5 text-[13px]">
-            <input type="radio" name="locale" value="cs" checked={fields.locale === "cs"} onChange={() => set("locale", "cs")} />
-            {t.czech}
-          </label>
-        </div>
-        <span className="text-[9px] placeholder-text -mt-1">{t.appliesWholeApp}</span>
 
         {state.error && <p className="text-sm text-warning">{state.error}</p>}
         {state.success && <p className="text-sm">{state.success}</p>}
