@@ -366,6 +366,10 @@ Verified live in the browser: Events table and Settings → Users & roles both c
 
 Verified live in the browser: Events table and Finance → Invoices both confirmed at the larger 15px row text, Settings → Users & roles confirmed too (both the users table and the role-reference table), all with column alignment intact. Clean `npm run build` + `npm run lint`; dev DB reseeded back to empty afterward.
 
+**Events table: dropped the next-milestone subtitle under the event name, made the name itself bigger.** `events/page.tsx`'s desktop row previously showed the event's next milestone title (or "—") as a small `.label` line directly under the event name (e.g. "Tech walkthrough at venue" under "Autumn Conference 2026") — removed entirely per direct request. The event name span went from `font-medium` (inheriting the row's 15px) to its own `text-[17px] font-semibold`, so it now reads as the clear focal point of the row instead of being the same weight as the event number prefix next to it. The event number prefix (`26-001` etc.) stays small/muted as before. Mobile's `MobileListRow` never showed the milestone line in the first place, so nothing needed to change there.
+
+Verified live in the browser: the Events table's rows now show only the event number and a visibly larger, bolder event name — the "Tech walkthrough at venue" subtitle that used to appear under Autumn Conference 2026 is gone. Clean `npm run build` + `npm run lint`; dev DB reseeded back to empty afterward.
+
 ## Environment
 
 This machine had **no Node.js, npm, Homebrew, Docker, or working Postgres** when the project started (MacPorts is present but broken — OS/platform mismatch). Network access works.

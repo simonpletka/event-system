@@ -133,8 +133,7 @@ export default async function EventsPage({
           >
             <div className="group-hover:text-accent">
               <span className="placeholder-text text-[11px] mr-1 group-hover:!text-accent">{event.number}</span>
-              <span className="font-medium">{event.title}</span>
-              <div className="label group-hover:!text-accent">{event.milestones[0]?.title ?? "—"}</div>
+              <span className="text-[17px] font-semibold">{event.title}</span>
             </div>
             <div className="placeholder-text group-hover:!text-accent">{event.companyName}</div>
             <div className="placeholder-text group-hover:!text-accent">{formatDateRange(event.startDate, event.endDate)}</div>
