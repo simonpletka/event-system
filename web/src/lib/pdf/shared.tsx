@@ -19,9 +19,25 @@ const ROW_BORDER = "#322e2b";
 // The built-in "Helvetica" standard font only covers WinAnsi (cp1252), which
 // is missing ě/ř/ů/ď/ť/ň — real Czech diacritics were silently dropping from
 // PDFs (e.g. "Vojtěšská" -> "Vojtská"). Neue Regrade covers all of them.
-// Same file registered at both weights since it's the only style file kept
-// on disk — react-pdf needs *a* match for `fontWeight: 700` or it throws.
-const FONT_PATH = path.join(process.cwd(), "src/fonts/neue-regrade/NeueRegrade-Variable.ttf");
+//
+// Two separate STATIC instances, not the variable TTF used elsewhere (the
+// live app's `next/font/local` in layout.tsx uses the variable file directly
+// and that's correct — browsers interpolate variable-font weight axes fine).
+// react-pdf's font pipeline (fontkit) does not: registering the same
+// variable file under both fontWeight 400 and 700 silently produced
+// IDENTICAL glyph outlines for both — fontkit loads a variable font at its
+// default axis position (this file's default is wght=300) regardless of the
+// nominal `fontWeight` key react-pdf was told to associate it with, and
+// fontkit's own subsetting of a live variation instance
+// (`font.getVariation({wght:700}).createSubset()`) throws outright — a
+// known rough edge, not something to build around at request time. Fixed at
+// the source instead: `fonttools varLib.instancer` (already used elsewhere
+// in this project to inspect this same font) flattens the variable font
+// into two real static instances at build-prep time, committed to disk —
+// confirmed visually distinct (Pillow render, plain vs. clearly bold
+// strokes) before wiring them in.
+const FONT_PATH_REGULAR = path.join(process.cwd(), "src/fonts/neue-regrade/NeueRegrade-Regular.ttf");
+const FONT_PATH_BOLD = path.join(process.cwd(), "src/fonts/neue-regrade/NeueRegrade-Bold.ttf");
 
 // Deliberately NOT registered once at module scope under a fixed family name.
 // @react-pdf/font's FontStore caches the loaded fontkit font object per
@@ -40,8 +56,8 @@ export function registerAppFont(): string {
   Font.register({
     family,
     fonts: [
-      { src: FONT_PATH, fontWeight: 400 },
-      { src: FONT_PATH, fontWeight: 700 },
+      { src: FONT_PATH_REGULAR, fontWeight: 400 },
+      { src: FONT_PATH_BOLD, fontWeight: 700 },
     ],
   });
   return family;
