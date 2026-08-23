@@ -10,6 +10,7 @@ import { QuoteStatusPill } from "@/components/StatusPill";
 import { DownloadPdfButton } from "@/components/finance/DownloadPdfButton";
 import { groupItemsByCategory, categoryTotal } from "@/lib/line-items";
 import { getLocale, getDictionary } from "@/lib/i18n";
+import { addressLines, clientAddressLines, DEFAULT_ACCENT } from "@/lib/pdf/shared";
 
 export default async function QuoteDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const user = await requireUser();
@@ -17,6 +18,11 @@ export default async function QuoteDetailPage({ params }: { params: Promise<{ id
   const t = getDictionary(await getLocale());
   const [quote, company] = await Promise.all([getQuoteDetail(user, id), getCompanySettings()]);
   if (!quote) notFound();
+
+  const supplierAddressLines = addressLines(company?.address ?? "");
+  const client = quote.event.client;
+  const customerAddressLines = client ? clientAddressLines(client) : addressLines(quote.event.companyAddress);
+  const accent = company?.accentColor || DEFAULT_ACCENT;
 
   const canManage = canManageFinance(user);
   const base = quote.items.reduce((s, i) => s + i.quantity * i.unitPrice, 0);
@@ -84,33 +90,63 @@ export default async function QuoteDetailPage({ params }: { params: Promise<{ id
 
       <div className="grid grid-cols-1 md:grid-cols-[1fr_280px] gap-5 mt-5">
         {/* PDF preview — same content/layout the generated PDF renders, so this box IS the preview. */}
-        <div className="card p-5 flex flex-col gap-2.5">
+        <div className="card p-6 md:p-8 flex flex-col gap-2.5">
           <div className="flex justify-between items-start">
-            <div className="text-sm font-semibold">{company?.name ?? t.finance.quotes.companyFallback}</div>
-            <div className="text-right">
-              <div className="label">{t.finance.quotes.quoteLabel}</div>
-              <div className="text-sm font-semibold">{quote.number}</div>
+            <div className="text-[40px] leading-[0.85] font-bold tracking-tight lowercase">{t.finance.quotes.quoteLabel}</div>
+            <div className="flex flex-col items-end gap-1">
+              {company?.logoPath ? (
+                // eslint-disable-next-line @next/next/no-img-element -- authenticated route, not a static asset next/image can optimize
+                <img src={`/api/uploads/logo/${company.logoPath}`} alt="" className="w-7 h-7 object-contain" />
+              ) : (
+                <div
+                  className="w-5 h-5 rounded-[5px] flex items-center justify-center text-[10px] font-bold text-white"
+                  style={{ backgroundColor: accent }}
+                >
+                  {(company?.name ?? t.finance.quotes.companyFallback).charAt(0).toUpperCase()}
+                </div>
+              )}
+              <div className="text-[10px] font-bold">{company?.name ?? t.finance.quotes.companyFallback}</div>
             </div>
           </div>
-          <div className="rule" />
-          <div className="grid grid-cols-2 gap-3 text-[11px]">
-            <div>
-              <div className="label">{t.finance.quotes.supplier}</div>
-              {company?.name}
-              <div className="placeholder-text">
-                {company?.address}
-                <br />
-                {`IČO ${company?.ico} · DIČ ${company?.dic}`}
+
+          <div className="flex justify-between items-start mt-4">
+            <div className="text-[13px] leading-[1.4]">
+              <div>
+                {t.finance.quotes.colIssued} {formatDate(quote.issuedAt)}
+              </div>
+              <div>
+                {t.finance.quotes.colValidTo} {formatDate(quote.validUntil)}
               </div>
             </div>
+            <div className="text-[13px] font-bold">{quote.number}</div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-[11px] mt-5">
             <div>
-              <div className="label">{t.finance.quotes.customer}</div>
-              {quote.event.companyName}
-              <div className="placeholder-text">
-                {quote.event.companyAddress}
-                <br />
-                {`IČO ${quote.event.companyIco || "—"} · DIČ ${quote.event.companyDic || "—"}`}
-              </div>
+              <div className="label mb-1">{t.finance.quotes.supplier}</div>
+              <div className="font-semibold">{company?.name}</div>
+              {supplierAddressLines.map((line) => (
+                <div key={line} className="placeholder-text">
+                  {line}
+                </div>
+              ))}
+              <div className="placeholder-text mt-1">{`IČO ${company?.ico} · DIČ ${company?.dic}`}</div>
+            </div>
+            <div>
+              <div className="label mb-1">{t.finance.quotes.customer}</div>
+              <div className="font-semibold">{quote.event.companyName}</div>
+              {customerAddressLines.map((line) => (
+                <div key={line} className="placeholder-text">
+                  {line}
+                </div>
+              ))}
+              <div className="placeholder-text mt-1">{`IČO ${quote.event.companyIco || "—"} · DIČ ${quote.event.companyDic || "—"}`}</div>
+            </div>
+            <div>
+              <div className="label mb-1">{t.finance.quotes.createdByHeading}</div>
+              <div className="font-semibold text-[13px]">{quote.createdBy.name}</div>
+              {quote.createdBy.email && <div className="placeholder-text text-[10px]">{quote.createdBy.email}</div>}
+              {quote.createdBy.phone && <div className="placeholder-text text-[10px]">{quote.createdBy.phone}</div>}
             </div>
           </div>
 
@@ -163,11 +199,15 @@ export default async function QuoteDetailPage({ params }: { params: Promise<{ id
             </div>
             <div className="flex items-center gap-1.5">
               <span className="label mr-1">{t.finance.quotes.total}</span>
-              <span className="font-semibold text-base">{formatCurrency(base + vat, quote.currency)}</span>
+              <span className="font-bold text-base" style={{ color: accent }}>
+                {formatCurrency(base + vat, quote.currency)}
+              </span>
               <span className="tag tag-neutral">{quote.currency}</span>
             </div>
           </div>
-          <div className="placeholder-text text-[9px] mt-auto pt-2">{t.finance.quotes.renderedNote(formatDate(quote.validUntil))}</div>
+          <div className="placeholder-text text-[9px] mt-auto pt-4 border-t border-ink/10">
+            {t.finance.quotes.renderedNote(formatDate(quote.validUntil))}
+          </div>
         </div>
 
         <div className="flex flex-col gap-3">

@@ -4,7 +4,17 @@ import type { CurrencyCode } from "@/lib/format";
 import type { PdfLang } from "./i18n";
 
 export const DEFAULT_ACCENT = "#ec3013";
-export const INK = "#201e1d";
+// Matches the app's own dark theme tokens (and the approved "Invoice Quote
+// Mockup" design canvas) — the generated PDF is dark-background/light-text,
+// not a light printable page. BG/INK/MUTED/LINE/RULE/ROW_BORDER are the
+// exact hex values the mockup used (background #131211, text #f3f2f2,
+// muted uppercase labels #918e87, secondary body text #c7c5c0).
+export const BG = "#131211";
+export const INK = "#f3f2f2";
+const MUTED = "#918e87";
+const LINE = "#c7c5c0";
+const RULE = "#f3f2f2";
+const ROW_BORDER = "#322e2b";
 
 // The built-in "Helvetica" standard font only covers WinAnsi (cp1252), which
 // is missing ě/ř/ů/ď/ť/ň — real Czech diacritics were silently dropping from
@@ -81,7 +91,7 @@ export function clientAddressLines(client: { street: string; city: string; postC
 }
 
 export const sharedStyles = StyleSheet.create({
-  page: { padding: 36, fontSize: 10, color: INK },
+  page: { padding: 36, fontSize: 10, color: INK, backgroundColor: BG },
 
   // Big lowercase wordmark header: doc word on the left, logo/initial chip + supplier name top-right.
   headerRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "flex-start" },
@@ -107,32 +117,32 @@ export const sharedStyles = StyleSheet.create({
   partiesRow: { flexDirection: "row", marginTop: 20, marginBottom: 16, gap: 14 },
   partyBlockNarrow: { width: "24%" },
   partyBlockWide: { width: "29%" },
-  label: { fontSize: 8, letterSpacing: 1, textTransform: "uppercase", color: "#666", marginBottom: 3 },
+  label: { fontSize: 8, letterSpacing: 1, textTransform: "uppercase", color: MUTED, marginBottom: 3 },
   partyName: { fontSize: 11, fontWeight: 700, marginBottom: 2 },
-  partyLine: { fontSize: 9, color: "#444", lineHeight: 1.45 },
+  partyLine: { fontSize: 9, color: LINE, lineHeight: 1.45 },
 
   // Invoice-only: payment-details column (text) beside its own QR column.
   paymentBlock: { width: "32%" },
   qrBlock: { width: "14%" },
-  qrBox: { backgroundColor: "#f3f2f2", borderRadius: 6, padding: 5, width: 52, alignSelf: "flex-start" },
+  qrBox: { backgroundColor: RULE, borderRadius: 6, padding: 5, width: 52, alignSelf: "flex-start" },
   qrImageSmall: { width: 42, height: 42 },
-  qrCaptionText: { fontSize: 7, color: "#666", marginTop: 4, lineHeight: 1.3 },
+  qrCaptionText: { fontSize: 7, color: MUTED, marginTop: 4, lineHeight: 1.3 },
 
   table: { marginTop: 8 },
   tableHeaderRow: {
     flexDirection: "row",
     borderBottomWidth: 2,
-    borderBottomColor: INK,
+    borderBottomColor: RULE,
     paddingBottom: 4,
     marginBottom: 4,
   },
-  tableRow: { flexDirection: "row", paddingVertical: 4, borderBottomWidth: 1, borderBottomColor: "#ddd" },
+  tableRow: { flexDirection: "row", paddingVertical: 4, borderBottomWidth: 1, borderBottomColor: ROW_BORDER },
   colDesc: { width: "46%" },
   colQty: { width: "12%", textAlign: "right" },
   colUnit: { width: "16%", textAlign: "right" },
   colVat: { width: "10%", textAlign: "right" },
   colTotal: { width: "16%", textAlign: "right" },
-  th: { fontSize: 8, letterSpacing: 0.6, textTransform: "uppercase", color: "#666" },
+  th: { fontSize: 8, letterSpacing: 0.6, textTransform: "uppercase", color: MUTED },
   summaryRow: { flexDirection: "row", justifyContent: "flex-end", marginTop: 12, gap: 24 },
   summaryBlock: { alignItems: "flex-end" },
   summaryValue: { fontSize: 10 },
@@ -141,7 +151,7 @@ export const sharedStyles = StyleSheet.create({
     marginTop: 40,
     paddingTop: 12,
     borderTopWidth: 1,
-    borderTopColor: "#ddd",
+    borderTopColor: ROW_BORDER,
   },
-  footerText: { fontSize: 8, color: "#666" },
+  footerText: { fontSize: 8, color: MUTED },
 });

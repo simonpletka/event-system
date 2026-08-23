@@ -13,33 +13,44 @@ import { buildIsdocXml } from "@/lib/isdoc";
 type InvoiceDetail = NonNullable<Awaited<ReturnType<typeof getInvoiceDetail>>>;
 type Company = Awaited<ReturnType<typeof getCompanySettings>>;
 
+export const FALLBACK_SUPPLIER = {
+  name: "Company",
+  address: "",
+  ico: "",
+  dic: "",
+  bankAccount: "",
+  accountNumber: "",
+  swiftBic: "",
+  isVatPayer: true,
+};
+
+/**
+ * Generates the same "QR Platba" data URL the PDF embeds — factored out so
+ * the invoice detail page's on-screen preview can show the identical code
+ * instead of silently omitting it. Czech "QR Platba" is a CZK-domestic
+ * payment standard — generating one for a foreign-currency invoice would be
+ * misleading, not just unhelpful, so this returns null for those too.
+ */
+export async function getInvoiceQrDataUrl(
+  invoice: Pick<InvoiceDetail, "number" | "total" | "amountPaid" | "currency" | "variableSymbol">,
+  supplier: { bankAccount: string }
+): Promise<string | null> {
+  if (!supplier.bankAccount || invoice.currency !== "CZK") return null;
+  const spd = buildQrPaymentString({
+    iban: supplier.bankAccount,
+    amount: invoice.total - invoice.amountPaid,
+    variableSymbol: invoice.variableSymbol || variableSymbolFor(invoice.number),
+    message: `Invoice ${invoice.number}`,
+  });
+  return QRCode.toDataURL(spd, { margin: 0 });
+}
+
 /** Shared by the /api/invoices/[id]/pdf route and the invoice-emailing actions — same PDF either way. */
 export async function buildInvoicePdfBuffer(invoice: InvoiceDetail, company: Company, lang: PdfLang) {
-  const supplier = company ?? {
-    name: "Company",
-    address: "",
-    ico: "",
-    dic: "",
-    bankAccount: "",
-    accountNumber: "",
-    swiftBic: "",
-    isVatPayer: true,
-  };
+  const supplier = company ?? FALLBACK_SUPPLIER;
 
   const logoDataUrl = company?.logoPath ? await readLogoAsDataUrl(company.logoPath) : null;
-
-  let qrDataUrl: string | null = null;
-  // Czech "QR Platba" is a CZK-domestic payment standard — generating one
-  // for a foreign-currency invoice would be misleading, not just unhelpful.
-  if (supplier.bankAccount && invoice.currency === "CZK") {
-    const spd = buildQrPaymentString({
-      iban: supplier.bankAccount,
-      amount: invoice.total - invoice.amountPaid,
-      variableSymbol: invoice.variableSymbol || variableSymbolFor(invoice.number),
-      message: `Invoice ${invoice.number}`,
-    });
-    qrDataUrl = await QRCode.toDataURL(spd, { margin: 0 });
-  }
+  const qrDataUrl = await getInvoiceQrDataUrl(invoice, supplier);
 
   // The linked Client (if any) has a real structured address; the Event's
   // own embedded companyAddress — what every other screen actually reads
