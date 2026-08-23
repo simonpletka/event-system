@@ -90,7 +90,7 @@ export default async function QuotesPage({
         {quotes.map((q) => (
           <div
             key={q.id}
-            className="group grid grid-cols-[.8fr_1.3fr_1fr_.7fr_.7fr_.8fr_.9fr_1fr] gap-2.5 items-center py-3.5 px-3.5 rounded-xl border-b border-ink/8 last:border-b-0 text-[14px] hover:bg-ink/5"
+            className="group grid grid-cols-[.8fr_1.3fr_1fr_.7fr_.7fr_.8fr_.9fr_1fr] gap-2.5 items-center py-3.5 px-3.5 rounded-xl border-b border-ink/8 last:border-b-0 text-[15px] hover:bg-ink/5"
           >
             <Link href={`/finance/quotes/${q.id}`} className="font-medium group-hover:text-accent">
               {q.number}

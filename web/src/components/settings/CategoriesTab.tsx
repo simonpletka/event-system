@@ -60,7 +60,7 @@ function CategoryRowItem({ category, t }: { category: CategoryRow; t: T }) {
   }
 
   return (
-    <div className="grid grid-cols-[1fr_auto] gap-2.5 items-center py-3 border-b border-ink/13 text-[14px]">
+    <div className="grid grid-cols-[1fr_auto] gap-2.5 items-center py-3 border-b border-ink/13 text-[15px]">
       <div>{category.name}</div>
       <div className="flex gap-2 text-[9px] tracking-[0.1em] uppercase">
         <button type="button" onClick={() => setEditing(true)} className="placeholder-text hover:text-ink">

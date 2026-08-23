@@ -24,7 +24,7 @@ export default async function ExpensesTab({ params }: { params: Promise<{ id: st
       {event.expenses.length === 0 && <p className="text-sm placeholder-text">{te.noExpensesRecorded}</p>}
       <div className="hidden md:block">
         {event.expenses.map((exp) => (
-          <div key={exp.id} className="grid grid-cols-[80px_1fr_1fr_auto] gap-2.5 items-center py-2.5 border-b border-ink/10 text-[14px]">
+          <div key={exp.id} className="grid grid-cols-[80px_1fr_1fr_auto] gap-2.5 items-center py-2.5 border-b border-ink/10 text-[15px]">
             <div className="placeholder-text">{formatDate(exp.date)}</div>
             <div>{t.expenseCategories[exp.category]}</div>
             <div className="placeholder-text">{exp.paidBy.name}{exp.note ? ` · ${exp.note}` : ""}</div>

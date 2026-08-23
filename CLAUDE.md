@@ -362,6 +362,10 @@ Verified live in the browser across a representative sample: Events table, Finan
 
 Verified live in the browser: Events table and Settings → Users & roles both confirmed at the larger row text with column alignment intact (the Events table's "Autumn Conference 2026" row correctly wrapped its venue text onto two lines at the new size, which is expected). Clean `npm run build` + `npm run lint`; dev DB reseeded back to empty afterward.
 
+**Table row text bumped again, to 15px explicitly (not another +1px) — user asked for the specific value this time.** Same set, same exclusions as both passes above: `text-[14px]` → `text-[15px]` on every desktop table row across clients, events, finance (invoices/quotes/expenses/reports), event-detail sub-tabs, time tracker, and the shared Users/Roles/Categories tables. Deliberately left `text-[14px]` values that were never part of this table-row set untouched — e.g. the mobile-card title spans in `finance/quotes/page.tsx`/`finance/expenses/page.tsx` (`md:hidden`, a different display path) happen to already be at 14px for unrelated reasons and were correctly not touched.
+
+Verified live in the browser: Events table and Finance → Invoices both confirmed at the larger 15px row text, Settings → Users & roles confirmed too (both the users table and the role-reference table), all with column alignment intact. Clean `npm run build` + `npm run lint`; dev DB reseeded back to empty afterward.
+
 ## Environment
 
 This machine had **no Node.js, npm, Homebrew, Docker, or working Postgres** when the project started (MacPorts is present but broken — OS/platform mismatch). Network access works.

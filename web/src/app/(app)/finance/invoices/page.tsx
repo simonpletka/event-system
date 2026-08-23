@@ -104,7 +104,7 @@ export default async function InvoicesPage({
         {invoices.map((inv) => (
           <div
             key={inv.id}
-            className="group grid grid-cols-[.8fr_1.2fr_.9fr_.6fr_.6fr_.8fr_1fr_.7fr] gap-2.5 items-center py-3.5 px-3.5 rounded-xl border-b border-ink/8 last:border-b-0 text-[14px] hover:bg-ink/5"
+            className="group grid grid-cols-[.8fr_1.2fr_.9fr_.6fr_.6fr_.8fr_1fr_.7fr] gap-2.5 items-center py-3.5 px-3.5 rounded-xl border-b border-ink/8 last:border-b-0 text-[15px] hover:bg-ink/5"
           >
             <Link href={`/finance/invoices/${inv.id}`} className="font-medium group-hover:text-accent">
               {inv.number}
