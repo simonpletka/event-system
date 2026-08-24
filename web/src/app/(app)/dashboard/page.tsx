@@ -2,7 +2,8 @@ import Link from "next/link";
 import { requireUser, canCreateEvent } from "@/lib/authz";
 import { getDashboardData, getDashboardTimeline, type TimelineItem } from "@/lib/queries/dashboard";
 import { getWeekCalendarData } from "@/lib/queries/calendar";
-import { formatCurrency, formatCompactCurrency, formatDate, formatDateRange, niceAxisMax } from "@/lib/format";
+import { getOverviewData } from "@/lib/queries/timetracker";
+import { formatCurrency, formatDate, formatDateRange, formatMinutes, niceAxisMax } from "@/lib/format";
 import { EventStatusPill } from "@/components/StatusPill";
 import { WeekCalendar } from "@/components/calendar/WeekCalendar";
 import { WeekNav } from "@/components/calendar/WeekNav";
@@ -24,14 +25,15 @@ export default async function DashboardPage({
   const view = params.view === "timeline" || params.view === "calendar" ? params.view : "list";
   const weekStart = mondayOf(params.week ? parseIsoDate(params.week) : new Date());
 
-  const [data, timeline, calendarEvents] = await Promise.all([
+  const [data, timeline, calendarEvents, myWeeklyTime] = await Promise.all([
     getDashboardData(user),
     view === "timeline" ? getDashboardTimeline(user) : Promise.resolve(null),
     view === "calendar" ? getWeekCalendarData(user, weekStart) : Promise.resolve(null),
+    getOverviewData([{ id: user.id, name: user.name ?? "" }], "week", new Date()),
   ]);
-  const maxMonthly = Math.max(1, ...data.monthly.flatMap((m) => [m.income, m.expense]));
-  const axisMax = niceAxisMax(maxMonthly);
-  const axisTicks = [axisMax, axisMax * 0.75, axisMax * 0.5, axisMax * 0.25, 0].map((v) => formatCompactCurrency(v));
+  const myTime = myWeeklyTime.people[0];
+  const timeAxisMax = niceAxisMax(Math.max(1, ...(myTime?.byBucket ?? [0])));
+  const timeAxisTicks = [timeAxisMax, timeAxisMax * 0.75, timeAxisMax * 0.5, timeAxisMax * 0.25, 0].map((v) => formatMinutes(v));
 
   const viewOptions = [
     { value: "list", label: t.dashboard.viewList, href: "/dashboard" },
@@ -168,70 +170,50 @@ export default async function DashboardPage({
         <div className="card px-6 py-5">
           <div className="flex items-start justify-between flex-wrap gap-3">
             <div>
-              <div className="heading-label !text-[12px]">{t.dashboard.balance}</div>
-              {data.monthly.length > 0 && (
-                <div className="text-[12.5px] placeholder-text mt-1">{t.dashboard.balanceSubtitle(data.monthly.length)}</div>
-              )}
+              <div className="heading-label !text-[12px]">{t.dashboard.myTrackedTime}</div>
+              <div className="text-[12.5px] placeholder-text mt-1">{t.dashboard.myTrackedTimeSubtitle}</div>
             </div>
-            <div className="flex gap-4 text-[12px] text-ink/70">
-              <span className="flex items-center gap-1.5">
-                <span className="w-2.5 h-2.5 rounded-sm" style={{ background: INCOME_CHART_COLOR }} /> {t.dashboard.income}
-              </span>
-              <span className="flex items-center gap-1.5">
-                <span className="w-2.5 h-2.5 rounded-sm bg-accent" /> {t.dashboard.expense}
-              </span>
-            </div>
+            {myTime && myTime.total > 0 && (
+              <div className="text-[15px] font-semibold tabular-nums">{formatMinutes(myTime.total)}</div>
+            )}
           </div>
 
-          {data.monthly.length === 0 ? (
+          {!myTime || myTime.total === 0 ? (
             <p className="text-sm placeholder-text mt-3">{t.dashboard.notEnoughData}</p>
           ) : (
             <>
               <div className="relative h-56 mt-6">
-                <ChartAxisGrid ticks={axisTicks} />
+                <ChartAxisGrid ticks={timeAxisTicks} />
                 <div className="absolute left-[74px] right-1 top-0 bottom-0 flex items-end justify-between gap-1.5">
-                  {data.monthly.map((m, i) => {
-                    const isLast = i === data.monthly.length - 1;
+                  {myWeeklyTime.buckets.map((b, i) => {
+                    const minutes = myTime.byBucket[i];
+                    const isToday = new Date() >= b.start && new Date() < b.end;
                     return (
-                      <div key={m.label} className="flex items-end gap-1.5" style={{ height: 224 }}>
-                        <div className="flex flex-col items-center justify-end" style={{ height: "100%" }}>
-                          {isLast && (
-                            <span className="text-[10.5px] font-semibold tabular-nums text-ink whitespace-nowrap mb-1">
-                              {formatCurrency(m.income)}
-                            </span>
-                          )}
-                          <div
-                            className="w-4 rounded-t"
-                            style={{ height: `${(m.income / axisMax) * 100}%`, background: INCOME_CHART_COLOR }}
-                            title={t.dashboard.incomeAmount(formatCurrency(m.income))}
-                          />
-                        </div>
-                        <div className="flex flex-col items-center justify-end" style={{ height: "100%" }}>
-                          {isLast && (
-                            <span className="text-[10.5px] font-semibold tabular-nums text-ink whitespace-nowrap mb-1">
-                              {formatCurrency(m.expense)}
-                            </span>
-                          )}
-                          <div
-                            className="w-4 rounded-t bg-accent"
-                            style={{ height: `${(m.expense / axisMax) * 100}%` }}
-                            title={t.dashboard.expenseAmount(formatCurrency(m.expense))}
-                          />
-                        </div>
+                      <div key={b.label} className="flex flex-col items-center justify-end flex-1" style={{ height: "100%" }}>
+                        {isToday && minutes > 0 && (
+                          <span className="text-[10.5px] font-semibold tabular-nums text-ink whitespace-nowrap mb-1">
+                            {formatMinutes(minutes)}
+                          </span>
+                        )}
+                        <div
+                          className="w-4 rounded-t"
+                          style={{ height: `${(minutes / timeAxisMax) * 100}%`, background: INCOME_CHART_COLOR }}
+                          title={t.dashboard.trackedAmount(formatMinutes(minutes))}
+                        />
                       </div>
                     );
                   })}
                 </div>
               </div>
               <div className="flex ml-[74px] mr-1 justify-between mt-2.5">
-                {data.monthly.map((m, i) => (
-                  <span
-                    key={m.label}
-                    className={`text-[11.5px] flex-1 text-center ${i === data.monthly.length - 1 ? "font-semibold text-ink" : "placeholder-text"}`}
-                  >
-                    {m.label}
-                  </span>
-                ))}
+                {myWeeklyTime.buckets.map((b) => {
+                  const isToday = new Date() >= b.start && new Date() < b.end;
+                  return (
+                    <span key={b.label} className={`text-[11.5px] flex-1 text-center ${isToday ? "font-semibold text-ink" : "placeholder-text"}`}>
+                      {b.label}
+                    </span>
+                  );
+                })}
               </div>
             </>
           )}

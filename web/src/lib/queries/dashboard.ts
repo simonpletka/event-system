@@ -6,7 +6,7 @@ export async function getDashboardData(user: SessionUser) {
   const expenseWhere = expenseWhereForUser(user);
   const now = new Date();
 
-  const [overdueInvoices, waitingQuotes, eventsToInvoice, upcomingEvents, latestExpenses, allInvoices, allExpenses] =
+  const [overdueInvoices, waitingQuotes, eventsToInvoice, upcomingEvents, latestExpenses] =
     await Promise.all([
       prisma.invoice.findMany({
         where: { status: { not: "PAID" }, dueDate: { lt: now }, event: eventWhere },
@@ -34,8 +34,6 @@ export async function getDashboardData(user: SessionUser) {
         orderBy: { date: "desc" },
         take: 4,
       }),
-      prisma.invoice.findMany({ where: { event: eventWhere }, select: { total: true, issuedAt: true } }),
-      prisma.expense.findMany({ where: expenseWhere, select: { amount: true, date: true } }),
     ]);
 
   const oldestOverdueDays = overdueInvoices.length
@@ -47,8 +45,6 @@ export async function getDashboardData(user: SessionUser) {
   const oldestQuoteDays = waitingQuotes.length
     ? Math.max(...waitingQuotes.map((q) => Math.floor((now.getTime() - q.issuedAt.getTime()) / 86400000)))
     : 0;
-
-  const monthly = buildMonthlyBalance(allInvoices, allExpenses);
 
   return {
     needsAttention: {
@@ -69,7 +65,6 @@ export async function getDashboardData(user: SessionUser) {
     },
     upcomingEvents,
     latestExpenses,
-    monthly,
   };
 }
 
@@ -101,26 +96,4 @@ export async function getDashboardTimeline(user: SessionUser): Promise<TimelineI
   }
 
   return items.sort((a, b) => a.date.getTime() - b.date.getTime());
-}
-
-function buildMonthlyBalance(
-  invoices: { total: number; issuedAt: Date }[],
-  expenses: { amount: number; date: Date }[]
-) {
-  const key = (d: Date) => `${d.getFullYear()}-${d.getMonth()}`;
-  const label = (d: Date) => d.toLocaleDateString("en-GB", { month: "short" });
-
-  const months = new Map<string, { label: string; income: number; expense: number; order: number }>();
-  const touch = (d: Date) => {
-    const k = key(d);
-    if (!months.has(k)) {
-      months.set(k, { label: label(d), income: 0, expense: 0, order: d.getFullYear() * 12 + d.getMonth() });
-    }
-    return months.get(k)!;
-  };
-
-  for (const inv of invoices) touch(inv.issuedAt).income += inv.total;
-  for (const exp of expenses) touch(exp.date).expense += exp.amount;
-
-  return [...months.values()].sort((a, b) => a.order - b.order).slice(-6);
 }
