@@ -74,11 +74,20 @@ export function WeekCalendar({
   const [, startTransition] = useTransition();
   const dragRef = useRef<DragPayload | null>(null);
   const [dragOverIdx, setDragOverIdx] = useState<number | null>(null);
+  const [draggingKey, setDraggingKey] = useState<string | null>(null);
 
   const scrollRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: DEFAULT_VIEW_START_HOUR * HOUR_PX });
   }, [weekStart]);
+
+  const [now, setNow] = useState(() => new Date());
+  useEffect(() => {
+    const id = setInterval(() => setNow(new Date()), 30000);
+    return () => clearInterval(id);
+  }, []);
+  const nowTop = ((now.getHours() * 60 + now.getMinutes()) / 60) * HOUR_PX;
+  const nowLabel = `${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}`;
 
   /**
    * The hourly grid's day columns double as the drop target for both
@@ -230,11 +239,22 @@ export function WeekCalendar({
       <div className="hidden md:block">
       <div className="grid grid-cols-[44px_repeat(7,minmax(0,1fr))] border-b border-ink/20 pb-1">
         <div className="heading-label !text-[11px] !tracking-normal whitespace-nowrap">WEEK {isoWeekNumber(weekStart)}</div>
-        {days.map((d) => (
-          <div key={d.toISOString()} className={`heading-label !text-[9px] font-semibold text-center ${isSameDay(d, today) ? "text-accent" : ""}`}>
-            {dayHeaderLabel(d)}
-          </div>
-        ))}
+        {days.map((d) => {
+          const [dow, num] = dayHeaderLabel(d).split(" ");
+          const isToday = isSameDay(d, today);
+          return (
+            <div key={d.toISOString()} className="heading-label !text-[9px] font-semibold flex items-center justify-center">
+              <span
+                className={`inline-flex items-center gap-1.5 !tracking-normal rounded-full ${
+                  isToday ? "bg-warning text-ink px-2 py-1" : ""
+                }`}
+              >
+                <span>{dow}</span>
+                <span>{num}</span>
+              </span>
+            </div>
+          );
+        })}
       </div>
 
       {bars.length > 0 && (
@@ -242,22 +262,27 @@ export function WeekCalendar({
           <div className="label font-semibold" style={{ gridRow: 1, gridColumn: 1 }}>
             {t.allDay}
           </div>
-          {bars.map((bar, i) => (
+          {bars.map((bar, i) => {
+            const barKey = `bar-${i}`;
+            return (
             <Link
               key={i}
               href={eventHref(bar.eventId)}
               title={bar.address ? `${bar.title} — ${bar.address}` : bar.title}
               draggable
-              onDragStart={() => {
+              onDragStart={(e) => {
                 dragRef.current = { type: "bar", eventId: bar.eventId, anchorCol: bar.colStart };
+                setDraggingKey(barKey);
+                e.dataTransfer.effectAllowed = "move";
               }}
               onDragEnd={() => {
                 dragRef.current = null;
                 setDragOverIdx(null);
+                setDraggingKey(null);
               }}
-              className={`overflow-hidden px-1.5 flex flex-col justify-center gap-0.5 cursor-grab active:cursor-grabbing ${
-                bar.kind === "main" ? "bg-accent text-ink" : "bg-ink/14"
-              }`}
+              className={`overflow-hidden px-1.5 flex flex-col justify-center gap-0.5 cursor-grab active:cursor-grabbing shadow-[0_6px_14px_rgba(0,0,0,0.45)] transition-opacity ${
+                draggingKey === barKey ? "opacity-30" : "opacity-100"
+              } ${bar.kind === "main" ? "bg-accent text-ink" : "bg-ink/14"}`}
               style={{ gridRow: 1, gridColumn: `${bar.colStart + 2} / ${bar.colEnd + 3}` }}
             >
               <span className="text-[10.5px] font-bold truncate leading-tight">
@@ -265,12 +290,13 @@ export function WeekCalendar({
               </span>
               {bar.address && <span className="text-[9px] font-semibold truncate leading-tight opacity-75">{bar.address}</span>}
             </Link>
-          ))}
+            );
+          })}
         </div>
       )}
 
       <div ref={scrollRef} className="overflow-y-auto mt-1" style={{ maxHeight: VISIBLE_VIEWPORT_HEIGHT }}>
-      <div className="grid grid-cols-[44px_repeat(7,minmax(0,1fr))]">
+      <div className="relative grid grid-cols-[44px_repeat(7,minmax(0,1fr))]">
         <div>
           {hours.map((h) => (
             <div key={h} className="label font-semibold" style={{ height: HOUR_PX }}>
@@ -299,20 +325,27 @@ export function WeekCalendar({
               onDragLeave={() => setDragOverIdx((cur) => (cur === dayIdx ? null : cur))}
               onDrop={(e) => handleDayDrop(e, dayIdx)}
             >
-              {placed.map((m) => (
+              {placed.map((m) => {
+                const milestoneKey = `milestone-${m.id}`;
+                return (
                 <Link
                   key={m.id}
                   href={eventHref(m.eventId)}
                   title={`${m.eventTitle}: ${m.title}`}
                   draggable
-                  onDragStart={() => {
+                  onDragStart={(e) => {
                     dragRef.current = { type: "milestone", milestoneId: m.id, eventId: m.eventId };
+                    setDraggingKey(milestoneKey);
+                    e.dataTransfer.effectAllowed = "move";
                   }}
                   onDragEnd={() => {
                     dragRef.current = null;
                     setDragOverIdx(null);
+                    setDraggingKey(null);
                   }}
-                  className="absolute overflow-hidden leading-tight bg-ink/22 border-2 border-ink/45 px-1 py-0.5 box-border cursor-grab active:cursor-grabbing hover:border-accent hover:bg-accent/20"
+                  className={`absolute overflow-hidden leading-tight bg-ink/22 border-2 border-ink/45 px-1 py-0.5 box-border cursor-grab active:cursor-grabbing hover:border-accent hover:bg-accent/20 shadow-[0_6px_14px_rgba(0,0,0,0.45)] transition-opacity ${
+                    draggingKey === milestoneKey ? "opacity-30" : "opacity-100"
+                  }`}
                   style={{
                     top: (m.startMin / 60) * HOUR_PX,
                     height: Math.max(16, ((m.endMin - m.startMin) / 60) * HOUR_PX),
@@ -323,10 +356,35 @@ export function WeekCalendar({
                   <div className="text-[10.5px] font-bold truncate">{m.eventTitle}</div>
                   <div className="placeholder-text text-[9px] font-bold truncate">{m.title}</div>
                 </Link>
-              ))}
+                );
+              })}
             </div>
           );
         })}
+
+        {todayIdx >= 0 && (
+          <>
+            <div
+              className="absolute pointer-events-none bg-warning/70 z-10"
+              style={{ top: nowTop, left: 44, right: 0, height: 1 }}
+            />
+            <div
+              className="absolute pointer-events-none bg-warning z-10 rounded-full"
+              style={{
+                top: nowTop - 1,
+                left: `calc(44px + (100% - 44px) * ${todayIdx} / 7)`,
+                width: `calc((100% - 44px) / 7)`,
+                height: 3,
+              }}
+            />
+            <div
+              className="absolute pointer-events-none bg-warning text-ink text-[10px] font-bold rounded px-1.5 py-[1px] z-20 -translate-y-1/2"
+              style={{ top: nowTop, left: 2 }}
+            >
+              {nowLabel}
+            </div>
+          </>
+        )}
       </div>
       </div>
 
