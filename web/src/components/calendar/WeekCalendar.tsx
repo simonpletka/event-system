@@ -10,7 +10,11 @@ import { getDictionary, type Locale } from "@/lib/dictionary";
 
 type DragPayload =
   | { type: "milestone"; milestoneId: string; eventId: string }
-  | { type: "bar"; eventId: string; anchorCol: number };
+  | { type: "bar"; eventId: string; anchorCol: number; kind: "prep" | "main" };
+
+type DragPreview =
+  | { type: "milestone"; dayIdx: number; top: number; label: string }
+  | { type: "bar"; dayIdx: number; kind: "prep" | "main" };
 
 export type CalendarEvent = {
   id: string;
@@ -75,6 +79,7 @@ export function WeekCalendar({
   const dragRef = useRef<DragPayload | null>(null);
   const [dragOverIdx, setDragOverIdx] = useState<number | null>(null);
   const [draggingKey, setDraggingKey] = useState<string | null>(null);
+  const [dragPreview, setDragPreview] = useState<DragPreview | null>(null);
 
   const scrollRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
@@ -89,6 +94,13 @@ export function WeekCalendar({
   const nowTop = ((now.getHours() * 60 + now.getMinutes()) / 60) * HOUR_PX;
   const nowLabel = `${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}`;
 
+  function snapMinutesFromEvent(e: DragEvent) {
+    const rect = e.currentTarget.getBoundingClientRect();
+    const offsetY = e.clientY - rect.top;
+    const rawMinutes = GRID_START_HOUR * 60 + (offsetY / HOUR_PX) * 60;
+    return Math.min(Math.max(Math.round(rawMinutes / 15) * 15, GRID_START_HOUR * 60), GRID_END_HOUR * 60);
+  }
+
   /**
    * The hourly grid's day columns double as the drop target for both
    * milestones and all-day bars (dropping a bar there just moves it — the
@@ -97,11 +109,25 @@ export function WeekCalendar({
    * pixels into the hourly grid below its own day is the intended gesture.
    * Reschedule is limited to the 7 days currently on screen — dropping
    * outside them isn't possible since no drop target exists there.
+   *
+   * A live "shadow" preview tracks the drag so it's clear exactly where the
+   * item will land before releasing — a ghost block at the snapped
+   * time-of-day for a milestone, or a ghost segment in the all-day row for a
+   * bar — rather than only the day column's background tinting.
    */
   function handleDayDragOver(e: DragEvent, dayIdx: number) {
-    if (!dragRef.current) return;
+    const drag = dragRef.current;
+    if (!drag) return;
     e.preventDefault();
     setDragOverIdx(dayIdx);
+
+    if (drag.type === "milestone") {
+      const snappedMinutes = snapMinutesFromEvent(e);
+      const label = `${String(Math.floor(snappedMinutes / 60)).padStart(2, "0")}:${String(snappedMinutes % 60).padStart(2, "0")}`;
+      setDragPreview({ type: "milestone", dayIdx, top: (snappedMinutes / 60) * HOUR_PX, label });
+    } else {
+      setDragPreview({ type: "bar", dayIdx, kind: drag.kind });
+    }
   }
 
   function handleDayDrop(e: DragEvent<HTMLDivElement>, dayIdx: number) {
@@ -109,13 +135,11 @@ export function WeekCalendar({
     const drag = dragRef.current;
     dragRef.current = null;
     setDragOverIdx(null);
+    setDragPreview(null);
     if (!drag) return;
 
     if (drag.type === "milestone") {
-      const rect = e.currentTarget.getBoundingClientRect();
-      const offsetY = e.clientY - rect.top;
-      const rawMinutes = GRID_START_HOUR * 60 + (offsetY / HOUR_PX) * 60;
-      const snappedMinutes = Math.min(Math.max(Math.round(rawMinutes / 15) * 15, GRID_START_HOUR * 60), GRID_END_HOUR * 60);
+      const snappedMinutes = snapMinutesFromEvent(e);
       const target = days[dayIdx];
       const newDate = new Date(
         target.getFullYear(),
@@ -271,7 +295,7 @@ export function WeekCalendar({
               title={bar.address ? `${bar.title} — ${bar.address}` : bar.title}
               draggable
               onDragStart={(e) => {
-                dragRef.current = { type: "bar", eventId: bar.eventId, anchorCol: bar.colStart };
+                dragRef.current = { type: "bar", eventId: bar.eventId, anchorCol: bar.colStart, kind: bar.kind };
                 setDraggingKey(barKey);
                 e.dataTransfer.effectAllowed = "move";
               }}
@@ -279,6 +303,7 @@ export function WeekCalendar({
                 dragRef.current = null;
                 setDragOverIdx(null);
                 setDraggingKey(null);
+                setDragPreview(null);
               }}
               className={`overflow-hidden px-1.5 flex flex-col justify-center gap-0.5 cursor-grab active:cursor-grabbing shadow-[0_6px_14px_rgba(0,0,0,0.45)] transition-opacity ${
                 draggingKey === barKey ? "opacity-30" : "opacity-100"
@@ -292,6 +317,14 @@ export function WeekCalendar({
             </Link>
             );
           })}
+          {dragPreview?.type === "bar" && (
+            <div
+              className={`pointer-events-none rounded-[3px] border-2 border-dashed shadow-[0_10px_24px_rgba(0,0,0,0.5)] ${
+                dragPreview.kind === "main" ? "bg-accent/50 border-accent" : "bg-ink/25 border-ink/60"
+              }`}
+              style={{ gridRow: 1, gridColumn: dragPreview.dayIdx + 2 }}
+            />
+          )}
         </div>
       )}
 
@@ -342,6 +375,7 @@ export function WeekCalendar({
                     dragRef.current = null;
                     setDragOverIdx(null);
                     setDraggingKey(null);
+                    setDragPreview(null);
                   }}
                   className={`absolute overflow-hidden leading-tight bg-ink/22 border-2 border-ink/45 px-1 py-0.5 box-border cursor-grab active:cursor-grabbing hover:border-accent hover:bg-accent/20 shadow-[0_6px_14px_rgba(0,0,0,0.45)] transition-opacity ${
                     draggingKey === milestoneKey ? "opacity-30" : "opacity-100"
@@ -358,6 +392,14 @@ export function WeekCalendar({
                 </Link>
                 );
               })}
+              {dragPreview?.type === "milestone" && dragPreview.dayIdx === dayIdx && (
+                <div
+                  className="absolute overflow-hidden leading-tight bg-accent/25 border-2 border-dashed border-accent px-1 py-0.5 box-border pointer-events-none shadow-[0_10px_24px_rgba(0,0,0,0.5)]"
+                  style={{ top: dragPreview.top, height: HOUR_PX, left: 0, width: "100%" }}
+                >
+                  <div className="text-[10.5px] font-bold text-accent truncate">{dragPreview.label}</div>
+                </div>
+              )}
             </div>
           );
         })}
