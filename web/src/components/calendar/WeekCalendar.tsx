@@ -305,7 +305,7 @@ export function WeekCalendar({
                 setDraggingKey(null);
                 setDragPreview(null);
               }}
-              className={`overflow-hidden px-1.5 flex flex-col justify-center gap-0.5 cursor-grab active:cursor-grabbing shadow-[0_6px_14px_rgba(0,0,0,0.45)] transition-opacity ${
+              className={`overflow-hidden rounded-md px-1.5 flex flex-col justify-center gap-0.5 cursor-grab active:cursor-grabbing shadow-[0_6px_14px_rgba(0,0,0,0.45)] transition-opacity ${
                 draggingKey === barKey ? "opacity-30" : "opacity-100"
               } ${bar.kind === "main" ? "bg-accent text-ink" : "bg-ink/14"}`}
               style={{ gridRow: 1, gridColumn: `${bar.colStart + 2} / ${bar.colEnd + 3}` }}
@@ -319,7 +319,7 @@ export function WeekCalendar({
           })}
           {dragPreview?.type === "bar" && (
             <div
-              className={`pointer-events-none rounded-[3px] border-2 border-dashed shadow-[0_10px_24px_rgba(0,0,0,0.5)] ${
+              className={`pointer-events-none rounded-md border-2 border-dashed shadow-[0_10px_24px_rgba(0,0,0,0.5)] ${
                 dragPreview.kind === "main" ? "bg-accent/50 border-accent" : "bg-ink/25 border-ink/60"
               }`}
               style={{ gridRow: 1, gridColumn: dragPreview.dayIdx + 2 }}
@@ -377,7 +377,7 @@ export function WeekCalendar({
                     setDraggingKey(null);
                     setDragPreview(null);
                   }}
-                  className={`absolute overflow-hidden leading-tight bg-ink/22 border-2 border-ink/45 px-1 py-0.5 box-border cursor-grab active:cursor-grabbing hover:border-accent hover:bg-accent/20 shadow-[0_6px_14px_rgba(0,0,0,0.45)] transition-opacity ${
+                  className={`absolute overflow-hidden rounded-md leading-tight bg-ink/22 border-2 border-ink/45 px-1 py-0.5 box-border cursor-grab active:cursor-grabbing hover:border-accent hover:bg-accent/20 shadow-[0_6px_14px_rgba(0,0,0,0.45)] transition-opacity ${
                     draggingKey === milestoneKey ? "opacity-30" : "opacity-100"
                   }`}
                   style={{
@@ -394,7 +394,7 @@ export function WeekCalendar({
               })}
               {dragPreview?.type === "milestone" && dragPreview.dayIdx === dayIdx && (
                 <div
-                  className="absolute overflow-hidden leading-tight bg-accent/25 border-2 border-dashed border-accent px-1 py-0.5 box-border pointer-events-none shadow-[0_10px_24px_rgba(0,0,0,0.5)]"
+                  className="absolute overflow-hidden rounded-md leading-tight bg-accent/25 border-2 border-dashed border-accent px-1 py-0.5 box-border pointer-events-none shadow-[0_10px_24px_rgba(0,0,0,0.5)]"
                   style={{ top: dragPreview.top, height: HOUR_PX, left: 0, width: "100%" }}
                 >
                   <div className="text-[10.5px] font-bold text-accent truncate">{dragPreview.label}</div>
