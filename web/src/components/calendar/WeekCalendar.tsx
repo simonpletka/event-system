@@ -16,6 +16,7 @@ export type CalendarEvent = {
   endDate: Date;
   strikeDate: Date | null;
   milestones: { id: string; title: string; date: Date }[];
+  venues: { address: string }[];
 };
 
 const GRID_START_HOUR = 7;
@@ -62,20 +63,29 @@ export function WeekCalendar({
     return events.flatMap((e) => e.milestones.filter((m) => isSameDay(m.date, day)).map((m) => ({ ...m, eventId: e.id, eventTitle: e.title })));
   }
 
-  type AllDayBar = { eventId: string; title: string; status: EventStatus; kind: "prep" | "main"; colStart: number; colEnd: number };
+  type AllDayBar = {
+    eventId: string;
+    title: string;
+    status: EventStatus;
+    kind: "prep" | "main";
+    colStart: number;
+    colEnd: number;
+    address?: string;
+  };
   const bars: AllDayBar[] = [];
   for (const event of events) {
+    const address = event.venues[0]?.address;
     const prepStart = event.buildDate ?? event.startDate;
     if (startOfDay(prepStart).getTime() < startOfDay(event.startDate).getTime()) {
       const range = clampRange(prepStart, addDays(event.startDate, -1), weekStart);
-      if (range) bars.push({ eventId: event.id, title: event.title, status: event.status, kind: "prep", colStart: range[0], colEnd: range[1] });
+      if (range) bars.push({ eventId: event.id, title: event.title, status: event.status, kind: "prep", colStart: range[0], colEnd: range[1], address });
     }
     const mainRange = clampRange(event.startDate, event.endDate, weekStart);
-    if (mainRange) bars.push({ eventId: event.id, title: event.title, status: event.status, kind: "main", colStart: mainRange[0], colEnd: mainRange[1] });
+    if (mainRange) bars.push({ eventId: event.id, title: event.title, status: event.status, kind: "main", colStart: mainRange[0], colEnd: mainRange[1], address });
     const strikeEnd = event.strikeDate ?? event.endDate;
     if (startOfDay(strikeEnd).getTime() > startOfDay(event.endDate).getTime()) {
       const range = clampRange(addDays(event.endDate, 1), strikeEnd, weekStart);
-      if (range) bars.push({ eventId: event.id, title: event.title, status: event.status, kind: "prep", colStart: range[0], colEnd: range[1] });
+      if (range) bars.push({ eventId: event.id, title: event.title, status: event.status, kind: "prep", colStart: range[0], colEnd: range[1], address });
     }
   }
 
@@ -131,8 +141,8 @@ export function WeekCalendar({
                 <div className="text-[9.5px] font-semibold text-ink/55">
                   {String(m.date.getHours()).padStart(2, "0")}:{String(m.date.getMinutes()).padStart(2, "0")}
                 </div>
-                <div className="text-[13.5px] font-semibold truncate">{m.title}</div>
-                <div className="placeholder-text text-[11px] truncate">{m.eventTitle}</div>
+                <div className="text-[13.5px] font-semibold truncate">{m.eventTitle}</div>
+                <div className="placeholder-text text-[11px] truncate">{m.title}</div>
               </div>
             </Link>
           ))}
@@ -153,7 +163,7 @@ export function WeekCalendar({
       </div>
 
       {bars.length > 0 && (
-        <div className="grid grid-cols-[44px_repeat(7,minmax(0,1fr))] auto-rows-[24px] gap-y-0.5 py-1.5 border-b-2 border-ink">
+        <div className="grid grid-cols-[44px_repeat(7,minmax(0,1fr))] auto-rows-[36px] gap-y-0.5 py-1.5 border-b-2 border-ink">
           <div className="label" style={{ gridRow: 1, gridColumn: 1 }}>
             {t.allDay}
           </div>
@@ -161,13 +171,16 @@ export function WeekCalendar({
             <Link
               key={i}
               href={eventHref(bar.eventId)}
-              title={bar.title}
-              className={`overflow-hidden text-[9.5px] font-bold px-1.5 flex items-center truncate ${
+              title={bar.address ? `${bar.title} — ${bar.address}` : bar.title}
+              className={`overflow-hidden px-1.5 flex flex-col justify-center gap-0.5 ${
                 bar.kind === "main" ? "bg-accent text-ink" : "bg-ink/14"
               }`}
               style={{ gridRow: 1, gridColumn: `${bar.colStart + 2} / ${bar.colEnd + 3}` }}
             >
-              {bar.kind === "main" ? t.eventDaysBar(bar.title) : t.prepBuildBar(bar.title)}
+              <span className="text-[9.5px] font-bold truncate leading-tight">
+                {bar.kind === "main" ? t.eventDaysBar(bar.title) : t.prepBuildBar(bar.title)}
+              </span>
+              {bar.address && <span className="text-[8px] font-semibold truncate leading-tight opacity-75">{bar.address}</span>}
             </Link>
           ))}
         </div>
@@ -212,8 +225,8 @@ export function WeekCalendar({
                     width: `${100 / m.cols}%`,
                   }}
                 >
-                  {m.title}
-                  <div className="placeholder-text">{m.eventTitle}</div>
+                  <div className="truncate">{m.eventTitle}</div>
+                  <div className="placeholder-text truncate">{m.title}</div>
                 </Link>
               ))}
             </div>
@@ -234,7 +247,7 @@ export function WeekCalendar({
           <div className="label mb-1">{t.thisWeeksEvents}</div>
           <div className="flex flex-col gap-1">
             {events.map((e) => (
-              <Link key={e.id} href={eventHref(e.id)} className="flex items-center gap-2 text-[12px] hover:text-accent">
+              <Link key={e.id} href={eventHref(e.id)} className="flex items-center gap-2 text-[13px] hover:text-accent">
                 <EventStatusPill status={e.status} t={tStatus} />
                 {e.title}
               </Link>

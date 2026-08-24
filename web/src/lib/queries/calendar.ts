@@ -24,6 +24,7 @@ export async function getWeekCalendarData(user: SessionUser, weekStart: Date) {
     },
     include: {
       milestones: { where: { date: { gte: weekStart, lt: weekEnd } } },
+      venues: true,
     },
     orderBy: { startDate: "asc" },
   });
