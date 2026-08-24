@@ -15,7 +15,7 @@ export function Sidebar({
 }: {
   userName: string;
   avatarUrl: string | null;
-  running: { eventTitle: string; startedAt: string } | null;
+  running: { eventTitle: string | null; startedAt: string } | null;
   tNav: Dictionary["nav"];
   tSidebar: Dictionary["sidebar"];
 }) {

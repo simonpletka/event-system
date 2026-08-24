@@ -45,10 +45,8 @@ export function ManualEntryForm({ events, t, tPhases }: { events: { id: string; 
       <form action={formAction} className="grid grid-cols-1 md:grid-cols-3 gap-3">
         <label className="flex flex-col gap-1.5">
           <span className="heading-label">{t.eventLabel}</span>
-          <select name="eventId" required defaultValue="" className="input">
-            <option value="" disabled>
-              {t.selectEvent}
-            </option>
+          <select name="eventId" defaultValue="" className="input">
+            <option value="">{t.noEventOption}</option>
             {events.map((e) => (
               <option key={e.id} value={e.id}>
                 {e.title}

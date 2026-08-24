@@ -14,7 +14,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   // free within the same request, not a second query.
   const [running, freshUser, locale] = await Promise.all([getRunningTimer(user.id), getFreshUserFields(user.id), getLocale()]);
   const t = getDictionary(locale);
-  const runningProp = running ? { eventTitle: running.event.title, startedAt: running.startedAt!.toISOString() } : null;
+  const runningProp = running ? { eventTitle: running.event?.title ?? null, startedAt: running.startedAt!.toISOString() } : null;
   const displayName = freshUser?.name ?? user.name ?? user.email ?? "Signed in";
   const avatarUrl = freshUser?.avatarPath ? `/api/uploads/avatar/${freshUser.avatarPath}` : null;
 

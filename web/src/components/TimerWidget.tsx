@@ -12,9 +12,9 @@ function formatElapsed(ms: number) {
   return `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`;
 }
 
-type T = { myTracker: string; noTimerRunning: string; startOne: string; stopTimer: string };
+type T = { myTracker: string; noTimerRunning: string; startOne: string; stopTimer: string; noEventYet: string };
 
-export function TimerWidget({ running, t }: { running: { eventTitle: string; startedAt: string } | null; t: T }) {
+export function TimerWidget({ running, t }: { running: { eventTitle: string | null; startedAt: string } | null; t: T }) {
   const [now, setNow] = useState(() => Date.now());
 
   useEffect(() => {
@@ -43,7 +43,7 @@ export function TimerWidget({ running, t }: { running: { eventTitle: string; sta
   return (
     <div className="card px-3.5 py-3 flex flex-col gap-2">
       <div className="heading-label">{t.myTracker}</div>
-      <div className="label truncate">{running.eventTitle}</div>
+      <div className="label truncate">{running.eventTitle ?? t.noEventYet}</div>
       <form action={stopTimerAction} className="flex items-center justify-between">
         <div className="text-lg font-semibold tabular-nums tracking-tight">{formatElapsed(elapsed)}</div>
         <button

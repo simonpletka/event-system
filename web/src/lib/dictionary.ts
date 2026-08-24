@@ -140,6 +140,7 @@ const en = {
     noTimerRunning: "No timer running",
     startOne: "Start one →",
     stopTimer: "Stop timer",
+    noEventYet: "No event yet",
   },
   calendar: {
     allDay: "All day",
@@ -726,6 +727,7 @@ const en = {
     title: "Time tracker",
     tabTracking: "Tracking",
     tabOverview: "Overview",
+    unassignedEvent: "Unassigned",
 
     tracking: {
       viewList: "List",
@@ -770,6 +772,7 @@ const en = {
       addManualEntry: "Add a manual entry",
       eventLabel: "Event",
       selectEvent: "Select an event…",
+      noEventOption: "No event yet — assign later",
       dateLabel: "Date",
       phaseLabel: "Phase",
       startTimeLabel: "Start time",
@@ -787,6 +790,8 @@ const en = {
       startATimer: "Start a timer",
       eventLabel: "Event",
       selectEvent: "Select an event…",
+      noEventOption: "No event yet — assign later",
+      noEventRunning: "No event assigned yet",
       phaseLabel: "Phase",
       descriptionLabel: "Description",
       whatWorkingOn: "What are you working on?",
@@ -803,6 +808,7 @@ const en = {
 
     editEntryForm: {
       eventLabel: "Event",
+      noEventOption: "No event — unassigned",
       dateLabel: "Date",
       durationLabel: "Duration (minutes)",
       startTimeOptional: "Start time (optional)",
@@ -1214,6 +1220,7 @@ const cs: Dictionary = {
     noTimerRunning: "Časovač neběží",
     startOne: "Spustit →",
     stopTimer: "Zastavit časovač",
+    noEventYet: "Zatím bez akce",
   },
   calendar: {
     allDay: "Celý den",
@@ -1803,6 +1810,7 @@ const cs: Dictionary = {
     title: "Sledování času",
     tabTracking: "Sledování",
     tabOverview: "Přehled",
+    unassignedEvent: "Nepřiřazeno",
 
     tracking: {
       viewList: "Seznam",
@@ -1847,6 +1855,7 @@ const cs: Dictionary = {
       addManualEntry: "Přidat ruční záznam",
       eventLabel: "Akce",
       selectEvent: "Vyberte akci…",
+      noEventOption: "Zatím bez akce — přiřadit později",
       dateLabel: "Datum",
       phaseLabel: "Fáze",
       startTimeLabel: "Začátek",
@@ -1864,6 +1873,8 @@ const cs: Dictionary = {
       startATimer: "Spustit časovač",
       eventLabel: "Akce",
       selectEvent: "Vyberte akci…",
+      noEventOption: "Zatím bez akce — přiřadit později",
+      noEventRunning: "Zatím bez přiřazené akce",
       phaseLabel: "Fáze",
       descriptionLabel: "Popis",
       whatWorkingOn: "Na čem právě pracujete?",
@@ -1880,6 +1891,7 @@ const cs: Dictionary = {
 
     editEntryForm: {
       eventLabel: "Akce",
+      noEventOption: "Bez akce — nepřiřazeno",
       dateLabel: "Datum",
       durationLabel: "Doba trvání (minuty)",
       startTimeOptional: "Začátek (nepovinné)",

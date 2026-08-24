@@ -1,5 +1,5 @@
 import { notFound } from "next/navigation";
-import { requireUser } from "@/lib/authz";
+import { requireUser, eventWhereForUser } from "@/lib/authz";
 import { prisma } from "@/lib/prisma";
 import { getLocale, getDictionary } from "@/lib/i18n";
 import { EditEntryForm } from "@/components/timetracker/EditEntryForm";
@@ -16,7 +16,6 @@ export default async function EditEntryPage({ params }: { params: Promise<{ id: 
 
   const entry = await prisma.timeEntry.findFirst({
     where: { id, userId: user.id },
-    include: { event: { select: { title: true } } },
   });
   if (!entry) notFound();
   if (entry.running) {
@@ -28,12 +27,19 @@ export default async function EditEntryPage({ params }: { params: Promise<{ id: 
     );
   }
 
+  const events = await prisma.event.findMany({
+    where: eventWhereForUser(user),
+    select: { id: true, title: true },
+    orderBy: { title: "asc" },
+  });
+
   return (
     <div>
       <h2 className="text-lg font-semibold mb-3">{t.timeTracker.entryEdit.editEntry}</h2>
       <EditEntryForm
         id={entry.id}
-        eventTitle={entry.event.title}
+        eventId={entry.eventId}
+        events={events}
         date={isoDate(entry.date)}
         minutes={entry.minutes}
         description={entry.description}

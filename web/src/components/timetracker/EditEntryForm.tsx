@@ -13,7 +13,8 @@ type TPhases = Dictionary["phases"];
 
 export function EditEntryForm({
   id,
-  eventTitle,
+  eventId,
+  events,
   date,
   minutes,
   description,
@@ -24,7 +25,8 @@ export function EditEntryForm({
   tPhases,
 }: {
   id: string;
-  eventTitle: string;
+  eventId: string | null;
+  events: { id: string; title: string }[];
   date: string;
   minutes: number;
   description: string;
@@ -41,8 +43,17 @@ export function EditEntryForm({
   return (
     <form action={formAction} className="max-w-md flex flex-col gap-3">
       <input type="hidden" name="id" value={id} />
-      <div className="label">{t.eventLabel}</div>
-      <div className="input opacity-60">{eventTitle}</div>
+      <label className="flex flex-col gap-1.5">
+        <span className="heading-label">{t.eventLabel}</span>
+        <select name="eventId" defaultValue={eventId ?? ""} className="input">
+          <option value="">{t.noEventOption}</option>
+          {events.map((e) => (
+            <option key={e.id} value={e.id}>
+              {e.title}
+            </option>
+          ))}
+        </select>
+      </label>
 
       <label className="flex flex-col gap-1.5">
         <span className="heading-label">{t.dateLabel}</span>

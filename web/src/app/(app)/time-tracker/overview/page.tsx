@@ -129,8 +129,8 @@ function DayBreakdown({ people, t }: { people: OverviewPerson[]; t: Dictionary }
             ) : (
               <div className="mt-2 flex flex-col gap-1">
                 {p.eventBreakdown.map((e) => (
-                  <div key={e.title} className="flex justify-between gap-2 text-[11px]">
-                    <span className="placeholder-text truncate">{e.title}</span>
+                  <div key={e.title ?? "__unassigned__"} className="flex justify-between gap-2 text-[11px]">
+                    <span className="placeholder-text truncate">{e.title ?? t.timeTracker.unassignedEvent}</span>
                     <span>{formatMinutes(e.minutes)}</span>
                   </div>
                 ))}

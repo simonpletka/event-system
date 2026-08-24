@@ -13,7 +13,7 @@ export type CalendarTimeEntry = {
   description: string;
   startedAt: Date | null;
   endedAt: Date | null;
-  event: { id: string; title: string };
+  event: { id: string; title: string } | null;
 };
 
 const GRID_START_HOUR = 6;
@@ -27,7 +27,9 @@ function minutesFromGridStart(d: Date) {
 }
 
 export function TimeTrackerCalendar({ weekStart, entries, locale }: { weekStart: Date; entries: CalendarTimeEntry[]; locale: Locale }) {
-  const t = getDictionary(locale).timeTracker.calendarView;
+  const dict = getDictionary(locale);
+  const t = dict.timeTracker.calendarView;
+  const unassignedLabel = dict.timeTracker.unassignedEvent;
   const days = weekDays(weekStart);
   const today = new Date();
   const todayIdx = days.findIndex((d) => isSameDay(d, today));
@@ -77,7 +79,7 @@ export function TimeTrackerCalendar({ weekStart, entries, locale }: { weekStart:
             <Link key={e.id} href={`/time-tracker/entries/${e.id}/edit`} className="card flex items-center gap-2.5 px-3.5 py-3">
               <span className="w-[3px] self-stretch rounded bg-ink/30" />
               <div className="min-w-0 flex-1">
-                <div className="text-[13.5px] font-semibold truncate">{e.event.title}</div>
+                <div className="text-[13.5px] font-semibold truncate">{(e.event?.title ?? unassignedLabel)}</div>
                 {e.description && <div className="placeholder-text text-[11px] truncate">{e.description}</div>}
               </div>
               <div className="text-[12px] font-semibold shrink-0">{formatMinutes(e.minutes)}</div>
@@ -91,7 +93,7 @@ export function TimeTrackerCalendar({ weekStart, entries, locale }: { weekStart:
                 <div className="text-[9.5px] font-semibold text-ink/55">
                   {String(e.startedAt!.getHours()).padStart(2, "0")}:{String(e.startedAt!.getMinutes()).padStart(2, "0")}
                 </div>
-                <div className="text-[13.5px] font-semibold truncate">{e.event.title}</div>
+                <div className="text-[13.5px] font-semibold truncate">{(e.event?.title ?? unassignedLabel)}</div>
                 {e.description && <div className="placeholder-text text-[11px] truncate">{e.description}</div>}
               </div>
               <div className="text-[12px] font-semibold shrink-0">{formatMinutes(e.minutes)}</div>
@@ -125,10 +127,10 @@ export function TimeTrackerCalendar({ weekStart, entries, locale }: { weekStart:
                   <Link
                     key={e.id}
                     href={`/time-tracker/entries/${e.id}/edit`}
-                    title={`${e.event.title}${e.description ? ` — ${e.description}` : ""}`}
+                    title={`${(e.event?.title ?? unassignedLabel)}${e.description ? ` — ${e.description}` : ""}`}
                     className="overflow-hidden text-[8.5px] leading-tight bg-ink/14 border border-ink/25 px-1.5 py-1 truncate hover:border-accent"
                   >
-                    <div className="font-semibold truncate">{e.event.title}</div>
+                    <div className="font-semibold truncate">{(e.event?.title ?? unassignedLabel)}</div>
                     <div className="placeholder-text">{formatMinutes(e.minutes)}</div>
                   </Link>
                 ))}
@@ -168,7 +170,7 @@ export function TimeTrackerCalendar({ weekStart, entries, locale }: { weekStart:
                 <Link
                   key={e.id}
                   href={`/time-tracker/entries/${e.id}/edit`}
-                  title={`${e.event.title}${e.description ? ` — ${e.description}` : ""}`}
+                  title={`${(e.event?.title ?? unassignedLabel)}${e.description ? ` — ${e.description}` : ""}`}
                   className="absolute overflow-hidden text-[8.5px] leading-tight bg-ink/14 border border-ink/25 px-1.5 py-1 box-border hover:border-accent flex flex-col"
                   style={{
                     top: (e.startMin / 60) * HOUR_PX,
@@ -177,7 +179,7 @@ export function TimeTrackerCalendar({ weekStart, entries, locale }: { weekStart:
                     width: `${100 / e.cols}%`,
                   }}
                 >
-                  <div className="font-semibold truncate">{e.event.title}</div>
+                  <div className="font-semibold truncate">{(e.event?.title ?? unassignedLabel)}</div>
                   {e.description && <div className="placeholder-text truncate">{e.description}</div>}
                   <div className="placeholder-text mt-auto">{formatMinutes(e.minutes)}</div>
                 </Link>

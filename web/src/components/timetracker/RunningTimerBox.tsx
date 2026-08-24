@@ -18,7 +18,7 @@ type Running = {
   description: string;
   phase: TimePhase;
   startedAt: Date;
-  event: { id: string; title: string; companyName: string };
+  event: { id: string; title: string; companyName: string } | null;
 } | null;
 
 type T = Dictionary["timeTracker"]["runningTimer"];
@@ -48,10 +48,8 @@ export function RunningTimerBox({
         <form action={startTimerAction} className="grid grid-cols-1 md:grid-cols-[1fr_160px_1fr_auto] gap-3 items-end">
           <label className="flex flex-col gap-1.5">
             <span className="heading-label">{t.eventLabel}</span>
-            <select name="eventId" required defaultValue="" className="input">
-              <option value="" disabled>
-                {t.selectEvent}
-              </option>
+            <select name="eventId" defaultValue="" className="input">
+              <option value="">{t.noEventOption}</option>
               {events.map((e) => (
                 <option key={e.id} value={e.id}>
                   {e.title}
@@ -89,7 +87,13 @@ export function RunningTimerBox({
       <form action={stopTimerAction} id="stop-form">
         <div className="heading-label">{t.runningOn}</div>
         <div className="text-[15px] font-semibold mt-1.5">
-          {running.event.title} <span className="placeholder-text font-normal">· {running.event.companyName}</span>
+          {running.event ? (
+            <>
+              {running.event.title} <span className="placeholder-text font-normal">· {running.event.companyName}</span>
+            </>
+          ) : (
+            <span className="placeholder-text">{t.noEventRunning}</span>
+          )}
         </div>
         <input
           name="description"
@@ -109,7 +113,7 @@ export function RunningTimerBox({
         <button type="submit" form="stop-form" className="btn">
           {t.stopAndSave}
         </button>
-        <SwitchEvent events={events.filter((e) => e.id !== running.event.id)} t={t} />
+        <SwitchEvent events={events.filter((e) => e.id !== running.event?.id)} t={t} />
         <div className="label">{t.startingAnotherHint}</div>
       </div>
     </div>

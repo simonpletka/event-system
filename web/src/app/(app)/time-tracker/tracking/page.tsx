@@ -160,9 +160,13 @@ function ListView({
               className="grid grid-cols-[56px_1.2fr_1.4fr_.6fr_.5fr] gap-2.5 items-center py-3 px-2.5 rounded-lg border-b border-ink/8 last:border-b-0 text-[15px] hover:bg-ink/5"
             >
               <div className="placeholder-text">{formatDate(e.date)}</div>
-              <Link href={`/events/${e.eventId}`} className="hover:text-accent">
-                {e.event.title}
-              </Link>
+              {e.event ? (
+                <Link href={`/events/${e.eventId}`} className="hover:text-accent">
+                  {e.event.title}
+                </Link>
+              ) : (
+                <span className="placeholder-text italic">{t.timeTracker.unassignedEvent}</span>
+              )}
               <div className="placeholder-text truncate">{e.description || "—"}</div>
               <div className="font-semibold">{formatMinutes(e.minutes)}</div>
               <div className="flex gap-2 text-[9px] tracking-[0.1em] uppercase">
@@ -180,9 +184,13 @@ function ListView({
             <div key={e.id} className="flex items-start justify-between gap-2.5 py-3 px-2.5 rounded-lg border-b border-ink/8 last:border-b-0 text-[13px]">
               <div className="min-w-0 flex-1">
                 <div className="placeholder-text text-[10.5px] mb-0.5">{formatDate(e.date)}</div>
-                <Link href={`/events/${e.eventId}`} className="font-semibold hover:text-accent">
-                  {e.event.title}
-                </Link>
+                {e.event ? (
+                  <Link href={`/events/${e.eventId}`} className="font-semibold hover:text-accent">
+                    {e.event.title}
+                  </Link>
+                ) : (
+                  <span className="font-semibold placeholder-text italic">{t.timeTracker.unassignedEvent}</span>
+                )}
                 <div className="placeholder-text text-[11.5px] mt-0.5 truncate">{e.description || "—"}</div>
                 <div className="flex gap-3 text-[9px] tracking-[0.1em] uppercase mt-1.5">
                   <Link href={`/time-tracker/entries/${e.id}/edit`} className="hover:text-ink placeholder-text">
@@ -206,8 +214,8 @@ function ListView({
             {isoDate(rangeStart(period, anchor)) === isoDate(rangeStart(period, new Date())) ? currentPeriodLabel(period, tt) : periodLabel(period, anchor)}
           </div>
           {periodTotals.map((pt) => (
-            <div key={pt.title} className="flex justify-between py-1.5 text-[13px] border-b border-ink/8 last:border-b-0">
-              <div>{pt.title}</div>
+            <div key={pt.title ?? "__unassigned__"} className="flex justify-between py-1.5 text-[13px] border-b border-ink/8 last:border-b-0">
+              <div className={pt.title ? "" : "italic placeholder-text"}>{pt.title ?? t.timeTracker.unassignedEvent}</div>
               <div className="placeholder-text">{formatMinutes(pt.minutes)}</div>
             </div>
           ))}

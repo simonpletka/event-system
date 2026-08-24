@@ -19,15 +19,22 @@ async function stopRunningTimerFor(userId: string) {
   });
 }
 
+/**
+ * eventId is optional — a timer can be started with no event picked yet
+ * ("track now, assign later") and edited afterward via
+ * updateManualEntryAction. When one is given, it's still validated against
+ * the user's own access the same as before.
+ */
 export async function startTimerAction(formData: FormData) {
   const user = await requireUser();
-  const eventId = String(formData.get("eventId") ?? "");
+  const eventId = String(formData.get("eventId") ?? "") || null;
   const description = String(formData.get("description") ?? "");
   const phase = (formData.get("phase") as TimePhase) || "PLANNING";
-  if (!eventId) return;
 
-  const event = await prisma.event.findFirst({ where: { id: eventId, ...eventWhereForUser(user) } });
-  if (!event) return;
+  if (eventId) {
+    const event = await prisma.event.findFirst({ where: { id: eventId, ...eventWhereForUser(user) } });
+    if (!event) return;
+  }
 
   await stopRunningTimerFor(user.id);
 
@@ -45,7 +52,7 @@ export async function startTimerAction(formData: FormData) {
 
   revalidatePath("/time-tracker");
   revalidatePath("/dashboard");
-  revalidatePath(`/events/${eventId}`);
+  if (eventId) revalidatePath(`/events/${eventId}`);
 }
 
 export async function stopTimerAction(formData: FormData) {
@@ -88,32 +95,36 @@ function computeMinutesAndTimes(formData: FormData, dateStr: string) {
   return { minutes: 0, startedAt: null, endedAt: null };
 }
 
+/** eventId is optional here too — same "assign later" reasoning as startTimerAction. */
 export async function addManualEntryAction(_prev: TimeFormState, formData: FormData): Promise<TimeFormState> {
   const user = await requireUser();
-  const eventId = String(formData.get("eventId") ?? "");
+  const eventId = String(formData.get("eventId") ?? "") || null;
   const date = String(formData.get("date") ?? "");
   const description = String(formData.get("description") ?? "");
   const phase = (formData.get("phase") as TimePhase) || "PLANNING";
-  if (!eventId || !date) {
-    return { error: "Event, date and either a start/end time or a duration are required." };
+  if (!date) {
+    return { error: "Date and either a start/end time or a duration are required." };
   }
   const { minutes, startedAt, endedAt } = computeMinutesAndTimes(formData, date);
   if (minutes <= 0) {
-    return { error: "Event, date and either a start/end time or a duration are required." };
+    return { error: "Date and either a start/end time or a duration are required." };
   }
 
-  const event = await prisma.event.findFirst({ where: { id: eventId, ...eventWhereForUser(user) } });
-  if (!event) return { error: "Event not found or not accessible." };
+  if (eventId) {
+    const event = await prisma.event.findFirst({ where: { id: eventId, ...eventWhereForUser(user) } });
+    if (!event) return { error: "Event not found or not accessible." };
+  }
 
   await prisma.timeEntry.create({
     data: { eventId, userId: user.id, date: new Date(date), minutes, description, phase, startedAt, endedAt },
   });
 
   revalidatePath("/time-tracker");
-  revalidatePath(`/events/${eventId}`);
+  if (eventId) revalidatePath(`/events/${eventId}`);
   redirect("/time-tracker");
 }
 
+/** Also handles assigning/reassigning/clearing the event on an existing entry. */
 export async function updateManualEntryAction(_prev: TimeFormState, formData: FormData): Promise<TimeFormState> {
   const user = await requireUser();
   const id = String(formData.get("id"));
@@ -121,6 +132,7 @@ export async function updateManualEntryAction(_prev: TimeFormState, formData: Fo
   if (!existing || existing.userId !== user.id) return { error: "Entry not found." };
   if (existing.running) return { error: "Stop the running timer before editing it." };
 
+  const eventId = String(formData.get("eventId") ?? "") || null;
   const date = String(formData.get("date") ?? "");
   const description = String(formData.get("description") ?? "");
   const phase = (formData.get("phase") as TimePhase) || "PLANNING";
@@ -128,13 +140,19 @@ export async function updateManualEntryAction(_prev: TimeFormState, formData: Fo
   const { minutes, startedAt, endedAt } = computeMinutesAndTimes(formData, date);
   if (minutes <= 0) return { error: "Date and either a start/end time or a duration are required." };
 
+  if (eventId) {
+    const event = await prisma.event.findFirst({ where: { id: eventId, ...eventWhereForUser(user) } });
+    if (!event) return { error: "Event not found or not accessible." };
+  }
+
   await prisma.timeEntry.update({
     where: { id },
-    data: { date: new Date(date), minutes, description, phase, startedAt, endedAt },
+    data: { eventId, date: new Date(date), minutes, description, phase, startedAt, endedAt },
   });
 
   revalidatePath("/time-tracker");
-  revalidatePath(`/events/${existing.eventId}`);
+  if (existing.eventId) revalidatePath(`/events/${existing.eventId}`);
+  if (eventId) revalidatePath(`/events/${eventId}`);
   redirect("/time-tracker");
 }
 
@@ -146,5 +164,5 @@ export async function deleteTimeEntryAction(formData: FormData) {
 
   await prisma.timeEntry.delete({ where: { id } });
   revalidatePath("/time-tracker");
-  revalidatePath(`/events/${existing.eventId}`);
+  if (existing.eventId) revalidatePath(`/events/${existing.eventId}`);
 }

@@ -46,11 +46,12 @@ export async function getMyTimeTrackerData(user: SessionUser, period: TimePeriod
     }),
   ]);
 
-  const byEvent = new Map<string, { title: string; minutes: number }>();
+  const byEvent = new Map<string, { title: string | null; minutes: number }>();
   for (const t of entries) {
-    const cur = byEvent.get(t.event.id) ?? { title: t.event.title, minutes: 0 };
+    const key = t.event?.id ?? "__unassigned__";
+    const cur = byEvent.get(key) ?? { title: t.event?.title ?? null, minutes: 0 };
     cur.minutes += t.minutes;
-    byEvent.set(t.event.id, cur);
+    byEvent.set(key, cur);
   }
   const periodTotals = [...byEvent.values()].sort((a, b) => b.minutes - a.minutes);
   const periodTotalMinutes = periodTotals.reduce((s, e) => s + e.minutes, 0);
@@ -130,11 +131,12 @@ export async function getOverviewData(selectedUsers: { id: string; name: string 
     const byBucket = buckets.map((b) => own.filter((e) => e.date >= b.start && e.date < b.end).reduce((s, e) => s + e.minutes, 0));
     const total = own.reduce((s, e) => s + e.minutes, 0);
 
-    const byEvent = new Map<string, { title: string; minutes: number }>();
+    const byEvent = new Map<string, { title: string | null; minutes: number }>();
     for (const e of own) {
-      const cur = byEvent.get(e.eventId) ?? { title: e.event.title, minutes: 0 };
+      const key = e.eventId ?? "__unassigned__";
+      const cur = byEvent.get(key) ?? { title: e.event?.title ?? null, minutes: 0 };
       cur.minutes += e.minutes;
-      byEvent.set(e.eventId, cur);
+      byEvent.set(key, cur);
     }
     const eventBreakdown = [...byEvent.values()].sort((a, b) => b.minutes - a.minutes);
 

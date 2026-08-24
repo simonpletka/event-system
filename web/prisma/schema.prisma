@@ -286,8 +286,8 @@ enum TimePhase {
 
 model TimeEntry {
   id          String    @id @default(cuid())
-  eventId     String
-  event       Event     @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  eventId     String? // null = not yet assigned to an event; assign later via edit
+  event       Event?    @relation(fields: [eventId], references: [id], onDelete: Cascade)
   userId      String
   user        User      @relation(fields: [userId], references: [id])
   minutes     Int       @default(0) // 0 while running; set on stop, or directly for manual entries
