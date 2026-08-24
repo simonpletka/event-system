@@ -1,11 +1,16 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState, useTransition, type DragEvent } from "react";
 import Link from "next/link";
 import { addDays, dayHeaderLabel, isSameDay, isoWeekNumber, startOfDay, weekDays, assignColumns } from "@/lib/calendar";
 import { EventStatusPill } from "@/components/StatusPill";
+import { rescheduleMilestoneAction, rescheduleEventAction } from "@/lib/actions/events";
 import type { EventStatus } from "@/generated/prisma/enums";
 import { getDictionary, type Locale } from "@/lib/dictionary";
+
+type DragPayload =
+  | { type: "milestone"; milestoneId: string; eventId: string }
+  | { type: "bar"; eventId: string; anchorCol: number };
 
 export type CalendarEvent = {
   id: string;
@@ -19,10 +24,17 @@ export type CalendarEvent = {
   venues: { address: string }[];
 };
 
-const GRID_START_HOUR = 7;
-const GRID_END_HOUR = 21;
-const HOUR_PX = 32;
+// The grid itself covers the full day, scrollable — DEFAULT_VIEW_* just
+// controls the visible window and initial scroll position on load, not what
+// exists in the grid (a milestone can still be dropped outside 6–20 by
+// scrolling first, it's just not what's on screen by default).
+const GRID_START_HOUR = 0;
+const GRID_END_HOUR = 24;
+const DEFAULT_VIEW_START_HOUR = 6;
+const DEFAULT_VIEW_END_HOUR = 20;
+const HOUR_PX = 48;
 const GRID_HEIGHT = (GRID_END_HOUR - GRID_START_HOUR) * HOUR_PX;
+const VISIBLE_VIEWPORT_HEIGHT = (DEFAULT_VIEW_END_HOUR - DEFAULT_VIEW_START_HOUR) * HOUR_PX;
 
 function dayIndex(date: Date, weekStart: Date) {
   return Math.floor((startOfDay(date).getTime() - weekStart.getTime()) / 86400000);
@@ -58,6 +70,69 @@ export function WeekCalendar({
   const todayIdx = days.findIndex((d) => isSameDay(d, today));
   const [selectedIdx, setSelectedIdx] = useState(todayIdx >= 0 ? todayIdx : 0);
   const selectedDay = days[selectedIdx];
+
+  const [, startTransition] = useTransition();
+  const dragRef = useRef<DragPayload | null>(null);
+  const [dragOverIdx, setDragOverIdx] = useState<number | null>(null);
+
+  const scrollRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    scrollRef.current?.scrollTo({ top: DEFAULT_VIEW_START_HOUR * HOUR_PX });
+  }, [weekStart]);
+
+  /**
+   * The hourly grid's day columns double as the drop target for both
+   * milestones and all-day bars (dropping a bar there just moves it — the
+   * vertical position only matters for a milestone). There's no separate
+   * drop zone inside the all-day bar row itself; dragging a bar down a few
+   * pixels into the hourly grid below its own day is the intended gesture.
+   * Reschedule is limited to the 7 days currently on screen — dropping
+   * outside them isn't possible since no drop target exists there.
+   */
+  function handleDayDragOver(e: DragEvent, dayIdx: number) {
+    if (!dragRef.current) return;
+    e.preventDefault();
+    setDragOverIdx(dayIdx);
+  }
+
+  function handleDayDrop(e: DragEvent<HTMLDivElement>, dayIdx: number) {
+    e.preventDefault();
+    const drag = dragRef.current;
+    dragRef.current = null;
+    setDragOverIdx(null);
+    if (!drag) return;
+
+    if (drag.type === "milestone") {
+      const rect = e.currentTarget.getBoundingClientRect();
+      const offsetY = e.clientY - rect.top;
+      const rawMinutes = GRID_START_HOUR * 60 + (offsetY / HOUR_PX) * 60;
+      const snappedMinutes = Math.min(Math.max(Math.round(rawMinutes / 15) * 15, GRID_START_HOUR * 60), GRID_END_HOUR * 60);
+      const target = days[dayIdx];
+      const newDate = new Date(
+        target.getFullYear(),
+        target.getMonth(),
+        target.getDate(),
+        Math.floor(snappedMinutes / 60),
+        snappedMinutes % 60
+      );
+      const formData = new FormData();
+      formData.set("milestoneId", drag.milestoneId);
+      formData.set("eventId", drag.eventId);
+      formData.set("date", newDate.toISOString());
+      startTransition(() => {
+        rescheduleMilestoneAction(formData);
+      });
+    } else {
+      const deltaDays = dayIdx - drag.anchorCol;
+      if (deltaDays === 0) return;
+      const formData = new FormData();
+      formData.set("id", drag.eventId);
+      formData.set("deltaDays", String(deltaDays));
+      startTransition(() => {
+        rescheduleEventAction(formData);
+      });
+    }
+  }
 
   function milestonesFor(day: Date) {
     return events.flatMap((e) => e.milestones.filter((m) => isSameDay(m.date, day)).map((m) => ({ ...m, eventId: e.id, eventTitle: e.title })));
@@ -172,7 +247,15 @@ export function WeekCalendar({
               key={i}
               href={eventHref(bar.eventId)}
               title={bar.address ? `${bar.title} — ${bar.address}` : bar.title}
-              className={`overflow-hidden px-1.5 flex flex-col justify-center gap-0.5 ${
+              draggable
+              onDragStart={() => {
+                dragRef.current = { type: "bar", eventId: bar.eventId, anchorCol: bar.colStart };
+              }}
+              onDragEnd={() => {
+                dragRef.current = null;
+                setDragOverIdx(null);
+              }}
+              className={`overflow-hidden px-1.5 flex flex-col justify-center gap-0.5 cursor-grab active:cursor-grabbing ${
                 bar.kind === "main" ? "bg-accent text-ink" : "bg-ink/14"
               }`}
               style={{ gridRow: 1, gridColumn: `${bar.colStart + 2} / ${bar.colEnd + 3}` }}
@@ -186,7 +269,8 @@ export function WeekCalendar({
         </div>
       )}
 
-      <div className="grid grid-cols-[44px_repeat(7,minmax(0,1fr))] mt-1">
+      <div ref={scrollRef} className="overflow-y-auto mt-1" style={{ maxHeight: VISIBLE_VIEWPORT_HEIGHT }}>
+      <div className="grid grid-cols-[44px_repeat(7,minmax(0,1fr))]">
         <div>
           {hours.map((h) => (
             <div key={h} className="label font-semibold" style={{ height: HOUR_PX }}>
@@ -194,7 +278,7 @@ export function WeekCalendar({
             </div>
           ))}
         </div>
-        {days.map((day) => {
+        {days.map((day, dayIdx) => {
           const dayMilestones = milestonesFor(day);
           const placed = assignColumns(
             dayMilestones.map((m) => ({
@@ -206,18 +290,29 @@ export function WeekCalendar({
           return (
             <div
               key={day.toISOString()}
-              className="relative border-l border-ink/13"
+              className={`relative border-l border-ink/13 ${dragOverIdx === dayIdx ? "bg-accent/10" : ""}`}
               style={{
                 height: GRID_HEIGHT,
                 backgroundImage: `repeating-linear-gradient(to bottom, rgba(243,242,242,.1) 0 1px, transparent 1px ${HOUR_PX}px)`,
               }}
+              onDragOver={(e) => handleDayDragOver(e, dayIdx)}
+              onDragLeave={() => setDragOverIdx((cur) => (cur === dayIdx ? null : cur))}
+              onDrop={(e) => handleDayDrop(e, dayIdx)}
             >
               {placed.map((m) => (
                 <Link
                   key={m.id}
                   href={eventHref(m.eventId)}
                   title={`${m.eventTitle}: ${m.title}`}
-                  className="absolute overflow-hidden leading-tight bg-ink/22 border-2 border-ink/45 px-1 py-0.5 box-border hover:border-accent hover:bg-accent/20"
+                  draggable
+                  onDragStart={() => {
+                    dragRef.current = { type: "milestone", milestoneId: m.id, eventId: m.eventId };
+                  }}
+                  onDragEnd={() => {
+                    dragRef.current = null;
+                    setDragOverIdx(null);
+                  }}
+                  className="absolute overflow-hidden leading-tight bg-ink/22 border-2 border-ink/45 px-1 py-0.5 box-border cursor-grab active:cursor-grabbing hover:border-accent hover:bg-accent/20"
                   style={{
                     top: (m.startMin / 60) * HOUR_PX,
                     height: Math.max(16, ((m.endMin - m.startMin) / 60) * HOUR_PX),
@@ -232,6 +327,7 @@ export function WeekCalendar({
             </div>
           );
         })}
+      </div>
       </div>
 
       <div className="flex gap-3.5 flex-wrap mt-2.5">

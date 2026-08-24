@@ -6,6 +6,7 @@ import { prisma } from "@/lib/prisma";
 import { requireUser, canEditEvent, canCreateEvent, isAdmin } from "@/lib/authz";
 import { resolveClientId, syncClientContacts } from "@/lib/actions/clients";
 import { nextEventNumber } from "@/lib/document-number";
+import { addDays } from "@/lib/calendar";
 import type { EventStatus } from "@/generated/prisma/enums";
 
 export type EventFormState = { error?: string };
@@ -244,4 +245,62 @@ export async function deleteMilestoneAction(formData: FormData) {
   await prisma.milestone.delete({ where: { id: milestoneId } });
   revalidatePath(`/events/${eventId}/milestones`);
   revalidatePath(`/events/${eventId}`);
+}
+
+/**
+ * Drag-and-drop reschedule of a single milestone from the weekly calendar
+ * (WeekCalendar.tsx) — sets its date/time directly to wherever it was
+ * dropped in the grid. Silently no-ops on a missing event or a permission
+ * failure (same defensive pattern as every other action here) since this is
+ * fired from a drag gesture with no confirm step and no error UI to show.
+ */
+export async function rescheduleMilestoneAction(formData: FormData) {
+  const user = await requireUser();
+  const milestoneId = String(formData.get("milestoneId"));
+  const eventId = String(formData.get("eventId"));
+  const date = String(formData.get("date") ?? "");
+  if (!date) return;
+
+  const event = await prisma.event.findUnique({ where: { id: eventId }, include: { members: true } });
+  if (!event) return;
+  if (!canEditEvent(user, { ownerId: event.ownerId, memberIds: event.members.map((m) => m.userId) })) return;
+
+  await prisma.milestone.update({ where: { id: milestoneId }, data: { date: new Date(date) } });
+  revalidatePath(`/events/${eventId}/milestones`);
+  revalidatePath(`/events/${eventId}`);
+  revalidatePath("/events");
+  revalidatePath("/dashboard");
+}
+
+/**
+ * Drag-and-drop reschedule of a whole event from the weekly calendar — shifts
+ * buildDate/startDate/endDate/strikeDate (whichever are set) by the same
+ * number of days, preserving each one's own time-of-day and the gaps between
+ * them (a 2-day build lead stays a 2-day build lead after the move). Uses
+ * addDays() (local calendar-day arithmetic) rather than raw millisecond math
+ * so a shift across a DST boundary doesn't silently drift the clock time.
+ */
+export async function rescheduleEventAction(formData: FormData) {
+  const user = await requireUser();
+  const id = String(formData.get("id"));
+  const deltaDays = Number(formData.get("deltaDays"));
+  if (!Number.isFinite(deltaDays) || deltaDays === 0) return;
+
+  const event = await prisma.event.findUnique({ where: { id }, include: { members: true } });
+  if (!event) return;
+  if (!canEditEvent(user, { ownerId: event.ownerId, memberIds: event.members.map((m) => m.userId) })) return;
+
+  await prisma.event.update({
+    where: { id },
+    data: {
+      buildDate: event.buildDate ? addDays(event.buildDate, deltaDays) : null,
+      startDate: addDays(event.startDate, deltaDays),
+      endDate: addDays(event.endDate, deltaDays),
+      strikeDate: event.strikeDate ? addDays(event.strikeDate, deltaDays) : null,
+    },
+  });
+
+  revalidatePath(`/events/${id}`);
+  revalidatePath("/events");
+  revalidatePath("/dashboard");
 }
