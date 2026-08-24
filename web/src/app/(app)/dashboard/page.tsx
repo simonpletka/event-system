@@ -3,7 +3,7 @@ import { requireUser, canCreateEvent } from "@/lib/authz";
 import { getDashboardData, getDashboardTimeline, type TimelineItem } from "@/lib/queries/dashboard";
 import { getWeekCalendarData } from "@/lib/queries/calendar";
 import { getOverviewData } from "@/lib/queries/timetracker";
-import { formatCurrency, formatDate, formatDateRange, formatMinutes, niceAxisMax } from "@/lib/format";
+import { formatCurrency, formatDate, formatDateRange, formatMinutes } from "@/lib/format";
 import { EventStatusPill } from "@/components/StatusPill";
 import { WeekCalendar } from "@/components/calendar/WeekCalendar";
 import { WeekNav } from "@/components/calendar/WeekNav";
@@ -32,8 +32,15 @@ export default async function DashboardPage({
     getOverviewData([{ id: user.id, name: user.name ?? "" }], "week", new Date()),
   ]);
   const myTime = myWeeklyTime.people[0];
-  const timeAxisMax = niceAxisMax(Math.max(1, ...(myTime?.byBucket ?? [0])));
-  const timeAxisTicks = [timeAxisMax, timeAxisMax * 0.75, timeAxisMax * 0.5, timeAxisMax * 0.25, 0].map((v) => formatMinutes(v));
+  // Fixed 2-hour gridlines (2/4/6/8h, extending by 2h steps past a full
+  // workday if a single day ever exceeds 8h) instead of niceAxisMax's
+  // proportional rounding — that produced odd, hard-to-read tick values
+  // like 0:50/1:40/2:30/3:20 for a chart whose unit is hours, not currency.
+  const TWO_HOURS_MIN = 120;
+  const dataMaxMinutes = Math.max(0, ...(myTime?.byBucket ?? [0]));
+  const timeAxisMax = Math.max(TWO_HOURS_MIN * 4, Math.ceil(dataMaxMinutes / TWO_HOURS_MIN) * TWO_HOURS_MIN);
+  const timeAxisTicks: string[] = [];
+  for (let m = timeAxisMax; m >= 0; m -= TWO_HOURS_MIN) timeAxisTicks.push(formatMinutes(m));
 
   const viewOptions = [
     { value: "list", label: t.dashboard.viewList, href: "/dashboard" },
@@ -72,7 +79,7 @@ export default async function DashboardPage({
         </div>
       )}
 
-      <div className="heading-label !text-[12px] mt-6 mb-2.5">{t.dashboard.needsAttention}</div>
+      <div className="heading-label !text-[12px] font-bold mt-6 mb-2.5">{t.dashboard.needsAttention}</div>
       <div className="flex overflow-x-auto gap-3 -mx-6 px-6 md:mx-0 md:px-0 md:grid md:grid-cols-3 md:overflow-visible">
         <AttentionTile
           icon={ICON_ALERT}
@@ -113,7 +120,7 @@ export default async function DashboardPage({
       {view === "list" && (
         <>
           <div className="flex items-baseline justify-between mt-7 mb-2.5">
-            <div className="heading-label !text-[12px]">{t.dashboard.upcomingEvents}</div>
+            <div className="heading-label !text-[12px] font-bold">{t.dashboard.upcomingEvents}</div>
           </div>
           {data.upcomingEvents.length === 0 ? (
             <p className="text-sm placeholder-text">{t.dashboard.noUpcomingEvents}</p>
@@ -152,7 +159,7 @@ export default async function DashboardPage({
           href="/finance/expenses"
           className="card group block px-5 py-4 hover:bg-ink/5 transition-colors md:col-span-3"
         >
-          <div className="heading-label !text-[12px] mb-1.5 group-hover:!text-accent">{t.dashboard.latestExpenses}</div>
+          <div className="heading-label !text-[12px] font-bold mb-1.5 group-hover:!text-accent">{t.dashboard.latestExpenses}</div>
           {data.latestExpenses.length === 0 ? (
             <p className="text-sm placeholder-text">{t.dashboard.noExpensesYet}</p>
           ) : (
@@ -171,7 +178,7 @@ export default async function DashboardPage({
         <div className="card px-6 py-5 md:col-span-2">
           <div className="flex items-start justify-between flex-wrap gap-3">
             <div>
-              <div className="heading-label !text-[12px]">{t.dashboard.myTrackedTime}</div>
+              <div className="heading-label !text-[12px] font-bold">{t.dashboard.myTrackedTime}</div>
               <div className="text-[12.5px] placeholder-text mt-1">{t.dashboard.myTrackedTimeSubtitle}</div>
             </div>
             {myTime && myTime.total > 0 && (
@@ -188,10 +195,9 @@ export default async function DashboardPage({
                 <div className="absolute left-[74px] right-1 top-0 bottom-0 flex items-end justify-between gap-1">
                   {myWeeklyTime.buckets.map((b, i) => {
                     const minutes = myTime.byBucket[i];
-                    const isToday = new Date() >= b.start && new Date() < b.end;
                     return (
                       <div key={b.label} className="flex flex-col items-center justify-end flex-1" style={{ height: "100%" }}>
-                        {isToday && minutes > 0 && (
+                        {minutes > 0 && (
                           <span className="text-[10.5px] font-semibold tabular-nums text-ink whitespace-nowrap mb-1">
                             {formatMinutes(minutes)}
                           </span>
