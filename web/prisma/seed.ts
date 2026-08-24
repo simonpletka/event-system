@@ -1,6 +1,7 @@
 import { PrismaClient } from "../src/generated/prisma/client";
 import { PrismaBetterSqlite3 } from "@prisma/adapter-better-sqlite3";
 import bcrypt from "bcryptjs";
+import { mondayOf } from "../src/lib/calendar";
 
 const adapter = new PrismaBetterSqlite3({
   url: process.env.DATABASE_URL || "file:./dev.db",
@@ -1031,6 +1032,31 @@ async function main() {
       { eventId: winterDemo.id, userId: member.id, minutes: 260, date: d("2026-08-17"), description: "Press-list research", phase: "PLANNING" },
       { eventId: appreciationNight.id, userId: producer.id, minutes: 690, date: d("2026-08-14"), description: "On-site coordination", phase: "ON_SITE" },
     ],
+  });
+
+  // --- Admin's tracked time for the current week, so the Dashboard's "My
+  // tracked time" chart has real data to show on load. Dates are computed
+  // relative to "now" (mondayOf(new Date())), not hardcoded literals like
+  // the rest of this file's dates — a fixed date would only ever land in
+  // the real current week on the one day this file happened to be seeded,
+  // and would silently go stale (empty chart) every day after that.
+  const thisWeekMonday = mondayOf(new Date());
+  const daysElapsedThisWeek = Math.min(6, Math.floor((Date.now() - thisWeekMonday.getTime()) / 86400000));
+  const recentDayOffsets = Array.from({ length: daysElapsedThisWeek + 1 }, (_, i) => i).slice(-3);
+  const adminWeekEntries = [
+    { minutes: 150, description: "Stand walkthrough with local crew", phase: "ON_SITE" as const },
+    { minutes: 95, description: "Supplier follow-ups", phase: "SUPPLIERS" as const },
+    { minutes: 130, description: "Run-of-show planning", phase: "PLANNING" as const },
+  ].slice(-recentDayOffsets.length);
+  await prisma.timeEntry.createMany({
+    data: recentDayOffsets.map((offset, i) => ({
+      eventId: munich.id,
+      userId: admin.id,
+      minutes: adminWeekEntries[i].minutes,
+      date: new Date(thisWeekMonday.getTime() + offset * 86400000),
+      description: adminWeekEntries[i].description,
+      phase: adminWeekEntries[i].phase,
+    })),
   });
 
   // --- one running timer, so the sidebar widget has something real to show ---

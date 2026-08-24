@@ -147,8 +147,11 @@ export default async function DashboardPage({
         </>
       )}
 
-      <div className="mt-7">
-        <Link href="/finance/expenses" className="card group block px-5 py-4 hover:bg-ink/5 transition-colors">
+      <div className="mt-7 grid grid-cols-1 md:grid-cols-5 gap-4">
+        <Link
+          href="/finance/expenses"
+          className="card group block px-5 py-4 hover:bg-ink/5 transition-colors md:col-span-3"
+        >
           <div className="heading-label !text-[12px] mb-1.5 group-hover:!text-accent">{t.dashboard.latestExpenses}</div>
           {data.latestExpenses.length === 0 ? (
             <p className="text-sm placeholder-text">{t.dashboard.noExpensesYet}</p>
@@ -164,10 +167,8 @@ export default async function DashboardPage({
             ))
           )}
         </Link>
-      </div>
 
-      <div className="mt-5">
-        <div className="card px-6 py-5">
+        <div className="card px-6 py-5 md:col-span-2">
           <div className="flex items-start justify-between flex-wrap gap-3">
             <div>
               <div className="heading-label !text-[12px]">{t.dashboard.myTrackedTime}</div>
@@ -184,7 +185,7 @@ export default async function DashboardPage({
             <>
               <div className="relative h-56 mt-6">
                 <ChartAxisGrid ticks={timeAxisTicks} />
-                <div className="absolute left-[74px] right-1 top-0 bottom-0 flex items-end justify-between gap-1.5">
+                <div className="absolute left-[74px] right-1 top-0 bottom-0 flex items-end justify-between gap-1">
                   {myWeeklyTime.buckets.map((b, i) => {
                     const minutes = myTime.byBucket[i];
                     const isToday = new Date() >= b.start && new Date() < b.end;
