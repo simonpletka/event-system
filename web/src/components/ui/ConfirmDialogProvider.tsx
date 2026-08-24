@@ -69,20 +69,20 @@ export function ConfirmDialogProvider({
       {children}
       {state && (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-bg/80 p-4"
+          className="fixed inset-0 z-50 flex items-center justify-center bg-bg/70 backdrop-blur-sm p-4"
           role="presentation"
           onClick={() => close(false)}
         >
           <div
-            className="bg-surface border-2 border-ink w-full max-w-sm p-5"
+            className="glass-panel rounded-2xl shadow-[0_24px_64px_rgba(0,0,0,0.55)] w-full max-w-sm p-6"
             role={state.mode === "confirm" ? "alertdialog" : "dialog"}
             aria-modal="true"
             onClick={(e) => e.stopPropagation()}
           >
-            {state.options.title && <div className="text-sm font-semibold mb-2">{state.options.title}</div>}
-            <p className="text-sm leading-relaxed">{state.message}</p>
+            {state.options.title && <div className="text-[15px] font-bold mb-2">{state.options.title}</div>}
+            <p className="text-[14px] leading-relaxed text-ink/85">{state.message}</p>
             {state.mode === "confirm" ? (
-              <div className="flex gap-2 mt-5">
+              <div className="flex gap-2.5 mt-6">
                 <button type="button" className="btn flex-1" autoFocus onClick={() => close(false)}>
                   {state.options.cancelLabel ?? defaultLabels.cancel}
                 </button>
@@ -91,7 +91,7 @@ export function ConfirmDialogProvider({
                 </button>
               </div>
             ) : (
-              <div className="flex justify-end mt-5">
+              <div className="flex justify-end mt-6">
                 <button type="button" className="btn" autoFocus onClick={() => close(false)}>
                   {state.options.dismissLabel ?? defaultLabels.ok}
                 </button>

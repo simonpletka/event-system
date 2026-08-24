@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { addDays, dayHeaderLabel, isSameDay, startOfDay, weekDays, assignColumns } from "@/lib/calendar";
+import { addDays, dayHeaderLabel, isSameDay, isoWeekNumber, startOfDay, weekDays, assignColumns } from "@/lib/calendar";
 import { EventStatusPill } from "@/components/StatusPill";
 import type { EventStatus } from "@/generated/prisma/enums";
 import { getDictionary, type Locale } from "@/lib/dictionary";
@@ -100,8 +100,8 @@ export function WeekCalendar({
                   isSelected ? "bg-accent text-ink" : isToday ? "text-accent" : "text-ink/60"
                 }`}
               >
-                <span className="text-[8.5px] tracking-[0.06em]">{dow}</span>
-                <span className="text-[14px] font-semibold">{num}</span>
+                <span className="text-[9.5px] tracking-[0.06em]">{dow}</span>
+                <span className="text-[15px] font-semibold">{num}</span>
               </button>
             );
           })}
@@ -144,9 +144,9 @@ export function WeekCalendar({
 
       <div className="hidden md:block">
       <div className="grid grid-cols-[44px_repeat(7,minmax(0,1fr))] border-b border-ink/20 pb-1">
-        <div />
+        <div className="heading-label !text-[9px]">W{isoWeekNumber(weekStart)}</div>
         {days.map((d) => (
-          <div key={d.toISOString()} className={`heading-label text-center ${isSameDay(d, today) ? "text-accent" : ""}`}>
+          <div key={d.toISOString()} className={`heading-label !text-[9px] text-center ${isSameDay(d, today) ? "text-accent" : ""}`}>
             {dayHeaderLabel(d)}
           </div>
         ))}
@@ -162,8 +162,8 @@ export function WeekCalendar({
               key={i}
               href={eventHref(bar.eventId)}
               title={bar.title}
-              className={`overflow-hidden text-[8.5px] px-1.5 flex items-center truncate ${
-                bar.kind === "main" ? "bg-ink text-bg" : "bg-ink/14"
+              className={`overflow-hidden text-[9.5px] font-bold px-1.5 flex items-center truncate ${
+                bar.kind === "main" ? "bg-accent text-ink" : "bg-ink/14"
               }`}
               style={{ gridRow: 1, gridColumn: `${bar.colStart + 2} / ${bar.colEnd + 3}` }}
             >
@@ -204,7 +204,7 @@ export function WeekCalendar({
                   key={m.id}
                   href={eventHref(m.eventId)}
                   title={`${m.eventTitle}: ${m.title}`}
-                  className="absolute overflow-hidden text-[8px] leading-tight bg-ink/14 border border-ink/25 px-1 py-0.5 box-border hover:border-accent"
+                  className="absolute overflow-hidden text-[9px] font-bold leading-tight bg-ink/22 border-2 border-ink/45 px-1 py-0.5 box-border hover:border-accent hover:bg-accent/20"
                   style={{
                     top: (m.startMin / 60) * HOUR_PX,
                     height: Math.max(16, ((m.endMin - m.startMin) / 60) * HOUR_PX),
@@ -222,9 +222,9 @@ export function WeekCalendar({
       </div>
 
       <div className="flex gap-3.5 flex-wrap mt-2.5">
-        <Legend swatch="bg-ink" label={t.legendEventDays} />
+        <Legend swatch="bg-accent" label={t.legendEventDays} />
         <Legend swatch="bg-ink/14" label={t.legendPrepBuild} />
-        <Legend swatch="border border-ink/25" label={t.legendMilestone} />
+        <Legend swatch="border-2 border-ink/45 bg-ink/22" label={t.legendMilestone} />
       </div>
       </div>
 

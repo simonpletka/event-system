@@ -181,6 +181,32 @@ async function main() {
       contacts: { create: [{ name: "Radka Sýkorová", phone: "+420 604 552 019", email: "sykorova@aeris.cz" }] },
     },
   });
+  const brightMedia = await prisma.client.create({
+    data: {
+      name: "Bright Media s.r.o.",
+      street: "Na Poříčí 12",
+      city: "Praha 1",
+      postCode: "110 00",
+      state: "Hlavní město Praha",
+      ico: "24681012",
+      dic: "CZ24681012",
+      invoicingEmail: "hruskova@brightmedia.cz",
+      contacts: { create: [{ name: "Karolína Hrušková", phone: "+420 775 340 128", email: "hruskova@brightmedia.cz" }] },
+    },
+  });
+  // Deliberately non-Czech, no IČO/DIČ — real coverage for a client whose ARES
+  // lookup will never apply and whose invoices/quotes carry a foreign currency.
+  const solventia = await prisma.client.create({
+    data: {
+      name: "Solventia GmbH",
+      street: "Leopoldstraße 44",
+      city: "München",
+      postCode: "80802",
+      state: "Bayern",
+      invoicingEmail: "wagner@solventia.de",
+      contacts: { create: [{ name: "Lukas Wagner", phone: "+49 170 552 3311", email: "wagner@solventia.de" }] },
+    },
+  });
 
   // --- Autumn Conference — confirmed, upcoming, fully fleshed out ---
   await prisma.event.create({
@@ -568,6 +594,408 @@ async function main() {
     },
   });
 
+  // --- Winter Product Demo — confirmed, further out, new client ---
+  await prisma.event.create({
+    data: {
+      number: "26-008",
+      title: "Winter Product Demo",
+      brief: "Bright Media's winter hardware demo day for press and retail partners.",
+      clientId: brightMedia.id,
+      contacts: { create: [{ name: "Karolína Hrušková", phone: "+420 775 340 128", email: "hruskova@brightmedia.cz" }] },
+      companyName: "Bright Media s.r.o.",
+      companyAddress: "Na Poříčí 12, Praha 1",
+      companyIco: "24681012",
+      companyDic: "CZ24681012",
+      status: "CONFIRMED",
+      buildDate: d("2026-12-08T08:00:00"),
+      startDate: d("2026-12-09T09:00:00"),
+      endDate: d("2026-12-09T19:00:00"),
+      strikeDate: d("2026-12-09T21:00:00"),
+      quotedValue: 156000,
+      ownerId: producer.id,
+      venues: { create: [{ name: "Vnitroblock", address: "Tusarova 31, Praha 7", note: "main hall + demo pods" }] },
+      milestones: {
+        create: [
+          { date: d("2026-11-10T10:00:00"), title: "Press list finalised" },
+          { date: d("2026-12-01T10:00:00"), title: "Demo units delivered" },
+        ],
+      },
+      members: { create: [{ userId: producer.id }, { userId: member.id }] },
+      expenses: {
+        create: [{ paidById: producer.id, amount: 2100, date: d("2026-08-18"), category: "FOOD", note: "venue site-visit lunch" }],
+      },
+      quotes: {
+        create: [
+          {
+            number: "26-008",
+            status: "ACCEPTED",
+            validUntil: d("2026-09-01"),
+            issuedAt: d("2026-08-15"),
+            createdById: producer.id,
+            ...withTotal([
+              { description: "Production management — Winter Product Demo", unitPrice: 96000, category: "People" },
+              { description: "Demo pod build & AV", unitPrice: 60000, category: "Rigging" },
+            ]),
+          },
+        ],
+      },
+    },
+  });
+
+  // --- Board Retreat — cancelled after initial planning, real coverage for that status ---
+  await prisma.event.create({
+    data: {
+      number: "26-009",
+      title: "Board Retreat",
+      brief: "Vela board offsite — postponed indefinitely, keeping the record rather than deleting it.",
+      clientId: vela.id,
+      contacts: { create: [{ name: "Lucie Marešová", phone: "+420 733 900 210", email: "maresova@vela.cz" }] },
+      companyName: "Vela s.r.o.",
+      companyAddress: "Náměstí Míru 5, Praha 2",
+      companyIco: "09984411",
+      companyDic: "CZ09984411",
+      status: "CANCELLED",
+      startDate: d("2026-10-15T09:00:00"),
+      endDate: d("2026-10-16T17:00:00"),
+      quotedValue: 64000,
+      ownerId: producer.id,
+      members: { create: [{ userId: producer.id }] },
+      quotes: {
+        create: [
+          {
+            number: "26-009",
+            status: "DECLINED",
+            validUntil: d("2026-09-20"),
+            issuedAt: d("2026-08-20"),
+            createdById: producer.id,
+            ...withTotal([{ description: "Board Retreat — two-day package", unitPrice: 64000 }]),
+          },
+        ],
+      },
+    },
+  });
+
+  // --- Munich Trade Fair — in progress, EUR currency + a non-Czech client ---
+  await prisma.event.create({
+    data: {
+      number: "26-010",
+      title: "Munich Trade Fair",
+      brief: "Solventia's stand build and staffing for a Munich trade fair.",
+      clientId: solventia.id,
+      contacts: { create: [{ name: "Lukas Wagner", phone: "+49 170 552 3311", email: "wagner@solventia.de" }] },
+      companyName: "Solventia GmbH",
+      companyAddress: "Leopoldstraße 44, München",
+      status: "IN_PROGRESS",
+      buildDate: d("2026-08-24T08:00:00"),
+      startDate: d("2026-08-26T09:00:00"),
+      endDate: d("2026-08-28T18:00:00"),
+      strikeDate: d("2026-08-28T21:00:00"),
+      quotedValue: 41000,
+      ownerId: admin.id,
+      venues: { create: [{ name: "Messe München — Hall B4", address: "Am Messesee 2, München", note: "" }] },
+      milestones: { create: [{ date: d("2026-08-22T10:00:00"), title: "Stand design sign-off" }] },
+      members: { create: [{ userId: admin.id }, { userId: producer.id }] },
+      expenses: {
+        create: [
+          { paidById: admin.id, amount: 385, date: d("2026-08-20"), category: "TRAVEL_FLIGHT", note: "site-survey flight" },
+          { paidById: admin.id, amount: 5200, date: d("2026-08-21"), category: "GEAR", note: "stand graphics printing" },
+        ],
+      },
+      timeEntries: {
+        create: [
+          { userId: admin.id, minutes: 640, date: d("2026-08-19"), description: "Stand layout planning", phase: "PLANNING" },
+          { userId: producer.id, minutes: 510, date: d("2026-08-21"), description: "Supplier coordination — Munich crew", phase: "SUPPLIERS" },
+        ],
+      },
+      quotes: {
+        create: [
+          {
+            number: "26-010",
+            status: "ACCEPTED",
+            validUntil: d("2026-08-10"),
+            issuedAt: d("2026-07-30"),
+            createdById: admin.id,
+            currency: "EUR",
+            ...withTotal([
+              { description: "Stand build — 24m²", unitPrice: 1200, category: "Rigging" },
+              { description: "On-site crew — 3 days", quantity: 3, unitPrice: 250, category: "People" },
+            ]),
+          },
+        ],
+      },
+    },
+  });
+
+  const munich = await prisma.event.findFirstOrThrow({ where: { title: "Munich Trade Fair" } });
+  const munichQuote = await prisma.quote.findFirstOrThrow({ where: { eventId: munich.id } });
+  const munichInvoiceData = withTotal([
+    { description: "Stand build — 24m²", unitPrice: 1200, category: "Rigging" },
+    { description: "On-site crew — 3 days", quantity: 3, unitPrice: 250, category: "People" },
+  ]);
+  await prisma.invoice.create({
+    data: {
+      eventId: munich.id,
+      quoteId: munichQuote.id,
+      number: "26-010",
+      variableSymbol: variableSymbol("26-010"),
+      status: "ISSUED",
+      currency: "EUR",
+      dueDate: d("2026-09-11"),
+      issuedAt: d("2026-08-24"),
+      ...munichInvoiceData,
+      history: {
+        create: [
+          { type: "CREATED", message: "Created from quote 26-010", createdAt: d("2026-08-24"), userId: admin.id },
+          { type: "ISSUED", message: "Issued and sent — Admin User", createdAt: d("2026-08-24"), userId: admin.id },
+        ],
+      },
+    },
+  });
+
+  // --- Client Appreciation Night — ended, another needs-attention "to invoice" item ---
+  await prisma.event.create({
+    data: {
+      number: "26-011",
+      title: "Client Appreciation Night",
+      brief: "Nordika's client appreciation evening — cocktails and a short showcase.",
+      clientId: nordika.id,
+      contacts: { create: [{ name: "Tomáš Beneš", phone: "+420 602 118 400", email: "benes@nordika.cz" }] },
+      companyName: "Nordika",
+      companyAddress: "Lidická 20, Brno",
+      companyIco: "05512244",
+      companyDic: "CZ05512244",
+      status: "TO_INVOICE",
+      startDate: d("2026-08-14T18:00:00"),
+      endDate: d("2026-08-14T23:00:00"),
+      quotedValue: 58000,
+      ownerId: producer.id,
+      members: { create: [{ userId: producer.id }] },
+      expenses: {
+        create: [{ paidById: producer.id, amount: 12400, date: d("2026-08-14"), category: "FOOD", note: "catering — 60 guests" }],
+      },
+    },
+  });
+
+  // --- Charity Gala — quote sent, waiting on client ---
+  await prisma.event.create({
+    data: {
+      number: "26-012",
+      title: "Charity Gala",
+      brief: "Aeris-sponsored charity gala — dinner, auction, live band.",
+      clientId: aeris.id,
+      contacts: { create: [{ name: "Radka Sýkorová", phone: "+420 604 552 019", email: "sykorova@aeris.cz" }] },
+      companyName: "Aeris",
+      companyAddress: "Karlovo náměstí 10, Praha 2",
+      companyIco: "08812234",
+      companyDic: "CZ08812234",
+      status: "QUOTE_SENT",
+      startDate: d("2026-11-21T18:00:00"),
+      endDate: d("2026-11-22T00:00:00"),
+      quotedValue: 175000,
+      ownerId: admin.id,
+      milestones: { create: [{ date: d("2026-09-05T10:00:00"), title: "Venue options review" }] },
+      members: { create: [{ userId: admin.id }, { userId: member.id }] },
+      quotes: {
+        create: [
+          {
+            number: "26-012",
+            status: "SENT",
+            validUntil: d("2026-09-19"),
+            issuedAt: d("2026-08-22"),
+            createdById: admin.id,
+            ...withTotal([
+              { description: "Production management — Charity Gala", unitPrice: 95000, category: "People" },
+              { description: "Live band & staging", unitPrice: 62000, category: "Rigging" },
+              { description: "Photography", unitPrice: 12000, category: "Other" },
+            ]),
+          },
+        ],
+      },
+    },
+  });
+
+  // --- Autumn Trade Expo — late 2025, closed and paid, real history before the 26-XXX sequence starts ---
+  await prisma.event.create({
+    data: {
+      number: "25-001",
+      title: "Autumn Trade Expo",
+      brief: "Kobra a.s.'s stand and hosted sessions at the regional trade expo.",
+      clientId: kobra.id,
+      contacts: { create: [{ name: "Petra Válková", phone: "+420 771 220 118", email: "valkova@kobra.cz" }] },
+      companyName: "Kobra a.s.",
+      companyAddress: "Vinohradská 12, Praha 2",
+      companyIco: "27182904",
+      companyDic: "CZ27182904",
+      status: "CLOSED",
+      startDate: d("2025-10-14T09:00:00"),
+      endDate: d("2025-10-16T18:00:00"),
+      quotedValue: 175450,
+      ownerId: producer.id,
+      venues: { create: [{ name: "PVA EXPO Praha", address: "Bečovská 2304/2, Praha 9", note: "hall 3, stand B12" }] },
+      members: { create: [{ userId: producer.id }] },
+      quotes: {
+        create: [
+          {
+            number: "25-001",
+            status: "ACCEPTED",
+            validUntil: d("2025-09-20"),
+            issuedAt: d("2025-09-05"),
+            createdById: producer.id,
+            ...withTotal([{ description: "Trade expo — stand build & staffing", unitPrice: 145000, category: "People" }]),
+          },
+        ],
+      },
+    },
+  });
+
+  const tradeExpo = await prisma.event.findFirstOrThrow({ where: { title: "Autumn Trade Expo" } });
+  const tradeExpoData = withTotal([{ description: "Trade expo — stand build & staffing", unitPrice: 145000, category: "People" }]);
+  await prisma.invoice.create({
+    data: {
+      eventId: tradeExpo.id,
+      number: "25-001",
+      variableSymbol: variableSymbol("25-001"),
+      status: "PAID",
+      dueDate: d("2025-10-30"),
+      issuedAt: d("2025-10-17"),
+      paidAt: d("2025-10-28"),
+      amountPaid: tradeExpoData.total,
+      ...tradeExpoData,
+      payments: { create: [{ amount: tradeExpoData.total, date: d("2025-10-28"), note: "Bank transfer", recordedById: accountant.id }] },
+      history: {
+        create: [
+          { type: "CREATED", message: "Created from quote 25-001", createdAt: d("2025-10-17"), userId: producer.id },
+          { type: "ISSUED", message: "Issued and sent — J. Novák", createdAt: d("2025-10-17"), userId: producer.id },
+          { type: "MARKED_PAID", message: "Paid in full — E. Kučerová", createdAt: d("2025-10-28"), userId: accountant.id },
+        ],
+      },
+    },
+  });
+
+  // --- Regional Sales Kickoff — late 2025, closed and paid ---
+  await prisma.event.create({
+    data: {
+      number: "25-002",
+      title: "Regional Sales Kickoff",
+      brief: "Nordika's regional sales team kickoff meeting and dinner.",
+      clientId: nordika.id,
+      contacts: { create: [{ name: "Tomáš Beneš", phone: "+420 602 118 400", email: "benes@nordika.cz" }] },
+      companyName: "Nordika",
+      companyAddress: "Lidická 20, Brno",
+      companyIco: "05512244",
+      companyDic: "CZ05512244",
+      status: "CLOSED",
+      startDate: d("2025-11-06T10:00:00"),
+      endDate: d("2025-11-06T21:00:00"),
+      quotedValue: 118580,
+      ownerId: admin.id,
+      milestones: { create: [{ date: d("2025-10-20T10:00:00"), title: "Venue confirmed" }] },
+      quotes: {
+        create: [
+          {
+            number: "25-002",
+            status: "ACCEPTED",
+            validUntil: d("2025-10-10"),
+            issuedAt: d("2025-09-28"),
+            createdById: admin.id,
+            ...withTotal([{ description: "Sales kickoff — full-day package", unitPrice: 98000 }]),
+          },
+        ],
+      },
+    },
+  });
+
+  const salesKickoff = await prisma.event.findFirstOrThrow({ where: { title: "Regional Sales Kickoff" } });
+  const salesKickoffData = withTotal([{ description: "Sales kickoff — full-day package", unitPrice: 98000 }]);
+  await prisma.invoice.create({
+    data: {
+      eventId: salesKickoff.id,
+      number: "25-002",
+      variableSymbol: variableSymbol("25-002"),
+      status: "PAID",
+      dueDate: d("2025-11-20"),
+      issuedAt: d("2025-11-07"),
+      paidAt: d("2025-11-18"),
+      amountPaid: salesKickoffData.total,
+      ...salesKickoffData,
+      payments: { create: [{ amount: salesKickoffData.total, date: d("2025-11-18"), note: "Bank transfer", recordedById: accountant.id }] },
+      history: {
+        create: [
+          { type: "CREATED", message: "Created from quote 25-002", createdAt: d("2025-11-07"), userId: admin.id },
+          { type: "ISSUED", message: "Issued and sent — Admin User", createdAt: d("2025-11-07"), userId: admin.id },
+          { type: "MARKED_PAID", message: "Paid in full — E. Kučerová", createdAt: d("2025-11-18"), userId: accountant.id },
+        ],
+      },
+    },
+  });
+
+  // --- Winter Charity Ball — late 2025, closed and paid, has a build/strike span for calendar coverage ---
+  await prisma.event.create({
+    data: {
+      number: "25-003",
+      title: "Winter Charity Ball",
+      brief: "Aeris-sponsored winter charity ball — dinner, auction, live music.",
+      clientId: aeris.id,
+      contacts: { create: [{ name: "Radka Sýkorová", phone: "+420 604 552 019", email: "sykorova@aeris.cz" }] },
+      companyName: "Aeris",
+      companyAddress: "Karlovo náměstí 10, Praha 2",
+      companyIco: "08812234",
+      companyDic: "CZ08812234",
+      status: "CLOSED",
+      buildDate: d("2025-12-12T08:00:00"),
+      startDate: d("2025-12-13T18:00:00"),
+      endDate: d("2025-12-13T23:30:00"),
+      strikeDate: d("2025-12-14T12:00:00"),
+      quotedValue: 254100,
+      ownerId: admin.id,
+      venues: { create: [{ name: "Žofín Palace", address: "Slovanský ostrov 226, Praha 1", note: "main hall" }] },
+      members: { create: [{ userId: admin.id }, { userId: member.id }] },
+      milestones: { create: [{ date: d("2025-11-24T10:00:00"), title: "Auction items confirmed" }] },
+      quotes: {
+        create: [
+          {
+            number: "25-003",
+            status: "ACCEPTED",
+            validUntil: d("2025-11-01"),
+            issuedAt: d("2025-10-15"),
+            createdById: admin.id,
+            ...withTotal([
+              { description: "Winter Charity Ball — production management", unitPrice: 140000, category: "People" },
+              { description: "Live band & staging", unitPrice: 70000, category: "Rigging" },
+            ]),
+          },
+        ],
+      },
+    },
+  });
+
+  const charityBall = await prisma.event.findFirstOrThrow({ where: { title: "Winter Charity Ball" } });
+  const charityBallData = withTotal([
+    { description: "Winter Charity Ball — production management", unitPrice: 140000, category: "People" },
+    { description: "Live band & staging", unitPrice: 70000, category: "Rigging" },
+  ]);
+  await prisma.invoice.create({
+    data: {
+      eventId: charityBall.id,
+      number: "25-003",
+      variableSymbol: variableSymbol("25-003"),
+      status: "PAID",
+      dueDate: d("2025-12-28"),
+      issuedAt: d("2025-12-14"),
+      paidAt: d("2025-12-22"),
+      amountPaid: charityBallData.total,
+      ...charityBallData,
+      payments: { create: [{ amount: charityBallData.total, date: d("2025-12-22"), note: "Bank transfer", recordedById: accountant.id }] },
+      history: {
+        create: [
+          { type: "CREATED", message: "Created from quote 25-003", createdAt: d("2025-12-14"), userId: admin.id },
+          { type: "ISSUED", message: "Issued and sent — Admin User", createdAt: d("2025-12-14"), userId: admin.id },
+          { type: "MARKED_PAID", message: "Paid in full — E. Kučerová", createdAt: d("2025-12-22"), userId: accountant.id },
+        ],
+      },
+    },
+  });
+
   // --- company overhead expenses, not tied to any event ---
   await prisma.expense.createMany({
     data: [
@@ -595,6 +1023,16 @@ async function main() {
     ],
   });
 
+  const winterDemo = await prisma.event.findFirstOrThrow({ where: { title: "Winter Product Demo" } });
+  const appreciationNight = await prisma.event.findFirstOrThrow({ where: { title: "Client Appreciation Night" } });
+  await prisma.timeEntry.createMany({
+    data: [
+      { eventId: winterDemo.id, userId: producer.id, minutes: 480, date: d("2026-08-16"), description: "Venue sourcing", phase: "PLANNING" },
+      { eventId: winterDemo.id, userId: member.id, minutes: 260, date: d("2026-08-17"), description: "Press-list research", phase: "PLANNING" },
+      { eventId: appreciationNight.id, userId: producer.id, minutes: 690, date: d("2026-08-14"), description: "On-site coordination", phase: "ON_SITE" },
+    ],
+  });
+
   // --- one running timer, so the sidebar widget has something real to show ---
   await prisma.timeEntry.create({
     data: {
@@ -608,7 +1046,7 @@ async function main() {
     },
   });
 
-  console.log("Seeded 7 events, 4 clients, 4 users, company settings. Dev login password for all seed accounts:", DEV_PASSWORD);
+  console.log("Seeded 15 events, 6 clients, 4 users, company settings. Dev login password for all seed accounts:", DEV_PASSWORD);
   console.log("  admin@eventsystem.cz (Admin)");
   console.log("  eva.kucerova@eventsystem.cz (Accountant)");
   console.log("  jan.novak@eventsystem.cz (Producer)");
