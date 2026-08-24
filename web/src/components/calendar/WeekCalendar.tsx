@@ -313,7 +313,12 @@ export function WeekCalendar({
               <span className="text-[10.5px] font-bold truncate leading-tight">
                 {bar.kind === "main" ? t.eventDaysBar(bar.title) : t.prepBuildBar(bar.title)}
               </span>
-              {bar.address && <span className="text-[9px] font-semibold truncate leading-tight opacity-75">{bar.address}</span>}
+              {bar.address && (
+                <span className="flex items-center gap-1 text-[9px] font-semibold truncate leading-tight opacity-75">
+                  <WaypointIcon className="shrink-0" />
+                  <span className="truncate">{bar.address}</span>
+                </span>
+              )}
             </Link>
             );
           })}
@@ -461,5 +466,14 @@ function Legend({ swatch, label }: { swatch: string; label: string }) {
       <div className={`w-2.5 h-2.5 ${swatch}`} />
       <div className="label !text-[9px]">{label}</div>
     </div>
+  );
+}
+
+function WaypointIcon({ className = "" }: { className?: string }) {
+  return (
+    <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className={className}>
+      <path d="M12 21s-7-6.5-7-11a7 7 0 0 1 14 0c0 4.5-7 11-7 11Z" />
+      <circle cx="12" cy="10" r="2.5" />
+    </svg>
   );
 }
