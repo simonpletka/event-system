@@ -11,14 +11,20 @@ export function MobileTopBar({
   userName,
   avatarUrl,
   running,
+  events,
   tNav,
   tSidebar,
+  tElapsed,
+  discardedMessage,
 }: {
   userName: string;
   avatarUrl: string | null;
-  running: { eventTitle: string | null; startedAt: string } | null;
+  running: { eventId: string | null; eventTitle: string | null; startedAt: string } | null;
+  events: { id: string; title: string }[];
   tNav: Dictionary["nav"];
   tSidebar: Dictionary["sidebar"];
+  tElapsed: Dictionary["timeTracker"]["editableElapsed"];
+  discardedMessage: string;
 }) {
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
@@ -73,7 +79,7 @@ export function MobileTopBar({
             </div>
 
             <div className="mb-2.5">
-              <TimerWidget running={running} t={tSidebar} />
+              <TimerWidget running={running} events={events} t={tSidebar} tElapsed={tElapsed} discardedMessage={discardedMessage} />
             </div>
 
             <Link

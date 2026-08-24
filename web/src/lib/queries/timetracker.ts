@@ -28,10 +28,8 @@ export function rangeEnd(period: TimePeriod, anchor: Date) {
   return end;
 }
 
-export async function getMyTimeTrackerData(user: SessionUser, period: TimePeriod, anchor: Date) {
-  const from = rangeStart(period, anchor);
-  const to = rangeEnd(period, anchor);
-
+/** `to` is exclusive — callers picking an inclusive end date should pass `addDays(toInclusive, 1)`. */
+export async function getMyTimeTrackerData(user: SessionUser, from: Date, to: Date) {
   const [running, entries, events] = await Promise.all([
     getRunningTimer(user.id),
     prisma.timeEntry.findMany({
@@ -46,17 +44,7 @@ export async function getMyTimeTrackerData(user: SessionUser, period: TimePeriod
     }),
   ]);
 
-  const byEvent = new Map<string, { title: string | null; minutes: number }>();
-  for (const t of entries) {
-    const key = t.event?.id ?? "__unassigned__";
-    const cur = byEvent.get(key) ?? { title: t.event?.title ?? null, minutes: 0 };
-    cur.minutes += t.minutes;
-    byEvent.set(key, cur);
-  }
-  const periodTotals = [...byEvent.values()].sort((a, b) => b.minutes - a.minutes);
-  const periodTotalMinutes = periodTotals.reduce((s, e) => s + e.minutes, 0);
-
-  return { running, entries, periodTotals, periodTotalMinutes, events };
+  return { running, entries, events };
 }
 
 export async function getTimeTrackerCalendarData(user: SessionUser, weekStart: Date) {

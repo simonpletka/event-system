@@ -1,25 +1,38 @@
 import Link from "next/link";
 import { requireUser } from "@/lib/authz";
-import { getMyTimeTrackerData, getTimeTrackerCalendarData, rangeStart, type TimePeriod } from "@/lib/queries/timetracker";
+import { getMyTimeTrackerData, getTimeTrackerCalendarData } from "@/lib/queries/timetracker";
 import { formatDate, formatMinutes } from "@/lib/format";
 import { getLocale, getDictionary, type Dictionary } from "@/lib/i18n";
-import { ManualEntryForm } from "@/components/timetracker/ManualEntryForm";
 import { RunningTimerBox } from "@/components/timetracker/RunningTimerBox";
-import { DeleteEntryButton } from "@/components/timetracker/DeleteEntryButton";
+import { EditEntryButton } from "@/components/timetracker/EditEntryButton";
 import { TimeTrackerCalendar } from "@/components/timetracker/TimeTrackerCalendar";
 import { SegmentedTabs } from "@/components/ui/SegmentedTabs";
-import { WeekNav } from "@/components/calendar/WeekNav";
-import { isoDate, mondayOf, parseIsoDate } from "@/lib/calendar";
-import { stepDate, periodLabel, currentPeriodLabel } from "@/lib/period-nav";
+import { DateNav } from "@/components/calendar/DateNav";
+import { addDays, isoDate, isoTime, mondayOf, parseIsoDate } from "@/lib/calendar";
 
-function trackingHref(params: { view?: string; mode?: string; period?: string; date?: string }) {
+function trackingHref(params: { view?: string }) {
   const qs = new URLSearchParams();
   if (params.view) qs.set("view", params.view);
-  if (params.mode) qs.set("mode", params.mode);
-  if (params.period) qs.set("period", params.period);
-  if (params.date) qs.set("date", params.date);
   const s = qs.toString();
   return `/time-tracker/tracking${s ? `?${s}` : ""}`;
+}
+
+function CalendarIcon() {
+  return (
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+      <rect x="3" y="5" width="18" height="16" rx="2" />
+      <path d="M3 10h18M8 3v4M16 3v4" strokeLinecap="round" />
+    </svg>
+  );
+}
+
+function ListIcon() {
+  return (
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+      <path d="M8 6h13M8 12h13M8 18h13" />
+      <path d="M3 6h.01M3 12h.01M3 18h.01" />
+    </svg>
+  );
 }
 
 export default async function TrackingPage({
@@ -31,12 +44,13 @@ export default async function TrackingPage({
   const params = await searchParams;
   const locale = await getLocale();
   const t = getDictionary(locale);
-  const view = params.view === "calendar" ? "calendar" : "list";
-  const mode = params.mode === "manual" ? "manual" : "timer";
-  const period: TimePeriod = params.period === "day" || params.period === "month" ? params.period : "week";
-  const anchor = params.date ? parseIsoDate(params.date) : new Date();
+  const view = params.view === "list" ? "list" : "calendar";
 
-  const listData = view === "list" ? await getMyTimeTrackerData(user, period, anchor) : null;
+  const defaultFrom = mondayOf(new Date());
+  const from = params.from ? parseIsoDate(params.from) : defaultFrom;
+  const toInclusive = params.to ? parseIsoDate(params.to) : addDays(defaultFrom, 6);
+  const listData = view === "list" ? await getMyTimeTrackerData(user, from, addDays(toInclusive, 1)) : null;
+
   const weekStart = mondayOf(params.week ? parseIsoDate(params.week) : new Date());
   const calendarData = view === "calendar" ? await getTimeTrackerCalendarData(user, weekStart) : null;
 
@@ -48,102 +62,71 @@ export default async function TrackingPage({
     <SegmentedTabs
       active={view}
       options={[
-        { value: "list", label: t.timeTracker.tracking.viewList, href: trackingHref({ mode, period, date: params.date }) },
-        { value: "calendar", label: t.timeTracker.tracking.viewCalendar, href: trackingHref({ view: "calendar" }) },
+        { value: "calendar", label: <CalendarIcon />, href: trackingHref({ view: "calendar" }), title: t.timeTracker.tracking.viewCalendar },
+        { value: "list", label: <ListIcon />, href: trackingHref({ view: "list" }), title: t.timeTracker.tracking.viewList },
       ]}
     />
   );
 
-  const modeOptions = [
-    { value: "timer", label: t.timeTracker.tracking.modeTimer, href: trackingHref({ view, mode: "timer", period, date: params.date }) },
-    { value: "manual", label: t.timeTracker.tracking.modeManual, href: trackingHref({ view, mode: "manual", period, date: params.date }) },
-  ];
-
   return (
     <div>
-      {runningNormalized ? (
-        <RunningTimerBox running={runningNormalized} events={events} locale={locale} />
-      ) : (
-        <div>
-          <div className="mb-3">
-            <SegmentedTabs active={mode} options={modeOptions} />
-          </div>
-          {mode === "timer" ? (
-            <RunningTimerBox running={null} events={events} locale={locale} />
-          ) : (
-            <ManualEntryForm events={events} t={t.timeTracker.manualForm} tPhases={t.phases} />
-          )}
-        </div>
-      )}
+      {view === "calendar" && <RunningTimerBox running={runningNormalized} events={events} locale={locale} />}
 
-      <div className="flex items-center justify-between gap-2 flex-wrap mt-5">
+      <div className={`flex items-center justify-between gap-2 flex-wrap ${view === "calendar" ? "mt-5" : ""}`}>
         <div className="heading-label !text-[12px]">{view === "list" ? t.timeTracker.tracking.myEntries : t.timeTracker.tabOverview}</div>
         {viewSwitch}
       </div>
 
       {view === "calendar" ? (
         <>
-          <div className="flex justify-end mt-3">
-            <WeekNav weekStart={weekStart} hrefFor={(week) => `/time-tracker/tracking?view=calendar&week=${week}`} todayLabel={t.timeTracker.tracking.today} />
+          <div className="mt-3">
+            <DateNav
+              mode="single"
+              weekStartIso={isoDate(weekStart)}
+              basePath="/time-tracker/tracking"
+              extraQuery="view=calendar"
+              todayLabel={t.timeTracker.tracking.today}
+            />
           </div>
           <div className="mt-4">
-            <TimeTrackerCalendar weekStart={weekStart} entries={calendarData!.entries} locale={locale} />
+            <TimeTrackerCalendar weekStart={weekStart} entries={calendarData!.entries} events={calendarData!.events} locale={locale} />
           </div>
         </>
       ) : (
-        <ListView period={period} anchor={anchor} params={params} listData={listData!} t={t} />
+        <ListView from={from} toInclusive={toInclusive} listData={listData!} t={t} locale={locale} />
       )}
     </div>
   );
 }
 
 function ListView({
-  period,
-  anchor,
-  params,
+  from,
+  toInclusive,
   listData,
   t,
+  locale,
 }: {
-  period: TimePeriod;
-  anchor: Date;
-  params: Record<string, string | undefined>;
+  from: Date;
+  toInclusive: Date;
   listData: NonNullable<Awaited<ReturnType<typeof getMyTimeTrackerData>>>;
   t: Dictionary;
+  locale: Parameters<typeof RunningTimerBox>[0]["locale"];
 }) {
-  const mode = params.mode === "manual" ? "manual" : "timer";
-  const { entries, periodTotals, periodTotalMinutes } = listData;
+  const { entries, events, running } = listData;
+  const runningNormalized = running && running.startedAt ? { ...running, startedAt: running.startedAt } : null;
   const tt = t.timeTracker.tracking;
 
-  const periodOptions = [
-    { value: "day", label: tt.day, href: trackingHref({ mode, period: "day" }) },
-    { value: "week", label: tt.week, href: trackingHref({ mode, period: "week" }) },
-    { value: "month", label: tt.month, href: trackingHref({ mode, period: "month" }) },
-  ];
-
-  const prevHref = trackingHref({ mode, period, date: isoDate(stepDate(period, anchor, -1)) });
-  const nextHref = trackingHref({ mode, period, date: isoDate(stepDate(period, anchor, 1)) });
-  const todayHref = trackingHref({ mode, period });
-
-  const periodNoun = tt.periodNoun[period];
-
   return (
-    <div className="grid grid-cols-1 md:grid-cols-[1fr_280px] gap-5 mt-3">
-      <div>
-        <div className="flex items-center justify-between gap-2 flex-wrap">
-          <SegmentedTabs options={periodOptions} active={period} />
-          <div className="flex items-center gap-1.5">
-            <Link href={prevHref} className="btno px-2 py-1.5">
-              ←
-            </Link>
-            <span className="text-[10px] tracking-[0.1em] uppercase min-w-[150px] text-center">{periodLabel(period, anchor)}</span>
-            <Link href={nextHref} className="btno px-2 py-1.5">
-              →
-            </Link>
-            <Link href={todayHref} className="btno">
-              {tt.today}
-            </Link>
-          </div>
-        </div>
+    <div className="grid grid-cols-1 md:grid-cols-5 gap-5 mt-3">
+      <div className="md:col-span-4">
+        <DateNav
+          mode="range"
+          fromIso={isoDate(from)}
+          toIso={isoDate(toInclusive)}
+          basePath="/time-tracker/tracking"
+          extraQuery="view=list"
+          todayLabel={tt.today}
+        />
 
         <div className="hidden md:block">
           <div className="grid grid-cols-[56px_1.2fr_1.4fr_.6fr_.5fr] gap-2.5 border-b border-ink/14 pb-1.5 mt-4 px-2.5 [&_.heading-label]:font-bold [&_.heading-label]:!text-[9px]">
@@ -170,10 +153,26 @@ function ListView({
               <div className="placeholder-text truncate">{e.description || "—"}</div>
               <div className="font-semibold">{formatMinutes(e.minutes)}</div>
               <div className="flex gap-2 text-[9px] tracking-[0.1em] uppercase">
-                <Link href={`/time-tracker/entries/${e.id}/edit`} className="hover:text-ink placeholder-text">
+                <EditEntryButton
+                  entry={{
+                    id: e.id,
+                    eventId: e.eventId,
+                    date: isoDate(e.date),
+                    minutes: e.minutes,
+                    description: e.description,
+                    phase: e.phase,
+                    startTime: e.startedAt ? isoTime(e.startedAt) : undefined,
+                    endTime: e.endedAt ? isoTime(e.endedAt) : undefined,
+                  }}
+                  events={events}
+                  modalTitle={t.timeTracker.entryEdit.editEntry}
+                  t={t.timeTracker.editEntryForm}
+                  tPhases={t.phases}
+                  tDelete={t.timeTracker.deleteEntry}
+                  className="hover:text-ink placeholder-text"
+                >
                   {tt.edit}
-                </Link>
-                <DeleteEntryButton id={e.id} t={t.timeTracker.deleteEntry} />
+                </EditEntryButton>
               </div>
             </div>
           ))}
@@ -193,10 +192,26 @@ function ListView({
                 )}
                 <div className="placeholder-text text-[11.5px] mt-0.5 truncate">{e.description || "—"}</div>
                 <div className="flex gap-3 text-[9px] tracking-[0.1em] uppercase mt-1.5">
-                  <Link href={`/time-tracker/entries/${e.id}/edit`} className="hover:text-ink placeholder-text">
+                  <EditEntryButton
+                    entry={{
+                      id: e.id,
+                      eventId: e.eventId,
+                      date: isoDate(e.date),
+                      minutes: e.minutes,
+                      description: e.description,
+                      phase: e.phase,
+                      startTime: e.startedAt ? isoTime(e.startedAt) : undefined,
+                      endTime: e.endedAt ? isoTime(e.endedAt) : undefined,
+                    }}
+                    events={events}
+                    modalTitle={t.timeTracker.entryEdit.editEntry}
+                    t={t.timeTracker.editEntryForm}
+                    tPhases={t.phases}
+                    tDelete={t.timeTracker.deleteEntry}
+                    className="hover:text-ink placeholder-text"
+                  >
                     {tt.edit}
-                  </Link>
-                  <DeleteEntryButton id={e.id} t={t.timeTracker.deleteEntry} />
+                  </EditEntryButton>
                 </div>
               </div>
               <div className="font-semibold shrink-0">{formatMinutes(e.minutes)}</div>
@@ -204,26 +219,12 @@ function ListView({
           ))}
         </div>
 
-        {entries.length === 0 && <p className="text-sm placeholder-text mt-3">{tt.noEntriesForPeriod(periodNoun)}</p>}
+        {entries.length === 0 && <p className="text-sm placeholder-text mt-3">{tt.noEntriesInRange}</p>}
         <div className="label mt-3 px-2.5">{tt.manualTrackedNote}</div>
       </div>
 
-      <div className="flex flex-col gap-3">
-        <div className="card px-4 py-4">
-          <div className="heading-label !text-[12px] mb-1.5">
-            {isoDate(rangeStart(period, anchor)) === isoDate(rangeStart(period, new Date())) ? currentPeriodLabel(period, tt) : periodLabel(period, anchor)}
-          </div>
-          {periodTotals.map((pt) => (
-            <div key={pt.title ?? "__unassigned__"} className="flex justify-between py-1.5 text-[13px] border-b border-ink/8 last:border-b-0">
-              <div className={pt.title ? "" : "italic placeholder-text"}>{pt.title ?? t.timeTracker.unassignedEvent}</div>
-              <div className="placeholder-text">{formatMinutes(pt.minutes)}</div>
-            </div>
-          ))}
-          <div className="flex justify-between pt-2 mt-1 border-t border-ink/14 text-[13px] font-semibold">
-            <div>{tt.totalLabel}</div>
-            <div>{formatMinutes(periodTotalMinutes)}</div>
-          </div>
-        </div>
+      <div className="md:col-span-1 flex flex-col gap-3 order-first md:order-none">
+        <RunningTimerBox running={runningNormalized} events={events} locale={locale} compact />
       </div>
     </div>
   );

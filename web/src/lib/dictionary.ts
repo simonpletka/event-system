@@ -138,9 +138,9 @@ const en = {
   sidebar: {
     myTracker: "My tracker",
     noTimerRunning: "No timer running",
-    startOne: "Start one →",
     stopTimer: "Stop timer",
-    noEventYet: "No event yet",
+    quickStart: "Start a timer now, no event",
+    assignEventOption: "Assign an event…",
   },
   calendar: {
     allDay: "All day",
@@ -732,16 +732,13 @@ const en = {
     tracking: {
       viewList: "List",
       viewCalendar: "Calendar",
-      modeTimer: "Timer",
-      modeManual: "Manual",
       myEntries: "My entries",
       today: "Today",
       colDate: "Date",
       colEvent: "Event",
       colWork: "Work",
       colHours: "Hours",
-      noEntriesForPeriod: (noun: string) => `No entries for this ${noun}.`,
-      periodNoun: { day: "day", week: "week", month: "month" },
+      noEntriesInRange: "No entries in this range.",
       edit: "Edit",
       manualTrackedNote: "Manual and tracked entries look identical in every report.",
       day: "Day",
@@ -765,45 +762,17 @@ const en = {
 
     entryEdit: {
       editEntry: "Edit entry",
-      timerStillRunning: "This timer is still running — stop it first from the Tracking tab.",
-    },
-
-    manualForm: {
-      addManualEntry: "Add a manual entry",
-      eventLabel: "Event",
-      selectEvent: "Select an event…",
-      noEventOption: "No event yet — assign later",
-      dateLabel: "Date",
-      phaseLabel: "Phase",
-      startTimeLabel: "Start time",
-      endTimeLabel: "End time",
-      orDurationLabel: "Or duration (mins)",
-      minsPlaceholder: "mins",
-      descriptionLabel: "Description",
-      descriptionPlaceholder: "What was done",
-      adding: "Adding…",
-      addEntry: "Add entry",
-      fillHint: "Fill start/end time, or a duration in minutes if you don't know the exact times.",
     },
 
     runningTimer: {
-      startATimer: "Start a timer",
       eventLabel: "Event",
-      selectEvent: "Select an event…",
+      assignEvent: "+ Event",
       noEventOption: "No event yet — assign later",
-      noEventRunning: "No event assigned yet",
       phaseLabel: "Phase",
-      descriptionLabel: "Description",
       whatWorkingOn: "What are you working on?",
       start: "Start",
-      runningOn: "Running on",
-      descEditableHint: "Description can be edited while the timer runs",
-      elapsed: "Elapsed",
-      startedAt: (t: string) => `started ${t}`,
-      stopAndSave: "Stop & save",
-      startingAnotherHint: "Starting another timer stops this one",
-      switchEvent: "Switch event",
-      switch: "Switch",
+      stop: "Stop",
+      discardedTooShort: "That timer ran for under 10 seconds, so it wasn't saved.",
     },
 
     editEntryForm: {
@@ -818,6 +787,7 @@ const en = {
       descriptionLabel: "Description",
       saving: "Saving…",
       saveChanges: "Save changes",
+      cancel: "Cancel",
     },
 
     deleteEntry: {
@@ -830,6 +800,24 @@ const en = {
       unscheduled: "Unscheduled",
       noTimeThisWeek: "No time tracked this week.",
       noItemsThisDay: "Nothing tracked this day.",
+    },
+
+    createEntryPopover: {
+      descriptionPlaceholder: "Add description",
+      noEventOption: "No event",
+      duration: (h: number, m: number) => `${h}h ${m}m`,
+      adding: "Adding…",
+      addEntry: "Add entry",
+      cancel: "Cancel",
+    },
+
+    editableElapsed: {
+      start: "Start",
+      stop: "Stop",
+      stillRunning: "Still running",
+      adjustStart: "Click to adjust start time",
+      save: "Save",
+      saving: "Saving…",
     },
   },
 
@@ -1218,9 +1206,9 @@ const cs: Dictionary = {
   sidebar: {
     myTracker: "Můj čas",
     noTimerRunning: "Časovač neběží",
-    startOne: "Spustit →",
     stopTimer: "Zastavit časovač",
-    noEventYet: "Zatím bez akce",
+    quickStart: "Spustit časovač bez akce",
+    assignEventOption: "Přiřadit akci…",
   },
   calendar: {
     allDay: "Celý den",
@@ -1815,16 +1803,13 @@ const cs: Dictionary = {
     tracking: {
       viewList: "Seznam",
       viewCalendar: "Kalendář",
-      modeTimer: "Časovač",
-      modeManual: "Ručně",
       myEntries: "Moje záznamy",
       today: "Dnes",
       colDate: "Datum",
       colEvent: "Akce",
       colWork: "Práce",
       colHours: "Hodiny",
-      noEntriesForPeriod: (noun: string) => `Žádné záznamy za ${noun}.`,
-      periodNoun: { day: "tento den", week: "tento týden", month: "tento měsíc" },
+      noEntriesInRange: "Žádné záznamy v tomto období.",
       edit: "Upravit",
       manualTrackedNote: "Ruční a sledované záznamy vypadají ve všech reportech stejně.",
       day: "Den",
@@ -1848,45 +1833,17 @@ const cs: Dictionary = {
 
     entryEdit: {
       editEntry: "Upravit záznam",
-      timerStillRunning: "Tento časovač stále běží — nejprve ho zastavte v záložce Sledování.",
-    },
-
-    manualForm: {
-      addManualEntry: "Přidat ruční záznam",
-      eventLabel: "Akce",
-      selectEvent: "Vyberte akci…",
-      noEventOption: "Zatím bez akce — přiřadit později",
-      dateLabel: "Datum",
-      phaseLabel: "Fáze",
-      startTimeLabel: "Začátek",
-      endTimeLabel: "Konec",
-      orDurationLabel: "Nebo doba trvání (min)",
-      minsPlaceholder: "min",
-      descriptionLabel: "Popis",
-      descriptionPlaceholder: "Co bylo uděláno",
-      adding: "Přidávání…",
-      addEntry: "Přidat záznam",
-      fillHint: "Vyplňte začátek/konec, nebo dobu trvání v minutách, pokud přesné časy neznáte.",
     },
 
     runningTimer: {
-      startATimer: "Spustit časovač",
       eventLabel: "Akce",
-      selectEvent: "Vyberte akci…",
+      assignEvent: "+ Akce",
       noEventOption: "Zatím bez akce — přiřadit později",
-      noEventRunning: "Zatím bez přiřazené akce",
       phaseLabel: "Fáze",
-      descriptionLabel: "Popis",
       whatWorkingOn: "Na čem právě pracujete?",
       start: "Spustit",
-      runningOn: "Běží na",
-      descEditableHint: "Popis lze upravovat, dokud časovač běží",
-      elapsed: "Uplynulý čas",
-      startedAt: (t: string) => `spuštěno v ${t}`,
-      stopAndSave: "Zastavit a uložit",
-      startingAnotherHint: "Spuštěním jiného časovače se tento zastaví",
-      switchEvent: "Přepnout akci",
-      switch: "Přepnout",
+      stop: "Zastavit",
+      discardedTooShort: "Časovač běžel méně než 10 sekund, takže nebyl uložen.",
     },
 
     editEntryForm: {
@@ -1901,6 +1858,7 @@ const cs: Dictionary = {
       descriptionLabel: "Popis",
       saving: "Ukládání…",
       saveChanges: "Uložit změny",
+      cancel: "Zrušit",
     },
 
     deleteEntry: {
@@ -1913,6 +1871,24 @@ const cs: Dictionary = {
       unscheduled: "Nezařazeno",
       noTimeThisWeek: "Tento týden není sledován žádný čas.",
       noItemsThisDay: "Tento den nic nesledováno.",
+    },
+
+    createEntryPopover: {
+      descriptionPlaceholder: "Přidat popis",
+      noEventOption: "Bez akce",
+      duration: (h: number, m: number) => `${h} h ${m} min`,
+      adding: "Přidávání…",
+      addEntry: "Přidat záznam",
+      cancel: "Zrušit",
+    },
+
+    editableElapsed: {
+      start: "Začátek",
+      stop: "Konec",
+      stillRunning: "Stále běží",
+      adjustStart: "Kliknutím upravíte začátek",
+      save: "Uložit",
+      saving: "Ukládání…",
     },
   },
 

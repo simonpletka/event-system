@@ -208,6 +208,15 @@ body {
   border-color: var(--color-ink);
 }
 
+@keyframes timer-pulse-ring {
+  0% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--color-warning) 55%, transparent); }
+  70% { box-shadow: 0 0 0 9px color-mix(in srgb, var(--color-warning) 0%, transparent); }
+  100% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--color-warning) 0%, transparent); }
+}
+.timer-pulse {
+  animation: timer-pulse-ring 1.8s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
 @media print {
   body { background: #fff; color: #000; }
   .print-hide { display: none !important; }

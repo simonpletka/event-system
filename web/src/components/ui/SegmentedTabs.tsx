@@ -1,9 +1,9 @@
 "use client";
 
 import Link from "next/link";
-import { useLayoutEffect, useRef, useState } from "react";
+import { useLayoutEffect, useRef, useState, type ReactNode } from "react";
 
-export type SegmentedTabOption = { value: string; label: string; href: string };
+export type SegmentedTabOption = { value: string; label: ReactNode; href: string; title?: string };
 
 /**
  * Glass pill segmented control with a sliding highlight behind the active
@@ -43,11 +43,13 @@ export function SegmentedTabs({ options, active }: { options: SegmentedTabOption
           <Link
             key={opt.value}
             href={opt.href}
+            title={opt.title}
+            aria-label={opt.title}
             ref={(el) => {
               if (el) buttonRefs.current.set(opt.value, el);
               else buttonRefs.current.delete(opt.value);
             }}
-            className={`relative z-[1] px-5 py-2 text-[11px] font-semibold tracking-[0.1em] uppercase text-center transition-colors ${
+            className={`relative z-[1] px-5 py-2 text-[11px] font-semibold tracking-[0.1em] uppercase text-center transition-colors flex items-center justify-center ${
               isActive ? "text-ink" : "text-ink/55 hover:text-ink/80"
             }`}
           >

@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState, useTransition, type DragEvent } from "react";
 import Link from "next/link";
-import { addDays, dayHeaderLabel, isSameDay, isoWeekNumber, startOfDay, weekDays, assignColumns } from "@/lib/calendar";
+import { addDays, dayHeaderLabel, isSameDay, isoWeekNumber, startOfDay, weekDays, assignColumns, overlapBoxStyle } from "@/lib/calendar";
 import { EventStatusPill } from "@/components/StatusPill";
 import { rescheduleMilestoneAction, rescheduleEventAction } from "@/lib/actions/events";
 import type { EventStatus } from "@/generated/prisma/enums";
@@ -36,7 +36,7 @@ const GRID_START_HOUR = 0;
 const GRID_END_HOUR = 24;
 const DEFAULT_VIEW_START_HOUR = 6;
 const DEFAULT_VIEW_END_HOUR = 20;
-const HOUR_PX = 48;
+const HOUR_PX = 72;
 const GRID_HEIGHT = (GRID_END_HOUR - GRID_START_HOUR) * HOUR_PX;
 const VISIBLE_VIEWPORT_HEIGHT = (DEFAULT_VIEW_END_HOUR - DEFAULT_VIEW_START_HOUR) * HOUR_PX;
 
@@ -388,8 +388,7 @@ export function WeekCalendar({
                   style={{
                     top: (m.startMin / 60) * HOUR_PX,
                     height: Math.max(16, ((m.endMin - m.startMin) / 60) * HOUR_PX),
-                    left: `${(m.col / m.cols) * 100}%`,
-                    width: `${100 / m.cols}%`,
+                    ...overlapBoxStyle(m.col),
                   }}
                 >
                   <div className="text-[10.5px] font-bold truncate">{m.eventTitle}</div>

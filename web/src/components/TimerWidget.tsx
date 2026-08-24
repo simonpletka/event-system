@@ -1,8 +1,10 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import NextLink from "next/link";
-import { stopTimerAction } from "@/lib/actions/timetracker";
+import { startTimerAction, assignRunningTimerEventAction } from "@/lib/actions/timetracker";
+import { EditableElapsedTime } from "@/components/timetracker/EditableElapsedTime";
+import { useStopTimerAction } from "@/hooks/useStopTimerAction";
+import type { Dictionary } from "@/lib/dictionary";
 
 function formatElapsed(ms: number) {
   const totalSeconds = Math.max(0, Math.floor(ms / 1000));
@@ -12,10 +14,31 @@ function formatElapsed(ms: number) {
   return `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`;
 }
 
-type T = { myTracker: string; noTimerRunning: string; startOne: string; stopTimer: string; noEventYet: string };
+type T = {
+  myTracker: string;
+  noTimerRunning: string;
+  stopTimer: string;
+  quickStart: string;
+  assignEventOption: string;
+};
 
-export function TimerWidget({ running, t }: { running: { eventTitle: string | null; startedAt: string } | null; t: T }) {
+type Running = { eventId: string | null; eventTitle: string | null; startedAt: string } | null;
+
+export function TimerWidget({
+  running,
+  events,
+  t,
+  tElapsed,
+  discardedMessage,
+}: {
+  running: Running;
+  events: { id: string; title: string }[];
+  t: T;
+  tElapsed: Dictionary["timeTracker"]["editableElapsed"];
+  discardedMessage: string;
+}) {
   const [now, setNow] = useState(() => Date.now());
+  const { formAction: stopFormAction } = useStopTimerAction(discardedMessage);
 
   useEffect(() => {
     if (!running) return;
@@ -27,35 +50,70 @@ export function TimerWidget({ running, t }: { running: { eventTitle: string | nu
     return (
       <div className="card px-3.5 py-3 flex flex-col gap-1">
         <div className="heading-label">{t.myTracker}</div>
-        <div className="text-sm placeholder-text">{t.noTimerRunning}</div>
-        <NextLink
-          href="/time-tracker"
-          className="text-[9px] placeholder-text hover:text-ink underline underline-offset-2 mt-0.5 inline-block"
-        >
-          {t.startOne}
-        </NextLink>
+        <div className="flex items-center justify-between gap-2">
+          <div className="text-sm placeholder-text">{t.noTimerRunning}</div>
+          <form action={startTimerAction}>
+            <button
+              type="submit"
+              title={t.quickStart}
+              className="w-[27px] h-[27px] rounded-lg bg-accent flex items-center justify-center hover:opacity-90 transition-opacity shrink-0"
+            >
+              <svg width="10" height="10" viewBox="0 0 24 24">
+                <path d="M7 4v16l14-8Z" fill="currentColor" className="text-ink" />
+              </svg>
+            </button>
+          </form>
+        </div>
       </div>
     );
   }
 
   const elapsed = now - new Date(running.startedAt).getTime();
+  const startedAt = new Date(running.startedAt);
 
   return (
     <div className="card px-3.5 py-3 flex flex-col gap-2">
       <div className="heading-label">{t.myTracker}</div>
-      <div className="label truncate">{running.eventTitle ?? t.noEventYet}</div>
-      <form action={stopTimerAction} className="flex items-center justify-between">
-        <div className="text-lg font-semibold tabular-nums tracking-tight">{formatElapsed(elapsed)}</div>
-        <button
-          type="submit"
-          title={t.stopTimer}
-          className="w-[27px] h-[27px] rounded-lg border border-ink/20 bg-ink/5 flex items-center justify-center hover:bg-ink/10 transition-colors"
-        >
-          <svg width="10" height="10" viewBox="0 0 24 24">
-            <rect x="3" y="3" width="18" height="18" rx="3" fill="currentColor" className="text-ink/85" />
-          </svg>
-        </button>
-      </form>
+      {running.eventTitle ? (
+        <div className="label truncate">{running.eventTitle}</div>
+      ) : (
+        <form action={assignRunningTimerEventAction}>
+          <select
+            name="eventId"
+            defaultValue=""
+            onChange={(e) => e.currentTarget.form?.requestSubmit()}
+            className="input !rounded-full !border-dashed !py-1 text-[10.5px] w-full"
+          >
+            <option value="" disabled>
+              {t.assignEventOption}
+            </option>
+            {events.map((e) => (
+              <option key={e.id} value={e.id}>
+                {e.title}
+              </option>
+            ))}
+          </select>
+        </form>
+      )}
+      <div className="flex items-center justify-between">
+        <EditableElapsedTime
+          elapsedLabel={formatElapsed(elapsed)}
+          startedAt={startedAt}
+          t={tElapsed}
+          className="text-lg font-semibold tabular-nums tracking-tight"
+        />
+        <form action={stopFormAction}>
+          <button
+            type="submit"
+            title={t.stopTimer}
+            className="w-[27px] h-[27px] rounded-lg border border-ink/20 bg-ink/5 flex items-center justify-center hover:bg-ink/10 transition-colors"
+          >
+            <svg width="10" height="10" viewBox="0 0 24 24">
+              <rect x="3" y="3" width="18" height="18" rx="3" fill="currentColor" className="text-ink/85" />
+            </svg>
+          </button>
+        </form>
+      </div>
     </div>
   );
 }
