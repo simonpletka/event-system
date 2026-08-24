@@ -36,7 +36,7 @@ export function TimeTrackerCalendar({ weekStart, entries, locale }: { weekStart:
   const scheduled = entries.filter((e) => e.startedAt);
   const unscheduled = entries.filter((e) => !e.startedAt);
 
-  const hours = Array.from({ length: (GRID_END_HOUR - GRID_START_HOUR) / 2 + 1 }, (_, i) => GRID_START_HOUR + i * 2);
+  const hours = Array.from({ length: GRID_END_HOUR - GRID_START_HOUR + 1 }, (_, i) => GRID_START_HOUR + i);
 
   const selectedUnscheduled = unscheduled.filter((e) => isSameDay(e.date, selectedDay));
   const selectedScheduled = scheduled
@@ -141,7 +141,7 @@ export function TimeTrackerCalendar({ weekStart, entries, locale }: { weekStart:
       <div className="grid grid-cols-[44px_repeat(7,minmax(0,1fr))] mt-1">
         <div>
           {hours.map((h) => (
-            <div key={h} className="label" style={{ height: HOUR_PX * 2 }}>
+            <div key={h} className="label" style={{ height: HOUR_PX }}>
               {String(h).padStart(2, "0")}:00
             </div>
           ))}
@@ -161,7 +161,7 @@ export function TimeTrackerCalendar({ weekStart, entries, locale }: { weekStart:
               className="relative border-l border-ink/13"
               style={{
                 height: GRID_HEIGHT,
-                backgroundImage: `repeating-linear-gradient(to bottom, rgba(243,242,242,.1) 0 1px, transparent 1px ${HOUR_PX * 2}px)`,
+                backgroundImage: `repeating-linear-gradient(to bottom, rgba(243,242,242,.1) 0 1px, transparent 1px ${HOUR_PX}px)`,
               }}
             >
               {placed.map((e) => (
