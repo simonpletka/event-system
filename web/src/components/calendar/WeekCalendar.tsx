@@ -154,9 +154,9 @@ export function WeekCalendar({
 
       <div className="hidden md:block">
       <div className="grid grid-cols-[44px_repeat(7,minmax(0,1fr))] border-b border-ink/20 pb-1">
-        <div className="heading-label !text-[9px]">W{isoWeekNumber(weekStart)}</div>
+        <div className="heading-label !text-[11px] !tracking-normal whitespace-nowrap">WEEK {isoWeekNumber(weekStart)}</div>
         {days.map((d) => (
-          <div key={d.toISOString()} className={`heading-label !text-[9px] text-center ${isSameDay(d, today) ? "text-accent" : ""}`}>
+          <div key={d.toISOString()} className={`heading-label !text-[9px] font-semibold text-center ${isSameDay(d, today) ? "text-accent" : ""}`}>
             {dayHeaderLabel(d)}
           </div>
         ))}
@@ -164,7 +164,7 @@ export function WeekCalendar({
 
       {bars.length > 0 && (
         <div className="grid grid-cols-[44px_repeat(7,minmax(0,1fr))] auto-rows-[36px] gap-y-0.5 py-1.5 border-b-2 border-ink">
-          <div className="label" style={{ gridRow: 1, gridColumn: 1 }}>
+          <div className="label font-semibold" style={{ gridRow: 1, gridColumn: 1 }}>
             {t.allDay}
           </div>
           {bars.map((bar, i) => (
@@ -177,10 +177,10 @@ export function WeekCalendar({
               }`}
               style={{ gridRow: 1, gridColumn: `${bar.colStart + 2} / ${bar.colEnd + 3}` }}
             >
-              <span className="text-[9.5px] font-bold truncate leading-tight">
+              <span className="text-[10.5px] font-bold truncate leading-tight">
                 {bar.kind === "main" ? t.eventDaysBar(bar.title) : t.prepBuildBar(bar.title)}
               </span>
-              {bar.address && <span className="text-[8px] font-semibold truncate leading-tight opacity-75">{bar.address}</span>}
+              {bar.address && <span className="text-[9px] font-semibold truncate leading-tight opacity-75">{bar.address}</span>}
             </Link>
           ))}
         </div>
@@ -189,7 +189,7 @@ export function WeekCalendar({
       <div className="grid grid-cols-[44px_repeat(7,minmax(0,1fr))] mt-1">
         <div>
           {hours.map((h) => (
-            <div key={h} className="label" style={{ height: HOUR_PX * 2 }}>
+            <div key={h} className="label font-semibold" style={{ height: HOUR_PX * 2 }}>
               {String(h).padStart(2, "0")}:00
             </div>
           ))}
@@ -217,7 +217,7 @@ export function WeekCalendar({
                   key={m.id}
                   href={eventHref(m.eventId)}
                   title={`${m.eventTitle}: ${m.title}`}
-                  className="absolute overflow-hidden text-[9px] font-bold leading-tight bg-ink/22 border-2 border-ink/45 px-1 py-0.5 box-border hover:border-accent hover:bg-accent/20"
+                  className="absolute overflow-hidden leading-tight bg-ink/22 border-2 border-ink/45 px-1 py-0.5 box-border hover:border-accent hover:bg-accent/20"
                   style={{
                     top: (m.startMin / 60) * HOUR_PX,
                     height: Math.max(16, ((m.endMin - m.startMin) / 60) * HOUR_PX),
@@ -225,8 +225,8 @@ export function WeekCalendar({
                     width: `${100 / m.cols}%`,
                   }}
                 >
-                  <div className="truncate">{m.eventTitle}</div>
-                  <div className="placeholder-text truncate">{m.title}</div>
+                  <div className="text-[10.5px] font-bold truncate">{m.eventTitle}</div>
+                  <div className="placeholder-text text-[9px] font-bold truncate">{m.title}</div>
                 </Link>
               ))}
             </div>
@@ -244,7 +244,7 @@ export function WeekCalendar({
       {events.length === 0 && <p className="text-sm placeholder-text mt-3">{t.noEventsThisWeek}</p>}
       {events.length > 0 && (
         <div className="mt-3">
-          <div className="label mb-1">{t.thisWeeksEvents}</div>
+          <div className="label !text-[11px] font-bold mb-1">{t.thisWeeksEvents}</div>
           <div className="flex flex-col gap-1">
             {events.map((e) => (
               <Link key={e.id} href={eventHref(e.id)} className="flex items-center gap-2 text-[13px] hover:text-accent">
@@ -263,7 +263,7 @@ function Legend({ swatch, label }: { swatch: string; label: string }) {
   return (
     <div className="flex gap-1.5 items-center">
       <div className={`w-2.5 h-2.5 ${swatch}`} />
-      <div className="label">{label}</div>
+      <div className="label !text-[9px]">{label}</div>
     </div>
   );
 }
