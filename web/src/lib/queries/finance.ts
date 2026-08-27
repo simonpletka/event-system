@@ -19,9 +19,27 @@ export function overdueDays(invoice: { dueDate: Date }) {
   return Math.max(0, Math.floor((Date.now() - invoice.dueDate.getTime()) / 86400000));
 }
 
+// --- Shared list sort ---
+
+/** Sort a quote/invoice list by issue date or document number, either way. */
+export type FinanceSort = "date_desc" | "date_asc" | "number_desc" | "number_asc";
+
+export function financeOrderBy(sort: string | undefined): { issuedAt: "asc" | "desc" } | { number: "asc" | "desc" } {
+  switch (sort) {
+    case "date_asc":
+      return { issuedAt: "asc" };
+    case "number_desc":
+      return { number: "desc" };
+    case "number_asc":
+      return { number: "asc" };
+    default:
+      return { issuedAt: "desc" };
+  }
+}
+
 // --- Quotes ---
 
-export type QuoteListFilters = { q?: string; status?: QuoteStatus; eventId?: string; year?: number };
+export type QuoteListFilters = { q?: string; status?: QuoteStatus; eventId?: string; year?: number; sort?: string };
 
 export async function getQuoteList(user: SessionUser, filters: QuoteListFilters) {
   const year = filters.year ?? new Date().getFullYear();
@@ -45,7 +63,7 @@ export async function getQuoteList(user: SessionUser, filters: QuoteListFilters)
     prisma.quote.findMany({
       where,
       include: { event: true, invoices: { select: { id: true, number: true } } },
-      orderBy: { issuedAt: "desc" },
+      orderBy: financeOrderBy(filters.sort),
     }),
     prisma.quote.aggregate({
       where: { ...quoteWhereForUser(user), status: { in: ["DRAFT", "SENT"] } },
@@ -75,7 +93,7 @@ export const getQuoteDetail = cache(async function getQuoteDetail(user: SessionU
 
 // --- Invoices ---
 
-export type InvoiceListFilters = { bucket?: "issued" | "paid" | "overdue" | "partly_paid"; eventId?: string };
+export type InvoiceListFilters = { bucket?: "issued" | "paid" | "overdue" | "partly_paid"; eventId?: string; sort?: string };
 
 export async function getInvoiceList(user: SessionUser, filters: InvoiceListFilters) {
   const where: Prisma.InvoiceWhereInput = {
@@ -86,7 +104,7 @@ export async function getInvoiceList(user: SessionUser, filters: InvoiceListFilt
   const all = await prisma.invoice.findMany({
     where,
     include: { event: true },
-    orderBy: { dueDate: "asc" },
+    orderBy: financeOrderBy(filters.sort),
   });
 
   const filtered = all.filter((inv) => {

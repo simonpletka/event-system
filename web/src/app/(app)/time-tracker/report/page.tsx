@@ -13,6 +13,7 @@ import {
 import { formatMinutes, formatDurationShort, niceMinutesAxis } from "@/lib/format";
 import { getLocale, getDictionary, type Dictionary } from "@/lib/i18n";
 import { SegmentedTabs } from "@/components/ui/SegmentedTabs";
+import { Menu, MenuLink } from "@/components/ui/Menu";
 import { DateJumpPicker } from "@/components/timetracker/DateJumpPicker";
 import { FilterChip } from "@/components/timetracker/FilterChip";
 import { TextFilterChip } from "@/components/timetracker/TextFilterChip";
@@ -165,25 +166,13 @@ function BreakdownBySelect({ axis, hrefFor, t }: { axis: OverviewAxis; hrefFor: 
   ];
   const current = options.find((o) => o.value === axis)!;
   return (
-    <details className="relative">
-      <summary className="btno text-[9px] cursor-pointer list-none flex items-center gap-1.5">
-        <span className="placeholder-text normal-case tracking-normal">{t.breakdownBy}:</span>
-        <span className="font-semibold">{current.label}</span>
-      </summary>
-      <div className="card absolute right-0 mt-1.5 p-1.5 z-10 w-[130px] flex flex-col gap-0.5 shadow-[0_14px_36px_rgba(0,0,0,0.4)]">
-        {options.map((o) => (
-          <Link
-            key={o.value}
-            href={hrefFor(o.value)}
-            className={`block text-[11px] px-2.5 py-1.5 rounded-md transition-colors ${
-              o.value === axis ? "bg-ink/10 text-accent font-semibold" : "text-ink/70 hover:bg-ink/5 hover:text-ink"
-            }`}
-          >
-            {o.label}
-          </Link>
-        ))}
-      </div>
-    </details>
+    <Menu triggerLabel={t.breakdownBy} triggerValue={current.label} align="right" width={130}>
+      {options.map((o) => (
+        <MenuLink key={o.value} href={hrefFor(o.value)} active={o.value === axis}>
+          {o.label}
+        </MenuLink>
+      ))}
+    </Menu>
   );
 }
 

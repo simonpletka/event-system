@@ -5,6 +5,7 @@ import { formatCurrency, formatDate } from "@/lib/format";
 import { QuoteStatusPill } from "@/components/StatusPill";
 import { convertQuoteToInvoiceAction, duplicateQuoteAction } from "@/lib/actions/finance";
 import { DownloadPdfButton } from "@/components/finance/DownloadPdfButton";
+import { FinanceSortMenu } from "@/components/finance/FinanceSortMenu";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { getLocale, getDictionary } from "@/lib/i18n";
 import type { QuoteStatus } from "@/generated/prisma/enums";
@@ -24,6 +25,7 @@ export default async function QuotesPage({
     status: (params.status as QuoteStatus) || undefined,
     eventId: params.eventId || undefined,
     year: params.year ? Number(params.year) : undefined,
+    sort: params.sort || undefined,
   };
   const { quotes, openValue, events, year } = await getQuoteList(user, filters);
   const canManage = canManageFinance(user);
@@ -68,11 +70,19 @@ export default async function QuotesPage({
             {t.finance.quotes.apply}
           </button>
         </form>
-        {canManage && (
-          <Link href="/finance/quotes/new" className="btn font-semibold">
-            {t.finance.quotes.newQuote}
-          </Link>
-        )}
+        <div className="flex items-center gap-2 shrink-0">
+          <FinanceSortMenu
+            current={filters.sort}
+            basePath="/finance/quotes"
+            params={{ status: filters.status, eventId: filters.eventId, year: String(year), q: filters.q }}
+            t={t.finance.sort}
+          />
+          {canManage && (
+            <Link href="/finance/quotes/new" className="btn font-semibold">
+              {t.finance.quotes.newQuote}
+            </Link>
+          )}
+        </div>
       </div>
 
       <div className="hidden md:block">

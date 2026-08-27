@@ -6,6 +6,7 @@ import { EXPENSE_CATEGORIES } from "@/lib/expense-categories";
 import { deleteExpenseAction } from "@/lib/actions/finance";
 import { ConfirmDeleteButton } from "@/components/ui/ConfirmDeleteButton";
 import { TrashIcon } from "@/components/ui/icons";
+import { Menu, MenuLink } from "@/components/ui/Menu";
 import { getLocale, getDictionary } from "@/lib/i18n";
 import type { ExpenseCategory } from "@/generated/prisma/enums";
 
@@ -24,6 +25,35 @@ export default async function ExpensesPage({
   };
   const { expenses, total, events } = await getExpenseList(user, filters);
   const admin = isAdmin(user);
+  const grouped = params.group === "event";
+
+  // One group per event (plus a company-overhead bucket), each with a subtotal.
+  // Not grouped → a single passthrough group so the render path is the same.
+  type Group = { key: string; label: string; rows: typeof expenses; subtotal: number };
+  let groups: Group[];
+  if (grouped) {
+    const byKey = new Map<string, Group>();
+    for (const exp of expenses) {
+      const key = exp.event?.id ?? "overhead";
+      const label = exp.event?.title ?? te.companyOverheadFallback;
+      const g = byKey.get(key) ?? { key, label, rows: [], subtotal: 0 };
+      g.rows.push(exp);
+      g.subtotal += exp.amount;
+      byKey.set(key, g);
+    }
+    groups = [...byKey.values()].sort((a, b) => a.label.localeCompare(b.label));
+  } else {
+    groups = [{ key: "all", label: "", rows: expenses, subtotal: total }];
+  }
+
+  const groupHref = (g: string) => {
+    const p = new URLSearchParams();
+    for (const [k, v] of Object.entries({ eventId: filters.eventId, category: filters.category, group: g || undefined })) {
+      if (v) p.set(k, v);
+    }
+    const qs = p.toString();
+    return qs ? `/finance/expenses?${qs}` : "/finance/expenses";
+  };
 
   return (
     <div>
@@ -53,9 +83,19 @@ export default async function ExpensesPage({
             {te.apply}
           </button>
         </form>
-        <Link href="/finance/expenses/new" className="btn font-semibold shrink-0">
-          {te.newExpense}
-        </Link>
+        <div className="flex items-center gap-2 shrink-0">
+          <Menu triggerLabel={t.finance.groupBy.label} triggerValue={grouped ? t.finance.groupBy.event : t.finance.groupBy.none} width={150}>
+            <MenuLink href={groupHref("")} active={!grouped}>
+              {t.finance.groupBy.none}
+            </MenuLink>
+            <MenuLink href={groupHref("event")} active={grouped}>
+              {t.finance.groupBy.event}
+            </MenuLink>
+          </Menu>
+          <Link href="/finance/expenses/new" className="btn font-semibold shrink-0">
+            {te.newExpense}
+          </Link>
+        </div>
       </div>
 
       <div className="hidden md:block">
@@ -69,7 +109,15 @@ export default async function ExpensesPage({
           <span className="heading-label"></span>
         </div>
 
-        {expenses.map((exp) => (
+        {groups.map((g) => (
+          <div key={g.key}>
+          {grouped && (
+            <div className="flex items-baseline justify-between px-3.5 pt-5 pb-1.5 border-b border-ink/14">
+              <span className="heading-label !text-[11px] !text-ink">{g.label}</span>
+              <span className="text-[13px] font-semibold tabular-nums">{formatCurrency(g.subtotal)}</span>
+            </div>
+          )}
+          {g.rows.map((exp) => (
           <div
             key={exp.id}
             className="group grid grid-cols-[80px_1fr_1fr_1fr_auto_auto_auto] gap-2.5 items-center py-3.5 px-3.5 rounded-xl border-b border-ink/8 last:border-b-0 text-[15px] hover:bg-ink/5"
@@ -120,6 +168,8 @@ export default async function ExpensesPage({
               )}
             </div>
           </div>
+          ))}
+          </div>
         ))}
       </div>
 
@@ -128,7 +178,15 @@ export default async function ExpensesPage({
           so a card with its own inline actions matches the source shape better
           than forcing a single navigable Link. */}
       <div className="md:hidden flex flex-col gap-2 mt-4">
-        {expenses.map((exp) => (
+        {groups.map((g) => (
+          <div key={g.key} className="flex flex-col gap-2">
+          {grouped && (
+            <div className="flex items-baseline justify-between px-1 pt-2">
+              <span className="heading-label !text-[11px] !text-ink">{g.label}</span>
+              <span className="text-[12px] font-semibold tabular-nums">{formatCurrency(g.subtotal)}</span>
+            </div>
+          )}
+          {g.rows.map((exp) => (
           <div key={exp.id} className="card px-3.5 py-3.5">
             <div className="flex items-start justify-between gap-2.5">
               <div className="min-w-0">
@@ -175,6 +233,8 @@ export default async function ExpensesPage({
                 </ConfirmDeleteButton>
               )}
             </div>
+          </div>
+          ))}
           </div>
         ))}
       </div>

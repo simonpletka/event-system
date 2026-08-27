@@ -442,6 +442,19 @@ const en = {
     expensesTab: (n: number) => (n ? `Expenses · ${n}` : "Expenses"),
     reportsTab: "Reports",
 
+    sort: {
+      label: "Sort",
+      newest: "Newest first",
+      oldest: "Oldest first",
+      numberDesc: "Number ↓",
+      numberAsc: "Number ↑",
+    },
+    groupBy: {
+      label: "Group",
+      none: "No grouping",
+      event: "By event",
+    },
+
     quotes: {
       statusFilter: "Status",
       eventFilter: "Event",
@@ -463,7 +476,7 @@ const en = {
       remindClient: "Remind client",
       reminderNotWired: "Reminder emails aren't wired up yet",
       confirmDelete: (n: string) => `Delete quote ${n}? This can't be undone.`,
-      sortedByNote: "Sorted by issue date — newest first · accepted quotes carry their items and client data into the invoice",
+      sortedByNote: "Accepted quotes carry their items and client data into the invoice",
       openValue: (amt: string) => `Open value ${amt}`,
 
       backLink: "Quotes",
@@ -524,13 +537,13 @@ const en = {
       colEvent: "Event",
       colClient: "Client",
       colIssued: "Issued",
-      colDue: "Due ↑",
+      colDue: "Due",
       colTotal: "Total",
       colPayment: "Payment",
       colPdf: "PDF",
       noInvoicesMatch: "No invoices match this filter.",
       download: "Download",
-      sortedByNote: "Sorted by due date · overdue first",
+      sortedByNote: "",
       showingOfTotal: (count: number, total: number) => `Showing ${count} of ${total}`,
 
       backLink: "Invoices",
@@ -1534,6 +1547,19 @@ const cs: Dictionary = {
     expensesTab: (n: number) => (n ? `Výdaje · ${n}` : "Výdaje"),
     reportsTab: "Reporty",
 
+    sort: {
+      label: "Řadit",
+      newest: "Nejnovější",
+      oldest: "Nejstarší",
+      numberDesc: "Číslo ↓",
+      numberAsc: "Číslo ↑",
+    },
+    groupBy: {
+      label: "Seskupit",
+      none: "Bez seskupení",
+      event: "Podle akce",
+    },
+
     quotes: {
       statusFilter: "Stav",
       eventFilter: "Akce",
@@ -1555,7 +1581,7 @@ const cs: Dictionary = {
       remindClient: "Připomenout klientovi",
       reminderNotWired: "Připomínkové e-maily zatím nejsou zapojené",
       confirmDelete: (n: string) => `Smazat nabídku ${n}? Tuto akci nelze vrátit zpět.`,
-      sortedByNote: "Seřazeno podle data vystavení — nejnovější první · přijaté nabídky přenesou položky a údaje o klientovi do faktury",
+      sortedByNote: "Přijaté nabídky přenesou položky a údaje o klientovi do faktury",
       openValue: (amt: string) => `Otevřená hodnota ${amt}`,
 
       backLink: "Nabídky",
@@ -1616,13 +1642,13 @@ const cs: Dictionary = {
       colEvent: "Akce",
       colClient: "Klient",
       colIssued: "Vystaveno",
-      colDue: "Splatnost ↑",
+      colDue: "Splatnost",
       colTotal: "Celkem",
       colPayment: "Platba",
       colPdf: "PDF",
       noInvoicesMatch: "Žádné faktury neodpovídají filtru.",
       download: "Stáhnout",
-      sortedByNote: "Seřazeno podle splatnosti · nejdříve po splatnosti",
+      sortedByNote: "",
       showingOfTotal: (count: number, total: number) => `Zobrazeno ${count} z ${total}`,
 
       backLink: "Faktury",

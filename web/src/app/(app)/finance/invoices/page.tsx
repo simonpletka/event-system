@@ -4,6 +4,7 @@ import { getInvoiceList, getInvoiceKpis, type InvoiceListFilters } from "@/lib/q
 import { formatCurrency, formatDate } from "@/lib/format";
 import { InvoiceStatusPill } from "@/components/StatusPill";
 import { DownloadPdfButton } from "@/components/finance/DownloadPdfButton";
+import { FinanceSortMenu } from "@/components/finance/FinanceSortMenu";
 import { MobileListRow } from "@/components/ui/MobileListRow";
 import { getLocale, getDictionary, czCount, type Locale } from "@/lib/i18n";
 
@@ -20,6 +21,15 @@ export default async function InvoicesPage({
   const filters: InvoiceListFilters = {
     bucket: (params.bucket as InvoiceListFilters["bucket"]) || undefined,
     eventId: params.eventId || undefined,
+    sort: params.sort || undefined,
+  };
+  const carry = (over: Record<string, string | undefined>) => {
+    const p = new URLSearchParams();
+    for (const [k, v] of Object.entries({ bucket: filters.bucket, eventId: filters.eventId, sort: filters.sort, ...over })) {
+      if (v) p.set(k, v);
+    }
+    const qs = p.toString();
+    return qs ? `/finance/invoices?${qs}` : "/finance/invoices";
   };
   const [{ invoices, total, events }, kpis] = await Promise.all([
     getInvoiceList(user, filters),
@@ -65,7 +75,7 @@ export default async function InvoicesPage({
           {buckets.map((b) => (
             <Link
               key={b.key}
-              href={b.key ? `/finance/invoices?bucket=${b.key}` : "/finance/invoices"}
+              href={carry({ bucket: b.key || undefined })}
               className={`shrink-0 text-[11px] font-semibold tracking-[0.04em] px-3.5 py-2 rounded-full border ${
                 (filters.bucket ?? "") === b.key
                   ? "bg-accent border-accent text-ink"
@@ -76,20 +86,29 @@ export default async function InvoicesPage({
             </Link>
           ))}
         </div>
-        <form method="get" className="flex gap-1.5">
-          {filters.bucket && <input type="hidden" name="bucket" value={filters.bucket} />}
-          <select name="eventId" defaultValue={filters.eventId ?? ""} className="btno bg-transparent text-[9px]">
-            <option value="">{ti.eventFilter}</option>
-            {events.map((e) => (
-              <option key={e.id} value={e.id}>
-                {e.title}
-              </option>
-            ))}
-          </select>
-          <button type="submit" className="btno text-[9px]">
-            {ti.apply}
-          </button>
-        </form>
+        <div className="flex items-center gap-2">
+          <form method="get" className="flex gap-1.5">
+            {filters.bucket && <input type="hidden" name="bucket" value={filters.bucket} />}
+            {filters.sort && <input type="hidden" name="sort" value={filters.sort} />}
+            <select name="eventId" defaultValue={filters.eventId ?? ""} className="btno bg-transparent text-[9px]">
+              <option value="">{ti.eventFilter}</option>
+              {events.map((e) => (
+                <option key={e.id} value={e.id}>
+                  {e.title}
+                </option>
+              ))}
+            </select>
+            <button type="submit" className="btno text-[9px]">
+              {ti.apply}
+            </button>
+          </form>
+          <FinanceSortMenu
+            current={filters.sort}
+            basePath="/finance/invoices"
+            params={{ bucket: filters.bucket, eventId: filters.eventId }}
+            t={t.finance.sort}
+          />
+        </div>
       </div>
 
       <div className="hidden md:block">
