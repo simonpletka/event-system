@@ -7,6 +7,7 @@ import { toDateTimeLocal, formatDate } from "@/lib/format";
 import { LineItemsFields, BLANK_ITEM, type LineItem } from "./LineItemsFields";
 import { EventPicker } from "@/components/EventPicker";
 import { CancelLink } from "@/components/ui/CancelLink";
+import { DateTimeField } from "@/components/ui/DateTimeField";
 import type { QuoteStatus, Currency } from "@/generated/prisma/enums";
 import { getDictionary, type Locale } from "@/lib/dictionary";
 
@@ -97,13 +98,12 @@ export function QuoteForm({
         </label>
         <label className="flex flex-col gap-1.5">
           <span className="field-label">{tf.validUntilLabel}</span>
-          <input
+          <DateTimeField
             name="validUntil"
-            type="date"
             required
             value={validUntil}
-            onChange={(e) => setValidUntil(e.target.value)}
-            className={`input ${conflict ? "!border-warning text-warning" : ""}`}
+            onChange={setValidUntil}
+            className={conflict ? "!border-warning !text-warning" : ""}
           />
           {conflict && (
             <span className="text-[9px] text-warning">

@@ -6,6 +6,8 @@ import { ReceiptInput } from "./ReceiptInput";
 import { EXPENSE_CATEGORIES } from "@/lib/expense-categories";
 import { EventPicker, type PickableEvent } from "@/components/EventPicker";
 import { CancelLink } from "@/components/ui/CancelLink";
+import { DateTimeField } from "@/components/ui/DateTimeField";
+import { isoDate } from "@/lib/calendar";
 import type { ExpenseCategory } from "@/generated/prisma/enums";
 import { getDictionary, type Locale } from "@/lib/dictionary";
 
@@ -58,13 +60,7 @@ export function ExpenseForm({
           </label>
           <label className="flex flex-col gap-1.5">
             <span className="field-label">{tf.dateOfPaymentLabel}</span>
-            <input
-              name="date"
-              type="date"
-              required
-              defaultValue={defaults?.date ?? new Date().toISOString().slice(0, 10)}
-              className="input"
-            />
+            <DateTimeField name="date" required defaultValue={defaults?.date ?? isoDate(new Date())} />
           </label>
           <label className="flex flex-col gap-1.5">
             <span className="field-label">{tf.paidByLabel}</span>

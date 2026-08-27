@@ -4,6 +4,7 @@ import { useActionState, useState } from "react";
 import { createEventAction, updateEventAction, type EventFormState } from "@/lib/actions/events";
 import { toDateTimeLocal, formatClientAddress } from "@/lib/format";
 import { CancelLink } from "@/components/ui/CancelLink";
+import { DateTimeField } from "@/components/ui/DateTimeField";
 import { AddressAutocompleteInput } from "@/components/ui/AddressAutocompleteInput";
 import { ClientPicker, type PickableClient } from "@/components/ClientPicker";
 import { useAresLookup } from "@/hooks/useAresLookup";
@@ -120,30 +121,16 @@ export function EventForm({ defaults, clients, locale }: { defaults: EventFormDe
       <div className="heading-label !text-[12px]">{tf.datesHeading}</div>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
         <Field label={tf.buildPrepLabel}>
-          <input name="buildDate" type="datetime-local" defaultValue={toDateTimeLocal(defaults.buildDate)} className="input" />
+          <DateTimeField name="buildDate" withTime defaultValue={toDateTimeLocal(defaults.buildDate)} />
         </Field>
         <Field label={tf.strikeLabel}>
-          <input name="strikeDate" type="datetime-local" defaultValue={toDateTimeLocal(defaults.strikeDate)} className="input" />
+          <DateTimeField name="strikeDate" withTime defaultValue={toDateTimeLocal(defaults.strikeDate)} />
         </Field>
         <Field label={tf.eventStartLabel}>
-          <input
-            name="startDate"
-            type="datetime-local"
-            required
-            value={startDate}
-            onChange={(e) => handleStartChange(e.target.value)}
-            className="input"
-          />
+          <DateTimeField name="startDate" withTime required value={startDate} onChange={handleStartChange} />
         </Field>
         <Field label={tf.eventEndLabel}>
-          <input
-            name="endDate"
-            type="datetime-local"
-            required
-            value={endDate}
-            onChange={(e) => setEndDate(e.target.value)}
-            className="input"
-          />
+          <DateTimeField name="endDate" withTime required value={endDate} onChange={setEndDate} />
         </Field>
       </div>
 

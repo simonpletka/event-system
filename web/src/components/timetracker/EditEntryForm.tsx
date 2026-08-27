@@ -3,6 +3,7 @@
 import { useActionState, useEffect, useTransition } from "react";
 import { updateManualEntryAction, deleteTimeEntryAction, type TimeFormState } from "@/lib/actions/timetracker";
 import { useConfirmDialog } from "@/components/ui/ConfirmDialogProvider";
+import { DateTimeField } from "@/components/ui/DateTimeField";
 import type { TimePhase } from "@/generated/prisma/enums";
 import type { Dictionary } from "@/lib/dictionary";
 
@@ -85,7 +86,7 @@ export function EditEntryForm({
 
       <label className="flex flex-col gap-1.5">
         <span className="field-label">{t.dateLabel}</span>
-        <input name="date" type="date" required defaultValue={date} className="input" />
+        <DateTimeField name="date" required defaultValue={date} />
       </label>
 
       <label className="flex flex-col gap-1.5">
