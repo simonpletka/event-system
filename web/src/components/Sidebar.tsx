@@ -13,6 +13,7 @@ export function Sidebar({
   events,
   tNav,
   tSidebar,
+  tTimeTracker,
   tElapsed,
   discardedMessage,
 }: {
@@ -22,6 +23,7 @@ export function Sidebar({
   events: { id: string; title: string }[];
   tNav: Dictionary["nav"];
   tSidebar: Dictionary["sidebar"];
+  tTimeTracker: Pick<Dictionary["timeTracker"], "tabTracking" | "tabReport">;
   tElapsed: Dictionary["timeTracker"]["editableElapsed"];
   discardedMessage: string;
 }) {
@@ -35,6 +37,12 @@ export function Sidebar({
     { href: "/time-tracker", label: tNav.timeTracker },
   ];
 
+  const inTimeTracker = pathname.startsWith("/time-tracker");
+  const timeTrackerSubNav = [
+    { href: "/time-tracker/tracking", label: tTimeTracker.tabTracking },
+    { href: "/time-tracker/report", label: tTimeTracker.tabReport },
+  ];
+
   return (
     <div className="hidden md:flex sticky top-3 h-[calc(100vh-24px)] ml-3 shrink-0 glass-panel rounded-2xl shadow-[0_14px_36px_rgba(0,0,0,0.4)] w-[216px] px-4 pt-4 pb-5 flex-col gap-4 print-hide font-medium overflow-y-auto">
       <span className="text-[11px] font-bold tracking-[0.16em]">EVENT SYSTEM</span>
@@ -43,9 +51,24 @@ export function Sidebar({
         {NAV.map((item) => {
           const active = pathname.startsWith(item.href);
           return (
-            <Link key={item.href} href={item.href} className={`nav-item ${active ? "active" : ""}`}>
-              {item.label}
-            </Link>
+            <div key={item.href}>
+              <Link href={item.href} className={`nav-item ${active ? "active" : ""}`}>
+                {item.label}
+              </Link>
+              {item.href === "/time-tracker" && inTimeTracker && (
+                <div className="flex flex-col ml-2.5 mt-0.5 mb-0.5 gap-0.5 border-l border-ink/10 pl-2.5">
+                  {timeTrackerSubNav.map((sub) => (
+                    <Link
+                      key={sub.href}
+                      href={sub.href}
+                      className={`nav-item !text-[10px] !py-1.5 ${pathname.startsWith(sub.href) ? "active" : ""}`}
+                    >
+                      {sub.label}
+                    </Link>
+                  ))}
+                </div>
+              )}
+            </div>
           );
         })}
       </nav>

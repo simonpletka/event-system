@@ -69,7 +69,14 @@ export default async function EventsPage({
         <ViewHeader canCreate={canCreateEvent(user)} total={total} activeCount={activeCount} t={t} />
 
         <div className="flex items-center justify-between gap-2 mt-4 flex-wrap">
-          <ViewSwitch view="table" t={t} />
+          <div className="flex items-center gap-2 shrink-0">
+            <ViewSwitch view="table" t={t} />
+            {firstUpcomingId && (
+              <a href="#today-row" className="btno text-[9px]">
+                {t.events.today}
+              </a>
+            )}
+          </div>
 
           <form method="get" className="flex gap-1.5 items-center flex-nowrap overflow-x-auto pb-1 md:pb-0 md:flex-wrap md:overflow-visible">
             <select name="status" defaultValue={filters.status ?? ""} className="btno bg-transparent text-[9px] shrink-0">
@@ -164,11 +171,8 @@ export default async function EventsPage({
 
       {events.length === 0 && <p className="text-sm placeholder-text mt-4">{t.events.noEventsMatch}</p>}
 
-      <div className="flex items-center justify-between mt-4 px-3.5">
+      <div className="mt-4 px-3.5">
         <div className="label">{t.events.sortedBy(events.length, total)}</div>
-        <a href="#today-row" className="btno text-[9px]">
-          {t.events.today}
-        </a>
       </div>
     </div>
   );

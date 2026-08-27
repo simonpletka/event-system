@@ -5,7 +5,13 @@ import { getLocale, getDictionary } from "@/lib/i18n";
 
 export default async function NewEventPage() {
   const user = await requireUser();
-  const now = new Date();
+  // Seed the date pickers with a sane placeholder rather than "now to the
+  // minute": next full hour for the start, +2h for the end (the form's own
+  // default event length). The user still picks the real dates.
+  const startDefault = new Date();
+  startDefault.setMinutes(0, 0, 0);
+  startDefault.setHours(startDefault.getHours() + 1);
+  const endDefault = new Date(startDefault.getTime() + 2 * 60 * 60 * 1000);
   const clients = canCreateEvent(user) ? await getClientOptions() : [];
   const locale = await getLocale();
   const t = getDictionary(locale);
@@ -30,8 +36,8 @@ export default async function NewEventPage() {
             companyDic: "",
             status: "INQUIRY",
             buildDate: null,
-            startDate: now,
-            endDate: now,
+            startDate: startDefault,
+            endDate: endDefault,
             strikeDate: null,
             quotedValue: 0,
             venues: [],

@@ -47,14 +47,27 @@ export default async function SettingsPage({
   const roleRows = customRoles.map((r) => ({ ...r, userCount: r._count.users }));
   const colors = getAppColors(company);
 
+  // Eyebrow describes the tab you're actually on — not a fixed value keyed
+  // to permissions (which showed "N accounts" above the General tab).
+  const tabEyebrow =
+    tab === "users" && canUsers
+      ? t.settings.accountsCount(users.length)
+      : tab === "company"
+        ? t.settings.tabCompany
+        : tab === "templates"
+          ? t.settings.tabTemplates
+          : tab === "invoiceEmailing"
+            ? t.settings.tabInvoiceEmailing
+            : tab === "appSettings"
+              ? t.settings.tabAppSettings
+              : t.settings.general.accountHeading;
+
   return (
     <div>
       <div className="sticky top-0 z-20 -mx-6 mt-0 md:-mt-5 px-6 pt-5 pb-2 backdrop-blur-2xl bg-gradient-to-b from-bg/80 to-bg/50 border-b border-ink/10">
         <div className="flex items-end justify-between">
           <div>
-            <div className="heading-label">
-              {canUsers ? t.settings.accountsCount(users.length) : canCompany ? t.settings.companySettingsLabel : t.settings.general.accountHeading}
-            </div>
+            <div className="heading-label">{tabEyebrow}</div>
             <h1 className="text-[28px] font-bold tracking-tight mt-1">{t.settings.title}</h1>
           </div>
         </div>

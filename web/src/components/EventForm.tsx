@@ -160,13 +160,15 @@ export function EventForm({ defaults, clients, locale }: { defaults: EventFormDe
               />
               <input name="venueAddress" placeholder={tf.venueAddress} defaultValue={v.address} className="input" />
               <input name="venueNote" placeholder={tf.venueNote} defaultValue={v.note} className="input" />
-              <button
-                type="button"
-                onClick={() => setVenues((vs) => vs.filter((_, idx) => idx !== i))}
-                className="btno px-2 py-2 text-[9px]"
-              >
-                {tf.remove}
-              </button>
+              {venues.length > 1 && (
+                <button
+                  type="button"
+                  onClick={() => setVenues((vs) => vs.filter((_, idx) => idx !== i))}
+                  className="btno px-2 py-2 text-[9px]"
+                >
+                  {tf.remove}
+                </button>
+              )}
             </div>
           ))}
         </div>
@@ -211,13 +213,15 @@ export function EventForm({ defaults, clients, locale }: { defaults: EventFormDe
               />
               <input name="contactPhone" placeholder={tf.contactPhone} defaultValue={c.phone} className="input" />
               <input name="contactEmail" placeholder={tf.contactEmail} type="email" defaultValue={c.email} className="input" />
-              <button
-                type="button"
-                onClick={() => setContacts((cs) => cs.filter((_, idx) => idx !== i))}
-                className="btno px-2 py-2 text-[9px]"
-              >
-                {tf.remove}
-              </button>
+              {contacts.length > 1 && (
+                <button
+                  type="button"
+                  onClick={() => setContacts((cs) => cs.filter((_, idx) => idx !== i))}
+                  className="btno px-2 py-2 text-[9px]"
+                >
+                  {tf.remove}
+                </button>
+              )}
             </div>
           ))}
         </div>

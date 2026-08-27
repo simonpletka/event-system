@@ -2,7 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { requireUser, canManageFinance } from "@/lib/authz";
 import { getEventDetail } from "@/lib/queries/events";
-import { formatCurrency, formatDate, formatMinutes } from "@/lib/format";
+import { formatCurrency, formatDate, formatDateRange, formatMinutes } from "@/lib/format";
 import { QuoteStatusPill, InvoiceStatusPill } from "@/components/StatusPill";
 import { getRunningTimer } from "@/lib/queries/timetracker";
 import { startTimerAction } from "@/lib/actions/timetracker";
@@ -31,7 +31,7 @@ export default async function EventOverviewPage({ params }: { params: Promise<{ 
 
         <div className="label mt-3.5">{te.dates}</div>
         <Row label={te.buildPrep} value={event.buildDate ? formatDate(event.buildDate, { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" }) : "—"} />
-        <Row label={te.eventDays} value={`${formatDate(event.startDate)} – ${formatDate(event.endDate)}`} />
+        <Row label={te.eventDays} value={formatDateRange(event.startDate, event.endDate)} />
         <Row label={te.strike} value={event.strikeDate ? formatDate(event.strikeDate, { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" }) : "—"} />
 
         <div className="label mt-3.5">

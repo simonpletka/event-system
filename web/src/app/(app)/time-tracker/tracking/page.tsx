@@ -73,7 +73,7 @@ export default async function TrackingPage({
       {view === "calendar" && <RunningTimerBox running={runningNormalized} events={events} locale={locale} />}
 
       <div className={`flex items-center justify-between gap-2 flex-wrap ${view === "calendar" ? "mt-5" : ""}`}>
-        <div className="heading-label !text-[12px]">{view === "list" ? t.timeTracker.tracking.myEntries : t.timeTracker.tabOverview}</div>
+        <div className="heading-label !text-[12px]">{view === "list" ? t.timeTracker.tracking.myEntries : t.timeTracker.tabReport}</div>
         {viewSwitch}
       </div>
 

@@ -68,8 +68,36 @@ export function niceAxisMax(max: number): number {
   return step * magnitude;
 }
 
+/**
+ * Chart axis for minutes-based data: the max grows to fit whatever's being
+ * charted, but the tick step is always a whole or half hour (a multiple of
+ * 30 minutes) — never an odd fraction like the proportional niceAxisMax
+ * rounding can produce for small values.
+ */
+export function niceMinutesAxis(maxMinutes: number, intervals = 4) {
+  const step = Math.max(30, Math.ceil(maxMinutes / intervals / 30) * 30);
+  const axisMax = step * intervals;
+  const ticks: number[] = [];
+  for (let m = axisMax; m >= 0; m -= step) ticks.push(m);
+  return { axisMax, ticks };
+}
+
 export function formatMinutes(minutes: number) {
   const h = Math.floor(minutes / 60);
   const m = minutes % 60;
   return `${h}:${String(m).padStart(2, "0")}`;
+}
+
+/**
+ * Compact duration for chart axis ticks — "8h", "1h 30m", "45m", "0".
+ * Unlike formatMinutes ("8:00"), this never looks like a time of day, which
+ * matters on a vertical axis sitting next to day-of-week labels.
+ */
+export function formatDurationShort(minutes: number) {
+  if (minutes <= 0) return "0";
+  const h = Math.floor(minutes / 60);
+  const m = Math.round(minutes % 60);
+  if (h === 0) return `${m}m`;
+  if (m === 0) return `${h}h`;
+  return `${h}h ${m}m`;
 }

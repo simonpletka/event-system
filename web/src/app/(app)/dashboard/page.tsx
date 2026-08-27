@@ -3,7 +3,7 @@ import { requireUser, canCreateEvent } from "@/lib/authz";
 import { getDashboardData, getDashboardTimeline, type TimelineItem } from "@/lib/queries/dashboard";
 import { getWeekCalendarData } from "@/lib/queries/calendar";
 import { getOverviewData } from "@/lib/queries/timetracker";
-import { formatCurrency, formatDate, formatDateRange, formatMinutes } from "@/lib/format";
+import { formatCurrency, formatDate, formatDateRange, formatMinutes, formatDurationShort } from "@/lib/format";
 import { EventStatusPill } from "@/components/StatusPill";
 import { WeekCalendar } from "@/components/calendar/WeekCalendar";
 import { WeekNav } from "@/components/calendar/WeekNav";
@@ -31,7 +31,7 @@ export default async function DashboardPage({
     view === "calendar" ? getWeekCalendarData(user, weekStart) : Promise.resolve(null),
     getOverviewData([{ id: user.id, name: user.name ?? "" }], "week", new Date()),
   ]);
-  const myTime = myWeeklyTime.people[0];
+  const myTime = myWeeklyTime.rows[0];
   // Fixed 2-hour gridlines (2/4/6/8h, extending by 2h steps past a full
   // workday if a single day ever exceeds 8h) instead of niceAxisMax's
   // proportional rounding — that produced odd, hard-to-read tick values
@@ -40,7 +40,7 @@ export default async function DashboardPage({
   const dataMaxMinutes = Math.max(0, ...(myTime?.byBucket ?? [0]));
   const timeAxisMax = Math.max(TWO_HOURS_MIN * 4, Math.ceil(dataMaxMinutes / TWO_HOURS_MIN) * TWO_HOURS_MIN);
   const timeAxisTicks: string[] = [];
-  for (let m = timeAxisMax; m >= 0; m -= TWO_HOURS_MIN) timeAxisTicks.push(formatMinutes(m));
+  for (let m = timeAxisMax; m >= 0; m -= TWO_HOURS_MIN) timeAxisTicks.push(formatDurationShort(m));
 
   const viewOptions = [
     { value: "list", label: t.dashboard.viewList, href: "/dashboard" },
@@ -187,7 +187,12 @@ export default async function DashboardPage({
           </div>
 
           {!myTime || myTime.total === 0 ? (
-            <p className="text-sm placeholder-text mt-3">{t.dashboard.notEnoughData}</p>
+            <p className="text-sm placeholder-text mt-3">
+              {t.dashboard.notEnoughData}{" "}
+              <Link href="/time-tracker/tracking" className="text-accent hover:underline">
+                {t.dashboard.startATimer}
+              </Link>
+            </p>
           ) : (
             <>
               <div className="relative h-56 mt-6">
