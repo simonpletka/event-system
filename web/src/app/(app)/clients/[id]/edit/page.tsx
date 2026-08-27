@@ -14,7 +14,7 @@ export default async function EditClientPage({ params }: { params: Promise<{ id:
   const t = getDictionary(locale);
 
   return (
-    <div>
+    <div className="max-w-3xl">
       <BackLink href={`/clients/${id}`}>{client.name}</BackLink>
       <h1 className="text-[28px] font-bold tracking-tight border-b border-ink/14 pb-4 mb-5 mt-2">{t.clients.editClientH1(client.name)}</h1>
       {!canManageClients(user) ? (

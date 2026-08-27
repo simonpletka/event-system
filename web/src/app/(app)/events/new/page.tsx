@@ -17,7 +17,7 @@ export default async function NewEventPage() {
   const t = getDictionary(locale);
 
   return (
-    <div>
+    <div className="max-w-3xl">
       <h1 className="text-xl font-semibold border-b-2 border-ink pb-2 mb-4">{t.events.newEventH1}</h1>
       {!canCreateEvent(user) ? (
         <p className="text-lg font-semibold text-ink">{t.events.noPermCreate}</p>

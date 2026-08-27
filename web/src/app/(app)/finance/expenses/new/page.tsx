@@ -26,7 +26,7 @@ export default async function NewExpensePage() {
     : [{ id: user.id, name: user.name ?? "Me" }];
 
   return (
-    <div>
+    <div className="max-w-3xl">
       <h1 className="text-xl font-semibold border-b-2 border-ink pb-2 mb-4">{t.finance.expenses.newExpenseH1}</h1>
       <ExpenseForm events={events} payers={payers} currentUserId={user.id} locale={locale} />
     </div>

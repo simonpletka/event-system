@@ -47,7 +47,7 @@ export function ExpenseForm({
   }, [state.success]);
 
   return (
-    <form ref={formRef} action={formAction} className="max-w-2xl flex flex-col gap-4">
+    <form ref={formRef} action={formAction} className="w-full flex flex-col gap-4">
       {isEdit && <input type="hidden" name="id" value={defaults!.id} />}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <ReceiptInput existingReceiptPath={defaults?.receiptPath} t={t.finance.expenses.receipt} />

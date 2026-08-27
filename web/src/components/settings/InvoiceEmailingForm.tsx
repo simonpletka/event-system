@@ -26,7 +26,7 @@ export function InvoiceEmailingForm({ defaults, locale }: { defaults: Templates;
   const allTokens = EMAIL_TEMPLATE_TOKENS.map((tok) => `{{${tok}}}`).join(", ");
 
   return (
-    <form ref={formRef} action={formAction} className="card p-5 flex flex-col gap-4 max-w-2xl">
+    <form ref={formRef} action={formAction} className="card p-5 flex flex-col gap-4 w-full">
       <div>
         <div className="heading-label !text-[12px]">{t.heading}</div>
         <p className="text-[10px] placeholder-text mt-1 max-w-prose">{t.intro}</p>

@@ -91,7 +91,7 @@ export function EventForm({ defaults, clients, locale }: { defaults: EventFormDe
   }
 
   return (
-    <form action={formAction} className="max-w-2xl flex flex-col gap-5">
+    <form action={formAction} className="w-full flex flex-col gap-5">
       {isEdit && <input type="hidden" name="id" value={defaults.id} />}
 
       <Field label={tf.titleLabel}>

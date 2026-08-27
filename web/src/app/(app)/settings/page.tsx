@@ -65,6 +65,7 @@ export default async function SettingsPage({
   return (
     <div>
       <div className="sticky top-0 z-20 -mx-6 mt-0 md:-mt-5 px-6 pt-5 pb-2 backdrop-blur-2xl bg-gradient-to-b from-bg/80 to-bg/50 border-b border-ink/10">
+        <div className="max-w-3xl">
         <div className="flex items-end justify-between">
           <div>
             <div className="heading-label">{tabEyebrow}</div>
@@ -120,9 +121,10 @@ export default async function SettingsPage({
             </Link>
           )}
         </div>
+        </div>
       </div>
 
-      <div className="mt-5">
+      <div className="mt-5 max-w-3xl">
         {tab === "general" && (
           <GeneralSettingsForm
             defaults={{

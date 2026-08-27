@@ -49,7 +49,7 @@ export function ClientForm({ defaults, locale }: { defaults: ClientFormDefaults;
   }
 
   return (
-    <form action={formAction} className="card max-w-lg flex flex-col gap-4 p-6">
+    <form action={formAction} className="card w-full flex flex-col gap-4 p-6">
       {isEdit && <input type="hidden" name="id" value={defaults.id} />}
 
       <label className="flex flex-col gap-1.5">

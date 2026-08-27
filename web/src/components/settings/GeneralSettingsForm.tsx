@@ -54,7 +54,7 @@ export function GeneralSettingsForm({
   }
 
   return (
-    <div className="max-w-2xl flex flex-col gap-4">
+    <div className="w-full flex flex-col gap-4">
       <form action={profileAction} className="card p-5 flex flex-col gap-3">
         <div className="heading-label !text-[12px]">{t.accountHeading}</div>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">

@@ -15,7 +15,7 @@ export default async function NewInvoicePage() {
 
   if (!canManageFinance(user)) {
     return (
-      <div>
+      <div className="max-w-3xl">
         <h1 className="text-xl font-semibold border-b-2 border-ink pb-2 mb-4">{ti.newInvoiceH1}</h1>
         <p className="text-lg font-semibold text-ink">{ti.noPermCreate}</p>
       </div>
@@ -41,7 +41,7 @@ export default async function NewInvoicePage() {
   const defaultDueDate = new Date(new Date().getTime() + dueDays * 86400000).toISOString().slice(0, 10);
 
   return (
-    <div>
+    <div className="max-w-3xl">
       <h1 className="text-xl font-semibold border-b-2 border-ink pb-2 mb-4">{ti.newInvoiceH1}</h1>
 
       {eligibleQuotes.length > 0 && (

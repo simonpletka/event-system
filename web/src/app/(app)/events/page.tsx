@@ -9,6 +9,7 @@ import { WeekNav } from "@/components/calendar/WeekNav";
 import { mondayOf, parseIsoDate } from "@/lib/calendar";
 import { SegmentedTabs } from "@/components/ui/SegmentedTabs";
 import { MobileListRow } from "@/components/ui/MobileListRow";
+import { EmptyState } from "@/components/ui/EmptyState";
 import { getLocale, getDictionary, type Dictionary } from "@/lib/i18n";
 import type { EventStatus } from "@/generated/prisma/enums";
 
@@ -169,7 +170,13 @@ export default async function EventsPage({
         ))}
       </div>
 
-      {events.length === 0 && <p className="text-sm placeholder-text mt-4">{t.events.noEventsMatch}</p>}
+      {events.length === 0 && (
+        <EmptyState
+          message={t.events.noEventsMatch}
+          actionLabel={canCreateEvent(user) && !(filters.q || filters.status || filters.client || filters.place) ? t.events.newEvent : undefined}
+          actionHref="/events/new"
+        />
+      )}
 
       <div className="mt-4 px-3.5">
         <div className="label">{t.events.sortedBy(events.length, total)}</div>

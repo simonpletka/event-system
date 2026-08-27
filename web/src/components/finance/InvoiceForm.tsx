@@ -49,7 +49,7 @@ export function InvoiceForm({
   }
 
   return (
-    <form action={formAction} className="max-w-3xl flex flex-col gap-4">
+    <form action={formAction} className="w-full flex flex-col gap-4">
       <label className="flex flex-col gap-1.5">
         <span className="field-label">{tf.eventLabel}</span>
         <EventPicker name="eventId" initialEvents={events} required onSelect={handleEventSelect} t={t.events.picker} />

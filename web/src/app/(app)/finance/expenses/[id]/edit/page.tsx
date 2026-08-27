@@ -16,7 +16,7 @@ export default async function EditExpensePage({ params }: { params: Promise<{ id
 
   if (!canEditExpense(user, expense.paidById)) {
     return (
-      <div>
+      <div className="max-w-3xl">
         <h1 className="text-xl font-semibold border-b-2 border-ink pb-2 mb-4">{t.finance.expenses.editExpense}</h1>
         <p className="text-lg font-semibold text-ink">{t.finance.expenses.noPermEdit}</p>
       </div>
@@ -41,7 +41,7 @@ export default async function EditExpensePage({ params }: { params: Promise<{ id
     : [{ id: user.id, name: user.name ?? "Me" }];
 
   return (
-    <div>
+    <div className="max-w-3xl">
       <BackLink href="/finance/expenses">{t.finance.expenses.backLink}</BackLink>
       <h1 className="text-xl font-semibold border-b-2 border-ink pb-2 mb-4">{t.finance.expenses.editExpense}</h1>
       <ExpenseForm

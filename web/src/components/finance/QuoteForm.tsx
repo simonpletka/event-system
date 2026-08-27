@@ -67,7 +67,7 @@ export function QuoteForm({
   }, [eventId, validUntil, events]);
 
   return (
-    <form action={formAction} className="max-w-3xl flex flex-col gap-4">
+    <form action={formAction} className="w-full flex flex-col gap-4">
       {isEdit && <input type="hidden" name="id" value={defaults!.id} />}
 
       {!isEdit && (
