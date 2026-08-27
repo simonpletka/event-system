@@ -117,7 +117,6 @@ export default async function InvoicesPage({
             <div className="placeholder-text group-hover:!text-accent">{formatDate(inv.dueDate)}</div>
             <div className="font-semibold tabular-nums group-hover:text-accent">
               {formatCurrency(inv.total, inv.currency)}
-              {inv.currency !== "CZK" && <span className="tag tag-neutral ml-1">{inv.currency}</span>}
             </div>
             <div>
               <InvoiceStatusPill status={inv.status} dueDate={inv.dueDate} paidAt={inv.paidAt} t={t.invoicePill} />
@@ -143,7 +142,6 @@ export default async function InvoicesPage({
             trailing={
               <>
                 {formatCurrency(inv.total, inv.currency)}
-                {inv.currency !== "CZK" && <span className="tag tag-neutral ml-1">{inv.currency}</span>}
               </>
             }
           />

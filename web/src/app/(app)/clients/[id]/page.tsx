@@ -154,8 +154,12 @@ export default async function ClientDetailPage({ params }: { params: Promise<{ i
 
           <div className="h-px bg-ink/8 my-3.5" />
           <div className="heading-label">{tc.totalChargedHeading}</div>
-          <div className="text-2xl font-semibold tracking-tight mt-1.5">{formatCurrency(client.totalCharged)}</div>
+          <div className="text-2xl font-semibold tracking-tight mt-1.5">
+            {formatCurrency(client.totalCharged)}
+            {client.totalMixed && <span className="placeholder-text text-base align-top">&thinsp;*</span>}
+          </div>
           <div className="placeholder-text text-[10px] mt-0.5">{tc.acrossEvents(client.events.length)}</div>
+          {client.totalMixed && <div className="placeholder-text text-[10px] mt-1">{tc.mixedCurrencyNote}</div>}
 
           {isAdmin(user) && (
             <>

@@ -5,6 +5,7 @@ import { formatCurrency, formatDate } from "@/lib/format";
 import { QuoteStatusPill } from "@/components/StatusPill";
 import { convertQuoteToInvoiceAction, deleteQuoteAction, duplicateQuoteAction } from "@/lib/actions/finance";
 import { ConfirmDeleteButton } from "@/components/ui/ConfirmDeleteButton";
+import { EmptyState } from "@/components/ui/EmptyState";
 import { getLocale, getDictionary } from "@/lib/i18n";
 import type { QuoteStatus } from "@/generated/prisma/enums";
 
@@ -102,9 +103,7 @@ export default async function QuotesPage({
             <div className="placeholder-text group-hover:!text-accent">{formatDate(q.issuedAt)}</div>
             <div className="placeholder-text group-hover:!text-accent">{formatDate(q.validUntil)}</div>
             <div className="font-semibold tabular-nums group-hover:text-accent">
-              {formatCurrency(q.total, q.currency)}
-              {q.currency !== "CZK" && <span className="tag tag-neutral ml-1">{q.currency}</span>}
-            </div>
+              {formatCurrency(q.total, q.currency)}            </div>
             <div>
               <QuoteStatusPill status={q.status} t={t.statusQuote} />
             </div>
@@ -172,7 +171,6 @@ export default async function QuotesPage({
               </div>
               <div className="text-right shrink-0 text-[13px] font-semibold">
                 {formatCurrency(q.total, q.currency)}
-                {q.currency !== "CZK" && <span className="tag tag-neutral ml-1">{q.currency}</span>}
               </div>
             </Link>
             <div className="flex items-center justify-between gap-2 text-[9px] tracking-[0.1em] uppercase px-3.5 pb-3 pt-2.5 border-t border-ink/8">
@@ -218,7 +216,13 @@ export default async function QuotesPage({
         ))}
       </div>
 
-      {quotes.length === 0 && <p className="text-sm placeholder-text mt-4">{t.finance.quotes.noQuotesForYear(year)}</p>}
+      {quotes.length === 0 && (
+        <EmptyState
+          message={t.finance.quotes.noQuotesForYear(year)}
+          actionLabel={canManage && !(filters.q || filters.status || filters.eventId) ? t.finance.quotes.newQuote : undefined}
+          actionHref="/finance/quotes/new"
+        />
+      )}
 
       <div className="flex justify-between mt-4 px-3.5">
         <div className="label">{t.finance.quotes.sortedByNote}</div>

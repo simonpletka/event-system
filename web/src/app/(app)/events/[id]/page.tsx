@@ -97,6 +97,14 @@ export default async function EventOverviewPage({ params }: { params: Promise<{ 
           <div className="heading-label !text-[12px]">{te.budgetVsActual}</div>
           <div className="text-2xl font-semibold tracking-tight mt-1">{formatCurrency(event.quotedValue)}</div>
           <div className="placeholder-text text-[10px]">{te.quotedValue}</div>
+          {event.quotedValue > 0 && totalExpenses > 0 && (
+            <div className="mt-2.5 h-1.5 rounded-full bg-ink/10 overflow-hidden" title={te.expenses}>
+              <div
+                className={`h-full rounded-full ${totalExpenses > event.quotedValue ? "bg-warning" : "bg-ink/40"}`}
+                style={{ width: `${Math.min(100, (totalExpenses / event.quotedValue) * 100)}%` }}
+              />
+            </div>
+          )}
           <div className="mt-2">
             <Row label={te.expenses} value={formatCurrency(totalExpenses)} />
             <Row label={te.invoiced} value={formatCurrency(totalInvoiced)} />

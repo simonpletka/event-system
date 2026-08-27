@@ -14,6 +14,21 @@ export function formatCurrency(amount: number, currency: CurrencyCode = "CZK") {
   }).format(amount);
 }
 
+/**
+ * True when a raw summed total spans currencies — either a non-CZK amount is
+ * present, or more than one currency is. Aggregates in this app sum raw Int
+ * amounts with no FX conversion and label the result CZK (see CLAUDE.md); this
+ * flags the cases where that label is misleading so the UI can mark it.
+ */
+export function isMixedCurrencyTotal(currencies: Iterable<string>): boolean {
+  const seen = new Set<string>();
+  for (const c of currencies) {
+    if (c) seen.add(c);
+    if (seen.size > 1 || (seen.size === 1 && !seen.has("CZK"))) return true;
+  }
+  return false;
+}
+
 export function formatDate(date: Date, opts: Intl.DateTimeFormatOptions = { day: "numeric", month: "short" }) {
   return new Intl.DateTimeFormat("en-GB", opts).format(date);
 }

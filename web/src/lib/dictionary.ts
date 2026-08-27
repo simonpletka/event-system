@@ -235,7 +235,7 @@ const en = {
     quotedValue: "quoted value",
     expenses: "Expenses",
     invoiced: "Invoiced",
-    margin: "Margin",
+    margin: "Quoted − expenses",
     timeLogged: "Time logged",
     peopleCount: (n: number) => `${n} people`,
     timerRunningHere: "Timer running here",
@@ -372,6 +372,7 @@ const en = {
     colEvents: "Events",
     colTotalCharged: "Total charged",
     noClientsYet: "No clients yet.",
+    mixedCurrencyNote: "* Includes amounts in other currencies, added up as CZK without conversion.",
 
     backLink: "Clients",
     edit: "Edit",
@@ -1322,7 +1323,7 @@ const cs: Dictionary = {
     quotedValue: "nabídnutá hodnota",
     expenses: "Výdaje",
     invoiced: "Vyfakturováno",
-    margin: "Marže",
+    margin: "Nabídka − výdaje",
     timeLogged: "Odpracovaný čas",
     peopleCount: (n: number) => `${czCount(n, "1 osoba", `${n} lidé`, `${n} lidí`)}`,
     timerRunningHere: "Časovač zde běží",
@@ -1462,6 +1463,7 @@ const cs: Dictionary = {
     colEvents: "Akce",
     colTotalCharged: "Celkem fakturováno",
     noClientsYet: "Zatím žádní klienti.",
+    mixedCurrencyNote: "* Zahrnuje částky v jiných měnách, sečtené jako CZK bez přepočtu.",
 
     backLink: "Klienti",
     edit: "Upravit",
