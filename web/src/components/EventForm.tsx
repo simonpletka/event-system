@@ -281,8 +281,8 @@ export function EventForm({ defaults, clients, locale }: { defaults: EventFormDe
 
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (
-    <label className="flex flex-col gap-1.5">
-      <span className="heading-label">{label}</span>
+    <label className="flex flex-col gap-1">
+      <span className="field-label">{label}</span>
       {children}
     </label>
   );

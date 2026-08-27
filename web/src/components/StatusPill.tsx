@@ -2,9 +2,10 @@ import type { EventStatus, InvoiceStatus, QuoteStatus } from "@/generated/prisma
 import type { Dictionary } from "@/lib/i18n";
 
 // Positive = teal (a "good" outcome — never orange, so it's never mistaken
-// for a call-to-action). Warning = red, reserved strictly for things that
-// need attention (overdue, due very soon, cancelled/declined). Neutral
-// covers everything else, including routine in-progress states.
+// for a call-to-action). Warning = red, reserved for states that ask the
+// viewer to *act* or are time-sensitive (needs invoicing, overdue, due very
+// soon). Neutral covers everything else, including terminal states that need
+// no action — a cancelled/declined item is dead, not a warning.
 const EVENT_STATUS_VARIANT: Record<EventStatus, "positive" | "warning" | "neutral"> = {
   INQUIRY: "neutral",
   QUOTE_SENT: "neutral",
@@ -12,7 +13,7 @@ const EVENT_STATUS_VARIANT: Record<EventStatus, "positive" | "warning" | "neutra
   IN_PROGRESS: "neutral",
   TO_INVOICE: "warning",
   CLOSED: "neutral",
-  CANCELLED: "warning",
+  CANCELLED: "neutral",
 };
 
 export function EventStatusPill({ status, t }: { status: EventStatus; t: Dictionary["statusEvent"] }) {
@@ -23,7 +24,7 @@ const QUOTE_STATUS_VARIANT: Record<QuoteStatus, "positive" | "warning" | "neutra
   DRAFT: "neutral",
   SENT: "neutral",
   ACCEPTED: "positive",
-  DECLINED: "warning",
+  DECLINED: "neutral",
 };
 
 export function QuoteStatusPill({ status, t }: { status: QuoteStatus; t: Dictionary["statusQuote"] }) {

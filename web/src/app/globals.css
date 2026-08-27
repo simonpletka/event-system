@@ -133,8 +133,16 @@ body {
   text-transform: uppercase;
   color: color-mix(in srgb, var(--color-ink) 45%, transparent);
 }
+/* Per-input form label — sentence case, readable size. Section headers and
+   table column headers keep the .heading-label uppercase treatment; this is
+   only for the label directly above a single field. */
+.field-label {
+  font-size: 11px;
+  letter-spacing: 0.01em;
+  color: color-mix(in srgb, var(--color-ink) 70%, transparent);
+}
 .placeholder-text {
-  color: color-mix(in srgb, var(--color-ink) 40%, transparent);
+  color: color-mix(in srgb, var(--color-ink) 52%, transparent);
 }
 .btn {
   font-size: 10px;
