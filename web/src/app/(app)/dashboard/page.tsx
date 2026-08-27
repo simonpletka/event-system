@@ -10,7 +10,6 @@ import { WeekNav } from "@/components/calendar/WeekNav";
 import { isSameDay, mondayOf, parseIsoDate } from "@/lib/calendar";
 import { SegmentedTabs } from "@/components/ui/SegmentedTabs";
 import { ChartAxisGrid } from "@/components/ui/ChartAxisGrid";
-import { INCOME_CHART_COLOR } from "@/lib/chart-colors";
 import { getLocale, getDictionary, type Dictionary } from "@/lib/i18n";
 
 export default async function DashboardPage({
@@ -41,6 +40,7 @@ export default async function DashboardPage({
   const timeAxisMax = Math.max(TWO_HOURS_MIN * 4, Math.ceil(dataMaxMinutes / TWO_HOURS_MIN) * TWO_HOURS_MIN);
   const timeAxisTicks: string[] = [];
   for (let m = timeAxisMax; m >= 0; m -= TWO_HOURS_MIN) timeAxisTicks.push(formatDurationShort(m));
+  const nowMs = new Date().getTime();
 
   const viewOptions = [
     { value: "list", label: t.dashboard.viewList, href: "/dashboard" },
@@ -200,6 +200,7 @@ export default async function DashboardPage({
                 <div className="absolute left-[74px] right-1 top-0 bottom-0 flex items-end justify-between gap-1">
                   {myWeeklyTime.buckets.map((b, i) => {
                     const minutes = myTime.byBucket[i];
+                    const isToday = b.start.getTime() <= nowMs && nowMs < b.end.getTime();
                     return (
                       <div key={b.label} className="flex flex-col items-center justify-end flex-1" style={{ height: "100%" }}>
                         {minutes > 0 && (
@@ -209,7 +210,12 @@ export default async function DashboardPage({
                         )}
                         <div
                           className="w-4 rounded-t"
-                          style={{ height: `${(minutes / timeAxisMax) * 100}%`, background: INCOME_CHART_COLOR }}
+                          style={{
+                            height: `${(minutes / timeAxisMax) * 100}%`,
+                            background: isToday
+                              ? "color-mix(in srgb, var(--color-ink) 82%, transparent)"
+                              : "color-mix(in srgb, var(--color-ink) 34%, transparent)",
+                          }}
                           title={t.dashboard.trackedAmount(formatMinutes(minutes))}
                         />
                       </div>
@@ -219,7 +225,7 @@ export default async function DashboardPage({
               </div>
               <div className="flex ml-[74px] mr-1 justify-between mt-2.5">
                 {myWeeklyTime.buckets.map((b) => {
-                  const isToday = new Date() >= b.start && new Date() < b.end;
+                  const isToday = b.start.getTime() <= nowMs && nowMs < b.end.getTime();
                   return (
                     <span key={b.label} className={`text-[11.5px] flex-1 text-center ${isToday ? "font-semibold text-ink" : "placeholder-text"}`}>
                       {b.label}

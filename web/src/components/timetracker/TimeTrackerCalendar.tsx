@@ -93,6 +93,15 @@ export function TimeTrackerCalendar({
     scrollRef.current?.scrollTo({ top: DEFAULT_VIEW_START_HOUR * HOUR_PX });
   }, [weekStart]);
 
+  // Red "now" line in today's column — mirrors WeekCalendar. Seeded lazily so
+  // the effect only owns the interval, not the initial value.
+  const [now, setNow] = useState(() => new Date());
+  useEffect(() => {
+    const id = setInterval(() => setNow(new Date()), 30000);
+    return () => clearInterval(id);
+  }, []);
+  const nowTop = ((now.getHours() * 60 + now.getMinutes()) / 60) * HOUR_PX;
+
   const [draft, setDraft] = useState<Draft | null>(null);
   const [dragging, setDragging] = useState(false);
   const dragAnchorRef = useRef<{ dayIdx: number; anchorMin: number; top: number } | null>(null);
@@ -304,6 +313,12 @@ export function TimeTrackerCalendar({
                   className="absolute overflow-hidden rounded-md pointer-events-none border-2 border-dashed border-accent bg-accent/20"
                   style={{ top: (draft.startMin / 60) * HOUR_PX, height: ((draft.endMin - draft.startMin) / 60) * HOUR_PX, left: 0, right: 0 }}
                 />
+              )}
+              {dayIdx === todayIdx && (
+                <div className="absolute left-0 right-0 pointer-events-none z-20" style={{ top: nowTop }}>
+                  <div className="h-px bg-warning/80" />
+                  <div className="absolute -left-[3px] -top-[3px] w-[7px] h-[7px] rounded-full bg-warning" />
+                </div>
               )}
             </div>
           );

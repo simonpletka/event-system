@@ -211,7 +211,16 @@ function BucketTable({ buckets, rows, axis, t }: { buckets: OverviewBucket[]; ro
   const cols = `minmax(110px,1fr) repeat(${buckets.length}, minmax(56px,.7fr)) minmax(56px,.7fr)`;
   const { axisMax, ticks } = niceMinutesAxis(Math.max(1, ...rows.flatMap((r) => r.byBucket)));
   const axisTicks = ticks.map(formatDurationShort);
-  const chartRows = rows.map((r, i) => ({ id: r.id, label: rowLabel(r, axis, t), color: categoricalColor(i), byBucket: r.byBucket }));
+  // A single series is the viewer's own time — render it monochrome on the
+  // app ink so it reads as part of the UI, not a categorical dataset. The
+  // categorical palette only earns its keep when series are being compared.
+  const singleSeries = rows.length === 1;
+  const chartRows = rows.map((r, i) => ({
+    id: r.id,
+    label: rowLabel(r, axis, t),
+    color: singleSeries ? "color-mix(in srgb, var(--color-ink) 42%, transparent)" : categoricalColor(i),
+    byBucket: r.byBucket,
+  }));
   const chartBuckets = buckets.map((b) => ({ label: b.label }));
 
   return (
