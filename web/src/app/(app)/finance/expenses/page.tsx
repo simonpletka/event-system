@@ -7,6 +7,7 @@ import { deleteExpenseAction } from "@/lib/actions/finance";
 import { ConfirmDeleteButton } from "@/components/ui/ConfirmDeleteButton";
 import { TrashIcon } from "@/components/ui/icons";
 import { Menu, MenuLink } from "@/components/ui/Menu";
+import { GroupIcon } from "@/components/ui/icons";
 import { getLocale, getDictionary } from "@/lib/i18n";
 import type { ExpenseCategory } from "@/generated/prisma/enums";
 
@@ -84,7 +85,7 @@ export default async function ExpensesPage({
           </button>
         </form>
         <div className="flex items-center gap-2 shrink-0">
-          <Menu triggerLabel={t.finance.groupBy.label} triggerValue={grouped ? t.finance.groupBy.event : t.finance.groupBy.none} width={150}>
+          <Menu icon={<GroupIcon size={13} />} value={grouped ? t.finance.groupBy.event : t.finance.groupBy.none} width={150}>
             <MenuLink href={groupHref("")} active={!grouped}>
               {t.finance.groupBy.none}
             </MenuLink>

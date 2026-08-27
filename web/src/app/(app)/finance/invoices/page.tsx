@@ -143,11 +143,7 @@ export default async function InvoicesPage({
             <div>
               <InvoiceStatusPill status={inv.status} dueDate={inv.dueDate} paidAt={inv.paidAt} t={t.invoicePill} />
             </div>
-            <DownloadPdfButton
-              pdfUrl={`/api/invoices/${inv.id}/pdf`}
-              label={ti.download}
-              className="text-[9px] tracking-[0.1em] uppercase hover:text-accent"
-            />
+            <DownloadPdfButton pdfUrl={`/api/invoices/${inv.id}/pdf`} label={ti.download} subtle />
           </div>
         ))}
       </div>

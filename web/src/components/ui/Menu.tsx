@@ -4,27 +4,26 @@ import Link from "next/link";
 import { useEffect, useRef, useState, type ReactNode } from "react";
 
 /**
- * The app's one dropdown-menu shape — a `.btno` trigger and a `.card` popover
- * with rounded items, matching the Time Tracker report's "Breakdown by" menu.
- * Controlled open state with click-outside + Escape (a bare <details> can't
- * close on outside click). Use MenuLink / MenuButton for the items.
+ * The app's one dropdown-menu shape — an icon-and-value trigger (bordered,
+ * rounded, chevron) and a frosted `.card` popover with rounded items.
+ * Controlled open state with click-outside + Escape. Use MenuLink /
+ * MenuButton / MenuAnchor for the items.
  */
 export function Menu({
-  triggerLabel,
-  triggerValue,
+  icon,
+  value,
   trigger,
   triggerClassName,
   align = "left",
-  width = 150,
+  width = 160,
   children,
 }: {
-  /** Dim prefix shown before the value, e.g. "Sort" → renders "Sort:". */
-  triggerLabel?: string;
-  /** The current selection, shown bold. Ignored if `trigger` is given. */
-  triggerValue?: ReactNode;
-  /** Fully custom trigger content. Pass `triggerClassName` to drop the .btno pill. */
+  /** A small line icon that signals what the menu controls (sort, group, …). */
+  icon?: ReactNode;
+  /** The current selection, shown next to the icon. Ignored if `trigger` is set. */
+  value?: ReactNode;
+  /** Fully custom trigger content. Pass `triggerClassName` to drop the default styling. */
   trigger?: ReactNode;
-  /** Overrides the default `.btno` trigger styling. */
   triggerClassName?: string;
   align?: "left" | "right";
   width?: number;
@@ -59,19 +58,35 @@ export function Menu({
           e.stopPropagation();
           setOpen((o) => !o);
         }}
-        className={triggerClassName ?? "btno text-[9px] flex items-center gap-1.5"}
+        className={
+          triggerClassName ??
+          `inline-flex items-center gap-1.5 text-[12px] font-medium rounded-lg border px-2.5 py-1.5 transition-colors ${
+            open ? "border-ink/35 text-ink" : "border-ink/13 text-ink/78 hover:border-ink/30 hover:text-ink"
+          }`
+        }
       >
         {trigger ?? (
           <>
-            {triggerLabel && <span className="placeholder-text normal-case tracking-normal">{triggerLabel}:</span>}
-            <span className="font-semibold">{triggerValue}</span>
+            {icon && <span className="opacity-60 shrink-0 flex">{icon}</span>}
+            <span>{value}</span>
+            <svg
+              width="9"
+              height="6"
+              viewBox="0 0 10 6"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="1.6"
+              className={`shrink-0 opacity-55 transition-transform ${open ? "rotate-180" : ""}`}
+            >
+              <path d="M1 1l4 4 4-4" />
+            </svg>
           </>
         )}
       </button>
       {open && (
         <div
           role="menu"
-          className={`card absolute mt-1.5 p-1.5 z-30 flex flex-col gap-0.5 shadow-[0_14px_36px_rgba(0,0,0,0.4)] ${align === "right" ? "right-0" : "left-0"}`}
+          className={`card absolute mt-1.5 p-1.5 z-30 flex flex-col gap-0.5 shadow-[0_18px_44px_rgba(0,0,0,0.5)] ${align === "right" ? "right-0" : "left-0"}`}
           style={{ width }}
         >
           {children}
@@ -81,9 +96,9 @@ export function Menu({
   );
 }
 
-const ITEM_BASE = "block w-full text-left text-[11px] px-2.5 py-1.5 rounded-md transition-colors";
+const ITEM_BASE = "block w-full text-left text-[11.5px] px-2.5 py-1.5 rounded-md transition-colors";
 const ITEM_ACTIVE = "bg-ink/10 text-accent font-semibold";
-const ITEM_IDLE = "text-ink/70 hover:bg-ink/5 hover:text-ink";
+const ITEM_IDLE = "text-ink/72 hover:bg-ink/6 hover:text-ink";
 
 export function MenuLink({ href, active, children }: { href: string; active?: boolean; children: ReactNode }) {
   return (

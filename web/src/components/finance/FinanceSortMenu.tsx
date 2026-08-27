@@ -1,6 +1,7 @@
 "use client";
 
 import { Menu, MenuLink } from "@/components/ui/Menu";
+import { SortIcon } from "@/components/ui/icons";
 
 type SortLabels = { label: string; newest: string; oldest: string; numberDesc: string; numberAsc: string };
 
@@ -34,7 +35,7 @@ export function FinanceSortMenu({
   const currentLabel = opts.find(([v]) => v === sort)?.[1] ?? t.newest;
 
   return (
-    <Menu triggerLabel={t.label} triggerValue={currentLabel} width={160}>
+    <Menu icon={<SortIcon size={13} />} value={currentLabel} width={160}>
       {opts.map(([v, l]) => (
         <MenuLink key={v} href={href(v)} active={v === sort}>
           {l}

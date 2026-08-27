@@ -145,11 +145,7 @@ export default async function QuotesPage({
                   {t.finance.quotes.remindClient}
                 </span>
               )}
-              <DownloadPdfButton
-                pdfUrl={`/api/quotes/${q.id}/pdf`}
-                label={t.finance.quotes.pdf}
-                className="shrink-0 text-[9px] tracking-[0.1em] uppercase placeholder-text hover:text-accent transition-colors"
-              />
+              <DownloadPdfButton pdfUrl={`/api/quotes/${q.id}/pdf`} label={t.finance.quotes.pdf} subtle />
             </div>
           </div>
         ))}
@@ -206,11 +202,7 @@ export default async function QuotesPage({
                   {t.finance.quotes.remindClient}
                 </span>
               )}
-              <DownloadPdfButton
-                pdfUrl={`/api/quotes/${q.id}/pdf`}
-                label={t.finance.quotes.pdf}
-                className="shrink-0 text-[9px] tracking-[0.1em] uppercase placeholder-text hover:text-accent"
-              />
+              <DownloadPdfButton pdfUrl={`/api/quotes/${q.id}/pdf`} label={t.finance.quotes.pdf} subtle />
             </div>
           </div>
         ))}

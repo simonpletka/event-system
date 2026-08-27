@@ -14,6 +14,7 @@ import { formatMinutes, formatDurationShort, niceMinutesAxis } from "@/lib/forma
 import { getLocale, getDictionary, type Dictionary } from "@/lib/i18n";
 import { SegmentedTabs } from "@/components/ui/SegmentedTabs";
 import { Menu, MenuLink } from "@/components/ui/Menu";
+import { ColumnsIcon } from "@/components/ui/icons";
 import { DateJumpPicker } from "@/components/timetracker/DateJumpPicker";
 import { FilterChip } from "@/components/timetracker/FilterChip";
 import { TextFilterChip } from "@/components/timetracker/TextFilterChip";
@@ -166,7 +167,7 @@ function BreakdownBySelect({ axis, hrefFor, t }: { axis: OverviewAxis; hrefFor: 
   ];
   const current = options.find((o) => o.value === axis)!;
   return (
-    <Menu triggerLabel={t.breakdownBy} triggerValue={current.label} align="right" width={130}>
+    <Menu icon={<ColumnsIcon size={13} />} value={current.label} align="right" width={140}>
       {options.map((o) => (
         <MenuLink key={o.value} href={hrefFor(o.value)} active={o.value === axis}>
           {o.label}
