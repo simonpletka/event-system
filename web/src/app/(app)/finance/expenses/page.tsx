@@ -5,6 +5,7 @@ import { formatCurrency, formatDate } from "@/lib/format";
 import { EXPENSE_CATEGORIES } from "@/lib/expense-categories";
 import { deleteExpenseAction } from "@/lib/actions/finance";
 import { ConfirmDeleteButton } from "@/components/ui/ConfirmDeleteButton";
+import { RowActions } from "@/components/ui/RowActions";
 import { getLocale, getDictionary } from "@/lib/i18n";
 import type { ExpenseCategory } from "@/generated/prisma/enums";
 
@@ -58,9 +59,7 @@ export default async function ExpensesPage({
       </div>
 
       <div className="hidden md:block">
-        <div
-          className={`grid ${admin ? "grid-cols-[80px_1fr_1fr_1fr_auto_auto_auto_auto]" : "grid-cols-[80px_1fr_1fr_1fr_auto_auto_auto]"} gap-2.5 border-b border-ink/14 pb-1.5 mt-5 px-3.5 [&_.heading-label]:font-bold [&_.heading-label]:!text-[9px]`}
-        >
+        <div className="grid grid-cols-[80px_1fr_1fr_1fr_auto_auto_auto] gap-2.5 border-b border-ink/14 pb-1.5 mt-5 px-3.5 [&_.heading-label]:font-bold [&_.heading-label]:!text-[9px]">
           <span className="heading-label">{te.colDate}</span>
           <span className="heading-label">{te.colCategory}</span>
           <span className="heading-label">{te.colEvent}</span>
@@ -68,13 +67,12 @@ export default async function ExpensesPage({
           <span className="heading-label">{te.colAmount}</span>
           <span className="heading-label">{te.colReceipt}</span>
           <span className="heading-label"></span>
-          {admin && <span className="heading-label"></span>}
         </div>
 
         {expenses.map((exp) => (
           <div
             key={exp.id}
-            className={`grid ${admin ? "grid-cols-[80px_1fr_1fr_1fr_auto_auto_auto_auto]" : "grid-cols-[80px_1fr_1fr_1fr_auto_auto_auto]"} gap-2.5 items-center py-3.5 px-3.5 rounded-xl border-b border-ink/8 last:border-b-0 text-[15px] hover:bg-ink/5`}
+            className="grid grid-cols-[80px_1fr_1fr_1fr_auto_auto_auto] gap-2.5 items-center py-3.5 px-3.5 rounded-xl border-b border-ink/8 last:border-b-0 text-[15px] hover:bg-ink/5"
           >
             <div className="placeholder-text">{formatDate(exp.date)}</div>
             <div>{t.expenseCategories[exp.category]}</div>
@@ -103,26 +101,25 @@ export default async function ExpensesPage({
                 <span className="placeholder-text text-[9px]">—</span>
               )}
             </div>
-            <div>
-              {canEditExpense(user, exp.paidById) ? (
-                <Link
-                  href={`/finance/expenses/${exp.id}/edit`}
-                  className="text-[9px] tracking-[0.1em] uppercase placeholder-text hover:text-ink"
-                >
+            <div className="flex items-center justify-end gap-1 text-[9px] tracking-[0.1em] uppercase">
+              {canEditExpense(user, exp.paidById) && (
+                <Link href={`/finance/expenses/${exp.id}/edit`} className="placeholder-text hover:text-ink">
                   {te.edit}
                 </Link>
-              ) : null}
+              )}
+              {admin && (
+                <RowActions menuLabel={t.common.moreActions}>
+                  <ConfirmDeleteButton
+                    action={deleteExpenseAction}
+                    fields={{ id: exp.id }}
+                    label={t.common.delete}
+                    pendingLabel={t.common.deleting}
+                    confirmMessage={te.confirmDelete(formatCurrency(exp.amount))}
+                    className="menu-item !text-warning hover:!bg-warning/10"
+                  />
+                </RowActions>
+              )}
             </div>
-            {admin && (
-              <ConfirmDeleteButton
-                action={deleteExpenseAction}
-                fields={{ id: exp.id }}
-                label={t.common.delete}
-                pendingLabel={t.common.deleting}
-                confirmMessage={te.confirmDelete(formatCurrency(exp.amount))}
-                className="text-[9px] tracking-[0.1em] uppercase placeholder-text hover:text-warning"
-              />
-            )}
           </div>
         ))}
       </div>

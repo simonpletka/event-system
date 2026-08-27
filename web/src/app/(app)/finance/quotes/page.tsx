@@ -5,6 +5,7 @@ import { formatCurrency, formatDate } from "@/lib/format";
 import { QuoteStatusPill } from "@/components/StatusPill";
 import { convertQuoteToInvoiceAction, deleteQuoteAction, duplicateQuoteAction } from "@/lib/actions/finance";
 import { ConfirmDeleteButton } from "@/components/ui/ConfirmDeleteButton";
+import { RowActions } from "@/components/ui/RowActions";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { getLocale, getDictionary } from "@/lib/i18n";
 import type { QuoteStatus } from "@/generated/prisma/enums";
@@ -107,11 +108,11 @@ export default async function QuotesPage({
             <div>
               <QuoteStatusPill status={q.status} t={t.statusQuote} />
             </div>
-            <div className="flex items-center justify-between gap-2 text-[9px] tracking-[0.1em] uppercase">
+            <div className="flex items-center justify-end gap-1 text-[9px] tracking-[0.1em] uppercase">
               {q.status === "ACCEPTED" && q.invoices.length === 0 && canManage ? (
                 <form action={convertQuoteToInvoiceAction}>
                   <input type="hidden" name="quoteId" value={q.id} />
-                  <button type="submit" className="text-accent hover:underline">
+                  <button type="submit" className="text-accent hover:opacity-70">
                     {t.finance.quotes.convertToInvoice}
                   </button>
                 </form>
@@ -120,13 +121,13 @@ export default async function QuotesPage({
                   {t.finance.quotes.invoicedAs(q.invoices[0].number)}
                 </Link>
               ) : q.status === "DRAFT" && canManage ? (
-                <Link href={`/finance/quotes/${q.id}/edit`} className="hover:text-ink">
+                <Link href={`/finance/quotes/${q.id}/edit`} className="placeholder-text hover:text-ink">
                   {t.finance.quotes.edit}
                 </Link>
               ) : q.status === "DECLINED" && canManage ? (
                 <form action={duplicateQuoteAction}>
                   <input type="hidden" name="id" value={q.id} />
-                  <button type="submit" className="hover:text-ink">
+                  <button type="submit" className="placeholder-text hover:text-ink">
                     {t.finance.quotes.createNew}
                   </button>
                 </form>
@@ -136,14 +137,16 @@ export default async function QuotesPage({
                 </span>
               )}
               {admin && (
-                <ConfirmDeleteButton
-                  action={deleteQuoteAction}
-                  fields={{ id: q.id }}
-                  label={t.common.delete}
-                  pendingLabel={t.common.deleting}
-                  confirmMessage={t.finance.quotes.confirmDelete(q.number)}
-                  className="placeholder-text hover:text-warning"
-                />
+                <RowActions menuLabel={t.common.moreActions}>
+                  <ConfirmDeleteButton
+                    action={deleteQuoteAction}
+                    fields={{ id: q.id }}
+                    label={t.common.delete}
+                    pendingLabel={t.common.deleting}
+                    confirmMessage={t.finance.quotes.confirmDelete(q.number)}
+                    className="menu-item !text-warning hover:!bg-warning/10"
+                  />
+                </RowActions>
               )}
             </div>
           </div>
@@ -177,7 +180,7 @@ export default async function QuotesPage({
               {q.status === "ACCEPTED" && q.invoices.length === 0 && canManage ? (
                 <form action={convertQuoteToInvoiceAction}>
                   <input type="hidden" name="quoteId" value={q.id} />
-                  <button type="submit" className="text-accent hover:underline">
+                  <button type="submit" className="text-accent hover:opacity-70">
                     {t.finance.quotes.convertToInvoice}
                   </button>
                 </form>
@@ -186,13 +189,13 @@ export default async function QuotesPage({
                   {t.finance.quotes.invoicedAs(q.invoices[0].number)}
                 </Link>
               ) : q.status === "DRAFT" && canManage ? (
-                <Link href={`/finance/quotes/${q.id}/edit`} className="hover:text-ink">
+                <Link href={`/finance/quotes/${q.id}/edit`} className="placeholder-text hover:text-ink">
                   {t.finance.quotes.edit}
                 </Link>
               ) : q.status === "DECLINED" && canManage ? (
                 <form action={duplicateQuoteAction}>
                   <input type="hidden" name="id" value={q.id} />
-                  <button type="submit" className="hover:text-ink">
+                  <button type="submit" className="placeholder-text hover:text-ink">
                     {t.finance.quotes.createNew}
                   </button>
                 </form>

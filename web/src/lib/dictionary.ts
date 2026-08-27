@@ -41,6 +41,7 @@ const en = {
     errorTitle: "Something went wrong",
     errorBody: "This page hit an unexpected error and couldn't load. Try again, and if it keeps happening let an admin know.",
     tryAgain: "Try again",
+    moreActions: "More actions",
   },
   nav: {
     dashboard: "Dashboard",
@@ -1129,6 +1130,7 @@ const cs: Dictionary = {
     errorTitle: "Něco se pokazilo",
     errorBody: "Na této stránce došlo k neočekávané chybě a nešla načíst. Zkuste to znovu, a pokud potíže přetrvávají, dejte vědět administrátorovi.",
     tryAgain: "Zkusit znovu",
+    moreActions: "Další akce",
   },
   nav: {
     dashboard: "Přehled",
