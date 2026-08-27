@@ -31,24 +31,24 @@ export function QuickCreateEventModal({
       <p className="text-[10px] placeholder-text mb-3">{t.quickCreateHelper}</p>
       <form action={formAction} className="flex flex-col gap-3">
         <label className="flex flex-col gap-1.5">
-          <span className="heading-label">{t.titleLabel}</span>
+          <span className="field-label">{t.titleLabel}</span>
           <input name="title" required autoFocus className="input" />
         </label>
         <label className="flex flex-col gap-1.5">
-          <span className="heading-label">{t.clientContactLabel}</span>
+          <span className="field-label">{t.clientContactLabel}</span>
           <input name="clientName" required className="input" />
         </label>
         <label className="flex flex-col gap-1.5">
-          <span className="heading-label">{t.clientCompanyLabel}</span>
+          <span className="field-label">{t.clientCompanyLabel}</span>
           <input name="companyName" required className="input" />
         </label>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
           <label className="flex flex-col gap-1.5">
-            <span className="heading-label">{t.startLabel}</span>
+            <span className="field-label">{t.startLabel}</span>
             <input name="startDate" type="datetime-local" required className="input" />
           </label>
           <label className="flex flex-col gap-1.5">
-            <span className="heading-label">{t.endLabel}</span>
+            <span className="field-label">{t.endLabel}</span>
             <input name="endDate" type="datetime-local" required className="input" />
           </label>
         </div>

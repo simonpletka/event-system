@@ -36,19 +36,19 @@ function AddContactModal({ clientId, onClose, t }: { clientId: string; onClose: 
       <form action={formAction} className="flex flex-col gap-3">
         <input type="hidden" name="clientId" value={clientId} />
         <label className="flex flex-col gap-1.5">
-          <span className="heading-label">{t.nameLabel}</span>
+          <span className="field-label">{t.nameLabel}</span>
           <input name="name" required autoFocus className="input" />
         </label>
         <label className="flex flex-col gap-1.5">
-          <span className="heading-label">{t.roleLabel}</span>
+          <span className="field-label">{t.roleLabel}</span>
           <input name="role" className="input" />
         </label>
         <label className="flex flex-col gap-1.5">
-          <span className="heading-label">{t.phoneLabel}</span>
+          <span className="field-label">{t.phoneLabel}</span>
           <input name="phone" className="input" />
         </label>
         <label className="flex flex-col gap-1.5">
-          <span className="heading-label">{t.emailLabel}</span>
+          <span className="field-label">{t.emailLabel}</span>
           <input name="email" type="email" className="input" />
         </label>
 

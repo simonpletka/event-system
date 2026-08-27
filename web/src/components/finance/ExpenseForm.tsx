@@ -53,11 +53,11 @@ export function ExpenseForm({
         <ReceiptInput existingReceiptPath={defaults?.receiptPath} t={t.finance.expenses.receipt} />
         <div className="flex flex-col gap-3">
           <label className="flex flex-col gap-1.5">
-            <span className="heading-label">{tf.amountLabel}</span>
+            <span className="field-label">{tf.amountLabel}</span>
             <input name="amount" type="number" min={1} required defaultValue={defaults?.amount} className="input" />
           </label>
           <label className="flex flex-col gap-1.5">
-            <span className="heading-label">{tf.dateOfPaymentLabel}</span>
+            <span className="field-label">{tf.dateOfPaymentLabel}</span>
             <input
               name="date"
               type="date"
@@ -67,7 +67,7 @@ export function ExpenseForm({
             />
           </label>
           <label className="flex flex-col gap-1.5">
-            <span className="heading-label">{tf.paidByLabel}</span>
+            <span className="field-label">{tf.paidByLabel}</span>
             <select name="paidById" defaultValue={defaults?.paidById ?? currentUserId} className="input">
               {payers.map((p) => (
                 <option key={p.id} value={p.id}>
@@ -82,7 +82,7 @@ export function ExpenseForm({
       </div>
 
       <label className="flex flex-col gap-1.5">
-        <span className="heading-label">{tf.eventLabel}</span>
+        <span className="field-label">{tf.eventLabel}</span>
         <EventPicker
           name="eventId"
           initialEvents={events}
@@ -94,7 +94,7 @@ export function ExpenseForm({
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <label className="flex flex-col gap-1.5">
-          <span className="heading-label">{tf.categoryLabel}</span>
+          <span className="field-label">{tf.categoryLabel}</span>
           <select name="category" defaultValue={defaults?.category ?? "GENERIC"} className="input">
             {EXPENSE_CATEGORIES.map((c) => (
               <option key={c} value={c}>
@@ -104,7 +104,7 @@ export function ExpenseForm({
           </select>
         </label>
         <label className="flex flex-col gap-1.5">
-          <span className="heading-label">{tf.noteLabel}</span>
+          <span className="field-label">{tf.noteLabel}</span>
           <input name="note" placeholder={tf.notePlaceholder} defaultValue={defaults?.note} className="input" />
           <span className="text-[9px] placeholder-text">{tf.approvalHint}</span>
         </label>

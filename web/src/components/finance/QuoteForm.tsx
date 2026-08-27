@@ -72,14 +72,14 @@ export function QuoteForm({
 
       {!isEdit && (
         <label className="flex flex-col gap-1.5">
-          <span className="heading-label">{tf.eventLabel}</span>
+          <span className="field-label">{tf.eventLabel}</span>
           <EventPicker name="eventId" initialEvents={events} defaultValue={initialEventId} required onSelect={setEventId} t={t.events.picker} />
         </label>
       )}
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
         <label className="flex flex-col gap-1.5">
-          <span className="heading-label">{tf.statusLabel}</span>
+          <span className="field-label">{tf.statusLabel}</span>
           <select name="status" defaultValue={defaults?.status ?? "DRAFT"} className="input">
             <option value="DRAFT">{tf.statusDraft}</option>
             <option value="SENT">{tf.statusSent}</option>
@@ -88,7 +88,7 @@ export function QuoteForm({
           </select>
         </label>
         <label className="flex flex-col gap-1.5">
-          <span className="heading-label">{tf.currencyLabel}</span>
+          <span className="field-label">{tf.currencyLabel}</span>
           <select name="currency" value={currency} onChange={(e) => setCurrency(e.target.value as Currency)} className="input">
             <option value="CZK">{tf.czk}</option>
             <option value="EUR">{tf.eur}</option>
@@ -96,7 +96,7 @@ export function QuoteForm({
           </select>
         </label>
         <label className="flex flex-col gap-1.5">
-          <span className="heading-label">{tf.validUntilLabel}</span>
+          <span className="field-label">{tf.validUntilLabel}</span>
           <input
             name="validUntil"
             type="date"

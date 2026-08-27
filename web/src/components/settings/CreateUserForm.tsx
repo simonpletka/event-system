@@ -29,15 +29,15 @@ export function CreateUserForm({
       <div className="heading-label !text-[12px] mb-2.5">{t.newAccountHeading}</div>
       <form action={formAction} className="grid grid-cols-1 md:grid-cols-[1fr_1fr_150px_100px_auto] gap-2.5 items-end">
         <label className="flex flex-col gap-1.5">
-          <span className="heading-label">{t.nameLabel}</span>
+          <span className="field-label">{t.nameLabel}</span>
           <input name="name" required className="input" />
         </label>
         <label className="flex flex-col gap-1.5">
-          <span className="heading-label">{t.emailLabel}</span>
+          <span className="field-label">{t.emailLabel}</span>
           <input name="email" type="email" required className="input" />
         </label>
         <label className="flex flex-col gap-1.5">
-          <span className="heading-label">{t.roleLabel}</span>
+          <span className="field-label">{t.roleLabel}</span>
           <RoleSelect name="role" defaultValue="ROLE:MEMBER" customRoles={customRoles} className="input" t={tRoleSelect} tRoles={tRoles} />
         </label>
         <label className="flex items-center gap-1.5 pb-2.5">

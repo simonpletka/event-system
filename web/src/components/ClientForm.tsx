@@ -53,7 +53,7 @@ export function ClientForm({ defaults, locale }: { defaults: ClientFormDefaults;
       {isEdit && <input type="hidden" name="id" value={defaults.id} />}
 
       <label className="flex flex-col gap-1.5">
-        <span className="heading-label">{tf.icoLabel}</span>
+        <span className="field-label">{tf.icoLabel}</span>
         <div className="flex gap-1.5">
           <input name="ico" value={ico} onChange={(e) => setIco(e.target.value)} className="input flex-1" />
           <button type="button" onClick={loadFromAres} disabled={ares.loading} className="btno whitespace-nowrap">
@@ -63,23 +63,23 @@ export function ClientForm({ defaults, locale }: { defaults: ClientFormDefaults;
         {ares.error && <span className="text-[11px] text-warning">{ares.error}</span>}
       </label>
       <label className="flex flex-col gap-1.5">
-        <span className="heading-label">{tf.companyNameLabel}</span>
+        <span className="field-label">{tf.companyNameLabel}</span>
         <input name="name" value={name} onChange={(e) => setName(e.target.value)} required autoFocus className="input" />
       </label>
       <label className="flex flex-col gap-1.5">
-        <span className="heading-label">{tf.addressLabel}</span>
+        <span className="field-label">{tf.addressLabel}</span>
         <StructuredAddressInput value={address} onChange={setAddress} t={t.clients.address} />
       </label>
       <label className="flex flex-col gap-1.5">
-        <span className="heading-label">{tf.dicLabel}</span>
+        <span className="field-label">{tf.dicLabel}</span>
         <input name="dic" value={dic} onChange={(e) => setDic(e.target.value)} className="input" />
       </label>
       <label className="flex flex-col gap-1.5">
-        <span className="heading-label">{tf.invoicingEmailLabel}</span>
+        <span className="field-label">{tf.invoicingEmailLabel}</span>
         <input name="invoicingEmail" type="email" defaultValue={defaults.invoicingEmail} className="input" />
       </label>
       <label className="flex flex-col gap-1.5">
-        <span className="heading-label">{tf.noteLabel}</span>
+        <span className="field-label">{tf.noteLabel}</span>
         <textarea name="note" defaultValue={defaults.note} rows={3} className="input" />
       </label>
 

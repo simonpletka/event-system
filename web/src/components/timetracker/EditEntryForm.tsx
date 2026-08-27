@@ -72,7 +72,7 @@ export function EditEntryForm({
     <form action={formAction} className="flex flex-col gap-3">
       <input type="hidden" name="id" value={id} />
       <label className="flex flex-col gap-1.5">
-        <span className="heading-label">{t.eventLabel}</span>
+        <span className="field-label">{t.eventLabel}</span>
         <select name="eventId" defaultValue={eventId ?? ""} className="input">
           <option value="">{t.noEventOption}</option>
           {events.map((e) => (
@@ -84,29 +84,29 @@ export function EditEntryForm({
       </label>
 
       <label className="flex flex-col gap-1.5">
-        <span className="heading-label">{t.dateLabel}</span>
+        <span className="field-label">{t.dateLabel}</span>
         <input name="date" type="date" required defaultValue={date} className="input" />
       </label>
 
       <label className="flex flex-col gap-1.5">
-        <span className="heading-label">{t.durationLabel}</span>
+        <span className="field-label">{t.durationLabel}</span>
         <input name="duration" type="number" min={1} defaultValue={h * 60 + m} className="input" />
       </label>
 
       <div className="grid grid-cols-2 gap-3">
         <label className="flex flex-col gap-1.5">
-          <span className="heading-label">{t.startTimeOptional}</span>
+          <span className="field-label">{t.startTimeOptional}</span>
           <input name="startTime" type="time" defaultValue={startTime} className="input" />
         </label>
         <label className="flex flex-col gap-1.5">
-          <span className="heading-label">{t.endTimeOptional}</span>
+          <span className="field-label">{t.endTimeOptional}</span>
           <input name="endTime" type="time" defaultValue={endTime} className="input" />
         </label>
       </div>
       <span className="text-[9px] placeholder-text -mt-1">{t.recomputeHint}</span>
 
       <label className="flex flex-col gap-1.5">
-        <span className="heading-label">{t.phaseLabel}</span>
+        <span className="field-label">{t.phaseLabel}</span>
         <select name="phase" defaultValue={phase} className="input">
           {Object.entries(tPhases).map(([v, l]) => (
             <option key={v} value={v}>
@@ -117,7 +117,7 @@ export function EditEntryForm({
       </label>
 
       <label className="flex flex-col gap-1.5">
-        <span className="heading-label">{t.descriptionLabel}</span>
+        <span className="field-label">{t.descriptionLabel}</span>
         <input name="description" defaultValue={description} className="input" />
       </label>
 
