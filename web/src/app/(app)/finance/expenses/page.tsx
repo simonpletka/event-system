@@ -5,7 +5,7 @@ import { formatCurrency, formatDate } from "@/lib/format";
 import { EXPENSE_CATEGORIES } from "@/lib/expense-categories";
 import { deleteExpenseAction } from "@/lib/actions/finance";
 import { ConfirmDeleteButton } from "@/components/ui/ConfirmDeleteButton";
-import { RowActions } from "@/components/ui/RowActions";
+import { TrashIcon } from "@/components/ui/icons";
 import { getLocale, getDictionary } from "@/lib/i18n";
 import type { ExpenseCategory } from "@/generated/prisma/enums";
 
@@ -72,28 +72,26 @@ export default async function ExpensesPage({
         {expenses.map((exp) => (
           <div
             key={exp.id}
-            className="grid grid-cols-[80px_1fr_1fr_1fr_auto_auto_auto] gap-2.5 items-center py-3.5 px-3.5 rounded-xl border-b border-ink/8 last:border-b-0 text-[15px] hover:bg-ink/5"
+            className="group grid grid-cols-[80px_1fr_1fr_1fr_auto_auto_auto] gap-2.5 items-center py-3.5 px-3.5 rounded-xl border-b border-ink/8 last:border-b-0 text-[15px] hover:bg-ink/5"
           >
-            <div className="placeholder-text">{formatDate(exp.date)}</div>
-            <div>{t.expenseCategories[exp.category]}</div>
-            <div className="placeholder-text">
+            <div className="placeholder-text group-hover:!text-accent">{formatDate(exp.date)}</div>
+            <div className="group-hover:text-accent">{t.expenseCategories[exp.category]}</div>
+            <div className="placeholder-text group-hover:!text-accent">
               {exp.event ? (
-                <Link href={`/events/${exp.event.id}`} className="hover:text-accent">
-                  {exp.event.title}
-                </Link>
+                <Link href={`/events/${exp.event.id}`}>{exp.event.title}</Link>
               ) : (
                 te.companyOverheadFallback
               )}
             </div>
-            <div className="placeholder-text">{exp.paidBy.name}</div>
-            <div className="font-semibold tabular-nums">{formatCurrency(exp.amount)}</div>
+            <div className="placeholder-text group-hover:!text-accent">{exp.paidBy.name}</div>
+            <div className="font-semibold tabular-nums group-hover:text-accent">{formatCurrency(exp.amount)}</div>
             <div>
               {exp.receiptPath ? (
                 <a
                   href={`/api/uploads/receipts/${exp.receiptPath}`}
                   target="_blank"
                   rel="noreferrer"
-                  className="text-[9px] tracking-[0.1em] uppercase hover:text-accent"
+                  className="text-[9px] tracking-[0.1em] uppercase placeholder-text hover:text-accent"
                 >
                   {te.viewReceipt}
                 </a>
@@ -101,23 +99,24 @@ export default async function ExpensesPage({
                 <span className="placeholder-text text-[9px]">—</span>
               )}
             </div>
-            <div className="flex items-center justify-end gap-1 text-[9px] tracking-[0.1em] uppercase">
+            <div className="flex items-center justify-end gap-1.5 text-[9px] tracking-[0.1em] uppercase">
               {canEditExpense(user, exp.paidById) && (
-                <Link href={`/finance/expenses/${exp.id}/edit`} className="placeholder-text hover:text-ink">
+                <Link href={`/finance/expenses/${exp.id}/edit`} className="placeholder-text hover:text-accent">
                   {te.edit}
                 </Link>
               )}
               {admin && (
-                <RowActions menuLabel={t.common.moreActions}>
-                  <ConfirmDeleteButton
-                    action={deleteExpenseAction}
-                    fields={{ id: exp.id }}
-                    label={t.common.delete}
-                    pendingLabel={t.common.deleting}
-                    confirmMessage={te.confirmDelete(formatCurrency(exp.amount))}
-                    className="menu-item !text-warning hover:!bg-warning/10"
-                  />
-                </RowActions>
+                <ConfirmDeleteButton
+                  action={deleteExpenseAction}
+                  fields={{ id: exp.id }}
+                  label={t.common.delete}
+                  pendingLabel={t.common.deleting}
+                  confirmMessage={te.confirmDelete(formatCurrency(exp.amount))}
+                  title={t.common.delete}
+                  className="shrink-0 grid place-items-center w-7 h-7 rounded-md text-ink/35 hover:text-warning hover:bg-warning/10 transition-colors disabled:opacity-40"
+                >
+                  <TrashIcon />
+                </ConfirmDeleteButton>
               )}
             </div>
           </div>
@@ -169,8 +168,11 @@ export default async function ExpensesPage({
                   label={t.common.delete}
                   pendingLabel={t.common.deleting}
                   confirmMessage={te.confirmDelete(formatCurrency(exp.amount))}
-                  className="placeholder-text hover:text-warning ml-auto"
-                />
+                  title={t.common.delete}
+                  className="shrink-0 grid place-items-center w-8 h-8 rounded-md text-ink/40 hover:text-warning transition-colors ml-auto"
+                >
+                  <TrashIcon size={16} />
+                </ConfirmDeleteButton>
               )}
             </div>
           </div>

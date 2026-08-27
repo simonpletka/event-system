@@ -40,6 +40,9 @@ export default async function InvoicesPage({
       <div className="flex justify-end gap-2">
         {canManage && (
           <>
+            {/* Real navigation to a file-download API route, not a page — the catch-all
+                route makes no-html-link-for-pages think otherwise. */}
+            {/* eslint-disable-next-line @next/next/no-html-link-for-pages */}
             <a href="/api/finance/invoices/export" className="btno">
               {ti.exportAccounting}
             </a>

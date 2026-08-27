@@ -1,11 +1,10 @@
 import Link from "next/link";
-import { requireUser, canManageFinance, isAdmin } from "@/lib/authz";
+import { requireUser, canManageFinance } from "@/lib/authz";
 import { getQuoteList, type QuoteListFilters } from "@/lib/queries/finance";
 import { formatCurrency, formatDate } from "@/lib/format";
 import { QuoteStatusPill } from "@/components/StatusPill";
-import { convertQuoteToInvoiceAction, deleteQuoteAction, duplicateQuoteAction } from "@/lib/actions/finance";
-import { ConfirmDeleteButton } from "@/components/ui/ConfirmDeleteButton";
-import { RowActions } from "@/components/ui/RowActions";
+import { convertQuoteToInvoiceAction, duplicateQuoteAction } from "@/lib/actions/finance";
+import { DownloadPdfButton } from "@/components/finance/DownloadPdfButton";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { getLocale, getDictionary } from "@/lib/i18n";
 import type { QuoteStatus } from "@/generated/prisma/enums";
@@ -28,7 +27,6 @@ export default async function QuotesPage({
   };
   const { quotes, openValue, events, year } = await getQuoteList(user, filters);
   const canManage = canManageFinance(user);
-  const admin = isAdmin(user);
 
   return (
     <div>
@@ -104,11 +102,12 @@ export default async function QuotesPage({
             <div className="placeholder-text group-hover:!text-accent">{formatDate(q.issuedAt)}</div>
             <div className="placeholder-text group-hover:!text-accent">{formatDate(q.validUntil)}</div>
             <div className="font-semibold tabular-nums group-hover:text-accent">
-              {formatCurrency(q.total, q.currency)}            </div>
+              {formatCurrency(q.total, q.currency)}
+            </div>
             <div>
               <QuoteStatusPill status={q.status} t={t.statusQuote} />
             </div>
-            <div className="flex items-center justify-end gap-1 text-[9px] tracking-[0.1em] uppercase">
+            <div className="flex items-center justify-end gap-3 text-[9px] tracking-[0.1em] uppercase">
               {q.status === "ACCEPTED" && q.invoices.length === 0 && canManage ? (
                 <form action={convertQuoteToInvoiceAction}>
                   <input type="hidden" name="quoteId" value={q.id} />
@@ -136,18 +135,11 @@ export default async function QuotesPage({
                   {t.finance.quotes.remindClient}
                 </span>
               )}
-              {admin && (
-                <RowActions menuLabel={t.common.moreActions}>
-                  <ConfirmDeleteButton
-                    action={deleteQuoteAction}
-                    fields={{ id: q.id }}
-                    label={t.common.delete}
-                    pendingLabel={t.common.deleting}
-                    confirmMessage={t.finance.quotes.confirmDelete(q.number)}
-                    className="menu-item !text-warning hover:!bg-warning/10"
-                  />
-                </RowActions>
-              )}
+              <DownloadPdfButton
+                pdfUrl={`/api/quotes/${q.id}/pdf`}
+                label={t.finance.quotes.pdf}
+                className="shrink-0 text-[9px] tracking-[0.1em] uppercase placeholder-text hover:text-accent transition-colors"
+              />
             </div>
           </div>
         ))}
@@ -204,16 +196,11 @@ export default async function QuotesPage({
                   {t.finance.quotes.remindClient}
                 </span>
               )}
-              {admin && (
-                <ConfirmDeleteButton
-                  action={deleteQuoteAction}
-                  fields={{ id: q.id }}
-                  label={t.common.delete}
-                  pendingLabel={t.common.deleting}
-                  confirmMessage={t.finance.quotes.confirmDelete(q.number)}
-                  className="placeholder-text hover:text-warning"
-                />
-              )}
+              <DownloadPdfButton
+                pdfUrl={`/api/quotes/${q.id}/pdf`}
+                label={t.finance.quotes.pdf}
+                className="shrink-0 text-[9px] tracking-[0.1em] uppercase placeholder-text hover:text-accent"
+              />
             </div>
           </div>
         ))}

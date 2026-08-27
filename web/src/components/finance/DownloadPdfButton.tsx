@@ -34,13 +34,13 @@ export function DownloadPdfButton({
         {label}
       </button>
       {open && (
-        <div className="absolute right-0 top-full mt-1 z-10 border border-ink bg-bg min-w-[9rem] shadow-lg">
+        <div className="card absolute right-0 top-full mt-1 z-20 p-1 min-w-[8.5rem] flex flex-col shadow-[0_14px_36px_rgba(0,0,0,0.45)]">
           <a
             href={`${pdfUrl}?lang=cs`}
             target="_blank"
             rel="noreferrer"
             onClick={() => setOpen(false)}
-            className="block px-3 py-2 text-[11px] hover:bg-accent hover:text-bg"
+            className="block px-2.5 py-1.5 text-[11px] rounded-md hover:bg-ink/8 hover:text-ink transition-colors"
           >
             Čeština
           </a>
@@ -49,7 +49,7 @@ export function DownloadPdfButton({
             target="_blank"
             rel="noreferrer"
             onClick={() => setOpen(false)}
-            className="block px-3 py-2 text-[11px] border-t border-ink/15 hover:bg-accent hover:text-bg"
+            className="block px-2.5 py-1.5 text-[11px] rounded-md hover:bg-ink/8 hover:text-ink transition-colors"
           >
             English
           </a>

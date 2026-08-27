@@ -41,7 +41,6 @@ const en = {
     errorTitle: "Something went wrong",
     errorBody: "This page hit an unexpected error and couldn't load. Try again, and if it keeps happening let an admin know.",
     tryAgain: "Try again",
-    moreActions: "More actions",
   },
   nav: {
     dashboard: "Dashboard",
@@ -455,6 +454,7 @@ const en = {
       colValidTo: "Valid to",
       colTotal: "Total",
       colStatus: "Status",
+      pdf: "PDF",
       noQuotesForYear: (year: number) => `No quotes for ${year}.`,
       convertToInvoice: "Convert to invoice →",
       invoicedAs: (n: string) => `Invoiced ${n}`,
@@ -1130,7 +1130,6 @@ const cs: Dictionary = {
     errorTitle: "Něco se pokazilo",
     errorBody: "Na této stránce došlo k neočekávané chybě a nešla načíst. Zkuste to znovu, a pokud potíže přetrvávají, dejte vědět administrátorovi.",
     tryAgain: "Zkusit znovu",
-    moreActions: "Další akce",
   },
   nav: {
     dashboard: "Přehled",
@@ -1547,6 +1546,7 @@ const cs: Dictionary = {
       colValidTo: "Platnost do",
       colTotal: "Celkem",
       colStatus: "Stav",
+      pdf: "PDF",
       noQuotesForYear: (year: number) => `Žádné nabídky za rok ${year}.`,
       convertToInvoice: "Převést na fakturu →",
       invoicedAs: (n: string) => `Vyfakturováno ${n}`,

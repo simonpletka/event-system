@@ -1,30 +1,34 @@
 import type { EventStatus, InvoiceStatus, QuoteStatus } from "@/generated/prisma/enums";
 import type { Dictionary } from "@/lib/i18n";
 
-// Positive = teal (a "good" outcome — never orange, so it's never mistaken
-// for a call-to-action). Warning = red, reserved for states that ask the
-// viewer to *act* or are time-sensitive (needs invoicing, overdue, due very
-// soon). Neutral covers everything else, including terminal states that need
-// no action — a cancelled/declined item is dead, not a warning.
-const EVENT_STATUS_VARIANT: Record<EventStatus, "positive" | "warning" | "neutral"> = {
+// Four status roles, so a list of pills reads at a glance:
+//   positive  (teal)  — a good outcome: confirmed, accepted, paid
+//   attention (amber) — in flight / waiting on someone / act soon:
+//                       quote out, needs invoicing, partly paid, due this week
+//   warning   (red)   — negative or urgent: cancelled, declined, overdue
+//   neutral   (grey)  — nothing pending: draft, inquiry, in progress, closed
+// Teal is never used for a CTA, so a status can't be mistaken for a button.
+type TagRole = "positive" | "attention" | "warning" | "neutral";
+
+const EVENT_STATUS_VARIANT: Record<EventStatus, TagRole> = {
   INQUIRY: "neutral",
-  QUOTE_SENT: "neutral",
+  QUOTE_SENT: "attention",
   CONFIRMED: "positive",
   IN_PROGRESS: "neutral",
-  TO_INVOICE: "warning",
+  TO_INVOICE: "attention",
   CLOSED: "neutral",
-  CANCELLED: "neutral",
+  CANCELLED: "warning",
 };
 
 export function EventStatusPill({ status, t }: { status: EventStatus; t: Dictionary["statusEvent"] }) {
   return <span className={`tag tag-${EVENT_STATUS_VARIANT[status]}`}>{t[status]}</span>;
 }
 
-const QUOTE_STATUS_VARIANT: Record<QuoteStatus, "positive" | "warning" | "neutral"> = {
+const QUOTE_STATUS_VARIANT: Record<QuoteStatus, TagRole> = {
   DRAFT: "neutral",
-  SENT: "neutral",
+  SENT: "attention",
   ACCEPTED: "positive",
-  DECLINED: "neutral",
+  DECLINED: "warning",
 };
 
 export function QuoteStatusPill({ status, t }: { status: QuoteStatus; t: Dictionary["statusQuote"] }) {
@@ -34,9 +38,8 @@ export function QuoteStatusPill({ status, t }: { status: QuoteStatus; t: Diction
 /**
  * Invoice payment-state pill. "Overdue" isn't a stored status — it's derived
  * from dueDate/amountPaid — so this takes the raw fields rather than a status enum.
- * "Due soon" (3-7 days out) stays neutral; under 3 days switches to the
- * warning-red tag, same as overdue — the two together are what the "red
- * means a warning" rule actually means for invoices.
+ * Overdue and due-in-under-3-days are warning-red (urgent); due this week
+ * and partly-paid are amber (on your radar); issued-and-not-yet-due neutral.
  */
 export function InvoiceStatusPill({
   status,
@@ -59,12 +62,12 @@ export function InvoiceStatusPill({
     const days = Math.floor(-msUntilDue / 86400000);
     return <span className="tag tag-warning">{t.overdueDays(days)}</span>;
   }
-  if (status === "PARTLY_PAID") return <span className="tag tag-neutral">{t.partlyPaid}</span>;
+  if (status === "PARTLY_PAID") return <span className="tag tag-attention">{t.partlyPaid}</span>;
   if (msUntilDue <= 3 * 86400000) {
     const days = Math.floor(msUntilDue / 86400000);
     return <span className="tag tag-warning">{days <= 0 ? t.dueToday : t.dueInDays(days)}</span>;
   }
-  if (msUntilDue <= 7 * 86400000) return <span className="tag tag-neutral">{t.dueSoon}</span>;
+  if (msUntilDue <= 7 * 86400000) return <span className="tag tag-attention">{t.dueSoon}</span>;
   return <span className="tag tag-neutral">{t.issued}</span>;
 }
 

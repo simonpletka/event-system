@@ -17,6 +17,11 @@
      declined). Never used decoratively. */
   --color-positive: #2dd4bf;
   --color-warning: #dc2626;
+  /* Amber "needs attention / in flight" — a fourth status role so a quote
+     that's still out (SENT) reads differently from a draft or a decline at
+     a glance. Fixed, not part of the 6 user-customizable colors: amber is
+     amber, and it never needs to track a rebranded accent. */
+  --color-attention: #f5a524;
 }
 
 @theme inline {
@@ -27,6 +32,7 @@
   --color-accent-hover: var(--color-accent-hover);
   --color-positive: var(--color-positive);
   --color-warning: var(--color-warning);
+  --color-attention: var(--color-attention);
   --font-sans: var(--font-neue-regrade);
 }
 
@@ -119,6 +125,10 @@ body {
   background: color-mix(in srgb, var(--color-warning) 15%, transparent);
   color: var(--color-warning);
 }
+.tag-attention {
+  background: color-mix(in srgb, var(--color-attention) 16%, transparent);
+  color: var(--color-attention);
+}
 
 /* Wireframe vocabulary, ported 1:1 so screens match the approved mocks. */
 .label {
@@ -203,21 +213,12 @@ body {
   font-weight: 600;
   background: color-mix(in srgb, var(--color-ink) 6%, transparent);
 }
-/* Item inside a RowActions "···" popover menu. */
-.menu-item {
-  display: block;
-  width: 100%;
-  text-align: left;
-  font-size: 11px;
-  letter-spacing: 0.01em;
-  padding: 6px 10px;
-  border-radius: 6px;
-  color: color-mix(in srgb, var(--color-ink) 78%, transparent);
-  white-space: nowrap;
-}
-.menu-item:hover {
-  background: color-mix(in srgb, var(--color-ink) 8%, transparent);
-  color: var(--color-ink);
+/* Tailwind v4's preflight no longer sets a pointer cursor on buttons, so
+   without this every button in the app shows the default arrow on hover. */
+button:not(:disabled),
+summary,
+[role="button"] {
+  cursor: pointer;
 }
 
 .input {
