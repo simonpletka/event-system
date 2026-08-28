@@ -19,6 +19,8 @@ export function ConfirmDeleteButton({
   label = "Delete",
   pendingLabel,
   className = "btno !border-warning text-warning",
+  children,
+  title,
 }: {
   action: (formData: FormData) => void | Promise<void>;
   fields: Record<string, string>;
@@ -26,6 +28,9 @@ export function ConfirmDeleteButton({
   label?: string;
   pendingLabel?: string;
   className?: string;
+  /** Icon-only rendering — the button shows this instead of the label text. `label` still drives the confirm dialog's action button. */
+  children?: React.ReactNode;
+  title?: string;
 }) {
   const [pending, startTransition] = useTransition();
   const { confirm } = useConfirmDialog();
@@ -35,6 +40,8 @@ export function ConfirmDeleteButton({
       type="button"
       disabled={pending}
       className={className}
+      title={title}
+      aria-label={children ? (title ?? label) : undefined}
       onClick={async () => {
         const ok = await confirm(confirmMessage, { confirmLabel: label });
         if (!ok) return;
@@ -45,7 +52,7 @@ export function ConfirmDeleteButton({
         });
       }}
     >
-      {pending ? (pendingLabel ?? "Deleting…") : label}
+      {pending ? (pendingLabel ?? "Deleting…") : (children ?? label)}
     </button>
   );
 }

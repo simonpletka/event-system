@@ -74,6 +74,24 @@ export async function getOverviewUsers() {
   });
 }
 
+/** Everyone selectable in the Overview event filter, scoped the same way as the rest of time tracking. */
+export async function getOverviewEvents(user: SessionUser) {
+  return prisma.event.findMany({
+    where: eventWhereForUser(user),
+    select: { id: true, title: true },
+    orderBy: { title: "asc" },
+  });
+}
+
+/** Every client with at least one event visible to this user — the Overview client filter. */
+export async function getOverviewClients(user: SessionUser) {
+  return prisma.client.findMany({
+    where: { events: { some: eventWhereForUser(user) } },
+    select: { id: true, name: true },
+    orderBy: { name: "asc" },
+  });
+}
+
 export type OverviewBucket = { label: string; start: Date; end: Date };
 
 /**
@@ -102,34 +120,103 @@ export function overviewBuckets(period: TimePeriod, from: Date, to: Date): Overv
   return [{ label: "Total", start: from, end: to }];
 }
 
-export async function getOverviewData(selectedUsers: { id: string; name: string }[], period: TimePeriod, anchor: Date) {
+export type OverviewAxis = "person" | "event" | "phase";
+/**
+ * `name` is the raw label for a person/event row — `null` for an unassigned
+ * event or any phase row, since a phase's display name is a translated enum
+ * label the page derives from `id` (a TimePhase key), not data from here.
+ */
+export type OverviewRow = { id: string; name: string | null; byBucket: number[]; total: number };
+
+const UNASSIGNED_EVENT_KEY = "__unassigned__";
+
+/**
+ * `eventIds` restricts which events' time counts (independent of `axis` —
+ * you can break down by Phase while still only looking at one event's time).
+ * `"unassigned"` in the list additionally includes eventless entries; pass
+ * `null`/undefined for no event filtering at all.
+ * `clientIds` further restricts to events belonging to one of those clients
+ * (ANDed with `eventIds`, not ORed — an eventless entry never has a client).
+ * `descriptionQuery` is a case-insensitive substring match against the entry
+ * description, applied in JS since SQLite's Prisma provider has no
+ * case-insensitive `contains` mode.
+ */
+export async function getOverviewData(
+  selectedUsers: { id: string; name: string }[],
+  period: TimePeriod,
+  anchor: Date,
+  axis: OverviewAxis = "person",
+  eventIds?: string[] | null,
+  clientIds?: string[] | null,
+  descriptionQuery?: string | null
+) {
   const from = rangeStart(period, anchor);
   const to = rangeEnd(period, anchor);
   const buckets = overviewBuckets(period, from, to);
 
-  if (selectedUsers.length === 0) return { from, to, buckets, people: [] };
+  if (selectedUsers.length === 0) return { from, to, buckets, rows: [] as OverviewRow[] };
 
-  const entries = await prisma.timeEntry.findMany({
-    where: { userId: { in: selectedUsers.map((u) => u.id) }, running: false, date: { gte: from, lt: to } },
-    select: { userId: true, eventId: true, minutes: true, date: true, event: { select: { title: true } } },
+  const wantsUnassigned = eventIds?.includes("unassigned") ?? false;
+  const specificEventIds = eventIds?.filter((id) => id !== "unassigned") ?? [];
+
+  let entries = await prisma.timeEntry.findMany({
+    where: {
+      userId: { in: selectedUsers.map((u) => u.id) },
+      running: false,
+      date: { gte: from, lt: to },
+      ...(eventIds && eventIds.length > 0
+        ? {
+            OR: [
+              ...(specificEventIds.length > 0 ? [{ eventId: { in: specificEventIds } }] : []),
+              ...(wantsUnassigned ? [{ eventId: null }] : []),
+            ],
+          }
+        : {}),
+      ...(clientIds && clientIds.length > 0 ? { event: { clientId: { in: clientIds } } } : {}),
+    },
+    select: {
+      userId: true,
+      eventId: true,
+      phase: true,
+      minutes: true,
+      date: true,
+      description: true,
+      event: { select: { title: true } },
+    },
   });
 
-  const people = selectedUsers.map((u) => {
-    const own = entries.filter((e) => e.userId === u.id);
-    const byBucket = buckets.map((b) => own.filter((e) => e.date >= b.start && e.date < b.end).reduce((s, e) => s + e.minutes, 0));
-    const total = own.reduce((s, e) => s + e.minutes, 0);
+  if (descriptionQuery?.trim()) {
+    const q = descriptionQuery.trim().toLowerCase();
+    entries = entries.filter((e) => e.description.toLowerCase().includes(q));
+  }
 
-    const byEvent = new Map<string, { title: string | null; minutes: number }>();
-    for (const e of own) {
-      const key = e.eventId ?? "__unassigned__";
-      const cur = byEvent.get(key) ?? { title: e.event?.title ?? null, minutes: 0 };
-      cur.minutes += e.minutes;
-      byEvent.set(key, cur);
+  function bucketize(rowEntries: typeof entries) {
+    const byBucket = buckets.map((b) => rowEntries.filter((e) => e.date >= b.start && e.date < b.end).reduce((s, e) => s + e.minutes, 0));
+    const total = rowEntries.reduce((s, e) => s + e.minutes, 0);
+    return { byBucket, total };
+  }
+
+  let rows: OverviewRow[];
+  if (axis === "person") {
+    rows = selectedUsers.map((u) => ({ id: u.id, name: u.name, ...bucketize(entries.filter((e) => e.userId === u.id)) }));
+  } else if (axis === "event") {
+    const byEvent = new Map<string, { name: string | null; entries: typeof entries }>();
+    for (const e of entries) {
+      const key = e.eventId ?? UNASSIGNED_EVENT_KEY;
+      const group = byEvent.get(key) ?? { name: e.event?.title ?? null, entries: [] };
+      group.entries.push(e);
+      byEvent.set(key, group);
     }
-    const eventBreakdown = [...byEvent.values()].sort((a, b) => b.minutes - a.minutes);
+    rows = [...byEvent.entries()]
+      .map(([id, group]) => ({ id, name: group.name, ...bucketize(group.entries) }))
+      .sort((a, b) => b.total - a.total);
+  } else {
+    const byPhase = new Map<string, typeof entries>();
+    for (const e of entries) byPhase.set(e.phase, [...(byPhase.get(e.phase) ?? []), e]);
+    rows = [...byPhase.entries()]
+      .map(([id, list]) => ({ id, name: null, ...bucketize(list) }))
+      .sort((a, b) => b.total - a.total);
+  }
 
-    return { id: u.id, name: u.name, byBucket, total, eventBreakdown };
-  });
-
-  return { from, to, buckets, people };
+  return { from, to, buckets, rows };
 }

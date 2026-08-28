@@ -3,6 +3,7 @@ import { requireUser, canManageClients } from "@/lib/authz";
 import { getClientList } from "@/lib/queries/clients";
 import { formatCurrency } from "@/lib/format";
 import { MobileListRow } from "@/components/ui/MobileListRow";
+import { EmptyState } from "@/components/ui/EmptyState";
 import { getLocale, getDictionary } from "@/lib/i18n";
 
 export default async function ClientsPage({
@@ -16,6 +17,7 @@ export default async function ClientsPage({
   const canManage = canManageClients(user);
   const t = getDictionary(await getLocale());
   const tc = t.clients;
+  const anyMixed = clients.some((c) => c.totalMixed);
 
   return (
     <div>
@@ -59,7 +61,10 @@ export default async function ClientsPage({
             <div className="placeholder-text group-hover:!text-accent">{c.ico || "—"}</div>
             <div className="placeholder-text group-hover:!text-accent">{c.contactCount}</div>
             <div className="placeholder-text group-hover:!text-accent">{c.eventCount}</div>
-            <div className="font-semibold tabular-nums group-hover:text-accent">{formatCurrency(c.totalCharged)}</div>
+            <div className="font-semibold tabular-nums group-hover:text-accent">
+              {formatCurrency(c.totalCharged)}
+              {c.totalMixed && <span className="placeholder-text">&thinsp;*</span>}
+            </div>
           </Link>
         ))}
       </div>
@@ -71,12 +76,19 @@ export default async function ClientsPage({
             href={`/clients/${c.id}`}
             title={c.name}
             meta={`${tc.colIco}: ${c.ico || "—"} · ${c.contactCount} ${tc.colContacts} · ${c.eventCount} ${tc.colEvents}`}
-            trailing={formatCurrency(c.totalCharged)}
+            trailing={`${formatCurrency(c.totalCharged)}${c.totalMixed ? " *" : ""}`}
           />
         ))}
       </div>
 
-      {clients.length === 0 && <p className="text-sm placeholder-text mt-4">{tc.noClientsYet}</p>}
+      {clients.length === 0 && (
+        <EmptyState
+          message={tc.noClientsYet}
+          actionLabel={canManage && !params.q ? tc.newClient : undefined}
+          actionHref="/clients/new"
+        />
+      )}
+      {anyMixed && <p className="label mt-4 px-3.5">{tc.mixedCurrencyNote}</p>}
     </div>
   );
 }

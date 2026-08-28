@@ -54,31 +54,31 @@ export function GeneralSettingsForm({
   }
 
   return (
-    <div className="max-w-2xl flex flex-col gap-4">
+    <div className="w-full flex flex-col gap-4">
       <form action={profileAction} className="card p-5 flex flex-col gap-3">
         <div className="heading-label !text-[12px]">{t.accountHeading}</div>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
           <label className="flex flex-col gap-1.5">
-            <span className="heading-label">{t.firstNameLabel}</span>
+            <span className="field-label">{t.firstNameLabel}</span>
             <input name="firstName" defaultValue={initialFirst} required className="input" />
           </label>
           <label className="flex flex-col gap-1.5">
-            <span className="heading-label">{t.lastNameLabel}</span>
+            <span className="field-label">{t.lastNameLabel}</span>
             <input name="lastName" defaultValue={initialLast} className="input" />
           </label>
           <label className="flex flex-col gap-1.5">
-            <span className="heading-label">{t.emailLabel}</span>
+            <span className="field-label">{t.emailLabel}</span>
             <input name="email" type="email" defaultValue={defaults.email} required className="input" />
           </label>
           <label className="flex flex-col gap-1.5">
-            <span className="heading-label">{t.phoneLabel}</span>
+            <span className="field-label">{t.phoneLabel}</span>
             <input name="phone" type="tel" defaultValue={defaults.phone} className="input" />
           </label>
         </div>
 
         <div className="flex gap-3 items-start mt-1">
           <div className="flex flex-col gap-1.5 flex-1">
-            <span className="heading-label">{t.photoLabel}</span>
+            <span className="field-label">{t.photoLabel}</span>
             <div className="flex items-center gap-2">
               <label htmlFor="avatar-upload" className="btno cursor-pointer">
                 {t.chooseFile}
@@ -139,19 +139,19 @@ export function GeneralSettingsForm({
         <div className="heading-label !text-[12px]">{t.passwordHeading}</div>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
           <div className="flex flex-col gap-1.5">
-            <label htmlFor="currentPassword" className="heading-label">
+            <label htmlFor="currentPassword" className="field-label">
               {t.currentPasswordLabel}
             </label>
             <PasswordInput id="currentPassword" name="currentPassword" autoComplete="current-password" required holdToShowLabel={t.holdToShowPassword} />
           </div>
           <div className="flex flex-col gap-1.5">
-            <label htmlFor="newPassword" className="heading-label">
+            <label htmlFor="newPassword" className="field-label">
               {t.newPasswordLabel}
             </label>
             <PasswordInput id="newPassword" name="newPassword" autoComplete="new-password" required holdToShowLabel={t.holdToShowPassword} />
           </div>
           <div className="flex flex-col gap-1.5">
-            <label htmlFor="confirmPassword" className="heading-label">
+            <label htmlFor="confirmPassword" className="field-label">
               {t.confirmPasswordLabel}
             </label>
             <PasswordInput id="confirmPassword" name="confirmPassword" autoComplete="new-password" required holdToShowLabel={t.holdToShowPassword} />

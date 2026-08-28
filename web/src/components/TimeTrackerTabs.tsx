@@ -9,7 +9,7 @@ export function TimeTrackerTabs({ locale }: { locale: Locale }) {
   const t = getDictionary(locale).timeTracker;
   const tabs = [
     { href: "/time-tracker/tracking", label: t.tabTracking },
-    { href: "/time-tracker/overview", label: t.tabOverview },
+    { href: "/time-tracker/report", label: t.tabReport },
   ];
 
   return (

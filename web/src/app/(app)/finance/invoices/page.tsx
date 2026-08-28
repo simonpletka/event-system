@@ -4,6 +4,8 @@ import { getInvoiceList, getInvoiceKpis, type InvoiceListFilters } from "@/lib/q
 import { formatCurrency, formatDate } from "@/lib/format";
 import { InvoiceStatusPill } from "@/components/StatusPill";
 import { DownloadPdfButton } from "@/components/finance/DownloadPdfButton";
+import { FinanceSortMenu } from "@/components/finance/FinanceSortMenu";
+import { FilterSelect } from "@/components/ui/FilterSelect";
 import { MobileListRow } from "@/components/ui/MobileListRow";
 import { getLocale, getDictionary, czCount, type Locale } from "@/lib/i18n";
 
@@ -20,6 +22,15 @@ export default async function InvoicesPage({
   const filters: InvoiceListFilters = {
     bucket: (params.bucket as InvoiceListFilters["bucket"]) || undefined,
     eventId: params.eventId || undefined,
+    sort: params.sort || undefined,
+  };
+  const carry = (over: Record<string, string | undefined>) => {
+    const p = new URLSearchParams();
+    for (const [k, v] of Object.entries({ bucket: filters.bucket, eventId: filters.eventId, sort: filters.sort, ...over })) {
+      if (v) p.set(k, v);
+    }
+    const qs = p.toString();
+    return qs ? `/finance/invoices?${qs}` : "/finance/invoices";
   };
   const [{ invoices, total, events }, kpis] = await Promise.all([
     getInvoiceList(user, filters),
@@ -40,6 +51,9 @@ export default async function InvoicesPage({
       <div className="flex justify-end gap-2">
         {canManage && (
           <>
+            {/* Real navigation to a file-download API route, not a page — the catch-all
+                route makes no-html-link-for-pages think otherwise. */}
+            {/* eslint-disable-next-line @next/next/no-html-link-for-pages */}
             <a href="/api/finance/invoices/export" className="btno">
               {ti.exportAccounting}
             </a>
@@ -62,7 +76,7 @@ export default async function InvoicesPage({
           {buckets.map((b) => (
             <Link
               key={b.key}
-              href={b.key ? `/finance/invoices?bucket=${b.key}` : "/finance/invoices"}
+              href={carry({ bucket: b.key || undefined })}
               className={`shrink-0 text-[11px] font-semibold tracking-[0.04em] px-3.5 py-2 rounded-full border ${
                 (filters.bucket ?? "") === b.key
                   ? "bg-accent border-accent text-ink"
@@ -73,20 +87,26 @@ export default async function InvoicesPage({
             </Link>
           ))}
         </div>
-        <form method="get" className="flex gap-1.5">
-          {filters.bucket && <input type="hidden" name="bucket" value={filters.bucket} />}
-          <select name="eventId" defaultValue={filters.eventId ?? ""} className="btno bg-transparent text-[9px]">
-            <option value="">{ti.eventFilter}</option>
-            {events.map((e) => (
-              <option key={e.id} value={e.id}>
-                {e.title}
-              </option>
-            ))}
-          </select>
-          <button type="submit" className="btno text-[9px]">
-            {ti.apply}
-          </button>
-        </form>
+        <div className="flex items-center gap-2">
+          <FilterSelect
+            label={ti.eventFilter}
+            value={filters.eventId ?? ""}
+            options={events.map((e) => ({ value: e.id, label: e.title }))}
+            basePath="/finance/invoices"
+            params={{ bucket: filters.bucket, sort: filters.sort }}
+            paramName="eventId"
+            searchable
+            searchPlaceholder={t.finance.filters.searchEvents}
+            emptyLabel={t.finance.filters.noMatches}
+            anyLabel={t.finance.filters.anyEvent}
+          />
+          <FinanceSortMenu
+            current={filters.sort}
+            basePath="/finance/invoices"
+            params={{ bucket: filters.bucket, eventId: filters.eventId }}
+            t={t.finance.sort}
+          />
+        </div>
       </div>
 
       <div className="hidden md:block">
@@ -117,16 +137,11 @@ export default async function InvoicesPage({
             <div className="placeholder-text group-hover:!text-accent">{formatDate(inv.dueDate)}</div>
             <div className="font-semibold tabular-nums group-hover:text-accent">
               {formatCurrency(inv.total, inv.currency)}
-              {inv.currency !== "CZK" && <span className="tag tag-neutral ml-1">{inv.currency}</span>}
             </div>
             <div>
               <InvoiceStatusPill status={inv.status} dueDate={inv.dueDate} paidAt={inv.paidAt} t={t.invoicePill} />
             </div>
-            <DownloadPdfButton
-              pdfUrl={`/api/invoices/${inv.id}/pdf`}
-              label={ti.download}
-              className="text-[9px] tracking-[0.1em] uppercase hover:text-accent"
-            />
+            <DownloadPdfButton pdfUrl={`/api/invoices/${inv.id}/pdf`} label={ti.download} subtle />
           </div>
         ))}
       </div>
@@ -143,7 +158,6 @@ export default async function InvoicesPage({
             trailing={
               <>
                 {formatCurrency(inv.total, inv.currency)}
-                {inv.currency !== "CZK" && <span className="tag tag-neutral ml-1">{inv.currency}</span>}
               </>
             }
           />

@@ -12,7 +12,7 @@ export default async function EditUserPage({ params }: { params: Promise<{ id: s
 
   if (!canManageUsers(user)) {
     return (
-      <div>
+      <div className="max-w-3xl">
         <h1 className="text-xl font-semibold border-b-2 border-ink pb-2 mb-4">{t.settings.users.editAccount}</h1>
         <p className="text-lg font-semibold text-ink">{t.settings.users.noPermManageUsers}</p>
       </div>
@@ -27,7 +27,7 @@ export default async function EditUserPage({ params }: { params: Promise<{ id: s
   if (!target) notFound();
 
   return (
-    <div>
+    <div className="max-w-3xl">
       <BackLink href="/settings">{t.settings.users.settingsBackLink}</BackLink>
       <h1 className="text-[28px] font-bold tracking-tight border-b border-ink/14 pb-4 mb-5 mt-2">{t.settings.users.editName(target.name)}</h1>
       <EditUserForm

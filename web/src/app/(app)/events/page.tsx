@@ -9,6 +9,9 @@ import { WeekNav } from "@/components/calendar/WeekNav";
 import { mondayOf, parseIsoDate } from "@/lib/calendar";
 import { SegmentedTabs } from "@/components/ui/SegmentedTabs";
 import { MobileListRow } from "@/components/ui/MobileListRow";
+import { EmptyState } from "@/components/ui/EmptyState";
+import { FilterSelect } from "@/components/ui/FilterSelect";
+import { FilterSearch } from "@/components/ui/FilterSearch";
 import { getLocale, getDictionary, type Dictionary } from "@/lib/i18n";
 import type { EventStatus } from "@/generated/prisma/enums";
 
@@ -62,6 +65,7 @@ export default async function EventsPage({
   const { events, total, activeCount, clients, places } = await getEventList(user, filters);
   const now = new Date();
   const firstUpcomingId = events.find((e) => e.endDate >= now)?.id;
+  const eventParams = { status: filters.status, client: filters.client, place: filters.place, q: filters.q };
 
   return (
     <div>
@@ -69,48 +73,56 @@ export default async function EventsPage({
         <ViewHeader canCreate={canCreateEvent(user)} total={total} activeCount={activeCount} t={t} />
 
         <div className="flex items-center justify-between gap-2 mt-4 flex-wrap">
-          <ViewSwitch view="table" t={t} />
+          <div className="flex items-center gap-2 shrink-0">
+            <ViewSwitch view="table" t={t} />
+            {firstUpcomingId && (
+              <a href="#today-row" className="btno text-[9px]">
+                {t.events.today}
+              </a>
+            )}
+          </div>
 
-          <form method="get" className="flex gap-1.5 items-center flex-nowrap overflow-x-auto pb-1 md:pb-0 md:flex-wrap md:overflow-visible">
-            <select name="status" defaultValue={filters.status ?? ""} className="btno bg-transparent text-[9px] shrink-0">
-              <option value="">{t.events.statusFilter}</option>
-              {STATUSES.map((s) => (
-                <option key={s} value={s}>
-                  {t.statusEvent[s]}
-                </option>
-              ))}
-            </select>
-            <select name="client" defaultValue={filters.client ?? ""} className="btno bg-transparent text-[9px] shrink-0">
-              <option value="">{t.events.clientFilter}</option>
-              {clients.map((c) => (
-                <option key={c} value={c}>
-                  {c}
-                </option>
-              ))}
-            </select>
-            <select name="place" defaultValue={filters.place ?? ""} className="btno bg-transparent text-[9px] shrink-0">
-              <option value="">{t.events.placeFilter}</option>
-              {places.map((p) => (
-                <option key={p} value={p}>
-                  {p}
-                </option>
-              ))}
-            </select>
-            <input
-              name="q"
-              defaultValue={filters.q ?? ""}
-              placeholder={t.common.search}
-              className="input text-[9px] py-1.5 w-[110px] shrink-0"
+          <div className="flex gap-1.5 items-center flex-nowrap overflow-x-auto pb-1 md:pb-0 md:flex-wrap md:overflow-visible">
+            <FilterSelect
+              label={t.events.statusFilter}
+              value={filters.status ?? ""}
+              options={STATUSES.map((s) => ({ value: s, label: t.statusEvent[s] }))}
+              basePath="/events"
+              params={eventParams}
+              paramName="status"
+              anyLabel={t.events.anyStatus}
             />
-            <button type="submit" className="btno text-[9px] shrink-0">
-              {t.events.apply}
-            </button>
+            <FilterSelect
+              label={t.events.clientFilter}
+              value={filters.client ?? ""}
+              options={clients.map((c) => ({ value: c, label: c }))}
+              basePath="/events"
+              params={eventParams}
+              paramName="client"
+              searchable
+              searchPlaceholder={t.events.searchClients}
+              emptyLabel={t.events.filterNoMatches}
+              anyLabel={t.events.anyClient}
+            />
+            <FilterSelect
+              label={t.events.placeFilter}
+              value={filters.place ?? ""}
+              options={places.map((p) => ({ value: p, label: p }))}
+              basePath="/events"
+              params={eventParams}
+              paramName="place"
+              searchable
+              searchPlaceholder={t.events.searchPlaces}
+              emptyLabel={t.events.filterNoMatches}
+              anyLabel={t.events.anyPlace}
+            />
+            <FilterSearch value={filters.q ?? ""} basePath="/events" params={eventParams} placeholder={t.common.search} />
             {(filters.q || filters.status || filters.client || filters.place) && (
               <Link href="/events" className="text-[9px] placeholder-text hover:text-ink underline underline-offset-2 shrink-0">
                 {t.events.clear}
               </Link>
             )}
-          </form>
+          </div>
         </div>
       </div>
 
@@ -162,13 +174,16 @@ export default async function EventsPage({
         ))}
       </div>
 
-      {events.length === 0 && <p className="text-sm placeholder-text mt-4">{t.events.noEventsMatch}</p>}
+      {events.length === 0 && (
+        <EmptyState
+          message={t.events.noEventsMatch}
+          actionLabel={canCreateEvent(user) && !(filters.q || filters.status || filters.client || filters.place) ? t.events.newEvent : undefined}
+          actionHref="/events/new"
+        />
+      )}
 
-      <div className="flex items-center justify-between mt-4 px-3.5">
+      <div className="mt-4 px-3.5">
         <div className="label">{t.events.sortedBy(events.length, total)}</div>
-        <a href="#today-row" className="btno text-[9px]">
-          {t.events.today}
-        </a>
       </div>
     </div>
   );

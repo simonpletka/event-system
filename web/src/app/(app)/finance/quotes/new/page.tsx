@@ -16,7 +16,7 @@ export default async function NewQuotePage({
 
   if (!canManageFinance(user)) {
     return (
-      <div>
+      <div className="max-w-3xl">
         <h1 className="text-xl font-semibold border-b-2 border-ink pb-2 mb-4">{t.finance.quotes.newQuoteH1}</h1>
         <p className="text-lg font-semibold text-ink">{t.finance.quotes.noPermCreate}</p>
       </div>
@@ -33,7 +33,7 @@ export default async function NewQuotePage({
   ]);
 
   return (
-    <div>
+    <div className="max-w-3xl">
       <h1 className="text-xl font-semibold border-b-2 border-ink pb-2 mb-4">{t.finance.quotes.newQuoteH1}</h1>
       <QuoteForm events={events} categories={categoryRows.map((c) => c.name)} initialEventId={params.eventId} locale={locale} />
     </div>

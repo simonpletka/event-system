@@ -2,7 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { requireUser, canManageFinance } from "@/lib/authz";
 import { getEventDetail } from "@/lib/queries/events";
-import { formatCurrency, formatDate, formatMinutes } from "@/lib/format";
+import { formatCurrency, formatDate, formatDateRange, formatMinutes } from "@/lib/format";
 import { QuoteStatusPill, InvoiceStatusPill } from "@/components/StatusPill";
 import { getRunningTimer } from "@/lib/queries/timetracker";
 import { startTimerAction } from "@/lib/actions/timetracker";
@@ -31,7 +31,7 @@ export default async function EventOverviewPage({ params }: { params: Promise<{ 
 
         <div className="label mt-3.5">{te.dates}</div>
         <Row label={te.buildPrep} value={event.buildDate ? formatDate(event.buildDate, { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" }) : "—"} />
-        <Row label={te.eventDays} value={`${formatDate(event.startDate)} – ${formatDate(event.endDate)}`} />
+        <Row label={te.eventDays} value={formatDateRange(event.startDate, event.endDate)} />
         <Row label={te.strike} value={event.strikeDate ? formatDate(event.strikeDate, { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" }) : "—"} />
 
         <div className="label mt-3.5">
@@ -97,6 +97,14 @@ export default async function EventOverviewPage({ params }: { params: Promise<{ 
           <div className="heading-label !text-[12px]">{te.budgetVsActual}</div>
           <div className="text-2xl font-semibold tracking-tight mt-1">{formatCurrency(event.quotedValue)}</div>
           <div className="placeholder-text text-[10px]">{te.quotedValue}</div>
+          {event.quotedValue > 0 && totalExpenses > 0 && (
+            <div className="mt-2.5 h-1.5 rounded-full bg-ink/10 overflow-hidden" title={te.expenses}>
+              <div
+                className={`h-full rounded-full ${totalExpenses > event.quotedValue ? "bg-warning" : "bg-ink/40"}`}
+                style={{ width: `${Math.min(100, (totalExpenses / event.quotedValue) * 100)}%` }}
+              />
+            </div>
+          )}
           <div className="mt-2">
             <Row label={te.expenses} value={formatCurrency(totalExpenses)} />
             <Row label={te.invoiced} value={formatCurrency(totalInvoiced)} />

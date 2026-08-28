@@ -17,7 +17,7 @@ export default async function EditEventPage({ params }: { params: Promise<{ id: 
   const clients = editable ? await getClientOptions() : [];
 
   return (
-    <div>
+    <div className="max-w-3xl">
       <h1 className="text-xl font-semibold border-b-2 border-ink pb-2 mb-4">{t.events.editEventH1}</h1>
       {!editable ? (
         <p className="text-lg font-semibold text-ink">{t.events.noPermEdit}</p>

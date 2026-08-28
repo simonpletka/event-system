@@ -6,6 +6,7 @@ import { createInvoiceAction, type FinanceFormState } from "@/lib/actions/financ
 import { LineItemsFields, BLANK_ITEM, type LineItem } from "./LineItemsFields";
 import { EventPicker, type PickableEvent } from "@/components/EventPicker";
 import { CancelLink } from "@/components/ui/CancelLink";
+import { DateTimeField } from "@/components/ui/DateTimeField";
 import type { Currency, DiscountType } from "@/generated/prisma/enums";
 import { getDictionary, type Locale } from "@/lib/dictionary";
 
@@ -49,19 +50,19 @@ export function InvoiceForm({
   }
 
   return (
-    <form action={formAction} className="max-w-3xl flex flex-col gap-4">
+    <form action={formAction} className="w-full flex flex-col gap-4">
       <label className="flex flex-col gap-1.5">
-        <span className="heading-label">{tf.eventLabel}</span>
+        <span className="field-label">{tf.eventLabel}</span>
         <EventPicker name="eventId" initialEvents={events} required onSelect={handleEventSelect} t={t.events.picker} />
       </label>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-3 max-w-xs">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-3 max-w-sm">
         <label className="flex flex-col gap-1.5">
-          <span className="heading-label">{tf.dueDateLabel}</span>
-          <input name="dueDate" type="date" required defaultValue={defaultDueDate} className="input" />
+          <span className="field-label">{tf.dueDateLabel}</span>
+          <DateTimeField name="dueDate" required defaultValue={defaultDueDate} />
         </label>
         <label className="flex flex-col gap-1.5">
-          <span className="heading-label">{tf.currencyLabel}</span>
+          <span className="field-label">{tf.currencyLabel}</span>
           <select name="currency" value={currency} onChange={(e) => setCurrency(e.target.value as Currency)} className="input">
             <option value="CZK">CZK</option>
             <option value="EUR">EUR</option>
@@ -84,7 +85,7 @@ export function InvoiceForm({
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-3 max-w-md">
         <label className="flex flex-col gap-1.5">
-          <span className="heading-label">{tf.discountLabel}</span>
+          <span className="field-label">{tf.discountLabel}</span>
           <select
             name="discountType"
             value={discountType}
@@ -98,7 +99,7 @@ export function InvoiceForm({
         </label>
         {discountType !== "NONE" && (
           <label className="flex flex-col gap-1.5">
-            <span className="heading-label">{discountType === "PERCENT" ? tf.percentLabel : tf.amountLabel(currency)}</span>
+            <span className="field-label">{discountType === "PERCENT" ? tf.percentLabel : tf.amountLabel(currency)}</span>
             <input
               name="discountValue"
               type="number"

@@ -38,6 +38,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
           events={assignableEvents}
           tNav={t.nav}
           tSidebar={t.sidebar}
+          tTimeTracker={{ tabTracking: t.timeTracker.tabTracking, tabReport: t.timeTracker.tabReport }}
           tElapsed={t.timeTracker.editableElapsed}
           discardedMessage={t.timeTracker.runningTimer.discardedTooShort}
         />

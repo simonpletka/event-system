@@ -24,6 +24,7 @@ export default async function ClientDetailPage({ params }: { params: Promise<{ i
   return (
     <div>
       <div className="sticky top-0 z-20 -mx-6 mt-0 md:-mt-5 px-6 pt-5 pb-4 backdrop-blur-2xl bg-gradient-to-b from-bg/80 to-bg/50 border-b border-ink/10">
+        <div className="max-w-6xl">
         <BackLink href="/clients">{tc.backLink}</BackLink>
         <div className="flex justify-between items-end flex-wrap gap-2 mt-2">
           <div className="text-[2.5rem] font-semibold leading-none">{client.name}</div>
@@ -33,9 +34,10 @@ export default async function ClientDetailPage({ params }: { params: Promise<{ i
             </Link>
           )}
         </div>
+        </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-[1fr_300px] gap-5 mt-5">
+      <div className="grid grid-cols-1 md:grid-cols-[1fr_300px] gap-5 mt-5 max-w-6xl">
         <div>
           <div className="flex items-center justify-between mb-2">
             <div className="heading-label !text-[12px]">{tc.contactsHeading}</div>
@@ -154,8 +156,12 @@ export default async function ClientDetailPage({ params }: { params: Promise<{ i
 
           <div className="h-px bg-ink/8 my-3.5" />
           <div className="heading-label">{tc.totalChargedHeading}</div>
-          <div className="text-2xl font-semibold tracking-tight mt-1.5">{formatCurrency(client.totalCharged)}</div>
+          <div className="text-2xl font-semibold tracking-tight mt-1.5">
+            {formatCurrency(client.totalCharged)}
+            {client.totalMixed && <span className="placeholder-text text-base align-top">&thinsp;*</span>}
+          </div>
           <div className="placeholder-text text-[10px] mt-0.5">{tc.acrossEvents(client.events.length)}</div>
+          {client.totalMixed && <div className="placeholder-text text-[10px] mt-1">{tc.mixedCurrencyNote}</div>}
 
           {isAdmin(user) && (
             <>

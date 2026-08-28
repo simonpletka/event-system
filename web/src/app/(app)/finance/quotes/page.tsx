@@ -1,10 +1,14 @@
 import Link from "next/link";
-import { requireUser, canManageFinance, isAdmin } from "@/lib/authz";
+import { requireUser, canManageFinance } from "@/lib/authz";
 import { getQuoteList, type QuoteListFilters } from "@/lib/queries/finance";
 import { formatCurrency, formatDate } from "@/lib/format";
 import { QuoteStatusPill } from "@/components/StatusPill";
-import { convertQuoteToInvoiceAction, deleteQuoteAction, duplicateQuoteAction } from "@/lib/actions/finance";
-import { ConfirmDeleteButton } from "@/components/ui/ConfirmDeleteButton";
+import { convertQuoteToInvoiceAction, duplicateQuoteAction } from "@/lib/actions/finance";
+import { DownloadPdfButton } from "@/components/finance/DownloadPdfButton";
+import { FinanceSortMenu } from "@/components/finance/FinanceSortMenu";
+import { FilterSelect } from "@/components/ui/FilterSelect";
+import { FilterSearch } from "@/components/ui/FilterSearch";
+import { EmptyState } from "@/components/ui/EmptyState";
 import { getLocale, getDictionary } from "@/lib/i18n";
 import type { QuoteStatus } from "@/generated/prisma/enums";
 
@@ -23,60 +27,65 @@ export default async function QuotesPage({
     status: (params.status as QuoteStatus) || undefined,
     eventId: params.eventId || undefined,
     year: params.year ? Number(params.year) : undefined,
+    sort: params.sort || undefined,
   };
   const { quotes, openValue, events, year } = await getQuoteList(user, filters);
   const canManage = canManageFinance(user);
-  const admin = isAdmin(user);
+  const quoteParams = {
+    status: filters.status,
+    eventId: filters.eventId,
+    year: String(year),
+    q: filters.q,
+    sort: filters.sort,
+  };
 
   return (
     <div>
       <div className="flex justify-between items-center gap-2 flex-wrap">
-        <form
-          method="get"
-          className="flex gap-1.5 items-center flex-nowrap overflow-x-auto pb-1 md:pb-0 md:flex-wrap md:overflow-visible"
-        >
-          <select name="status" defaultValue={filters.status ?? ""} className="btno bg-transparent text-[9px] shrink-0">
-            <option value="">{t.finance.quotes.statusFilter}</option>
-            {STATUSES.map((s) => (
-              <option key={s} value={s}>
-                {t.statusQuote[s]}
-              </option>
-            ))}
-          </select>
-          <select name="eventId" defaultValue={filters.eventId ?? ""} className="btno bg-transparent text-[9px] shrink-0">
-            <option value="">{t.finance.quotes.eventFilter}</option>
-            {events.map((e) => (
-              <option key={e.id} value={e.id}>
-                {e.title}
-              </option>
-            ))}
-          </select>
-          <select name="year" defaultValue={String(year)} className="btno bg-transparent text-[9px] shrink-0">
-            {[year - 1, year, year + 1].map((y) => (
-              <option key={y} value={y}>
-                {y}
-              </option>
-            ))}
-          </select>
-          <input
-            name="q"
-            defaultValue={filters.q ?? ""}
-            placeholder={t.common.search}
-            className="input text-[9px] py-1.5 w-[110px] shrink-0"
+        <div className="flex gap-1.5 items-center flex-nowrap overflow-x-auto pb-1 md:pb-0 md:flex-wrap md:overflow-visible">
+          <FilterSelect
+            label={t.finance.quotes.statusFilter}
+            value={filters.status ?? ""}
+            options={STATUSES.map((s) => ({ value: s, label: t.statusQuote[s] }))}
+            basePath="/finance/quotes"
+            params={quoteParams}
+            paramName="status"
+            anyLabel={t.finance.filters.anyStatus}
           />
-          <button type="submit" className="btno text-[9px] shrink-0">
-            {t.finance.quotes.apply}
-          </button>
-        </form>
-        {canManage && (
-          <Link href="/finance/quotes/new" className="btn font-semibold">
-            {t.finance.quotes.newQuote}
-          </Link>
-        )}
+          <FilterSelect
+            label={t.finance.quotes.eventFilter}
+            value={filters.eventId ?? ""}
+            options={events.map((e) => ({ value: e.id, label: e.title }))}
+            basePath="/finance/quotes"
+            params={quoteParams}
+            paramName="eventId"
+            searchable
+            searchPlaceholder={t.finance.filters.searchEvents}
+            emptyLabel={t.finance.filters.noMatches}
+            anyLabel={t.finance.filters.anyEvent}
+          />
+          <FilterSelect
+            label={String(year)}
+            value={String(year)}
+            options={[year - 1, year, year + 1].map((y) => ({ value: String(y), label: String(y) }))}
+            basePath="/finance/quotes"
+            params={quoteParams}
+            paramName="year"
+          />
+          <FilterSearch value={filters.q ?? ""} basePath="/finance/quotes" params={quoteParams} placeholder={t.common.search} />
+        </div>
+        <div className="flex items-center gap-2 shrink-0">
+          <FinanceSortMenu current={filters.sort} basePath="/finance/quotes" params={quoteParams} t={t.finance.sort} />
+          {canManage && (
+            <Link href="/finance/quotes/new" className="btn font-semibold">
+              {t.finance.quotes.newQuote}
+            </Link>
+          )}
+        </div>
       </div>
 
       <div className="hidden md:block">
-        <div className="grid grid-cols-[.8fr_1.3fr_1fr_.7fr_.7fr_.8fr_.9fr_1fr] gap-2.5 border-b border-ink/14 pb-1.5 mt-5 px-3.5 [&_.heading-label]:font-bold [&_.heading-label]:!text-[9px]">
+        <div className="grid grid-cols-[.8fr_1.3fr_1fr_.7fr_.7fr_.8fr_.9fr_.9fr_.55fr] gap-2.5 border-b border-ink/14 pb-1.5 mt-5 px-3.5 [&_.heading-label]:font-bold [&_.heading-label]:!text-[9px]">
           <span className="heading-label">{t.finance.quotes.colNumber}</span>
           <span className="heading-label">{t.finance.quotes.colEvent}</span>
           <span className="heading-label">{t.finance.quotes.colClient}</span>
@@ -85,12 +94,13 @@ export default async function QuotesPage({
           <span className="heading-label">{t.finance.quotes.colTotal}</span>
           <span className="heading-label">{t.finance.quotes.colStatus}</span>
           <span className="heading-label"></span>
+          <span className="heading-label">{t.finance.quotes.pdf}</span>
         </div>
 
         {quotes.map((q) => (
           <div
             key={q.id}
-            className="group grid grid-cols-[.8fr_1.3fr_1fr_.7fr_.7fr_.8fr_.9fr_1fr] gap-2.5 items-center py-3.5 px-3.5 rounded-xl border-b border-ink/8 last:border-b-0 text-[15px] hover:bg-ink/5"
+            className="group grid grid-cols-[.8fr_1.3fr_1fr_.7fr_.7fr_.8fr_.9fr_.9fr_.55fr] gap-2.5 items-center py-3.5 px-3.5 rounded-xl border-b border-ink/8 last:border-b-0 text-[15px] hover:bg-ink/5"
           >
             <Link href={`/finance/quotes/${q.id}`} className="font-medium group-hover:text-accent">
               {q.number}
@@ -103,16 +113,15 @@ export default async function QuotesPage({
             <div className="placeholder-text group-hover:!text-accent">{formatDate(q.validUntil)}</div>
             <div className="font-semibold tabular-nums group-hover:text-accent">
               {formatCurrency(q.total, q.currency)}
-              {q.currency !== "CZK" && <span className="tag tag-neutral ml-1">{q.currency}</span>}
             </div>
             <div>
               <QuoteStatusPill status={q.status} t={t.statusQuote} />
             </div>
-            <div className="flex items-center justify-between gap-2 text-[9px] tracking-[0.1em] uppercase">
+            <div className="flex items-center justify-end text-[9px] tracking-[0.1em] uppercase">
               {q.status === "ACCEPTED" && q.invoices.length === 0 && canManage ? (
                 <form action={convertQuoteToInvoiceAction}>
                   <input type="hidden" name="quoteId" value={q.id} />
-                  <button type="submit" className="text-accent hover:underline">
+                  <button type="submit" className="text-accent hover:opacity-70">
                     {t.finance.quotes.convertToInvoice}
                   </button>
                 </form>
@@ -121,13 +130,13 @@ export default async function QuotesPage({
                   {t.finance.quotes.invoicedAs(q.invoices[0].number)}
                 </Link>
               ) : q.status === "DRAFT" && canManage ? (
-                <Link href={`/finance/quotes/${q.id}/edit`} className="hover:text-ink">
+                <Link href={`/finance/quotes/${q.id}/edit`} className="placeholder-text hover:text-ink">
                   {t.finance.quotes.edit}
                 </Link>
               ) : q.status === "DECLINED" && canManage ? (
                 <form action={duplicateQuoteAction}>
                   <input type="hidden" name="id" value={q.id} />
-                  <button type="submit" className="hover:text-ink">
+                  <button type="submit" className="placeholder-text hover:text-ink">
                     {t.finance.quotes.createNew}
                   </button>
                 </form>
@@ -136,17 +145,8 @@ export default async function QuotesPage({
                   {t.finance.quotes.remindClient}
                 </span>
               )}
-              {admin && (
-                <ConfirmDeleteButton
-                  action={deleteQuoteAction}
-                  fields={{ id: q.id }}
-                  label={t.common.delete}
-                  pendingLabel={t.common.deleting}
-                  confirmMessage={t.finance.quotes.confirmDelete(q.number)}
-                  className="placeholder-text hover:text-warning"
-                />
-              )}
             </div>
+            <DownloadPdfButton pdfUrl={`/api/quotes/${q.id}/pdf`} label={t.finance.quotes.download} subtle />
           </div>
         ))}
       </div>
@@ -172,14 +172,13 @@ export default async function QuotesPage({
               </div>
               <div className="text-right shrink-0 text-[13px] font-semibold">
                 {formatCurrency(q.total, q.currency)}
-                {q.currency !== "CZK" && <span className="tag tag-neutral ml-1">{q.currency}</span>}
               </div>
             </Link>
             <div className="flex items-center justify-between gap-2 text-[9px] tracking-[0.1em] uppercase px-3.5 pb-3 pt-2.5 border-t border-ink/8">
               {q.status === "ACCEPTED" && q.invoices.length === 0 && canManage ? (
                 <form action={convertQuoteToInvoiceAction}>
                   <input type="hidden" name="quoteId" value={q.id} />
-                  <button type="submit" className="text-accent hover:underline">
+                  <button type="submit" className="text-accent hover:opacity-70">
                     {t.finance.quotes.convertToInvoice}
                   </button>
                 </form>
@@ -188,13 +187,13 @@ export default async function QuotesPage({
                   {t.finance.quotes.invoicedAs(q.invoices[0].number)}
                 </Link>
               ) : q.status === "DRAFT" && canManage ? (
-                <Link href={`/finance/quotes/${q.id}/edit`} className="hover:text-ink">
+                <Link href={`/finance/quotes/${q.id}/edit`} className="placeholder-text hover:text-ink">
                   {t.finance.quotes.edit}
                 </Link>
               ) : q.status === "DECLINED" && canManage ? (
                 <form action={duplicateQuoteAction}>
                   <input type="hidden" name="id" value={q.id} />
-                  <button type="submit" className="hover:text-ink">
+                  <button type="submit" className="placeholder-text hover:text-ink">
                     {t.finance.quotes.createNew}
                   </button>
                 </form>
@@ -203,22 +202,19 @@ export default async function QuotesPage({
                   {t.finance.quotes.remindClient}
                 </span>
               )}
-              {admin && (
-                <ConfirmDeleteButton
-                  action={deleteQuoteAction}
-                  fields={{ id: q.id }}
-                  label={t.common.delete}
-                  pendingLabel={t.common.deleting}
-                  confirmMessage={t.finance.quotes.confirmDelete(q.number)}
-                  className="placeholder-text hover:text-warning"
-                />
-              )}
+              <DownloadPdfButton pdfUrl={`/api/quotes/${q.id}/pdf`} label={t.finance.quotes.download} subtle />
             </div>
           </div>
         ))}
       </div>
 
-      {quotes.length === 0 && <p className="text-sm placeholder-text mt-4">{t.finance.quotes.noQuotesForYear(year)}</p>}
+      {quotes.length === 0 && (
+        <EmptyState
+          message={t.finance.quotes.noQuotesForYear(year)}
+          actionLabel={canManage && !(filters.q || filters.status || filters.eventId) ? t.finance.quotes.newQuote : undefined}
+          actionHref="/finance/quotes/new"
+        />
+      )}
 
       <div className="flex justify-between mt-4 px-3.5">
         <div className="label">{t.finance.quotes.sortedByNote}</div>
