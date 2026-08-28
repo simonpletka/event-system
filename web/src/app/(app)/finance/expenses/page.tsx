@@ -8,6 +8,7 @@ import { ConfirmDeleteButton } from "@/components/ui/ConfirmDeleteButton";
 import { TrashIcon } from "@/components/ui/icons";
 import { Menu, MenuLink } from "@/components/ui/Menu";
 import { GroupIcon } from "@/components/ui/icons";
+import { FilterSelect } from "@/components/ui/FilterSelect";
 import { getLocale, getDictionary } from "@/lib/i18n";
 import type { ExpenseCategory } from "@/generated/prisma/enums";
 
@@ -59,31 +60,32 @@ export default async function ExpensesPage({
   return (
     <div>
       <div className="flex justify-between items-center gap-2 flex-wrap">
-        <form
-          method="get"
-          className="flex gap-1.5 items-center flex-nowrap overflow-x-auto pb-1 md:pb-0 md:flex-wrap md:overflow-visible"
-        >
-          <select name="eventId" defaultValue={filters.eventId ?? ""} className="btno bg-transparent text-[9px] shrink-0">
-            <option value="">{te.eventFilter}</option>
-            <option value="overhead">{te.companyOverheadOption}</option>
-            {events.map((e) => (
-              <option key={e.id} value={e.id}>
-                {e.title}
-              </option>
-            ))}
-          </select>
-          <select name="category" defaultValue={filters.category ?? ""} className="btno bg-transparent text-[9px] shrink-0">
-            <option value="">{te.categoryFilter}</option>
-            {EXPENSE_CATEGORIES.map((c) => (
-              <option key={c} value={c}>
-                {t.expenseCategories[c]}
-              </option>
-            ))}
-          </select>
-          <button type="submit" className="btno text-[9px] shrink-0">
-            {te.apply}
-          </button>
-        </form>
+        <div className="flex gap-1.5 items-center flex-nowrap overflow-x-auto pb-1 md:pb-0 md:flex-wrap md:overflow-visible">
+          <FilterSelect
+            label={te.eventFilter}
+            value={filters.eventId ?? ""}
+            options={[
+              { value: "overhead", label: te.companyOverheadOption },
+              ...events.map((e) => ({ value: e.id, label: e.title })),
+            ]}
+            basePath="/finance/expenses"
+            params={{ category: filters.category, group: params.group }}
+            paramName="eventId"
+            searchable
+            searchPlaceholder={t.finance.filters.searchEvents}
+            emptyLabel={t.finance.filters.noMatches}
+            anyLabel={t.finance.filters.anyEvent}
+          />
+          <FilterSelect
+            label={te.categoryFilter}
+            value={filters.category ?? ""}
+            options={EXPENSE_CATEGORIES.map((c) => ({ value: c, label: t.expenseCategories[c] }))}
+            basePath="/finance/expenses"
+            params={{ eventId: filters.eventId, group: params.group }}
+            paramName="category"
+            anyLabel={t.finance.filters.anyCategory}
+          />
+        </div>
         <div className="flex items-center gap-2 shrink-0">
           <Menu icon={<GroupIcon size={13} />} value={grouped ? t.finance.groupBy.event : t.finance.groupBy.none} width={150}>
             <MenuLink href={groupHref("")} active={!grouped}>

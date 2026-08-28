@@ -6,6 +6,8 @@ import { QuoteStatusPill } from "@/components/StatusPill";
 import { convertQuoteToInvoiceAction, duplicateQuoteAction } from "@/lib/actions/finance";
 import { DownloadPdfButton } from "@/components/finance/DownloadPdfButton";
 import { FinanceSortMenu } from "@/components/finance/FinanceSortMenu";
+import { FilterSelect } from "@/components/ui/FilterSelect";
+import { FilterSearch } from "@/components/ui/FilterSearch";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { getLocale, getDictionary } from "@/lib/i18n";
 import type { QuoteStatus } from "@/generated/prisma/enums";
@@ -29,54 +31,51 @@ export default async function QuotesPage({
   };
   const { quotes, openValue, events, year } = await getQuoteList(user, filters);
   const canManage = canManageFinance(user);
+  const quoteParams = {
+    status: filters.status,
+    eventId: filters.eventId,
+    year: String(year),
+    q: filters.q,
+    sort: filters.sort,
+  };
 
   return (
     <div>
       <div className="flex justify-between items-center gap-2 flex-wrap">
-        <form
-          method="get"
-          className="flex gap-1.5 items-center flex-nowrap overflow-x-auto pb-1 md:pb-0 md:flex-wrap md:overflow-visible"
-        >
-          <select name="status" defaultValue={filters.status ?? ""} className="btno bg-transparent text-[9px] shrink-0">
-            <option value="">{t.finance.quotes.statusFilter}</option>
-            {STATUSES.map((s) => (
-              <option key={s} value={s}>
-                {t.statusQuote[s]}
-              </option>
-            ))}
-          </select>
-          <select name="eventId" defaultValue={filters.eventId ?? ""} className="btno bg-transparent text-[9px] shrink-0">
-            <option value="">{t.finance.quotes.eventFilter}</option>
-            {events.map((e) => (
-              <option key={e.id} value={e.id}>
-                {e.title}
-              </option>
-            ))}
-          </select>
-          <select name="year" defaultValue={String(year)} className="btno bg-transparent text-[9px] shrink-0">
-            {[year - 1, year, year + 1].map((y) => (
-              <option key={y} value={y}>
-                {y}
-              </option>
-            ))}
-          </select>
-          <input
-            name="q"
-            defaultValue={filters.q ?? ""}
-            placeholder={t.common.search}
-            className="input text-[9px] py-1.5 w-[110px] shrink-0"
-          />
-          <button type="submit" className="btno text-[9px] shrink-0">
-            {t.finance.quotes.apply}
-          </button>
-        </form>
-        <div className="flex items-center gap-2 shrink-0">
-          <FinanceSortMenu
-            current={filters.sort}
+        <div className="flex gap-1.5 items-center flex-nowrap overflow-x-auto pb-1 md:pb-0 md:flex-wrap md:overflow-visible">
+          <FilterSelect
+            label={t.finance.quotes.statusFilter}
+            value={filters.status ?? ""}
+            options={STATUSES.map((s) => ({ value: s, label: t.statusQuote[s] }))}
             basePath="/finance/quotes"
-            params={{ status: filters.status, eventId: filters.eventId, year: String(year), q: filters.q }}
-            t={t.finance.sort}
+            params={quoteParams}
+            paramName="status"
+            anyLabel={t.finance.filters.anyStatus}
           />
+          <FilterSelect
+            label={t.finance.quotes.eventFilter}
+            value={filters.eventId ?? ""}
+            options={events.map((e) => ({ value: e.id, label: e.title }))}
+            basePath="/finance/quotes"
+            params={quoteParams}
+            paramName="eventId"
+            searchable
+            searchPlaceholder={t.finance.filters.searchEvents}
+            emptyLabel={t.finance.filters.noMatches}
+            anyLabel={t.finance.filters.anyEvent}
+          />
+          <FilterSelect
+            label={String(year)}
+            value={String(year)}
+            options={[year - 1, year, year + 1].map((y) => ({ value: String(y), label: String(y) }))}
+            basePath="/finance/quotes"
+            params={quoteParams}
+            paramName="year"
+          />
+          <FilterSearch value={filters.q ?? ""} basePath="/finance/quotes" params={quoteParams} placeholder={t.common.search} />
+        </div>
+        <div className="flex items-center gap-2 shrink-0">
+          <FinanceSortMenu current={filters.sort} basePath="/finance/quotes" params={quoteParams} t={t.finance.sort} />
           {canManage && (
             <Link href="/finance/quotes/new" className="btn font-semibold">
               {t.finance.quotes.newQuote}

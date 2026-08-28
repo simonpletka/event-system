@@ -5,6 +5,7 @@ import { formatCurrency, formatDate } from "@/lib/format";
 import { InvoiceStatusPill } from "@/components/StatusPill";
 import { DownloadPdfButton } from "@/components/finance/DownloadPdfButton";
 import { FinanceSortMenu } from "@/components/finance/FinanceSortMenu";
+import { FilterSelect } from "@/components/ui/FilterSelect";
 import { MobileListRow } from "@/components/ui/MobileListRow";
 import { getLocale, getDictionary, czCount, type Locale } from "@/lib/i18n";
 
@@ -87,21 +88,18 @@ export default async function InvoicesPage({
           ))}
         </div>
         <div className="flex items-center gap-2">
-          <form method="get" className="flex gap-1.5">
-            {filters.bucket && <input type="hidden" name="bucket" value={filters.bucket} />}
-            {filters.sort && <input type="hidden" name="sort" value={filters.sort} />}
-            <select name="eventId" defaultValue={filters.eventId ?? ""} className="btno bg-transparent text-[9px]">
-              <option value="">{ti.eventFilter}</option>
-              {events.map((e) => (
-                <option key={e.id} value={e.id}>
-                  {e.title}
-                </option>
-              ))}
-            </select>
-            <button type="submit" className="btno text-[9px]">
-              {ti.apply}
-            </button>
-          </form>
+          <FilterSelect
+            label={ti.eventFilter}
+            value={filters.eventId ?? ""}
+            options={events.map((e) => ({ value: e.id, label: e.title }))}
+            basePath="/finance/invoices"
+            params={{ bucket: filters.bucket, sort: filters.sort }}
+            paramName="eventId"
+            searchable
+            searchPlaceholder={t.finance.filters.searchEvents}
+            emptyLabel={t.finance.filters.noMatches}
+            anyLabel={t.finance.filters.anyEvent}
+          />
           <FinanceSortMenu
             current={filters.sort}
             basePath="/finance/invoices"
