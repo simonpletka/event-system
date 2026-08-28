@@ -70,7 +70,7 @@ export function Menu({
         }}
         className={
           triggerClassName ??
-          `inline-flex items-center gap-1.5 text-[12px] font-medium rounded-lg border px-2.5 py-1.5 transition-colors ${
+          `inline-flex items-center gap-1.5 text-[12px] font-medium rounded-full border px-3 py-1.5 transition-colors ${
             open ? "border-ink/35 text-ink" : "border-ink/13 text-ink/78 hover:border-ink/30 hover:text-ink"
           }`
         }

@@ -98,7 +98,7 @@ export function FilterSelect({
             toggle();
           }
         }}
-        className={`inline-flex items-center gap-1.5 text-[12px] font-medium rounded-lg border px-2.5 py-1.5 cursor-pointer transition-colors max-w-[220px] ${
+        className={`inline-flex items-center gap-1.5 text-[12px] font-medium rounded-full border px-3 py-1.5 cursor-pointer transition-colors max-w-[220px] ${
           activeStyle
             ? "border-accent/45 bg-accent/8 text-accent"
             : open
@@ -144,7 +144,7 @@ export function FilterSelect({
               value={q}
               onChange={(e) => setQ(e.target.value)}
               placeholder={searchPlaceholder}
-              className="input !text-[12px] !py-2"
+              className="input !text-[12px] !py-2 !rounded-full"
             />
           )}
           <div className="flex flex-col max-h-[300px] overflow-y-auto -mx-0.5 px-0.5">
