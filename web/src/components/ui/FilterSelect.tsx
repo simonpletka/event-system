@@ -42,10 +42,15 @@ export function FilterSelect({
 }) {
   const [open, setOpen] = useState(false);
   const [q, setQ] = useState("");
+  const [flipRight, setFlipRight] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
 
   function toggle() {
     setQ("");
+    if (!open) {
+      const rect = ref.current?.getBoundingClientRect();
+      if (rect) setFlipRight(rect.left + 240 + 12 > window.innerWidth);
+    }
     setOpen((o) => !o);
   }
 
@@ -77,9 +82,9 @@ export function FilterSelect({
       ? options.filter((o) => o.label.toLowerCase().includes(q.trim().toLowerCase()))
       : options;
 
-  const item = "block text-[11.5px] px-2.5 py-1.5 rounded-md transition-colors truncate";
+  const item = "block shrink-0 text-[13px] leading-6 px-2.5 py-1.5 rounded-md transition-colors truncate";
   const itemActive = "bg-ink/10 text-accent font-semibold";
-  const itemIdle = "text-ink/72 hover:bg-ink/6 hover:text-ink";
+  const itemIdle = "text-ink/85 hover:bg-ink/8 hover:text-ink";
 
   return (
     <div ref={ref} className="relative shrink-0">
@@ -128,17 +133,21 @@ export function FilterSelect({
       </div>
 
       {open && (
-        <div className="card absolute left-0 mt-1.5 p-1.5 z-30 w-[224px] flex flex-col gap-1 shadow-[0_18px_44px_rgba(0,0,0,0.5)]">
+        <div
+          className={`card absolute mt-1.5 p-1.5 z-30 w-[240px] flex flex-col gap-1.5 shadow-[0_18px_44px_rgba(0,0,0,0.5)] ${
+            flipRight ? "right-0" : "left-0"
+          }`}
+        >
           {searchable && (
             <input
               autoFocus
               value={q}
               onChange={(e) => setQ(e.target.value)}
               placeholder={searchPlaceholder}
-              className="input !text-[11px] !py-1.5"
+              className="input !text-[12px] !py-2"
             />
           )}
-          <div className="flex flex-col max-h-[248px] overflow-y-auto">
+          <div className="flex flex-col max-h-[300px] overflow-y-auto -mx-0.5 px-0.5">
             {anyLabel && (
               <Link href={href("")} className={`${item} ${!active ? itemActive : itemIdle}`}>
                 {anyLabel}

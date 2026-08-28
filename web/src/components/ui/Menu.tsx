@@ -30,7 +30,17 @@ export function Menu({
   children: ReactNode;
 }) {
   const [open, setOpen] = useState(false);
+  const [flip, setFlip] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
+
+  function toggle() {
+    if (!open) {
+      const rect = ref.current?.getBoundingClientRect();
+      // Open toward whichever side has room for the popover.
+      if (rect) setFlip(align === "left" ? rect.left + width + 12 > window.innerWidth : rect.right - width - 12 < 0);
+    }
+    setOpen((o) => !o);
+  }
 
   useEffect(() => {
     if (!open) return;
@@ -56,7 +66,7 @@ export function Menu({
         aria-expanded={open}
         onClick={(e) => {
           e.stopPropagation();
-          setOpen((o) => !o);
+          toggle();
         }}
         className={
           triggerClassName ??
@@ -86,7 +96,9 @@ export function Menu({
       {open && (
         <div
           role="menu"
-          className={`card absolute mt-1.5 p-1.5 z-30 flex flex-col gap-0.5 shadow-[0_18px_44px_rgba(0,0,0,0.5)] ${align === "right" ? "right-0" : "left-0"}`}
+          className={`card absolute mt-1.5 p-1.5 z-30 flex flex-col gap-0.5 shadow-[0_18px_44px_rgba(0,0,0,0.5)] ${
+            (align === "right") !== flip ? "right-0" : "left-0"
+          }`}
           style={{ width }}
         >
           {children}
@@ -96,9 +108,9 @@ export function Menu({
   );
 }
 
-const ITEM_BASE = "block w-full text-left text-[11.5px] px-2.5 py-1.5 rounded-md transition-colors";
+const ITEM_BASE = "block shrink-0 w-full text-left text-[13px] leading-6 px-2.5 py-1.5 rounded-md transition-colors";
 const ITEM_ACTIVE = "bg-ink/10 text-accent font-semibold";
-const ITEM_IDLE = "text-ink/72 hover:bg-ink/6 hover:text-ink";
+const ITEM_IDLE = "text-ink/85 hover:bg-ink/8 hover:text-ink";
 
 export function MenuLink({ href, active, children }: { href: string; active?: boolean; children: ReactNode }) {
   return (
