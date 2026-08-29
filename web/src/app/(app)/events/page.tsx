@@ -193,7 +193,9 @@ function ViewHeader({ canCreate, total, activeCount, t }: { canCreate: boolean; 
   return (
     <div className="flex items-end justify-between">
       <div>
-        {total !== undefined && <div className="heading-label">{t.events.headerCount(total, activeCount ?? 0)}</div>}
+        {/* Keep the line's height in both views so the switcher below doesn't jump
+            when toggling table <-> calendar (calendar has no count to show). */}
+        <div className="heading-label">{total !== undefined ? t.events.headerCount(total, activeCount ?? 0) : " "}</div>
         <h1 className="text-[28px] font-bold tracking-tight mt-1">{t.events.title}</h1>
       </div>
       {canCreate && (
@@ -209,6 +211,7 @@ function ViewSwitch({ view, t }: { view: "table" | "calendar"; t: Dictionary }) 
   return (
     <SegmentedTabs
       active={view}
+      animated={false}
       options={[
         { value: "table", label: t.events.viewTable, href: "/events" },
         { value: "calendar", label: t.events.viewCalendar, href: "/events?view=calendar" },
