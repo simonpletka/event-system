@@ -20,9 +20,9 @@ export default async function MilestonesTab({ params }: { params: Promise<{ id: 
     <div className="max-w-xl">
       <p className="text-[10px] placeholder-text mb-3">{tm.syncHelper}</p>
 
-      {event.milestones.length === 0 && <p className="text-sm placeholder-text">{tm.noMilestones}</p>}
+      {event.roadmapItems.length === 0 && <p className="text-sm placeholder-text">{tm.noMilestones}</p>}
       <div className="hidden md:block">
-        {event.milestones.map((m) => (
+        {event.roadmapItems.map((m) => (
           <div key={m.id} className="grid grid-cols-[110px_1fr_auto] gap-2.5 items-center py-2.5 border-b border-ink/10 text-[15px]">
             <div className="placeholder-text">{formatDateTime(m.date)}</div>
             <div>{m.title}</div>
@@ -39,7 +39,7 @@ export default async function MilestonesTab({ params }: { params: Promise<{ id: 
         ))}
       </div>
       <div className="md:hidden flex flex-col gap-2">
-        {event.milestones.map((m) => (
+        {event.roadmapItems.map((m) => (
           <div key={m.id} className="flex items-start justify-between gap-2.5 py-2.5 border-b border-ink/10 text-[13px]">
             <div className="min-w-0">
               <div className="font-medium">{m.title}</div>

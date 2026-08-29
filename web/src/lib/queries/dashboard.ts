@@ -24,7 +24,10 @@ export async function getDashboardData(user: SessionUser) {
       }),
       prisma.event.findMany({
         where: { ...eventWhere, endDate: { gte: now }, status: { notIn: ["CANCELLED", "CLOSED"] } },
-        include: { venues: true, milestones: { where: { date: { gte: now } }, orderBy: { date: "asc" }, take: 1 } },
+        include: {
+          venues: true,
+          roadmapItems: { where: { date: { gte: now } }, orderBy: { date: "asc" }, take: 1 },
+        },
         orderBy: { startDate: "asc" },
         take: 3,
       }),
@@ -77,7 +80,7 @@ export async function getDashboardTimeline(user: SessionUser): Promise<TimelineI
 
   const events = await prisma.event.findMany({
     where: { ...eventWhereForUser(user), status: { notIn: ["CANCELLED", "CLOSED"] }, startDate: { lte: horizon }, endDate: { gte: now } },
-    include: { milestones: { where: { date: { gte: now, lte: horizon } } } },
+    include: { roadmapItems: { where: { type: "MILESTONE", date: { gte: now, lte: horizon } } } },
     orderBy: { startDate: "asc" },
     take: 20,
   });
@@ -90,7 +93,7 @@ export async function getDashboardTimeline(user: SessionUser): Promise<TimelineI
     } else if (e.startDate >= now) {
       items.push({ date: e.startDate, kind: "start", label: "Event begins", eventId: e.id, eventTitle: e.title });
     }
-    for (const m of e.milestones) {
+    for (const m of e.roadmapItems) {
       items.push({ date: m.date, kind: "milestone", label: m.title, eventId: e.id, eventTitle: e.title });
     }
   }

@@ -31,10 +31,7 @@ export async function getEventList(user: SessionUser, filters: EventListFilters)
   const [events, total, clients, places] = await Promise.all([
     prisma.event.findMany({
       where,
-      include: {
-        venues: true,
-        milestones: { where: { date: { gte: new Date() } }, orderBy: { date: "asc" }, take: 1 },
-      },
+      include: { venues: true },
       orderBy: { startDate: "asc" },
     }),
     prisma.event.count({ where: eventWhereForUser(user) }),
@@ -66,7 +63,7 @@ export const getEventDetail = cache(async function getEventDetail(user: SessionU
     where: { id, ...eventWhereForUser(user) },
     include: {
       venues: true,
-      milestones: { orderBy: { date: "asc" } },
+      roadmapItems: { orderBy: { date: "asc" } },
       members: { include: { user: true } },
       owner: true,
       expenses: { include: { paidBy: true }, orderBy: { date: "desc" } },

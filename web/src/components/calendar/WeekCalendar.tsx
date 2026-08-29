@@ -24,7 +24,7 @@ export type CalendarEvent = {
   startDate: Date;
   endDate: Date;
   strikeDate: Date | null;
-  milestones: { id: string; title: string; date: Date }[];
+  roadmapItems: { id: string; title: string; date: Date }[];
   venues: { address: string }[];
 };
 
@@ -168,7 +168,7 @@ export function WeekCalendar({
   }
 
   function milestonesFor(day: Date) {
-    return events.flatMap((e) => e.milestones.filter((m) => isSameDay(m.date, day)).map((m) => ({ ...m, eventId: e.id, eventTitle: e.title })));
+    return events.flatMap((e) => e.roadmapItems.filter((m) => isSameDay(m.date, day)).map((m) => ({ ...m, eventId: e.id, eventTitle: e.title })));
   }
 
   type AllDayBar = {

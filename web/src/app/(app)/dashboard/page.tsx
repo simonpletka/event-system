@@ -145,7 +145,7 @@ export default async function DashboardPage({
                   <div className="h-px bg-ink/10" />
                   <div className="flex justify-between items-center px-4 py-2.5 text-[11px]">
                     <span className="heading-label">{t.dashboard.nextMilestone}</span>
-                    <span className="text-ink/75">{event.milestones[0]?.title ?? "—"}</span>
+                    <span className="text-ink/75">{event.roadmapItems[0]?.title ?? "—"}</span>
                   </div>
                 </Link>
               ))}

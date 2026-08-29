@@ -32,7 +32,7 @@ export default async function EventOverviewPage({ params }: { params: Promise<{ 
   const totalExpenses = event.expenses.reduce((s, e) => s + e.amount, 0);
   const totalInvoiced = event.invoices.reduce((s, i) => s + i.total, 0);
   const totalMinutes = event.timeEntries.reduce((s, e) => s + e.minutes, 0);
-  const upcomingMilestones = event.milestones.filter((m) => m.date >= new Date()).slice(0, 3);
+  const upcomingMilestones = event.roadmapItems.filter((m) => m.date >= new Date()).slice(0, 3);
   const uniquePeople = new Set(event.timeEntries.map((e) => e.userId));
   const runningTimer = await getRunningTimer(user.id);
 
