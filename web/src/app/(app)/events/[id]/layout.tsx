@@ -36,13 +36,15 @@ export default async function EventDetailLayout({
             <div className="text-[24px] font-bold tracking-tight">
               <span className="placeholder-text font-medium">{event.number}</span> {event.title}
             </div>
-            <div className="placeholder-text text-[12px] mt-1">
-              {event.companyName} · {formatDateRange(event.startDate, event.endDate)}
-              {event.venues[0] ? ` · ${event.venues[0].name}` : ""}
+            <div className="flex flex-wrap items-center gap-x-1.5 gap-y-1 text-[12px] mt-1.5">
+              <span className="placeholder-text">
+                {event.companyName} · {formatDateRange(event.startDate, event.endDate)}
+                {event.venues[0] ? ` · ${event.venues[0].name}` : ""}
+              </span>
+              <EventStatusPill status={event.status} t={t.statusEvent} />
             </div>
           </div>
           <div className="flex gap-1.5 items-center">
-            <EventStatusPill status={event.status} t={t.statusEvent} />
             {editable && (
               <Link href={`/events/${event.id}/edit`} className="btno">
                 {t.events.editEvent}
