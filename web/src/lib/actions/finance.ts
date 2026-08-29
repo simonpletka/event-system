@@ -101,7 +101,7 @@ export async function createQuoteAction(_prev: FinanceFormState, formData: FormD
   });
 
   revalidatePath("/finance/quotes");
-  revalidatePath(`/events/${eventId}`);
+  revalidatePath(`/events/${eventId}`, "layout");
   redirect(`/finance/quotes/${quote.id}`);
 }
 
@@ -226,7 +226,7 @@ export async function duplicateQuoteAction(formData: FormData) {
   });
 
   revalidatePath("/finance/quotes");
-  revalidatePath(`/events/${quote.eventId}`);
+  revalidatePath(`/events/${quote.eventId}`, "layout");
   redirect(`/finance/quotes/${duplicate.id}/edit`);
 }
 
@@ -242,7 +242,7 @@ export async function deleteQuoteAction(formData: FormData) {
   await prisma.quote.delete({ where: { id } });
 
   revalidatePath("/finance/quotes");
-  revalidatePath(`/events/${quote.eventId}`);
+  revalidatePath(`/events/${quote.eventId}`, "layout");
   redirect("/finance/quotes");
 }
 
@@ -295,7 +295,7 @@ export async function convertQuoteToInvoiceAction(formData: FormData) {
 
   revalidatePath("/finance/quotes");
   revalidatePath("/finance/invoices");
-  revalidatePath(`/events/${quote.eventId}`);
+  revalidatePath(`/events/${quote.eventId}`, "layout");
   redirect(`/finance/invoices/${invoice.id}`);
 }
 
@@ -351,7 +351,7 @@ export async function createInvoiceAction(_prev: FinanceFormState, formData: For
   });
 
   revalidatePath("/finance/invoices");
-  revalidatePath(`/events/${eventId}`);
+  revalidatePath(`/events/${eventId}`, "layout");
   redirect(`/finance/invoices/${invoice.id}`);
 }
 
@@ -500,7 +500,7 @@ export async function deleteInvoiceAction(formData: FormData) {
   await prisma.invoice.delete({ where: { id } });
 
   revalidatePath("/finance/invoices");
-  revalidatePath(`/events/${invoice.eventId}`);
+  revalidatePath(`/events/${invoice.eventId}`, "layout");
   redirect("/finance/invoices");
 }
 
@@ -563,7 +563,7 @@ export async function createExpenseAction(_prev: FinanceFormState, formData: For
 
   revalidatePath("/finance/expenses");
   revalidatePath("/dashboard");
-  if (eventId) revalidatePath(`/events/${eventId}`);
+  if (eventId) revalidatePath(`/events/${eventId}`, "layout");
 
   if (formData.get("again") === "1") return { success: true };
   redirect("/finance/expenses");
@@ -658,8 +658,8 @@ export async function updateExpenseAction(_prev: FinanceFormState, formData: For
 
   revalidatePath("/finance/expenses");
   revalidatePath("/dashboard");
-  if (eventId) revalidatePath(`/events/${eventId}`);
-  if (existing.eventId && existing.eventId !== eventId) revalidatePath(`/events/${existing.eventId}`);
+  if (eventId) revalidatePath(`/events/${eventId}`, "layout");
+  if (existing.eventId && existing.eventId !== eventId) revalidatePath(`/events/${existing.eventId}`, "layout");
 
   redirect("/finance/expenses");
 }
@@ -678,7 +678,7 @@ export async function deleteExpenseAction(formData: FormData) {
 
   revalidatePath("/finance/expenses");
   revalidatePath("/dashboard");
-  if (expense.eventId) revalidatePath(`/events/${expense.eventId}`);
+  if (expense.eventId) revalidatePath(`/events/${expense.eventId}`, "layout");
 }
 
 // --- Invoice emailing ---

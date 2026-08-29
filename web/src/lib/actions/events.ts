@@ -145,7 +145,7 @@ export async function updateEventAction(_prev: EventFormState, formData: FormDat
     }),
   ]);
 
-  revalidatePath(`/events/${id}`);
+  revalidatePath(`/events/${id}`, "layout");
   revalidatePath("/events");
   revalidatePath("/dashboard");
   redirect(`/events/${id}`);
@@ -245,7 +245,7 @@ export async function addMilestoneAction(formData: FormData) {
 
   await prisma.roadmapItem.create({ data: { eventId, title, date: new Date(date), type: "MILESTONE" } });
   revalidatePath(`/events/${eventId}/milestones`);
-  revalidatePath(`/events/${eventId}`);
+  revalidatePath(`/events/${eventId}`, "layout");
 }
 
 export async function deleteMilestoneAction(formData: FormData) {
@@ -259,7 +259,7 @@ export async function deleteMilestoneAction(formData: FormData) {
 
   await prisma.roadmapItem.delete({ where: { id: milestoneId } });
   revalidatePath(`/events/${eventId}/milestones`);
-  revalidatePath(`/events/${eventId}`);
+  revalidatePath(`/events/${eventId}`, "layout");
 }
 
 /**
@@ -282,7 +282,7 @@ export async function rescheduleMilestoneAction(formData: FormData) {
 
   await prisma.roadmapItem.update({ where: { id: milestoneId }, data: { date: new Date(date) } });
   revalidatePath(`/events/${eventId}/milestones`);
-  revalidatePath(`/events/${eventId}`);
+  revalidatePath(`/events/${eventId}`, "layout");
   revalidatePath("/events");
   revalidatePath("/dashboard");
 }
@@ -315,7 +315,7 @@ export async function rescheduleEventAction(formData: FormData) {
     },
   });
 
-  revalidatePath(`/events/${id}`);
+  revalidatePath(`/events/${id}`, "layout");
   revalidatePath("/events");
   revalidatePath("/dashboard");
 }

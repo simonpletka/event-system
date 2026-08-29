@@ -1,8 +1,8 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { requireUser, canEditEvent, isAdmin } from "@/lib/authz";
+import { requireUser, canEditEvent, isAdmin, canViewEventBudget } from "@/lib/authz";
 import { getEventDetail } from "@/lib/queries/events";
-import { formatDateRange, formatMinutes } from "@/lib/format";
+import { formatDateRange } from "@/lib/format";
 import { EventStatusPill } from "@/components/StatusPill";
 import { EventTabs } from "@/components/EventTabs";
 import { BackLink } from "@/components/BackLink";
@@ -24,7 +24,6 @@ export default async function EventDetailLayout({
   const locale = await getLocale();
   const t = getDictionary(locale);
 
-  const totalMinutes = event.timeEntries.reduce((s, t) => s + t.minutes, 0);
   const editable = canEditEvent(user, { ownerId: event.ownerId, memberIds: event.members.map((m) => m.userId) });
 
   return (
@@ -62,15 +61,11 @@ export default async function EventDetailLayout({
           </div>
         </div>
 
-        <EventTabs
-          eventId={event.id}
-          counts={{ expenses: event.expenses.length, time: formatMinutes(totalMinutes), docs: event.quotes.length + event.invoices.length }}
-          locale={locale}
-        />
+        <EventTabs eventId={event.id} showFinance={canViewEventBudget(user)} locale={locale} />
         </div>
       </div>
 
-      <div className="mt-4 max-w-6xl">{children}</div>
+      <div className="mt-7 max-w-6xl">{children}</div>
     </div>
   );
 }

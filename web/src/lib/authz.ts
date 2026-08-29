@@ -233,3 +233,12 @@ export function canManageClients(user: SessionUser) {
 export function isAdmin(user: SessionUser) {
   return user.customRole === null && user.role === "ADMIN";
 }
+
+/**
+ * Literal built-in Accountant (not a custom role). Only used to gate the
+ * budget "% of quoted value" basis line on the Finance tab — Producers see
+ * the budget figure but not how it relates to the client quote.
+ */
+export function isAccountant(user: SessionUser) {
+  return user.customRole === null && user.role === "ACCOUNTANT";
+}

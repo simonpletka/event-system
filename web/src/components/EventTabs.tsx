@@ -6,11 +6,11 @@ import { getDictionary, type Locale } from "@/lib/dictionary";
 
 export function EventTabs({
   eventId,
-  counts,
+  showFinance,
   locale,
 }: {
   eventId: string;
-  counts: { expenses: number; time: string; docs: number };
+  showFinance: boolean;
   locale: Locale;
 }) {
   const t = getDictionary(locale).events;
@@ -18,10 +18,8 @@ export function EventTabs({
   const base = `/events/${eventId}`;
   const tabs = [
     { value: "overview", href: base, label: t.tabOverview },
-    { value: "milestones", href: `${base}/milestones`, label: t.tabMilestones },
-    { value: "expenses", href: `${base}/expenses`, label: t.tabExpenses(counts.expenses) },
-    { value: "time", href: `${base}/time`, label: t.tabTime(counts.time) },
-    { value: "quotes", href: `${base}/quotes`, label: t.tabQuotesInvoices(counts.docs) },
+    { value: "roadmap", href: `${base}/roadmap`, label: t.tabRoadmap },
+    ...(showFinance ? [{ value: "finance", href: `${base}/finance`, label: t.tabFinance }] : []),
     { value: "files", href: `${base}/files`, label: t.tabFiles },
   ];
   const seg = pathname.slice(base.length).split("/")[1] || "overview";
