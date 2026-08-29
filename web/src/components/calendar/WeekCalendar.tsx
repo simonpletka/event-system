@@ -4,7 +4,8 @@ import { useEffect, useRef, useState, useTransition, type DragEvent } from "reac
 import Link from "next/link";
 import { addDays, dayHeaderLabel, isSameDay, isoWeekNumber, startOfDay, weekDays, assignColumns, overlapBoxStyle } from "@/lib/calendar";
 import { EventStatusPill } from "@/components/StatusPill";
-import { rescheduleMilestoneAction, rescheduleEventAction } from "@/lib/actions/events";
+import { rescheduleEventAction } from "@/lib/actions/events";
+import { rescheduleRoadmapItemAction } from "@/lib/actions/roadmap";
 import type { EventStatus } from "@/generated/prisma/enums";
 import { getDictionary, type Locale } from "@/lib/dictionary";
 
@@ -149,11 +150,10 @@ export function WeekCalendar({
         snappedMinutes % 60
       );
       const formData = new FormData();
-      formData.set("milestoneId", drag.milestoneId);
-      formData.set("eventId", drag.eventId);
+      formData.set("itemId", drag.milestoneId);
       formData.set("date", newDate.toISOString());
       startTransition(() => {
-        rescheduleMilestoneAction(formData);
+        rescheduleRoadmapItemAction(formData);
       });
     } else {
       const deltaDays = dayIdx - drag.anchorCol;

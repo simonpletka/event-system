@@ -75,3 +75,27 @@ export const getEventDetail = cache(async function getEventDetail(user: SessionU
   });
   return event;
 });
+
+/**
+ * The Roadmap tab's own query — the deep includes (assignees, external
+ * attendees, comment threads) that `getEventDetail` deliberately keeps
+ * shallow so Overview/Finance don't pay for them.
+ */
+export const getEventRoadmap = cache(async function getEventRoadmap(user: SessionUser, id: string) {
+  return prisma.event.findFirst({
+    where: { id, ...eventWhereForUser(user) },
+    include: {
+      members: { include: { user: true } },
+      contacts: { orderBy: { sortOrder: "asc" } },
+      roadmapItems: {
+        orderBy: { date: "asc" },
+        include: {
+          assignees: { include: { user: true } },
+          externalAttendees: true,
+          comments: { include: { author: true }, orderBy: { createdAt: "asc" } },
+          createdBy: true,
+        },
+      },
+    },
+  });
+});

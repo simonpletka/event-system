@@ -232,61 +232,6 @@ export async function quickCreateEventAction(_prev: QuickEventState, formData: F
   return { event: { id: event.id, title: event.title, companyName: event.companyName, quotedValue: event.quotedValue } };
 }
 
-export async function addMilestoneAction(formData: FormData) {
-  const user = await requireUser();
-  const eventId = String(formData.get("eventId"));
-  const title = String(formData.get("title") ?? "").trim();
-  const date = String(formData.get("date") ?? "");
-  if (!title || !date) return;
-
-  const event = await prisma.event.findUnique({ where: { id: eventId }, include: { members: true } });
-  if (!event) return;
-  if (!canEditEvent(user, { ownerId: event.ownerId, memberIds: event.members.map((m) => m.userId) })) return;
-
-  await prisma.roadmapItem.create({ data: { eventId, title, date: new Date(date), type: "MILESTONE" } });
-  revalidatePath(`/events/${eventId}/milestones`);
-  revalidatePath(`/events/${eventId}`, "layout");
-}
-
-export async function deleteMilestoneAction(formData: FormData) {
-  const user = await requireUser();
-  const milestoneId = String(formData.get("milestoneId"));
-  const eventId = String(formData.get("eventId"));
-
-  const event = await prisma.event.findUnique({ where: { id: eventId }, include: { members: true } });
-  if (!event) return;
-  if (!canEditEvent(user, { ownerId: event.ownerId, memberIds: event.members.map((m) => m.userId) })) return;
-
-  await prisma.roadmapItem.delete({ where: { id: milestoneId } });
-  revalidatePath(`/events/${eventId}/milestones`);
-  revalidatePath(`/events/${eventId}`, "layout");
-}
-
-/**
- * Drag-and-drop reschedule of a single milestone from the weekly calendar
- * (WeekCalendar.tsx) — sets its date/time directly to wherever it was
- * dropped in the grid. Silently no-ops on a missing event or a permission
- * failure (same defensive pattern as every other action here) since this is
- * fired from a drag gesture with no confirm step and no error UI to show.
- */
-export async function rescheduleMilestoneAction(formData: FormData) {
-  const user = await requireUser();
-  const milestoneId = String(formData.get("milestoneId"));
-  const eventId = String(formData.get("eventId"));
-  const date = String(formData.get("date") ?? "");
-  if (!date) return;
-
-  const event = await prisma.event.findUnique({ where: { id: eventId }, include: { members: true } });
-  if (!event) return;
-  if (!canEditEvent(user, { ownerId: event.ownerId, memberIds: event.members.map((m) => m.userId) })) return;
-
-  await prisma.roadmapItem.update({ where: { id: milestoneId }, data: { date: new Date(date) } });
-  revalidatePath(`/events/${eventId}/milestones`);
-  revalidatePath(`/events/${eventId}`, "layout");
-  revalidatePath("/events");
-  revalidatePath("/dashboard");
-}
-
 /**
  * Drag-and-drop reschedule of a whole event from the weekly calendar — shifts
  * buildDate/startDate/endDate/strikeDate (whichever are set) by the same
