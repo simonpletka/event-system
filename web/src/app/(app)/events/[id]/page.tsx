@@ -5,8 +5,8 @@ import { getEventDetail } from "@/lib/queries/events";
 import { resolveEventBudget } from "@/lib/event-budget";
 import { formatCurrency, formatDate, formatDateRange, formatMinutes } from "@/lib/format";
 import { QuoteStatusPill, InvoiceStatusPill } from "@/components/StatusPill";
-import { getRunningTimer } from "@/lib/queries/timetracker";
-import { startTimerAction } from "@/lib/actions/timetracker";
+import { EventTimerButton } from "@/components/events/EventTimerButton";
+import { getRunningTimer, getOverviewUsers } from "@/lib/queries/timetracker";
 import { getLocale, getDictionary } from "@/lib/i18n";
 
 const DATE_TIME: Intl.DateTimeFormatOptions = { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" };
@@ -34,6 +34,7 @@ export default async function EventOverviewPage({ params }: { params: Promise<{ 
   const upcomingItems = event.roadmapItems.filter((m) => m.date >= new Date()).slice(0, 3);
   const uniquePeople = new Set(event.timeEntries.map((e) => e.userId));
   const runningTimer = await getRunningTimer(user.id);
+  const allUserIds = (await getOverviewUsers()).map((u) => u.id).join(",");
 
   const showFinance = canViewEventBudget(user);
   const budget = resolveEventBudget(event);
@@ -171,19 +172,28 @@ export default async function EventOverviewPage({ params }: { params: Promise<{ 
           )}
 
           <div className="card p-4">
-            <div className="heading-label !text-[9px]">{te.timeLogged}</div>
-            <div className="text-lg font-semibold mt-1">{formatMinutes(totalMinutes)}</div>
-            <div className="placeholder-text text-[10px]">{te.peopleCount(uniquePeople.size)}</div>
-            {runningTimer?.eventId === event.id ? (
-              <div className="btno block text-center mt-3 opacity-50 cursor-default">{te.timerRunningHere}</div>
-            ) : (
-              <form action={startTimerAction}>
-                <input type="hidden" name="eventId" value={event.id} />
-                <button type="submit" className="btno block w-full text-center mt-3">
-                  {te.startTimer}
-                </button>
-              </form>
-            )}
+            <div className="flex items-center justify-between">
+              <span className="heading-label !text-[9px]">{te.timeLogged}</span>
+              <Link
+                href={`/time-tracker/report?events=${event.id}&users=${allUserIds}`}
+                className="text-[8px] tracking-[0.14em] uppercase font-semibold placeholder-text hover:text-accent"
+              >
+                {te.showAllLogs}
+              </Link>
+            </div>
+            <div className="flex items-end justify-between mt-1">
+              <div>
+                <div className="text-lg font-semibold">{formatMinutes(totalMinutes)}</div>
+                <div className="placeholder-text text-[10px]">{te.peopleCount(uniquePeople.size)}</div>
+              </div>
+              <EventTimerButton
+                eventId={event.id}
+                running={runningTimer?.eventId === event.id}
+                startLabel={te.startTimer}
+                stopLabel={te.stopTimer}
+                discardedMessage={t.timeTracker.runningTimer.discardedTooShort}
+              />
+            </div>
           </div>
 
           {showFinance && (
