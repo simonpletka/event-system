@@ -6,6 +6,7 @@ import { InvoiceStatusPill } from "@/components/StatusPill";
 import { DownloadPdfButton } from "@/components/finance/DownloadPdfButton";
 import { FinanceSortMenu } from "@/components/finance/FinanceSortMenu";
 import { FilterSelect } from "@/components/ui/FilterSelect";
+import { groupEventOptions } from "@/lib/event-status";
 import { MobileListRow } from "@/components/ui/MobileListRow";
 import { getLocale, getDictionary, czCount, type Locale } from "@/lib/i18n";
 
@@ -91,7 +92,7 @@ export default async function InvoicesPage({
           <FilterSelect
             label={ti.eventFilter}
             value={filters.eventId ?? ""}
-            options={events.map((e) => ({ value: e.id, label: e.title }))}
+            groups={groupEventOptions(events, { active: t.finance.filters.activeEvents, inactive: t.finance.filters.pastEvents })}
             basePath="/finance/invoices"
             params={{ bucket: filters.bucket, sort: filters.sort }}
             paramName="eventId"

@@ -255,6 +255,44 @@ const en = {
     team: "Team",
     ownerOnly: (name: string) => `Owner only (${name})`,
 
+    stats: {
+      buildDay: "Build day",
+      buildRelative: (days: number | null) =>
+        days === null
+          ? "Not set"
+          : days < 0
+            ? `${-days} day${days === -1 ? "" : "s"} ago`
+            : days === 0
+              ? "Today"
+              : days === 1
+                ? "Tomorrow"
+                : `In ${days} days`,
+      plannedMargin: "Planned margin",
+      quotedMinusBudget: "quoted − budget",
+      spent: "Spent",
+      spentDetail: (pct: number | null, expenses: number) =>
+        `${pct === null ? "" : `${pct}% of budget · `}${expenses} expense${expenses === 1 ? "" : "s"}`,
+      timeLogged: "Time logged",
+      invoices: "Invoices",
+      invoicesPaid: (paid: number, total: number) => `${paid} of ${total} paid`,
+      invoicesIssued: (amount: string) => `${amount} issued`,
+      noInvoices: "None yet",
+    },
+
+    budget: {
+      title: "Budget",
+      basisPercent: (pct: number, quoted: string) => `${pct}% of the ${quoted} quoted value`,
+      basisFixed: (pct: number, quoted: string) => `fixed — about ${pct}% of the ${quoted} quoted value`,
+      spentLabel: (amount: string) => `${amount} spent`,
+      leftLabel: (amount: string) => `${amount} left`,
+      overLabel: (amount: string) => `${amount} over budget`,
+      plannedMargin: "Planned margin",
+      actualMargin: "Actual margin",
+      notSet: "No budget set for this event.",
+      setBudget: "Set a budget →",
+      edit: "Edit →",
+    },
+
     backToEvents: "Events",
     editEvent: "Edit event",
     tabOverview: "Overview",
@@ -284,6 +322,15 @@ const en = {
       briefLabel: "Brief / description",
       statusLabel: "Status",
       quotedValueLabel: "Quoted value (CZK)",
+      budgetLabel: "Event budget",
+      budgetHint: "internal spend cap, independent of the client quote",
+      budgetModePercent: "% of quoted",
+      budgetModeFixed: "Fixed amount",
+      budgetModeNone: "None",
+      budgetResolved: (amount: string) => `Budget for this event: ${amount}`,
+      budgetResolvedPercentNote: (pct: number, quoted: string) => `${pct}% of the ${quoted} quoted value`,
+      budgetResolvedFixedNote: (pct: number, quoted: string) => `fixed · about ${pct}% of the ${quoted} quoted value`,
+      budgetResolvedNone: "No budget set for this event",
       datesHeading: "Dates",
       buildPrepLabel: "Build / prep",
       strikeLabel: "Strike",
@@ -466,6 +513,8 @@ const en = {
       anyCategory: "Any category",
       anyYear: "Any year",
       searchEvents: "Search events…",
+      activeEvents: "Active",
+      pastEvents: "Closed & cancelled",
       noMatches: "No matches",
     },
 
@@ -1372,6 +1421,44 @@ const cs: Dictionary = {
     team: "Tým",
     ownerOnly: (name: string) => `Pouze vlastník (${name})`,
 
+    stats: {
+      buildDay: "Den příprav",
+      buildRelative: (days: number | null) =>
+        days === null
+          ? "Neurčeno"
+          : days < 0
+            ? `před ${-days} ${czCount(-days, "dnem", "dny", "dny")}`
+            : days === 0
+              ? "Dnes"
+              : days === 1
+                ? "Zítra"
+                : `za ${days} ${czCount(days, "den", "dny", "dní")}`,
+      plannedMargin: "Plánovaná marže",
+      quotedMinusBudget: "nabídka − rozpočet",
+      spent: "Vyčerpáno",
+      spentDetail: (pct: number | null, expenses: number) =>
+        `${pct === null ? "" : `${pct} % rozpočtu · `}${expenses} ${czCount(expenses, "výdaj", "výdaje", "výdajů")}`,
+      timeLogged: "Odpracovaný čas",
+      invoices: "Faktury",
+      invoicesPaid: (paid: number, total: number) => `${paid} z ${total} zaplaceno`,
+      invoicesIssued: (amount: string) => `vyfakturováno ${amount}`,
+      noInvoices: "Zatím žádné",
+    },
+
+    budget: {
+      title: "Rozpočet",
+      basisPercent: (pct: number, quoted: string) => `${pct} % z nabídnuté hodnoty ${quoted}`,
+      basisFixed: (pct: number, quoted: string) => `pevná — přibližně ${pct} % z nabídnuté hodnoty ${quoted}`,
+      spentLabel: (amount: string) => `vyčerpáno ${amount}`,
+      leftLabel: (amount: string) => `zbývá ${amount}`,
+      overLabel: (amount: string) => `${amount} přes rozpočet`,
+      plannedMargin: "Plánovaná marže",
+      actualMargin: "Skutečná marže",
+      notSet: "Pro tuto akci není nastaven rozpočet.",
+      setBudget: "Nastavit rozpočet →",
+      edit: "Upravit →",
+    },
+
     backToEvents: "Akce",
     editEvent: "Upravit akci",
     tabOverview: "Přehled",
@@ -1404,6 +1491,15 @@ const cs: Dictionary = {
       briefLabel: "Popis",
       statusLabel: "Stav",
       quotedValueLabel: "Nabídnutá hodnota (CZK)",
+      budgetLabel: "Rozpočet akce",
+      budgetHint: "interní strop výdajů, nezávislý na nabídce klientovi",
+      budgetModePercent: "% z nabídky",
+      budgetModeFixed: "Pevná částka",
+      budgetModeNone: "Žádný",
+      budgetResolved: (amount: string) => `Rozpočet této akce: ${amount}`,
+      budgetResolvedPercentNote: (pct: number, quoted: string) => `${pct} % z nabídnuté hodnoty ${quoted}`,
+      budgetResolvedFixedNote: (pct: number, quoted: string) => `pevná — přibližně ${pct} % z nabídnuté hodnoty ${quoted}`,
+      budgetResolvedNone: "Pro tuto akci není nastaven rozpočet",
       datesHeading: "Termíny",
       buildPrepLabel: "Příprava",
       strikeLabel: "Bourání",
@@ -1586,6 +1682,8 @@ const cs: Dictionary = {
       anyCategory: "Libovolná kategorie",
       anyYear: "Libovolný rok",
       searchEvents: "Hledat akce…",
+      activeEvents: "Aktivní",
+      pastEvents: "Uzavřené a zrušené",
       noMatches: "Nic nenalezeno",
     },
 

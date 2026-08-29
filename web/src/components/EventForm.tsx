@@ -7,8 +7,9 @@ import { CancelLink } from "@/components/ui/CancelLink";
 import { DateTimeField } from "@/components/ui/DateTimeField";
 import { AddressAutocompleteInput } from "@/components/ui/AddressAutocompleteInput";
 import { ClientPicker, type PickableClient } from "@/components/ClientPicker";
+import { BudgetField } from "@/components/BudgetField";
 import { useAresLookup } from "@/hooks/useAresLookup";
-import type { EventStatus } from "@/generated/prisma/enums";
+import type { EventStatus, BudgetType } from "@/generated/prisma/enums";
 import { getDictionary, type Locale } from "@/lib/dictionary";
 
 const STATUS_KEYS: EventStatus[] = ["INQUIRY", "QUOTE_SENT", "CONFIRMED", "IN_PROGRESS", "TO_INVOICE", "CLOSED", "CANCELLED"];
@@ -32,12 +33,24 @@ export type EventFormDefaults = {
   endDate: Date;
   strikeDate: Date | null;
   quotedValue: number;
+  budgetType: BudgetType;
+  budgetValue: number;
   venues: VenueRow[];
 };
 
 const initialState: EventFormState = {};
 
-export function EventForm({ defaults, clients, locale }: { defaults: EventFormDefaults; clients: PickableClient[]; locale: Locale }) {
+export function EventForm({
+  defaults,
+  clients,
+  locale,
+  canEditBudget = false,
+}: {
+  defaults: EventFormDefaults;
+  clients: PickableClient[];
+  locale: Locale;
+  canEditBudget?: boolean;
+}) {
   const t = getDictionary(locale);
   const isEdit = Boolean(defaults.id);
   const action = isEdit ? updateEventAction : createEventAction;
@@ -55,6 +68,7 @@ export function EventForm({ defaults, clients, locale }: { defaults: EventFormDe
 
   const [startDate, setStartDate] = useState(toDateTimeLocal(defaults.startDate));
   const [endDate, setEndDate] = useState(toDateTimeLocal(defaults.endDate));
+  const [quotedValue, setQuotedValue] = useState(defaults.quotedValue);
 
   const tf = t.events.form;
 
@@ -114,9 +128,25 @@ export function EventForm({ defaults, clients, locale }: { defaults: EventFormDe
           </select>
         </Field>
         <Field label={tf.quotedValueLabel}>
-          <input name="quotedValue" type="number" min={0} defaultValue={defaults.quotedValue} className="input" />
+          <input
+            name="quotedValue"
+            type="number"
+            min={0}
+            value={quotedValue}
+            onChange={(e) => setQuotedValue(Math.max(0, Number(e.target.value) || 0))}
+            className="input"
+          />
         </Field>
       </div>
+
+      {canEditBudget && (
+        <BudgetField
+          locale={locale}
+          quotedValue={quotedValue}
+          defaultType={defaults.budgetType}
+          defaultValue={defaults.budgetValue}
+        />
+      )}
 
       <div className="heading-label !text-[12px]">{tf.datesHeading}</div>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-3">

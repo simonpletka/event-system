@@ -7,7 +7,7 @@ import { convertQuoteToInvoiceAction, duplicateQuoteAction } from "@/lib/actions
 import { DownloadPdfButton } from "@/components/finance/DownloadPdfButton";
 import { FinanceSortMenu } from "@/components/finance/FinanceSortMenu";
 import { FilterSelect } from "@/components/ui/FilterSelect";
-import { FilterSearch } from "@/components/ui/FilterSearch";
+import { groupEventOptions } from "@/lib/event-status";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { getLocale, getDictionary } from "@/lib/i18n";
 import type { QuoteStatus } from "@/generated/prisma/enums";
@@ -55,7 +55,7 @@ export default async function QuotesPage({
           <FilterSelect
             label={t.finance.quotes.eventFilter}
             value={filters.eventId ?? ""}
-            options={events.map((e) => ({ value: e.id, label: e.title }))}
+            groups={groupEventOptions(events, { active: t.finance.filters.activeEvents, inactive: t.finance.filters.pastEvents })}
             basePath="/finance/quotes"
             params={quoteParams}
             paramName="eventId"
@@ -72,7 +72,6 @@ export default async function QuotesPage({
             params={quoteParams}
             paramName="year"
           />
-          <FilterSearch value={filters.q ?? ""} basePath="/finance/quotes" params={quoteParams} placeholder={t.common.search} />
         </div>
         <div className="flex items-center gap-2 shrink-0">
           <FinanceSortMenu current={filters.sort} basePath="/finance/quotes" params={quoteParams} t={t.finance.sort} />

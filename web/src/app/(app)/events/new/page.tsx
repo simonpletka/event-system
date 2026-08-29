@@ -1,4 +1,4 @@
-import { requireUser, canCreateEvent } from "@/lib/authz";
+import { requireUser, canCreateEvent, isAdmin } from "@/lib/authz";
 import { getClientOptions } from "@/lib/queries/clients";
 import { EventForm } from "@/components/EventForm";
 import { getLocale, getDictionary } from "@/lib/i18n";
@@ -25,6 +25,7 @@ export default async function NewEventPage() {
         <EventForm
           clients={clients}
           locale={locale}
+          canEditBudget={isAdmin(user)}
           defaults={{
             title: "",
             brief: "",
@@ -40,6 +41,8 @@ export default async function NewEventPage() {
             endDate: endDefault,
             strikeDate: null,
             quotedValue: 0,
+            budgetType: "NONE",
+            budgetValue: 0,
             venues: [],
           }}
         />

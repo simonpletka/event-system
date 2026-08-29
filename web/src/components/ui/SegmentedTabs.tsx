@@ -11,20 +11,39 @@ export type SegmentedTabOption = { value: string; label: ReactNode; href: string
  * build on its own (List/Timeline/Calendar, Table/Calendar, Day/Week/Month).
  * The thumb tracks the active button's real measured width/position rather
  * than assuming equal-width options, since labels vary in length here.
+ *
+ * Every option is a route `<Link>`, so `active` (driven by the caller from
+ * `usePathname`) only updates once the new segment has committed. To keep the
+ * highlight feeling instant we move it optimistically on click and let the
+ * real `active` prop reconcile when navigation lands.
  */
 export function SegmentedTabs({ options, active }: { options: SegmentedTabOption[]; active: string }) {
   const containerRef = useRef<HTMLDivElement>(null);
   const buttonRefs = useRef(new Map<string, HTMLAnchorElement>());
   const [thumb, setThumb] = useState<{ left: number; width: number } | null>(null);
 
+  // Optimistic selection: reconcile to the real `active` whenever it changes
+  // (navigation committed, or browser back/forward), otherwise track clicks.
+  const [shown, setShown] = useState(active);
+  const [prevActive, setPrevActive] = useState(active);
+  if (active !== prevActive) {
+    setPrevActive(active);
+    setShown(active);
+  }
+
   useLayoutEffect(() => {
     const container = containerRef.current;
-    const el = buttonRefs.current.get(active);
+    const el = buttonRefs.current.get(shown);
     if (!container || !el) return;
-    const containerRect = container.getBoundingClientRect();
-    const elRect = el.getBoundingClientRect();
-    setThumb({ left: elRect.left - containerRect.left, width: elRect.width });
-  }, [active, options]);
+    const measure = () => {
+      const containerRect = container.getBoundingClientRect();
+      const elRect = el.getBoundingClientRect();
+      setThumb({ left: elRect.left - containerRect.left, width: elRect.width });
+    };
+    measure();
+    window.addEventListener("resize", measure);
+    return () => window.removeEventListener("resize", measure);
+  }, [shown, options]);
 
   return (
     <div
@@ -38,13 +57,14 @@ export function SegmentedTabs({ options, active }: { options: SegmentedTabOption
         />
       )}
       {options.map((opt) => {
-        const isActive = opt.value === active;
+        const isActive = opt.value === shown;
         return (
           <Link
             key={opt.value}
             href={opt.href}
             title={opt.title}
             aria-label={opt.title}
+            onClick={() => setShown(opt.value)}
             ref={(el) => {
               if (el) buttonRefs.current.set(opt.value, el);
               else buttonRefs.current.delete(opt.value);

@@ -71,7 +71,7 @@ export async function getQuoteList(user: SessionUser, filters: QuoteListFilters)
     }),
     prisma.event.findMany({
       where: eventWhereForUser(user),
-      select: { id: true, title: true },
+      select: { id: true, title: true, status: true },
       orderBy: { title: "asc" },
     }),
   ]);
@@ -118,7 +118,7 @@ export async function getInvoiceList(user: SessionUser, filters: InvoiceListFilt
 
   const events = await prisma.event.findMany({
     where: eventWhereForUser(user),
-    select: { id: true, title: true },
+    select: { id: true, title: true, status: true },
     orderBy: { title: "asc" },
   });
 
@@ -182,7 +182,7 @@ export async function getExpenseList(user: SessionUser, filters: ExpenseListFilt
       include: { event: true, paidBy: true },
       orderBy: { date: "desc" },
     }),
-    prisma.event.findMany({ where: eventWhereForUser(user), select: { id: true, title: true }, orderBy: { title: "asc" } }),
+    prisma.event.findMany({ where: eventWhereForUser(user), select: { id: true, title: true, status: true }, orderBy: { title: "asc" } }),
   ]);
 
   return { expenses, total: expenses.reduce((s, e) => s + e.amount, 0), events };

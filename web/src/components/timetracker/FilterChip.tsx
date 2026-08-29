@@ -77,6 +77,8 @@ export function FilterChip({
 
   const filtered = query.trim() ? options.filter((o) => o.name.toLowerCase().includes(query.trim().toLowerCase())) : options;
 
+  const isActive = selectedIds.length > 0;
+
   return (
     <div ref={ref} className="relative shrink-0">
       <div
@@ -86,34 +88,51 @@ export function FilterChip({
         onKeyDown={(e) => {
           if (e.key === "Enter" || e.key === " ") setOpen((o) => !o);
         }}
-        className={`btno text-[9px] shrink-0 flex items-center gap-1.5 cursor-pointer max-w-[240px] ${
-          selectedIds.length > 0 ? "!bg-ink/10 !text-accent !border-accent/40" : ""
+        className={`inline-flex items-center gap-1.5 text-[12px] font-medium rounded-full border px-3 py-1.5 cursor-pointer transition-colors max-w-[240px] ${
+          isActive
+            ? "border-accent/45 bg-accent/8 text-accent"
+            : open
+              ? "border-ink/35 text-ink"
+              : "border-ink/13 text-ink/78 hover:border-ink/30 hover:text-ink"
         }`}
       >
         <span className="truncate">{summary}</span>
-        {selectedIds.length > 0 && (
+        {isActive ? (
           <button
             type="button"
             onClick={(e) => {
               e.stopPropagation();
               router.push(hrefFor([]));
             }}
-            className="leading-none hover:text-ink"
+            aria-label="Clear"
+            className="shrink-0 -mr-0.5 leading-none opacity-70 hover:opacity-100"
           >
             ×
           </button>
+        ) : (
+          <svg
+            width="9"
+            height="6"
+            viewBox="0 0 10 6"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="1.6"
+            className={`shrink-0 opacity-55 transition-transform ${open ? "rotate-180" : ""}`}
+          >
+            <path d="M1 1l4 4 4-4" />
+          </svg>
         )}
       </div>
       {open && (
-        <div className="card absolute left-0 top-[calc(100%+6px)] z-20 w-[220px] p-2 flex flex-col gap-1.5 shadow-[0_14px_36px_rgba(0,0,0,0.4)]">
+        <div className="card absolute left-0 top-[calc(100%+6px)] z-30 w-[240px] p-1.5 flex flex-col gap-1.5 shadow-[0_18px_44px_rgba(0,0,0,0.5)]">
           <input
             autoFocus
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             placeholder={searchPlaceholder}
-            className="input !text-[11px] !py-1.5"
+            className="input !text-[12px] !py-2 !rounded-full"
           />
-          <div className="flex items-center justify-between px-0.5">
+          <div className="flex items-center justify-between px-1">
             <span className="heading-label !text-[9px]">{label}</span>
             <div className="flex items-center gap-2 text-[9px] tracking-[0.08em] uppercase">
               <button type="button" onClick={() => router.push(hrefFor(options.map((o) => o.id)))} className="text-accent hover:underline">
@@ -124,14 +143,14 @@ export function FilterChip({
               </button>
             </div>
           </div>
-          <div className="flex flex-col max-h-[220px] overflow-y-auto">
+          <div className="flex flex-col max-h-[248px] overflow-y-auto -mx-0.5 px-0.5">
             {filtered.length === 0 ? (
-              <div className="text-[11px] placeholder-text px-1.5 py-2">{emptyLabel}</div>
+              <div className="text-[11px] placeholder-text px-2.5 py-2">{emptyLabel}</div>
             ) : (
               filtered.map((o) => (
                 <label
                   key={o.id}
-                  className="shrink-0 flex items-center gap-2 text-[12px] px-1.5 py-1.5 rounded-md hover:bg-ink/8 cursor-pointer truncate"
+                  className="shrink-0 flex items-center gap-2 text-[13px] leading-6 px-2.5 py-1.5 rounded-md text-ink/85 hover:bg-ink/8 hover:text-ink cursor-pointer truncate transition-colors"
                 >
                   <input
                     type="checkbox"
@@ -144,7 +163,7 @@ export function FilterChip({
               ))
             )}
           </div>
-          <button type="button" onClick={() => setOpen(false)} className="btn !text-[10px] !py-1.5 mt-0.5">
+          <button type="button" onClick={() => setOpen(false)} className="btn !text-[10px] !py-2 mt-0.5">
             {addLabel}
           </button>
         </div>
