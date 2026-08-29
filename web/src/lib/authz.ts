@@ -118,6 +118,17 @@ export function canEditEvent(user: SessionUser, event: { ownerId: string; member
   return false;
 }
 
+/**
+ * Who sees the event's internal budget (the read-only tile on the event
+ * detail page): anyone who works with money (Accountant, Admin — via
+ * finance access) or runs events (Producer — via create access). Members
+ * and finance-less custom roles don't. Editing the budget is a stricter
+ * gate still — isAdmin() only, checked on the event form/action.
+ */
+export function canViewEventBudget(user: SessionUser) {
+  return canViewFinance(user) || canCreateEvent(user);
+}
+
 // --- Finance (brief §2.2 "Finance (nabídky/faktury)" column) ---
 
 /** Full or read-only access: full access. Producer-tier: view-only on own/assigned events. None: no access. */

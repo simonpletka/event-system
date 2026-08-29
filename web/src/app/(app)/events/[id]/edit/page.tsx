@@ -1,5 +1,5 @@
 import { notFound } from "next/navigation";
-import { requireUser, canEditEvent } from "@/lib/authz";
+import { requireUser, canEditEvent, isAdmin } from "@/lib/authz";
 import { getEventDetail } from "@/lib/queries/events";
 import { getClientOptions } from "@/lib/queries/clients";
 import { EventForm } from "@/components/EventForm";
@@ -25,6 +25,7 @@ export default async function EditEventPage({ params }: { params: Promise<{ id: 
         <EventForm
           clients={clients}
           locale={locale}
+          canEditBudget={isAdmin(user)}
           defaults={{
             id: event.id,
             title: event.title,
@@ -41,6 +42,8 @@ export default async function EditEventPage({ params }: { params: Promise<{ id: 
             endDate: event.endDate,
             strikeDate: event.strikeDate,
             quotedValue: event.quotedValue,
+            budgetType: event.budgetType,
+            budgetValue: event.budgetValue,
             venues: event.venues.map((v) => ({ name: v.name, address: v.address, note: v.note })),
           }}
         />

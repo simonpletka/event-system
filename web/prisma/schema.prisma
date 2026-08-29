@@ -121,6 +121,17 @@ enum DiscountType {
   FIXED
 }
 
+// Event's internal spend cap (separate from the client-facing quotedValue).
+// Set manually by an Admin on the event form: a percentage of quotedValue,
+// or a flat amount. Same shape as DiscountType but kept distinct so the two
+// never get accidentally coupled — the budget percent range is wider (a
+// loss-leader event can be budgeted above 100% of what was quoted).
+enum BudgetType {
+  NONE
+  PERCENT
+  FIXED
+}
+
 // Per-document currency (brief: default CZK, switchable when creating a
 // quote; an invoice created from that quote inherits it). Deliberately no
 // exchange-rate conversion anywhere — aggregate stats (Reports, Dashboard,
@@ -188,6 +199,13 @@ model Event {
   strikeDate DateTime?
 
   quotedValue Int @default(0) // minor currency units avoided; brief uses whole CZK
+
+  // Internal budget — Admin-set, Admin-editable, visible to finance/event
+  // roles only (see canViewEventBudget). budgetValue holds a percent of
+  // quotedValue (0-300) when PERCENT, or a whole-CZK amount when FIXED;
+  // ignored when NONE. Resolve via resolveEventBudget().
+  budgetType  BudgetType @default(NONE)
+  budgetValue Int        @default(0)
 
   ownerId String
   owner   User   @relation("EventOwner", fields: [ownerId], references: [id])

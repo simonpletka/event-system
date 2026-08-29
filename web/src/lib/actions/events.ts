@@ -7,6 +7,7 @@ import { requireUser, canEditEvent, canCreateEvent, isAdmin } from "@/lib/authz"
 import { resolveClientId, syncClientContacts } from "@/lib/actions/clients";
 import { nextEventNumber } from "@/lib/document-number";
 import { addDays } from "@/lib/calendar";
+import { normaliseBudgetInput } from "@/lib/event-budget";
 import type { EventStatus } from "@/generated/prisma/enums";
 
 export type EventFormState = { error?: string };
@@ -35,6 +36,18 @@ function parseContacts(formData: FormData) {
     }
   }
   return contacts;
+}
+
+/**
+ * Budget fields, only ever read for an Admin (the form doesn't render them
+ * otherwise). Returns undefined for non-admins so the spread in the actions
+ * leaves the existing DB values untouched.
+ */
+function budgetDataFromForm(formData: FormData, isAdminUser: boolean) {
+  if (!isAdminUser) return undefined;
+  const type = String(formData.get("budgetType") ?? "NONE");
+  const field = type === "FIXED" ? "budgetAmount" : "budgetPercent";
+  return normaliseBudgetInput(type, Number(formData.get(field) ?? 0));
 }
 
 function eventDataFromForm(formData: FormData) {
@@ -81,6 +94,7 @@ export async function createEventAction(_prev: EventFormState, formData: FormDat
   const event = await prisma.event.create({
     data: {
       ...data,
+      ...budgetDataFromForm(formData, isAdmin(user)),
       number,
       ownerId: user.id,
       venues: { create: parseVenues(formData) },
@@ -124,6 +138,7 @@ export async function updateEventAction(_prev: EventFormState, formData: FormDat
       where: { id },
       data: {
         ...data,
+        ...budgetDataFromForm(formData, isAdmin(user)),
         venues: { create: parseVenues(formData) },
         contacts: { create: contacts.map((c, idx) => ({ ...c, sortOrder: idx })) },
       },
