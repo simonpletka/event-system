@@ -466,6 +466,8 @@ const en = {
       anyCategory: "Any category",
       anyYear: "Any year",
       searchEvents: "Search events…",
+      activeEvents: "Active",
+      pastEvents: "Closed & cancelled",
       noMatches: "No matches",
     },
 
@@ -1586,6 +1588,8 @@ const cs: Dictionary = {
       anyCategory: "Libovolná kategorie",
       anyYear: "Libovolný rok",
       searchEvents: "Hledat akce…",
+      activeEvents: "Aktivní",
+      pastEvents: "Uzavřené a zrušené",
       noMatches: "Nic nenalezeno",
     },
 

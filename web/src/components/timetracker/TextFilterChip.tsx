@@ -73,26 +73,43 @@ export function TextFilterChip({
           if (open) setOpen(false);
           else openPanel();
         }}
-        className={`btno text-[9px] shrink-0 flex items-center gap-1.5 cursor-pointer max-w-[220px] ${
-          value ? "!bg-ink/10 !text-accent !border-accent/40" : ""
+        className={`inline-flex items-center gap-1.5 text-[12px] font-medium rounded-full border px-3 py-1.5 cursor-pointer transition-colors max-w-[220px] ${
+          value
+            ? "border-accent/45 bg-accent/8 text-accent"
+            : open
+              ? "border-ink/35 text-ink"
+              : "border-ink/13 text-ink/78 hover:border-ink/30 hover:text-ink"
         }`}
       >
         <span className="truncate">{summary}</span>
-        {value && (
+        {value ? (
           <button
             type="button"
             onClick={(e) => {
               e.stopPropagation();
               router.push(hrefFor(""));
             }}
-            className="leading-none hover:text-ink"
+            aria-label="Clear"
+            className="shrink-0 -mr-0.5 leading-none opacity-70 hover:opacity-100"
           >
             ×
           </button>
+        ) : (
+          <svg
+            width="9"
+            height="6"
+            viewBox="0 0 10 6"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="1.6"
+            className={`shrink-0 opacity-55 transition-transform ${open ? "rotate-180" : ""}`}
+          >
+            <path d="M1 1l4 4 4-4" />
+          </svg>
         )}
       </div>
       {open && (
-        <div className="card absolute left-0 top-[calc(100%+6px)] z-20 w-[220px] p-2.5 flex flex-col gap-2 shadow-[0_14px_36px_rgba(0,0,0,0.4)]">
+        <div className="card absolute left-0 top-[calc(100%+6px)] z-30 w-[240px] p-1.5 flex flex-col gap-1.5 shadow-[0_18px_44px_rgba(0,0,0,0.5)]">
           <input
             autoFocus
             value={draft}
@@ -101,9 +118,9 @@ export function TextFilterChip({
               if (e.key === "Enter") commit();
             }}
             placeholder={placeholder}
-            className="input !text-[11px] !py-1.5"
+            className="input !text-[12px] !py-2 !rounded-full"
           />
-          <button type="button" onClick={commit} className="btn !text-[10px] !py-1.5">
+          <button type="button" onClick={commit} className="btn !text-[10px] !py-2">
             {addLabel}
           </button>
         </div>

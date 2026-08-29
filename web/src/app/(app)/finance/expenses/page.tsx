@@ -9,6 +9,7 @@ import { TrashIcon } from "@/components/ui/icons";
 import { Menu, MenuLink } from "@/components/ui/Menu";
 import { GroupIcon } from "@/components/ui/icons";
 import { FilterSelect } from "@/components/ui/FilterSelect";
+import { groupEventOptions } from "@/lib/event-status";
 import { getLocale, getDictionary } from "@/lib/i18n";
 import type { ExpenseCategory } from "@/generated/prisma/enums";
 
@@ -64,9 +65,9 @@ export default async function ExpensesPage({
           <FilterSelect
             label={te.eventFilter}
             value={filters.eventId ?? ""}
-            options={[
-              { value: "overhead", label: te.companyOverheadOption },
-              ...events.map((e) => ({ value: e.id, label: e.title })),
+            groups={[
+              { options: [{ value: "overhead", label: te.companyOverheadOption }] },
+              ...groupEventOptions(events, { active: t.finance.filters.activeEvents, inactive: t.finance.filters.pastEvents }),
             ]}
             basePath="/finance/expenses"
             params={{ category: filters.category, group: params.group }}

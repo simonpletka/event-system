@@ -4,7 +4,8 @@ import Link from "next/link";
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { listUrl } from "@/lib/list-url";
 
-type Option = { value: string; label: string };
+export type FilterOption = { value: string; label: string };
+export type FilterOptionGroup = { label?: string; options: FilterOption[] };
 
 /**
  * Single-select filter dropdown — replaces a native <select> so the menu
@@ -17,6 +18,7 @@ export function FilterSelect({
   label,
   value,
   options,
+  groups,
   basePath,
   params,
   paramName,
@@ -29,7 +31,9 @@ export function FilterSelect({
   /** Shown on the trigger when nothing is selected. */
   label: string;
   value: string;
-  options: Option[];
+  /** Flat option list. Use `groups` instead for section headings. */
+  options?: FilterOption[];
+  groups?: FilterOptionGroup[];
   basePath: string;
   params: Record<string, string | undefined>;
   paramName: string;
@@ -70,17 +74,24 @@ export function FilterSelect({
     };
   }, [open]);
 
-  const selected = options.find((o) => o.value === value);
+  const allGroups: FilterOptionGroup[] = groups ?? [{ options: options ?? [] }];
+  const flat = allGroups.flatMap((g) => g.options);
+  const selected = flat.find((o) => o.value === value);
   const active = value !== "";
   // A year-style picker (no anyLabel) always has a value — don't paint it as
   // an "active filter".
   const activeStyle = Boolean(anyLabel) && active;
   const showClear = Boolean(anyLabel) && active;
   const href = (v: string) => listUrl(basePath, params, { [paramName]: v || undefined });
-  const shown =
-    searchable && q.trim()
-      ? options.filter((o) => o.label.toLowerCase().includes(q.trim().toLowerCase()))
-      : options;
+
+  const needle = q.trim().toLowerCase();
+  const filtered = allGroups
+    .map((g) => ({
+      label: g.label,
+      options: needle ? g.options.filter((o) => o.label.toLowerCase().includes(needle)) : g.options,
+    }))
+    .filter((g) => g.options.length > 0);
+  const nothingShown = filtered.length === 0;
 
   const item = "block shrink-0 text-[13px] leading-6 px-2.5 py-1.5 rounded-md transition-colors truncate";
   const itemActive = "bg-ink/10 text-accent font-semibold";
@@ -153,12 +164,21 @@ export function FilterSelect({
                 {anyLabel}
               </Link>
             )}
-            {shown.map((o) => (
-              <Link key={o.value} href={href(o.value)} className={`${item} ${o.value === value ? itemActive : itemIdle}`}>
-                {o.label}
-              </Link>
+            {filtered.map((g, gi) => (
+              <div key={g.label ?? gi} className="flex flex-col">
+                {g.label && (
+                  <div className="shrink-0 px-2.5 pt-2 pb-1 text-[9px] font-bold tracking-[0.14em] uppercase text-ink/40">
+                    {g.label}
+                  </div>
+                )}
+                {g.options.map((o) => (
+                  <Link key={o.value} href={href(o.value)} className={`${item} ${o.value === value ? itemActive : itemIdle}`}>
+                    {o.label}
+                  </Link>
+                ))}
+              </div>
             ))}
-            {shown.length === 0 && <div className="text-[11px] placeholder-text px-2.5 py-2">{emptyLabel}</div>}
+            {nothingShown && <div className="text-[11px] placeholder-text px-2.5 py-2">{emptyLabel}</div>}
           </div>
         </div>
       )}
