@@ -137,17 +137,25 @@ export default async function EventsPage({
         </div>
 
         {events.map((event) => (
-          <Link
+          <div
             key={event.id}
             id={event.id === firstUpcomingId ? "today-row" : undefined}
-            href={`/events/${event.id}`}
-            className="group grid grid-cols-[1.5fr_.9fr_.8fr_.8fr_.9fr_.6fr] gap-2.5 items-center py-3.5 px-3.5 rounded-xl border-b border-ink/8 last:border-b-0 text-[15px] hover:bg-ink/5"
+            className="group relative grid grid-cols-[1.5fr_.9fr_.8fr_.8fr_.9fr_.6fr] gap-2.5 items-center py-3.5 px-3.5 rounded-xl border-b border-ink/8 last:border-b-0 text-[15px] hover:bg-ink/5"
           >
+            <Link href={`/events/${event.id}`} aria-label={event.title} className="absolute inset-0 z-0" />
             <div className="group-hover:text-accent">
               <span className="placeholder-text text-[11px] mr-1 group-hover:!text-accent">{event.number}</span>
               <span className="text-[17px] font-semibold">{event.title}</span>
             </div>
-            <div className="placeholder-text group-hover:!text-accent">{event.companyName}</div>
+            <div className="placeholder-text group-hover:!text-accent">
+              {event.clientId ? (
+                <Link href={`/clients/${event.clientId}`} className="relative z-[1] hover:text-accent">
+                  {event.companyName}
+                </Link>
+              ) : (
+                event.companyName
+              )}
+            </div>
             <div className="placeholder-text group-hover:!text-accent">{formatDateRange(event.startDate, event.endDate)}</div>
             <div className="placeholder-text group-hover:!text-accent">{event.venues[0]?.name ?? "—"}</div>
             <div>
@@ -156,7 +164,7 @@ export default async function EventsPage({
             <div className="font-semibold tabular-nums group-hover:text-accent">
               {event.quotedValue ? formatCurrency(event.quotedValue) : <span className="placeholder-text font-normal">—</span>}
             </div>
-          </Link>
+          </div>
         ))}
       </div>
 

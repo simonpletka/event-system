@@ -265,6 +265,13 @@ export default async function QuoteDetailPage({
                 {t.finance.quotes.eventLink(quote.event.title)}
               </Link>
             </div>
+            {client && (
+              <div className="py-1.5 text-[13px]">
+                <Link href={`/clients/${client.id}`} className="hover:text-accent">
+                  {t.finance.quotes.clientLink(client.name)}
+                </Link>
+              </div>
+            )}
             {quote.invoices.map((inv) => (
               <div key={inv.id} className="py-1.5 text-[13px]">
                 <Link href={`/finance/invoices/${inv.id}`} className="hover:text-accent">

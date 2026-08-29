@@ -347,6 +347,13 @@ export default async function InvoiceDetailPage({
                 {ti.eventLink(invoice.event.title)}
               </Link>
             </div>
+            {client && (
+              <div className="py-1.5 text-[13px]">
+                <Link href={`/clients/${client.id}`} className="hover:text-accent">
+                  {ti.clientLink(client.name)}
+                </Link>
+              </div>
+            )}
             {invoice.quote && (
               <div className="py-1.5 text-[13px]">
                 <Link href={`/finance/quotes/${invoice.quote.id}`} className="hover:text-accent">

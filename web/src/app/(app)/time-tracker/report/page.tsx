@@ -31,6 +31,18 @@ function rowLabel(row: OverviewRow, axis: OverviewAxis, t: Dictionary) {
   return row.name ?? t.timeTracker.unassignedEvent;
 }
 
+/** Same label, but an event row (which carries a real event id + name) links through to that event. */
+function rowLabelNode(row: OverviewRow, axis: OverviewAxis, t: Dictionary) {
+  if (axis === "event" && row.name) {
+    return (
+      <Link href={`/events/${row.id}`} className="hover:text-accent">
+        {row.name}
+      </Link>
+    );
+  }
+  return rowLabel(row, axis, t);
+}
+
 export default async function OverviewPage({
   searchParams,
 }: {
@@ -186,7 +198,7 @@ function DayBreakdown({ rows, axis, t }: { rows: OverviewRow[]; axis: OverviewAx
       >
         {rows.map((r) => (
           <div key={r.id} className="bg-surface px-3 py-3">
-            <div className="heading-label truncate">{rowLabel(r, axis, t)}</div>
+            <div className="heading-label truncate">{rowLabelNode(r, axis, t)}</div>
             <div className="text-xl font-semibold tracking-tight mt-0.5">{formatMinutes(r.total)}</div>
           </div>
         ))}
@@ -249,7 +261,7 @@ function BucketTable({ buckets, rows, axis, t }: { buckets: OverviewBucket[]; ro
                 {rows.length > 1 && (
                   <span className="w-2.5 h-2.5 rounded-sm shrink-0" style={{ background: categoricalColor(ri) }} />
                 )}
-                {rowLabel(r, axis, t)}
+                {rowLabelNode(r, axis, t)}
               </div>
               {r.byBucket.map((m, i) => (
                 <div key={i} className="text-center placeholder-text">

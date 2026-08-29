@@ -155,10 +155,8 @@ export default async function DashboardPage({
       )}
 
       <div className="mt-7 grid grid-cols-1 md:grid-cols-5 gap-4">
-        <Link
-          href="/finance/expenses"
-          className="card group block px-5 py-4 hover:bg-ink/5 transition-colors md:col-span-3"
-        >
+        <div className="card group relative block px-5 py-4 hover:bg-ink/5 transition-colors md:col-span-3">
+          <Link href="/finance/expenses" aria-hidden tabIndex={-1} className="absolute inset-0 z-0" />
           <div className="heading-label !text-[12px] font-bold mb-1.5 group-hover:!text-accent">{t.dashboard.latestExpenses}</div>
           {data.latestExpenses.length === 0 ? (
             <p className="text-sm placeholder-text">{t.dashboard.noExpensesYet}</p>
@@ -167,13 +165,19 @@ export default async function DashboardPage({
               <div key={exp.id} className="grid grid-cols-[1fr_auto] items-center gap-2.5 py-2.5 border-b border-ink/8 last:border-b-0 text-[13px]">
                 <div>
                   {t.expenseCategories[exp.category]}{" "}
-                  <span className="placeholder-text">· {exp.event?.title ?? t.dashboard.companyOverhead}</span>
+                  {exp.event ? (
+                    <Link href={`/events/${exp.event.id}`} className="relative z-[1] placeholder-text hover:text-accent">
+                      · {exp.event.title}
+                    </Link>
+                  ) : (
+                    <span className="placeholder-text">· {t.dashboard.companyOverhead}</span>
+                  )}
                 </div>
                 <div className="font-semibold tabular-nums">{formatCurrency(exp.amount)}</div>
               </div>
             ))
           )}
-        </Link>
+        </div>
 
         <div className="card px-6 py-5 md:col-span-2">
           <div className="flex items-start justify-between flex-wrap gap-3">
