@@ -1,8 +1,8 @@
 import { prisma } from "@/lib/prisma";
 import { eventWhereForUser, type SessionUser } from "@/lib/authz";
-import { startOfDay, addDays, mondayOf, dayHeaderLabel, weekDays } from "@/lib/calendar";
+import { startOfDay, addDays, mondayOf, dayHeaderLabel, weekDays, monthsOfYear, monthHeaderLabel } from "@/lib/calendar";
 
-export type TimePeriod = "day" | "week" | "month";
+export type TimePeriod = "day" | "week" | "month" | "year";
 
 export async function getRunningTimer(userId: string) {
   return prisma.timeEntry.findFirst({
@@ -15,6 +15,10 @@ export function rangeStart(period: TimePeriod, anchor: Date) {
   const d = startOfDay(anchor);
   if (period === "day") return d;
   if (period === "week") return mondayOf(d);
+  if (period === "year") {
+    d.setMonth(0, 1);
+    return d;
+  }
   d.setDate(1);
   return d;
 }
@@ -24,6 +28,10 @@ export function rangeEnd(period: TimePeriod, anchor: Date) {
   if (period === "day") return addDays(start, 1);
   if (period === "week") return addDays(start, 7);
   const end = new Date(start);
+  if (period === "year") {
+    end.setFullYear(end.getFullYear() + 1);
+    return end;
+  }
   end.setMonth(end.getMonth() + 1);
   return end;
 }
@@ -100,10 +108,18 @@ export type OverviewBucket = { label: string; start: Date; end: Date };
  * week → one bucket per calendar day (Mon..Sun).
  * month → one bucket per week, clipped to the month's actual [from, to) so
  * a partial first/last week doesn't pull in days outside the period.
+ * year → one bucket per calendar month (Jan..Dec).
  */
 export function overviewBuckets(period: TimePeriod, from: Date, to: Date): OverviewBucket[] {
   if (period === "week") {
     return weekDays(from).map((d) => ({ label: dayHeaderLabel(d), start: d, end: addDays(d, 1) }));
+  }
+  if (period === "year") {
+    return monthsOfYear(from).map((start) => ({
+      label: monthHeaderLabel(start),
+      start,
+      end: new Date(start.getFullYear(), start.getMonth() + 1, 1),
+    }));
   }
   if (period === "month") {
     const buckets: OverviewBucket[] = [];

@@ -53,7 +53,8 @@ export default async function OverviewPage({
   const t = getDictionary(await getLocale());
   const tt = t.timeTracker.tracking;
   const to = t.timeTracker.overview;
-  const period: TimePeriod = params.period === "day" || params.period === "month" ? params.period : "week";
+  const period: TimePeriod =
+    params.period === "day" || params.period === "month" || params.period === "year" ? params.period : "week";
   const anchor = params.date ? parseIsoDate(params.date) : new Date();
   const axis: OverviewAxis = params.by === "event" ? "event" : params.by === "phase" ? "phase" : "person";
   const selectedIds = params.users ? params.users.split(",").filter(Boolean) : [user.id];
@@ -84,6 +85,7 @@ export default async function OverviewPage({
     { value: "day", label: tt.day, href: overviewHref({ period: "day", ...baseParams }) },
     { value: "week", label: tt.week, href: overviewHref({ period: "week", ...baseParams }) },
     { value: "month", label: tt.month, href: overviewHref({ period: "month", ...baseParams }) },
+    { value: "year", label: tt.year, href: overviewHref({ period: "year", ...baseParams }) },
   ];
 
   const prevHref = overviewHref({ period, date: isoDate(stepDate(period, anchor, -1)), ...baseParams });

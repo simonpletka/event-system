@@ -832,10 +832,12 @@ const en = {
       day: "Day",
       week: "Week",
       month: "Month",
+      year: "Year",
       totalLabel: "Total",
       todayHeading: "Today",
       thisWeekHeading: "This week",
       thisMonthHeading: "This month",
+      thisYearHeading: "This year",
     },
 
     overview: {
@@ -2003,10 +2005,12 @@ const cs: Dictionary = {
       day: "Den",
       week: "Týden",
       month: "Měsíc",
+      year: "Rok",
       totalLabel: "Celkem",
       todayHeading: "Dnes",
       thisWeekHeading: "Tento týden",
       thisMonthHeading: "Tento měsíc",
+      thisYearHeading: "Tento rok",
     },
 
     overview: {
