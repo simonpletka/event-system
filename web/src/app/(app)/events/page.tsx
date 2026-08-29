@@ -211,7 +211,6 @@ function ViewSwitch({ view, t }: { view: "table" | "calendar"; t: Dictionary }) 
   return (
     <SegmentedTabs
       active={view}
-      animated={false}
       options={[
         { value: "table", label: t.events.viewTable, href: "/events" },
         { value: "calendar", label: t.events.viewCalendar, href: "/events?view=calendar" },
