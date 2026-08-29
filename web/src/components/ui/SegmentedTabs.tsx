@@ -12,7 +12,21 @@ export type SegmentedTabOption = { value: string; label: ReactNode; href: string
  * The thumb tracks the active button's real measured width/position rather
  * than assuming equal-width options, since labels vary in length here.
  */
-export function SegmentedTabs({ options, active }: { options: SegmentedTabOption[]; active: string }) {
+export function SegmentedTabs({
+  options,
+  active,
+  animated = true,
+}: {
+  options: SegmentedTabOption[];
+  active: string;
+  /**
+   * Slide the highlight between options. Fine for in-page view toggles where
+   * the switch is instant; set false for tab bars that navigate between routes
+   * (EventTabs) — there the slide lands after the segment has already swapped,
+   * which reads as lag. A non-animated thumb just sits under the active tab.
+   */
+  animated?: boolean;
+}) {
   const containerRef = useRef<HTMLDivElement>(null);
   const buttonRefs = useRef(new Map<string, HTMLAnchorElement>());
   const [thumb, setThumb] = useState<{ left: number; width: number } | null>(null);
@@ -21,9 +35,14 @@ export function SegmentedTabs({ options, active }: { options: SegmentedTabOption
     const container = containerRef.current;
     const el = buttonRefs.current.get(active);
     if (!container || !el) return;
-    const containerRect = container.getBoundingClientRect();
-    const elRect = el.getBoundingClientRect();
-    setThumb({ left: elRect.left - containerRect.left, width: elRect.width });
+    const measure = () => {
+      const containerRect = container.getBoundingClientRect();
+      const elRect = el.getBoundingClientRect();
+      setThumb({ left: elRect.left - containerRect.left, width: elRect.width });
+    };
+    measure();
+    window.addEventListener("resize", measure);
+    return () => window.removeEventListener("resize", measure);
   }, [active, options]);
 
   return (
@@ -33,7 +52,9 @@ export function SegmentedTabs({ options, active }: { options: SegmentedTabOption
     >
       {thumb && (
         <div
-          className="absolute top-1 bottom-1 rounded-full bg-ink/[0.16] shadow-[inset_0_1px_0_rgba(255,255,255,0.1),0_2px_10px_rgba(0,0,0,0.3)] transition-[left,width] duration-500 ease-[cubic-bezier(0.34,1.56,0.64,1)]"
+          className={`absolute top-1 bottom-1 rounded-full bg-ink/[0.16] shadow-[inset_0_1px_0_rgba(255,255,255,0.1),0_2px_10px_rgba(0,0,0,0.3)] ${
+            animated ? "transition-[left,width] duration-500 ease-[cubic-bezier(0.34,1.56,0.64,1)]" : ""
+          }`}
           style={{ left: thumb.left, width: thumb.width }}
         />
       )}

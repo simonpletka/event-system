@@ -29,7 +29,7 @@ export function EventTabs({
 
   return (
     <div className="mt-2.5 -mx-6 px-6 overflow-x-auto md:mx-0 md:px-0 md:overflow-visible">
-      <SegmentedTabs options={tabs} active={active} />
+      <SegmentedTabs options={tabs} active={active} animated={false} />
     </div>
   );
 }
