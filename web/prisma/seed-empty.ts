@@ -32,7 +32,7 @@ async function main() {
   await prisma.quote.deleteMany();
   await prisma.timeEntry.deleteMany();
   await prisma.expense.deleteMany();
-  await prisma.milestone.deleteMany();
+  await prisma.roadmapItem.deleteMany();
   await prisma.venue.deleteMany();
   await prisma.eventMember.deleteMany();
   await prisma.eventContact.deleteMany();

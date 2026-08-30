@@ -19,11 +19,11 @@ export async function getWeekCalendarData(user: SessionUser, weekStart: Date) {
           ],
         },
         // ...or it just has a milestone this week (e.g. an early planning call, weeks before build)
-        { milestones: { some: { date: { gte: weekStart, lt: weekEnd } } } },
+        { roadmapItems: { some: { type: "MILESTONE", date: { gte: weekStart, lt: weekEnd } } } },
       ],
     },
     include: {
-      milestones: { where: { date: { gte: weekStart, lt: weekEnd } } },
+      roadmapItems: { where: { type: "MILESTONE", date: { gte: weekStart, lt: weekEnd } } },
       venues: true,
     },
     orderBy: { startDate: "asc" },

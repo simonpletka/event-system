@@ -97,11 +97,45 @@ function resolvePermissions(user: SessionUser): Permissions {
   return user.customRole ?? BUILT_IN_PERMISSIONS[user.role];
 }
 
-/** Brief §2.2: Admin/Accountant see every event; Producer/Member see only their own. */
+/**
+ * Who can *see* an event at all. Admin/Accountant (ALL_*) and Member
+ * (ASSIGNED_READ) can open any event — Member read-only, everyone above per
+ * their own edit gate. Only the NONE tier (a custom role with events access
+ * switched off) is narrowed to events they're a member of. Editing, finance
+ * and budget are gated separately (canEditEvent / canViewFinance /
+ * canViewEventBudget), so widening this for Member doesn't grant them anything
+ * but visibility.
+ */
 export function eventWhereForUser(user: SessionUser): Prisma.EventWhereInput {
   const p = resolvePermissions(user).events;
-  if (p === "ALL_READ" || p === "ALL_FULL") return {};
-  return { members: { some: { userId: user.id } } };
+  if (p === "NONE") return { members: { some: { userId: user.id } } };
+  return {};
+}
+
+/**
+ * Events a user is actually on — owner or an EventMember row. Used by the
+ * per-role dashboards' "My events" sections, which stay the assigned set even
+ * though `eventWhereForUser` is now unrestricted for Member.
+ */
+export function assignedEventWhere(user: SessionUser): Prisma.EventWhereInput {
+  return { OR: [{ ownerId: user.id }, { members: { some: { userId: user.id } } }] };
+}
+
+/**
+ * Which of the four role dashboards a user sees. Derived from resolved
+ * permissions, not the literal role, so a CustomRole lands on the nearest
+ * sensible variant instead of a broken page. Maps the four built-ins exactly:
+ * ADMIN→admin, ACCOUNTANT→accountant, PRODUCER→producer, MEMBER→member.
+ */
+export type DashboardVariant = "admin" | "accountant" | "producer" | "member";
+
+export function dashboardVariant(user: SessionUser): DashboardVariant {
+  if (isAdmin(user)) return "admin";
+  const p = resolvePermissions(user);
+  if (p.finance === "FULL" && p.events === "ALL_FULL") return "admin";
+  if (p.finance === "FULL") return "accountant";
+  if (canCreateEvent(user)) return "producer";
+  return "member";
 }
 
 /** Brief §2.2: only Admin/Producer create events; Accountant/Member cannot. */
@@ -165,6 +199,16 @@ export function expenseWhereForUser(user: SessionUser): Prisma.ExpenseWhereInput
   if (p === "FULL") return {};
   if (p === "ADD_ON_OWN_EVENTS") return { event: { members: { some: { userId: user.id } } } };
   return { paidById: user.id }; // OWN_ONLY and NONE (page-gated) both fall back to own-only
+}
+
+/**
+ * Any expense access at all — gates the Finance section's Expenses sub-tab
+ * (list + "new expense") independently of quote/invoice access, so a Member
+ * (finance NONE, expenses OWN_ONLY) can still log and review their own
+ * expenses. Quotes/invoices/reports stay behind canViewFinance.
+ */
+export function canViewExpenses(user: SessionUser) {
+  return resolvePermissions(user).expenses !== "NONE";
 }
 
 export function canAddExpense(user: SessionUser, event: { ownerId: string; memberIds: string[] } | null) {
@@ -232,4 +276,13 @@ export function canManageClients(user: SessionUser) {
  */
 export function isAdmin(user: SessionUser) {
   return user.customRole === null && user.role === "ADMIN";
+}
+
+/**
+ * Literal built-in Accountant (not a custom role). Only used to gate the
+ * budget "% of quoted value" basis line on the Finance tab — Producers see
+ * the budget figure but not how it relates to the client quote.
+ */
+export function isAccountant(user: SessionUser) {
+  return user.customRole === null && user.role === "ACCOUNTANT";
 }

@@ -4,6 +4,7 @@ import { getClientList } from "@/lib/queries/clients";
 import { formatCurrency } from "@/lib/format";
 import { MobileListRow } from "@/components/ui/MobileListRow";
 import { EmptyState } from "@/components/ui/EmptyState";
+import { PageHeader } from "@/components/ui/PageHeader";
 import { getLocale, getDictionary } from "@/lib/i18n";
 
 export default async function ClientsPage({
@@ -21,7 +22,7 @@ export default async function ClientsPage({
 
   return (
     <div>
-      <div className="sticky top-0 z-20 -mx-6 mt-0 md:-mt-5 px-6 pt-5 pb-4 backdrop-blur-2xl bg-gradient-to-b from-bg/80 to-bg/50 border-b border-ink/10">
+      <PageHeader>
         <div className="flex items-end justify-between">
           <div>
             <div className="heading-label">{tc.countHeading(clients.length)}</div>
@@ -40,7 +41,7 @@ export default async function ClientsPage({
             {tc.apply}
           </button>
         </form>
-      </div>
+      </PageHeader>
 
       <div className="hidden md:block">
         <div className="grid grid-cols-[1.5fr_.8fr_.7fr_.7fr_1fr] gap-2.5 border-b border-ink/14 pb-1.5 mt-5 px-3.5 [&_.heading-label]:font-bold [&_.heading-label]:!text-[9px]">

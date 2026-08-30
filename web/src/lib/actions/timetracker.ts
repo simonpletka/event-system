@@ -60,7 +60,7 @@ export async function startTimerAction(formData: FormData) {
 
   revalidatePath("/time-tracker");
   revalidatePath("/dashboard");
-  if (eventId) revalidatePath(`/events/${eventId}`);
+  if (eventId) revalidatePath(`/events/${eventId}`, "layout");
 }
 
 export async function stopTimerAction(_prev: TimeFormState, formData: FormData): Promise<TimeFormState> {
@@ -137,7 +137,7 @@ export async function addCalendarEntryAction(_prev: TimeFormState, formData: For
   if (result.error) return result;
 
   revalidatePath("/time-tracker");
-  if (result.eventId) revalidatePath(`/events/${result.eventId}`);
+  if (result.eventId) revalidatePath(`/events/${result.eventId}`, "layout");
   return { success: true };
 }
 
@@ -168,8 +168,8 @@ export async function updateManualEntryAction(_prev: TimeFormState, formData: Fo
   });
 
   revalidatePath("/time-tracker");
-  if (existing.eventId) revalidatePath(`/events/${existing.eventId}`);
-  if (eventId) revalidatePath(`/events/${eventId}`);
+  if (existing.eventId) revalidatePath(`/events/${existing.eventId}`, "layout");
+  if (eventId) revalidatePath(`/events/${eventId}`, "layout");
   return { success: true };
 }
 
@@ -181,7 +181,7 @@ export async function deleteTimeEntryAction(formData: FormData) {
 
   await prisma.timeEntry.delete({ where: { id } });
   revalidatePath("/time-tracker");
-  if (existing.eventId) revalidatePath(`/events/${existing.eventId}`);
+  if (existing.eventId) revalidatePath(`/events/${existing.eventId}`, "layout");
 }
 
 /** Assigns (or reassigns) the event on the user's currently running timer, without stopping it. */
@@ -200,7 +200,7 @@ export async function assignRunningTimerEventAction(formData: FormData) {
 
   revalidatePath("/time-tracker");
   revalidatePath("/dashboard");
-  if (eventId) revalidatePath(`/events/${eventId}`);
+  if (eventId) revalidatePath(`/events/${eventId}`, "layout");
 }
 
 /** Same as assignRunningTimerEventAction but for the phase — lets the running timer's phase pill be reassigned in place. */

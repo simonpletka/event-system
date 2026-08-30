@@ -44,7 +44,7 @@ export function Sidebar({
   ];
 
   return (
-    <div className="hidden md:flex sticky top-3 h-[calc(100vh-24px)] ml-3 shrink-0 glass-panel rounded-2xl shadow-[0_14px_36px_rgba(0,0,0,0.4)] w-[216px] px-4 pt-4 pb-5 flex-col gap-4 print-hide font-medium overflow-y-auto">
+    <div className="hidden md:flex sticky top-3 z-30 h-[calc(100vh-24px)] ml-3 shrink-0 glass-panel rounded-2xl shadow-[0_14px_36px_rgba(0,0,0,0.4)] w-[216px] px-4 pt-4 pb-5 flex-col gap-4 print-hide font-medium overflow-y-auto">
       <span className="text-[11px] font-bold tracking-[0.16em]">EVENT SYSTEM</span>
 
       <nav className="flex flex-col">

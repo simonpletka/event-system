@@ -58,6 +58,18 @@ export function dayHeaderLabel(d: Date) {
   return `${DAY_LABEL[(d.getDay() + 6) % 7]} ${d.getDate()}`;
 }
 
+const MONTH_LABEL = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+
+/** Short month name for a date's month ("Jan".."Dec") — the year-view bucket label. */
+export function monthHeaderLabel(d: Date) {
+  return MONTH_LABEL[d.getMonth()];
+}
+
+/** First-of-month local Dates for all 12 months of `yearDate`'s year. */
+export function monthsOfYear(yearDate: Date) {
+  return Array.from({ length: 12 }, (_, i) => new Date(yearDate.getFullYear(), i, 1));
+}
+
 export function weekLabel(weekStart: Date) {
   const end = addDays(weekStart, 6);
   const startMonth = weekStart.toLocaleDateString("en-GB", { month: "short" });

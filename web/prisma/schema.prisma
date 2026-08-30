@@ -132,6 +132,16 @@ enum BudgetType {
   FIXED
 }
 
+// A single dated thing on an event's Roadmap tab. MILESTONE rows are the old
+// Milestone model migrated forward; TASK/MEETING are user-created. Production
+// phases (build / event days / strike) are derived from the Event's own
+// date fields at render time, not stored as rows.
+enum RoadmapItemType {
+  MILESTONE
+  TASK
+  MEETING
+}
+
 // Per-document currency (brief: default CZK, switchable when creating a
 // quote; an invoice created from that quote inherits it). Deliberately no
 // exchange-rate conversion anywhere — aggregate stats (Reports, Dashboard,
@@ -161,13 +171,16 @@ model User {
   customRoleId String?
   customRole   CustomRole? @relation(fields: [customRoleId], references: [id])
 
-  ownedEvents   Event[]        @relation("EventOwner")
-  assignments   EventMember[]
-  expenses      Expense[]
-  timeEntries   TimeEntry[]
-  createdQuotes Quote[]        @relation("QuoteCreator")
-  payments      Payment[]
-  invoiceEvents InvoiceEvent[]
+  ownedEvents         Event[]           @relation("EventOwner")
+  assignments         EventMember[]
+  expenses            Expense[]
+  timeEntries         TimeEntry[]
+  createdQuotes       Quote[]           @relation("QuoteCreator")
+  payments            Payment[]
+  invoiceEvents       InvoiceEvent[]
+  roadmapItemsCreated RoadmapItem[]     @relation("RoadmapItemCreatedBy")
+  roadmapAssignments  RoadmapAssignee[] @relation("RoadmapAssignee")
+  roadmapComments     RoadmapComment[]  @relation("RoadmapCommentAuthor")
 }
 
 model Event {
@@ -210,9 +223,9 @@ model Event {
   ownerId String
   owner   User   @relation("EventOwner", fields: [ownerId], references: [id])
 
-  venues      Venue[]
-  milestones  Milestone[]
-  members     EventMember[]
+  venues       Venue[]
+  roadmapItems RoadmapItem[]
+  members      EventMember[]
   expenses    Expense[]
   timeEntries TimeEntry[]
   quotes      Quote[]
@@ -263,15 +276,73 @@ model Venue {
   note    String @default("")
 }
 
-model Milestone {
-  id                    String   @id @default(cuid())
+// Replaces the old Milestone model. Drives the event detail's Roadmap tab —
+// tasks, client meetings and production milestones in one dated list, each
+// assignable to team members (assigning auto-adds an EventMember) and open
+// to a comment thread. Calendar/Meet sync is deferred (see TODO.md at the
+// repo root); googleCalendarEventId / googleMeetUrl are carried but never
+// populated yet.
+model RoadmapItem {
+  id                    String          @id @default(cuid())
   eventId               String
-  event                 Event    @relation(fields: [eventId], references: [id], onDelete: Cascade)
-  date                  DateTime
+  event                 Event           @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  type                  RoadmapItemType
   title                 String
-  googleCalendarEventId String? // populated once Calendar sync (later phase) is wired
+  date                  DateTime
+  allDay                Boolean         @default(false)
+  done                  Boolean         @default(false)
+  note                  String          @default("")
+  googleCalendarEventId String?
+  googleMeetUrl         String?
+  createdById           String?
+  createdBy             User?           @relation("RoadmapItemCreatedBy", fields: [createdById], references: [id])
+  createdAt             DateTime        @default(now())
+  updatedAt             DateTime        @updatedAt
+
+  assignees         RoadmapAssignee[]
+  externalAttendees RoadmapExternalAttendee[]
+  comments          RoadmapComment[]
 
   @@index([eventId, date])
+}
+
+// Team member assigned to a roadmap item. Creating one also upserts an
+// EventMember (see actions/roadmap.ts) so the person can see the event;
+// removing one never touches the EventMember.
+model RoadmapAssignee {
+  id     String      @id @default(cuid())
+  itemId String
+  userId String
+  item   RoadmapItem @relation(fields: [itemId], references: [id], onDelete: Cascade)
+  user   User        @relation("RoadmapAssignee", fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([itemId, userId])
+}
+
+// External (non-User) attendee on a MEETING roadmap item — a deliberate
+// free-text copy, no FK back to Client/ClientContact (same pattern as
+// EventContact).
+model RoadmapExternalAttendee {
+  id     String      @id @default(cuid())
+  itemId String
+  item   RoadmapItem @relation(fields: [itemId], references: [id], onDelete: Cascade)
+  name   String
+  email  String      @default("")
+}
+
+// User-authored comment on a roadmap item. Structure mirrors InvoiceEvent:
+// nullable author (kept if the user is later deleted), createdAt default,
+// indexed by parent + time.
+model RoadmapComment {
+  id        String      @id @default(cuid())
+  itemId    String
+  item      RoadmapItem @relation(fields: [itemId], references: [id], onDelete: Cascade)
+  authorId  String?
+  author    User?       @relation("RoadmapCommentAuthor", fields: [authorId], references: [id])
+  body      String
+  createdAt DateTime    @default(now())
+
+  @@index([itemId, createdAt])
 }
 
 // --- Minimal stubs for later phases; kept here so the event detail's

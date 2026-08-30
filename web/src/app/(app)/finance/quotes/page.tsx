@@ -1,5 +1,6 @@
 import Link from "next/link";
-import { requireUser, canManageFinance } from "@/lib/authz";
+import { redirect } from "next/navigation";
+import { requireUser, canManageFinance, canViewFinance } from "@/lib/authz";
 import { getQuoteList, type QuoteListFilters } from "@/lib/queries/finance";
 import { formatCurrency, formatDate } from "@/lib/format";
 import { QuoteStatusPill } from "@/components/StatusPill";
@@ -20,6 +21,7 @@ export default async function QuotesPage({
   searchParams: Promise<Record<string, string | undefined>>;
 }) {
   const user = await requireUser();
+  if (!canViewFinance(user)) redirect("/finance/expenses");
   const params = await searchParams;
   const t = getDictionary(await getLocale());
   const filters: QuoteListFilters = {
@@ -104,10 +106,18 @@ export default async function QuotesPage({
             <Link href={`/finance/quotes/${q.id}`} className="font-medium group-hover:text-accent">
               {q.number}
             </Link>
-            <Link href={`/finance/quotes/${q.id}`} className="group-hover:text-accent">
+            <Link href={`/events/${q.event.id}`} className="hover:text-accent">
               {q.event.title}
             </Link>
-            <div className="placeholder-text group-hover:!text-accent">{q.event.companyName}</div>
+            <div className="placeholder-text group-hover:!text-accent">
+              {q.event.clientId ? (
+                <Link href={`/clients/${q.event.clientId}`} className="hover:text-accent">
+                  {q.event.companyName}
+                </Link>
+              ) : (
+                q.event.companyName
+              )}
+            </div>
             <div className="placeholder-text group-hover:!text-accent">{formatDate(q.issuedAt)}</div>
             <div className="placeholder-text group-hover:!text-accent">{formatDate(q.validUntil)}</div>
             <div className="font-semibold tabular-nums group-hover:text-accent">
@@ -157,22 +167,35 @@ export default async function QuotesPage({
       <div className="md:hidden flex flex-col gap-2 mt-4">
         {quotes.map((q) => (
           <div key={q.id} className="card overflow-hidden">
-            <Link href={`/finance/quotes/${q.id}`} className="flex items-center gap-2.5 py-3.5 px-3.5">
+            <div className="relative flex items-center gap-2.5 py-3.5 px-3.5">
+              <Link href={`/finance/quotes/${q.id}`} aria-hidden tabIndex={-1} className="absolute inset-0 z-0" />
               <div className="flex-1 min-w-0">
                 <div className="placeholder-text text-[10.5px] mb-0.5">{q.number}</div>
                 <div className="flex items-center gap-1.5 flex-wrap">
-                  <span className="text-[14px] font-semibold truncate">{q.event.title}</span>
+                  <Link
+                    href={`/events/${q.event.id}`}
+                    className="relative z-[1] text-[14px] font-semibold truncate hover:text-accent"
+                  >
+                    {q.event.title}
+                  </Link>
                   <QuoteStatusPill status={q.status} t={t.statusQuote} />
                 </div>
                 <div className="placeholder-text text-[11.5px] mt-0.5">
-                  {q.event.companyName} · {t.finance.quotes.colIssued} {formatDate(q.issuedAt)} · {t.finance.quotes.colValidTo}{" "}
+                  {q.event.clientId ? (
+                    <Link href={`/clients/${q.event.clientId}`} className="relative z-[1] hover:text-accent">
+                      {q.event.companyName}
+                    </Link>
+                  ) : (
+                    q.event.companyName
+                  )}{" "}
+                  · {t.finance.quotes.colIssued} {formatDate(q.issuedAt)} · {t.finance.quotes.colValidTo}{" "}
                   {formatDate(q.validUntil)}
                 </div>
               </div>
               <div className="text-right shrink-0 text-[13px] font-semibold">
                 {formatCurrency(q.total, q.currency)}
               </div>
-            </Link>
+            </div>
             <div className="flex items-center justify-between gap-2 text-[9px] tracking-[0.1em] uppercase px-3.5 pb-3 pt-2.5 border-t border-ink/8">
               {q.status === "ACCEPTED" && q.invoices.length === 0 && canManage ? (
                 <form action={convertQuoteToInvoiceAction}>

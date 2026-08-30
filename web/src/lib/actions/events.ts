@@ -25,6 +25,11 @@ function parseVenues(formData: FormData) {
   return venues;
 }
 
+/** Selected team-member user ids from the form's hidden `memberIds` inputs. */
+function parseMemberIds(formData: FormData) {
+  return [...new Set((formData.getAll("memberIds") as string[]).map((s) => s.trim()).filter(Boolean))];
+}
+
 function parseContacts(formData: FormData) {
   const names = formData.getAll("contactName") as string[];
   const phones = formData.getAll("contactPhone") as string[];
@@ -90,6 +95,8 @@ export async function createEventAction(_prev: EventFormState, formData: FormDat
   });
   await syncClientContacts(data.clientId, contacts);
 
+  const memberIds = [...new Set([user.id, ...parseMemberIds(formData)])];
+
   const number = await nextEventNumber();
   const event = await prisma.event.create({
     data: {
@@ -99,7 +106,7 @@ export async function createEventAction(_prev: EventFormState, formData: FormDat
       ownerId: user.id,
       venues: { create: parseVenues(formData) },
       contacts: { create: contacts.map((c, idx) => ({ ...c, sortOrder: idx })) },
-      members: { create: [{ userId: user.id }] },
+      members: { create: memberIds.map((userId) => ({ userId })) },
     },
   });
 
@@ -131,9 +138,19 @@ export async function updateEventAction(_prev: EventFormState, formData: FormDat
   });
   await syncClientContacts(data.clientId, contacts);
 
+  // Sync the team from the picker. The owner is always kept even if somehow
+  // deselected; a deselected roadmap-assignee is removed here (an explicit
+  // team edit wins over the assign-time auto-add).
+  const currentMemberIds = new Set(existing.members.map((m) => m.userId));
+  const wantMemberIds = new Set([existing.ownerId, ...parseMemberIds(formData)]);
+  const toRemove = [...currentMemberIds].filter((uid) => !wantMemberIds.has(uid));
+  const toAdd = [...wantMemberIds].filter((uid) => !currentMemberIds.has(uid));
+
   await prisma.$transaction([
     prisma.venue.deleteMany({ where: { eventId: id } }),
     prisma.eventContact.deleteMany({ where: { eventId: id } }),
+    ...(toRemove.length ? [prisma.eventMember.deleteMany({ where: { eventId: id, userId: { in: toRemove } } })] : []),
+    ...(toAdd.length ? [prisma.eventMember.createMany({ data: toAdd.map((userId) => ({ eventId: id, userId })) })] : []),
     prisma.event.update({
       where: { id },
       data: {
@@ -145,7 +162,7 @@ export async function updateEventAction(_prev: EventFormState, formData: FormDat
     }),
   ]);
 
-  revalidatePath(`/events/${id}`);
+  revalidatePath(`/events/${id}`, "layout");
   revalidatePath("/events");
   revalidatePath("/dashboard");
   redirect(`/events/${id}`);
@@ -232,61 +249,6 @@ export async function quickCreateEventAction(_prev: QuickEventState, formData: F
   return { event: { id: event.id, title: event.title, companyName: event.companyName, quotedValue: event.quotedValue } };
 }
 
-export async function addMilestoneAction(formData: FormData) {
-  const user = await requireUser();
-  const eventId = String(formData.get("eventId"));
-  const title = String(formData.get("title") ?? "").trim();
-  const date = String(formData.get("date") ?? "");
-  if (!title || !date) return;
-
-  const event = await prisma.event.findUnique({ where: { id: eventId }, include: { members: true } });
-  if (!event) return;
-  if (!canEditEvent(user, { ownerId: event.ownerId, memberIds: event.members.map((m) => m.userId) })) return;
-
-  await prisma.milestone.create({ data: { eventId, title, date: new Date(date) } });
-  revalidatePath(`/events/${eventId}/milestones`);
-  revalidatePath(`/events/${eventId}`);
-}
-
-export async function deleteMilestoneAction(formData: FormData) {
-  const user = await requireUser();
-  const milestoneId = String(formData.get("milestoneId"));
-  const eventId = String(formData.get("eventId"));
-
-  const event = await prisma.event.findUnique({ where: { id: eventId }, include: { members: true } });
-  if (!event) return;
-  if (!canEditEvent(user, { ownerId: event.ownerId, memberIds: event.members.map((m) => m.userId) })) return;
-
-  await prisma.milestone.delete({ where: { id: milestoneId } });
-  revalidatePath(`/events/${eventId}/milestones`);
-  revalidatePath(`/events/${eventId}`);
-}
-
-/**
- * Drag-and-drop reschedule of a single milestone from the weekly calendar
- * (WeekCalendar.tsx) — sets its date/time directly to wherever it was
- * dropped in the grid. Silently no-ops on a missing event or a permission
- * failure (same defensive pattern as every other action here) since this is
- * fired from a drag gesture with no confirm step and no error UI to show.
- */
-export async function rescheduleMilestoneAction(formData: FormData) {
-  const user = await requireUser();
-  const milestoneId = String(formData.get("milestoneId"));
-  const eventId = String(formData.get("eventId"));
-  const date = String(formData.get("date") ?? "");
-  if (!date) return;
-
-  const event = await prisma.event.findUnique({ where: { id: eventId }, include: { members: true } });
-  if (!event) return;
-  if (!canEditEvent(user, { ownerId: event.ownerId, memberIds: event.members.map((m) => m.userId) })) return;
-
-  await prisma.milestone.update({ where: { id: milestoneId }, data: { date: new Date(date) } });
-  revalidatePath(`/events/${eventId}/milestones`);
-  revalidatePath(`/events/${eventId}`);
-  revalidatePath("/events");
-  revalidatePath("/dashboard");
-}
-
 /**
  * Drag-and-drop reschedule of a whole event from the weekly calendar — shifts
  * buildDate/startDate/endDate/strikeDate (whichever are set) by the same
@@ -315,7 +277,7 @@ export async function rescheduleEventAction(formData: FormData) {
     },
   });
 
-  revalidatePath(`/events/${id}`);
+  revalidatePath(`/events/${id}`, "layout");
   revalidatePath("/events");
   revalidatePath("/dashboard");
 }

@@ -1,5 +1,6 @@
 import Link from "next/link";
-import { requireUser } from "@/lib/authz";
+import { redirect } from "next/navigation";
+import { requireUser, canViewFinance } from "@/lib/authz";
 import { getReports } from "@/lib/queries/finance";
 import { formatCurrency, formatCompactCurrency, niceAxisMax } from "@/lib/format";
 import { PrintButton } from "@/components/finance/PrintButton";
@@ -15,6 +16,7 @@ export default async function ReportsPage({
   searchParams: Promise<Record<string, string | undefined>>;
 }) {
   const user = await requireUser();
+  if (!canViewFinance(user)) redirect("/finance/expenses");
   const params = await searchParams;
   const t = getDictionary(await getLocale());
   const tr = t.finance.reports;

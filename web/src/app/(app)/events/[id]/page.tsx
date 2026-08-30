@@ -1,13 +1,13 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { requireUser, canManageFinance, canViewEventBudget, isAdmin } from "@/lib/authz";
+import { requireUser, canManageFinance, canViewEventBudget } from "@/lib/authz";
 import { getEventDetail } from "@/lib/queries/events";
-import { formatCurrency, formatDate, formatDateRange, formatMinutes } from "@/lib/format";
 import { resolveEventBudget } from "@/lib/event-budget";
+import { formatCurrency, formatDate, formatDateRange, formatMinutes } from "@/lib/format";
 import { QuoteStatusPill, InvoiceStatusPill } from "@/components/StatusPill";
-import { getRunningTimer } from "@/lib/queries/timetracker";
-import { startTimerAction } from "@/lib/actions/timetracker";
-import { getLocale, getDictionary, type Dictionary } from "@/lib/i18n";
+import { EventTimerButton } from "@/components/events/EventTimerButton";
+import { getRunningTimer, getOverviewUsers } from "@/lib/queries/timetracker";
+import { getLocale, getDictionary } from "@/lib/i18n";
 
 const DATE_TIME: Intl.DateTimeFormatOptions = { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" };
 
@@ -30,59 +30,28 @@ export default async function EventOverviewPage({ params }: { params: Promise<{ 
   const te = t.events;
 
   const totalExpenses = event.expenses.reduce((s, e) => s + e.amount, 0);
-  const totalInvoiced = event.invoices.reduce((s, i) => s + i.total, 0);
   const totalMinutes = event.timeEntries.reduce((s, e) => s + e.minutes, 0);
-  const upcomingMilestones = event.milestones.filter((m) => m.date >= new Date()).slice(0, 3);
+  const upcomingItems = event.roadmapItems.filter((m) => m.date >= new Date()).slice(0, 3);
   const uniquePeople = new Set(event.timeEntries.map((e) => e.userId));
   const runningTimer = await getRunningTimer(user.id);
+  const allUserIds = (await getOverviewUsers()).map((u) => u.id).join(",");
 
-  const showBudget = canViewEventBudget(user);
-  const admin = isAdmin(user);
+  const showFinance = canViewEventBudget(user);
   const budget = resolveEventBudget(event);
-  const plannedMargin = budget.amount === null ? null : event.quotedValue - budget.amount;
   const actualMargin = event.quotedValue - totalExpenses;
-  const spendRatio = budget.amount && budget.amount > 0 ? totalExpenses / budget.amount : null;
+  const spentPct = budget.amount && budget.amount > 0 ? Math.round((totalExpenses / budget.amount) * 100) : null;
 
   const buildTarget = event.buildDate ?? event.startDate;
   const buildDays = daysFromToday(buildTarget);
-  const paidInvoices = event.invoices.filter((i) => i.status === "PAID").length;
 
   return (
     <div className="grid grid-cols-1 gap-5">
       {/* stats strip */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         <Stat label={te.stats.buildDay} value={te.stats.buildRelative(buildDays)} sub={formatDate(buildTarget, DATE_TIME)} />
-        {showBudget ? (
-          <>
-            {plannedMargin === null ? (
-              <Stat label={te.quotedValue} value={formatCurrency(event.quotedValue)} sub={te.stats.quotedMinusBudget} tone="positive" />
-            ) : (
-              <Stat
-                label={te.stats.plannedMargin}
-                value={formatCurrency(plannedMargin)}
-                sub={te.stats.quotedMinusBudget}
-                tone={plannedMargin >= 0 ? "positive" : "warning"}
-              />
-            )}
-            <Stat
-              label={te.stats.spent}
-              value={formatCurrency(totalExpenses)}
-              sub={te.stats.spentDetail(spendRatio === null ? null : Math.round(spendRatio * 100), event.expenses.length)}
-              tone={spendRatio !== null && spendRatio > 1 ? "warning" : spendRatio !== null && spendRatio >= 0.85 ? "attention" : undefined}
-            />
-            <Stat
-              label={te.stats.invoices}
-              value={event.invoices.length === 0 ? te.stats.noInvoices : te.stats.invoicesPaid(paidInvoices, event.invoices.length)}
-              sub={event.invoices.length === 0 ? "" : te.stats.invoicesIssued(formatCurrency(totalInvoiced))}
-            />
-          </>
-        ) : (
-          <>
-            <Stat label={te.stats.timeLogged} value={formatMinutes(totalMinutes)} sub={te.peopleCount(uniquePeople.size)} />
-            <Stat label={te.tabMilestones} value={String(upcomingMilestones.length)} sub={te.nextMilestones} />
-            <Stat label={te.documents} value={String(event.quotes.length + event.invoices.length)} sub="" />
-          </>
-        )}
+        <Stat label={te.stats.timeLogged} value={formatMinutes(totalMinutes)} sub={te.peopleCount(uniquePeople.size)} />
+        <Stat label={te.tabRoadmap} value={String(upcomingItems.length)} sub={te.nextMilestones} />
+        <Stat label={te.documents} value={String(event.quotes.length + event.invoices.length)} sub="" />
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-[1.6fr_1fr] gap-5 items-start">
@@ -147,7 +116,15 @@ export default async function EventOverviewPage({ params }: { params: Promise<{ 
               </div>
               <div className="rounded-xl bg-ink/4 border border-ink/8 p-3.5">
                 <div className="label">{te.company}</div>
-                <div className="font-medium text-[13px] mt-2">{event.companyName}</div>
+                <div className="font-medium text-[13px] mt-2">
+                  {event.clientId ? (
+                    <Link href={`/clients/${event.clientId}`} className="hover:text-accent">
+                      {event.companyName}
+                    </Link>
+                  ) : (
+                    event.companyName
+                  )}
+                </div>
                 <div className="placeholder-text text-[11px] mt-0.5">
                   {event.companyAddress}
                   {event.companyAddress && <br />}
@@ -160,12 +137,12 @@ export default async function EventOverviewPage({ params }: { params: Promise<{ 
           <section className="card p-5">
             <div className="flex items-center justify-between gap-2 mb-2">
               <span className="heading-label">{te.nextMilestones}</span>
-              <Link href={`/events/${event.id}/milestones`} className="text-[9px] tracking-[0.1em] uppercase placeholder-text hover:text-accent">
-                {te.fullListNote.replace(/^·\s*/, "")}
+              <Link href={`/events/${event.id}/roadmap`} className="text-[9px] tracking-[0.1em] uppercase placeholder-text hover:text-accent">
+                {te.tabRoadmap}
               </Link>
             </div>
-            {upcomingMilestones.length === 0 && <p className="text-sm placeholder-text mt-1">{te.noUpcomingMilestones}</p>}
-            {upcomingMilestones.map((m) => (
+            {upcomingItems.length === 0 && <p className="text-sm placeholder-text mt-1">{te.noUpcomingMilestones}</p>}
+            {upcomingItems.map((m) => (
               <div key={m.id} className="flex items-center justify-between gap-3 py-2.5 border-t border-ink/8 first:border-t-0 text-[13px]">
                 <div>{m.title}</div>
                 <div className="placeholder-text text-[11px] shrink-0">{formatDate(m.date, DATE_TIME)}</div>
@@ -176,68 +153,83 @@ export default async function EventOverviewPage({ params }: { params: Promise<{ 
 
         {/* right rail */}
         <div className="flex flex-col gap-4">
-          {showBudget && (
-            <BudgetTile
-              t={te}
-              amount={budget.amount}
-              basis={
-                budget.type === "PERCENT"
-                  ? te.budget.basisPercent(budget.value, formatCurrency(event.quotedValue))
-                  : budget.type === "FIXED"
-                    ? te.budget.basisFixed(
-                        event.quotedValue > 0 ? Math.round(((budget.amount ?? 0) / event.quotedValue) * 100) : 0,
-                        formatCurrency(event.quotedValue),
-                      )
-                    : null
-              }
-              spent={totalExpenses}
-              spendRatio={spendRatio}
-              plannedMargin={plannedMargin}
-              actualMargin={actualMargin}
-              editHref={admin ? `/events/${event.id}/edit` : null}
-            />
+          {showFinance && (
+            <Link href={`/events/${event.id}/finance`} className="card p-4 block hover:border-ink/25 transition-colors">
+              <div className="flex items-center justify-between mb-1">
+                <span className="heading-label !text-[9px]">{te.finance.snapshotHeading}</span>
+                <span className="text-[8px] tracking-[0.14em] uppercase font-semibold text-accent">{te.finance.openFinance}</span>
+              </div>
+              <div className="flex justify-between py-1 text-[13px]">
+                <span className="text-ink/72">{te.finance.snapshotBudget}</span>
+                <span className="font-semibold tabular-nums">{budget.amount === null ? "—" : formatCurrency(budget.amount)}</span>
+              </div>
+              <div className="flex justify-between py-1 text-[13px]">
+                <span className="text-ink/72">{te.finance.snapshotSpent}</span>
+                <span className="tabular-nums">
+                  {formatCurrency(totalExpenses)}
+                  {spentPct !== null && <span className="placeholder-text"> · {spentPct}%</span>}
+                </span>
+              </div>
+              <div className="flex justify-between py-1 text-[13px]">
+                <span className="text-ink/72">{te.finance.snapshotMargin}</span>
+                <span className={`font-semibold tabular-nums ${actualMargin >= 0 ? "text-positive" : "text-warning"}`}>
+                  {formatCurrency(actualMargin)}
+                </span>
+              </div>
+            </Link>
           )}
 
           <div className="card p-4">
-            <div className="heading-label !text-[9px]">{te.timeLogged}</div>
-            <div className="text-lg font-semibold mt-1">{formatMinutes(totalMinutes)}</div>
-            <div className="placeholder-text text-[10px]">{te.peopleCount(uniquePeople.size)}</div>
-            {runningTimer?.eventId === event.id ? (
-              <div className="btno block text-center mt-3 opacity-50 cursor-default">{te.timerRunningHere}</div>
-            ) : (
-              <form action={startTimerAction}>
-                <input type="hidden" name="eventId" value={event.id} />
-                <button type="submit" className="btno block w-full text-center mt-3">
-                  {te.startTimer}
-                </button>
-              </form>
-            )}
+            <div className="flex items-center justify-between">
+              <span className="heading-label !text-[9px]">{te.timeLogged}</span>
+              <Link
+                href={`/time-tracker/report?events=${event.id}&users=${allUserIds}`}
+                className="text-[8px] tracking-[0.14em] uppercase font-semibold placeholder-text hover:text-accent"
+              >
+                {te.showAllLogs}
+              </Link>
+            </div>
+            <div className="flex items-end justify-between mt-1">
+              <div>
+                <div className="text-lg font-semibold">{formatMinutes(totalMinutes)}</div>
+                <div className="placeholder-text text-[10px]">{te.peopleCount(uniquePeople.size)}</div>
+              </div>
+              <EventTimerButton
+                eventId={event.id}
+                running={runningTimer?.eventId === event.id}
+                startLabel={te.startTimer}
+                stopLabel={te.stopTimer}
+                discardedMessage={t.timeTracker.runningTimer.discardedTooShort}
+              />
+            </div>
           </div>
 
-          <div className="card p-4">
-            <div className="heading-label !text-[9px] mb-1.5">{te.documents}</div>
-            {[...event.quotes, ...event.invoices].length === 0 && <p className="text-[12px] placeholder-text">{te.noneYet}</p>}
-            {event.quotes.map((q) => (
-              <div key={q.id} className="flex justify-between items-center py-1.5 text-[12px] border-t border-ink/8 first:border-t-0">
-                <span>{te.quoteNumber(q.number)}</span>
-                <QuoteStatusPill status={q.status} t={t.statusQuote} />
-              </div>
-            ))}
-            {event.invoices.map((inv) => (
-              <div key={inv.id} className="flex justify-between items-center py-1.5 text-[12px] border-t border-ink/8 first:border-t-0">
-                <span>{te.invoiceNumber(inv.number)}</span>
-                <InvoiceStatusPill status={inv.status} dueDate={inv.dueDate} paidAt={inv.paidAt} t={t.invoicePill} />
-              </div>
-            ))}
-            <Link href={`/events/${event.id}/quotes`} className="btno block text-center mt-3">
-              {te.viewQuotesInvoices}
-            </Link>
-            {canManageFinance(user) && (
-              <Link href={`/finance/quotes/new?eventId=${event.id}`} className="btn font-semibold block text-center mt-1.5">
-                {te.newQuoteForEvent}
+          {showFinance && (
+            <div className="card p-4">
+              <div className="heading-label !text-[9px] mb-1.5">{te.documents}</div>
+              {[...event.quotes, ...event.invoices].length === 0 && <p className="text-[12px] placeholder-text">{te.noneYet}</p>}
+              {event.quotes.map((q) => (
+                <div key={q.id} className="flex justify-between items-center py-1.5 text-[12px] border-t border-ink/8 first:border-t-0">
+                  <span>{te.quoteNumber(q.number)}</span>
+                  <QuoteStatusPill status={q.status} t={t.statusQuote} />
+                </div>
+              ))}
+              {event.invoices.map((inv) => (
+                <div key={inv.id} className="flex justify-between items-center py-1.5 text-[12px] border-t border-ink/8 first:border-t-0">
+                  <span>{te.invoiceNumber(inv.number)}</span>
+                  <InvoiceStatusPill status={inv.status} dueDate={inv.dueDate} paidAt={inv.paidAt} t={t.invoicePill} />
+                </div>
+              ))}
+              <Link href={`/events/${event.id}/finance`} className="btno block text-center mt-3">
+                {te.viewQuotesInvoices}
               </Link>
-            )}
-          </div>
+              {canManageFinance(user) && (
+                <Link href={`/finance/quotes/new?eventId=${event.id}`} className="btn font-semibold block text-center mt-1.5">
+                  {te.newQuoteForEvent}
+                </Link>
+              )}
+            </div>
+          )}
 
           <div className="card p-4">
             <div className="heading-label !text-[9px] mb-1.5">{te.team}</div>
@@ -294,93 +286,6 @@ function Timeline({ nodes }: { nodes: { label: string; date: Date | null; displa
           </div>
         );
       })}
-    </div>
-  );
-}
-
-function BudgetTile({
-  t,
-  amount,
-  basis,
-  spent,
-  spendRatio,
-  plannedMargin,
-  actualMargin,
-  editHref,
-}: {
-  t: Dictionary["events"];
-  amount: number | null;
-  basis: string | null;
-  spent: number;
-  spendRatio: number | null;
-  plannedMargin: number | null;
-  actualMargin: number;
-  editHref: string | null;
-}) {
-  const tb = t.budget;
-  const over = spendRatio !== null && spendRatio > 1;
-  const warn = spendRatio !== null && spendRatio >= 0.85 && spendRatio <= 1;
-  const remaining = amount === null ? 0 : amount - spent;
-
-  return (
-    <div className="card p-[18px] border-accent/25">
-      <div className="flex items-center justify-between mb-1">
-        <span className="heading-label !text-[9px]">{tb.title}</span>
-        {editHref && (
-          <Link href={editHref} className="text-[8px] tracking-[0.14em] uppercase font-semibold placeholder-text hover:text-accent">
-            {tb.edit}
-          </Link>
-        )}
-      </div>
-
-      {amount === null ? (
-        <p className="text-[12px] placeholder-text mt-1">
-          {tb.notSet}
-          {editHref && (
-            <>
-              {" "}
-              <Link href={editHref} className="text-accent hover:underline">
-                {tb.setBudget}
-              </Link>
-            </>
-          )}
-        </p>
-      ) : (
-        <>
-          <div className="text-[24px] font-bold tracking-tight tabular-nums">{formatCurrency(amount)}</div>
-          {basis && <div className="text-[11px] placeholder-text mt-0.5">{basis}</div>}
-
-          <div className="mt-3.5">
-            <div className="h-2 rounded-full bg-ink/10 overflow-hidden">
-              <div
-                className={`h-full rounded-full ${over ? "bg-warning" : warn ? "bg-attention" : "bg-ink/50"}`}
-                style={{ width: `${Math.min(100, (spendRatio ?? 0) * 100)}%` }}
-              />
-            </div>
-            <div className="flex justify-between mt-2 text-[11px]">
-              <span className="tabular-nums">{tb.spentLabel(formatCurrency(spent))}</span>
-              <span className={`tabular-nums ${remaining < 0 ? "text-warning" : "placeholder-text"}`}>
-                {remaining < 0 ? tb.overLabel(formatCurrency(-remaining)) : tb.leftLabel(formatCurrency(remaining))}
-              </span>
-            </div>
-          </div>
-
-          <div className="mt-3 pt-1">
-            {plannedMargin !== null && (
-              <div className="flex justify-between py-1.5 text-[13px] border-t border-ink/8">
-                <span className="text-ink/72">{tb.plannedMargin}</span>
-                <span className={`font-semibold tabular-nums ${plannedMargin >= 0 ? "text-positive" : "text-warning"}`}>
-                  {formatCurrency(plannedMargin)}
-                </span>
-              </div>
-            )}
-            <div className="flex justify-between py-1.5 text-[13px] border-t border-ink/8">
-              <span className="text-ink/72">{tb.actualMargin}</span>
-              <span className="font-semibold tabular-nums">{formatCurrency(actualMargin)}</span>
-            </div>
-          </div>
-        </>
-      )}
     </div>
   );
 }

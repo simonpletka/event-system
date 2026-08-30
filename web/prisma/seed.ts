@@ -48,7 +48,7 @@ async function main() {
   await prisma.quote.deleteMany();
   await prisma.timeEntry.deleteMany();
   await prisma.expense.deleteMany();
-  await prisma.milestone.deleteMany();
+  await prisma.roadmapItem.deleteMany();
   await prisma.venue.deleteMany();
   await prisma.eventMember.deleteMany();
   await prisma.eventContact.deleteMany();
@@ -235,11 +235,11 @@ async function main() {
           { name: "Loď Cargo", address: "Dvořákovo nábřeží, Praha 1", note: "afterparty, 5 Sep evening" },
         ],
       },
-      milestones: {
+      roadmapItems: {
         create: [
-          { date: d("2026-08-20T10:00:00"), title: "Client call — run of show" },
-          { date: d("2026-08-28T10:00:00"), title: "Tech walkthrough at venue" },
-          { date: d("2026-09-03T08:00:00"), title: "Build day — crew call" },
+          { type: "MILESTONE" as const, date: d("2026-08-20T10:00:00"), title: "Client call — run of show" },
+          { type: "MILESTONE" as const, date: d("2026-08-28T10:00:00"), title: "Tech walkthrough at venue" },
+          { type: "MILESTONE" as const, date: d("2026-09-03T08:00:00"), title: "Build day — crew call" },
         ],
       },
       members: { create: [{ userId: producer.id }, { userId: member.id }] },
@@ -340,7 +340,7 @@ async function main() {
       quotedValue: 128000,
       ownerId: producer.id,
       members: { create: [{ userId: producer.id }] },
-      milestones: { create: [{ date: d("2026-08-20T14:00:00"), title: "Client call 20 Aug" }] },
+      roadmapItems: { create: [{ type: "MILESTONE" as const, date: d("2026-08-20T14:00:00"), title: "Client call 20 Aug" }] },
       quotes: {
         create: [
           {
@@ -378,7 +378,7 @@ async function main() {
       quotedValue: 96000,
       ownerId: producer.id,
       venues: { create: [{ name: "Lipno resort", address: "Lipno nad Vltavou 250", note: "" }] },
-      milestones: { create: [{ date: d("2026-08-25T11:00:00"), title: "Venue visit" }] },
+      roadmapItems: { create: [{ type: "MILESTONE" as const, date: d("2026-08-25T11:00:00"), title: "Venue visit" }] },
       members: { create: [{ userId: producer.id }, { userId: member.id }] },
       quotes: {
         create: [
@@ -615,10 +615,10 @@ async function main() {
       quotedValue: 156000,
       ownerId: producer.id,
       venues: { create: [{ name: "Vnitroblock", address: "Tusarova 31, Praha 7", note: "main hall + demo pods" }] },
-      milestones: {
+      roadmapItems: {
         create: [
-          { date: d("2026-11-10T10:00:00"), title: "Press list finalised" },
-          { date: d("2026-12-01T10:00:00"), title: "Demo units delivered" },
+          { type: "MILESTONE" as const, date: d("2026-11-10T10:00:00"), title: "Press list finalised" },
+          { type: "MILESTONE" as const, date: d("2026-12-01T10:00:00"), title: "Demo units delivered" },
         ],
       },
       members: { create: [{ userId: producer.id }, { userId: member.id }] },
@@ -694,7 +694,7 @@ async function main() {
       quotedValue: 41000,
       ownerId: admin.id,
       venues: { create: [{ name: "Messe München — Hall B4", address: "Am Messesee 2, München", note: "" }] },
-      milestones: { create: [{ date: d("2026-08-22T10:00:00"), title: "Stand design sign-off" }] },
+      roadmapItems: { create: [{ type: "MILESTONE" as const, date: d("2026-08-22T10:00:00"), title: "Stand design sign-off" }] },
       members: { create: [{ userId: admin.id }, { userId: producer.id }] },
       expenses: {
         create: [
@@ -794,7 +794,7 @@ async function main() {
       endDate: d("2026-11-22T00:00:00"),
       quotedValue: 175000,
       ownerId: admin.id,
-      milestones: { create: [{ date: d("2026-09-05T10:00:00"), title: "Venue options review" }] },
+      roadmapItems: { create: [{ type: "MILESTONE" as const, date: d("2026-09-05T10:00:00"), title: "Venue options review" }] },
       members: { create: [{ userId: admin.id }, { userId: member.id }] },
       quotes: {
         create: [
@@ -890,7 +890,7 @@ async function main() {
       endDate: d("2025-11-06T21:00:00"),
       quotedValue: 118580,
       ownerId: admin.id,
-      milestones: { create: [{ date: d("2025-10-20T10:00:00"), title: "Venue confirmed" }] },
+      roadmapItems: { create: [{ type: "MILESTONE" as const, date: d("2025-10-20T10:00:00"), title: "Venue confirmed" }] },
       quotes: {
         create: [
           {
@@ -951,7 +951,7 @@ async function main() {
       ownerId: admin.id,
       venues: { create: [{ name: "Žofín Palace", address: "Slovanský ostrov 226, Praha 1", note: "main hall" }] },
       members: { create: [{ userId: admin.id }, { userId: member.id }] },
-      milestones: { create: [{ date: d("2025-11-24T10:00:00"), title: "Auction items confirmed" }] },
+      roadmapItems: { create: [{ type: "MILESTONE" as const, date: d("2025-11-24T10:00:00"), title: "Auction items confirmed" }] },
       quotes: {
         create: [
           {

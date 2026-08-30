@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { getCompanySettings } from "@/lib/queries/finance";
 import { getLocale, getDictionary } from "@/lib/i18n";
 import { getAppColors } from "@/lib/theme";
+import { PageHeader } from "@/components/ui/PageHeader";
 import { UsersTable } from "@/components/settings/UsersTable";
 import { CreateUserForm } from "@/components/settings/CreateUserForm";
 import { GeneralSettingsForm } from "@/components/settings/GeneralSettingsForm";
@@ -64,7 +65,7 @@ export default async function SettingsPage({
 
   return (
     <div>
-      <div className="sticky top-0 z-20 -mx-6 mt-0 md:-mt-5 px-6 pt-5 pb-2 backdrop-blur-2xl bg-gradient-to-b from-bg/80 to-bg/50 border-b border-ink/10">
+      <PageHeader pb="pb-2">
         <div className="max-w-3xl">
         <div className="flex items-end justify-between">
           <div>
@@ -122,7 +123,7 @@ export default async function SettingsPage({
           )}
         </div>
         </div>
-      </div>
+      </PageHeader>
 
       <div className="mt-5 max-w-3xl">
         {tab === "general" && (

@@ -31,10 +31,7 @@ export async function getEventList(user: SessionUser, filters: EventListFilters)
   const [events, total, clients, places] = await Promise.all([
     prisma.event.findMany({
       where,
-      include: {
-        venues: true,
-        milestones: { where: { date: { gte: new Date() } }, orderBy: { date: "asc" }, take: 1 },
-      },
+      include: { venues: true },
       orderBy: { startDate: "asc" },
     }),
     prisma.event.count({ where: eventWhereForUser(user) }),
@@ -66,7 +63,7 @@ export const getEventDetail = cache(async function getEventDetail(user: SessionU
     where: { id, ...eventWhereForUser(user) },
     include: {
       venues: true,
-      milestones: { orderBy: { date: "asc" } },
+      roadmapItems: { orderBy: { date: "asc" } },
       members: { include: { user: true } },
       owner: true,
       expenses: { include: { paidBy: true }, orderBy: { date: "desc" } },
@@ -77,4 +74,28 @@ export const getEventDetail = cache(async function getEventDetail(user: SessionU
     },
   });
   return event;
+});
+
+/**
+ * The Roadmap tab's own query — the deep includes (assignees, external
+ * attendees, comment threads) that `getEventDetail` deliberately keeps
+ * shallow so Overview/Finance don't pay for them.
+ */
+export const getEventRoadmap = cache(async function getEventRoadmap(user: SessionUser, id: string) {
+  return prisma.event.findFirst({
+    where: { id, ...eventWhereForUser(user) },
+    include: {
+      members: { include: { user: true } },
+      contacts: { orderBy: { sortOrder: "asc" } },
+      roadmapItems: {
+        orderBy: { date: "asc" },
+        include: {
+          assignees: { include: { user: true } },
+          externalAttendees: true,
+          comments: { include: { author: true }, orderBy: { createdAt: "asc" } },
+          createdBy: true,
+        },
+      },
+    },
+  });
 });

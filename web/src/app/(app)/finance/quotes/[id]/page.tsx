@@ -6,6 +6,7 @@ import { formatCurrency, formatDate } from "@/lib/format";
 import { convertQuoteToInvoiceAction, deleteQuoteAction, updateQuoteStatusAction, duplicateQuoteAction } from "@/lib/actions/finance";
 import { BackLink } from "@/components/BackLink";
 import { ConfirmDeleteButton } from "@/components/ui/ConfirmDeleteButton";
+import { PageHeader } from "@/components/ui/PageHeader";
 import { QuoteStatusPill } from "@/components/StatusPill";
 import { DownloadPdfButton } from "@/components/finance/DownloadPdfButton";
 import { groupItemsByCategory, categoryTotal } from "@/lib/line-items";
@@ -49,7 +50,7 @@ export default async function QuoteDetailPage({
 
   return (
     <div>
-      <div className="sticky top-0 z-20 -mx-6 mt-0 md:-mt-5 px-6 pt-5 pb-4 backdrop-blur-2xl bg-gradient-to-b from-bg/80 to-bg/50 border-b border-ink/10">
+      <PageHeader>
         <BackLink href="/finance/quotes">{t.finance.quotes.backLink}</BackLink>
         <div className="flex justify-between items-end flex-wrap gap-2 mt-2">
           <div>
@@ -102,7 +103,7 @@ export default async function QuoteDetailPage({
             )}
           </div>
         </div>
-      </div>
+      </PageHeader>
 
       <div className="grid grid-cols-1 md:grid-cols-[1fr_280px] gap-5 mt-5">
         <div className="min-w-0">
@@ -265,6 +266,13 @@ export default async function QuoteDetailPage({
                 {t.finance.quotes.eventLink(quote.event.title)}
               </Link>
             </div>
+            {client && (
+              <div className="py-1.5 text-[13px]">
+                <Link href={`/clients/${client.id}`} className="hover:text-accent">
+                  {t.finance.quotes.clientLink(client.name)}
+                </Link>
+              </div>
+            )}
             {quote.invoices.map((inv) => (
               <div key={inv.id} className="py-1.5 text-[13px]">
                 <Link href={`/finance/invoices/${inv.id}`} className="hover:text-accent">

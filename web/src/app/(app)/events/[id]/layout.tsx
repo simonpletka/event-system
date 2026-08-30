@@ -1,13 +1,14 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { requireUser, canEditEvent, isAdmin } from "@/lib/authz";
+import { requireUser, canEditEvent, isAdmin, canViewEventBudget } from "@/lib/authz";
 import { getEventDetail } from "@/lib/queries/events";
-import { formatDateRange, formatMinutes } from "@/lib/format";
+import { formatDateRange } from "@/lib/format";
 import { EventStatusPill } from "@/components/StatusPill";
 import { EventTabs } from "@/components/EventTabs";
 import { BackLink } from "@/components/BackLink";
 import { DeleteEventButton } from "@/components/DeleteEventButton";
 import { deleteEventAction } from "@/lib/actions/events";
+import { PageHeader } from "@/components/ui/PageHeader";
 import { getLocale, getDictionary } from "@/lib/i18n";
 
 export default async function EventDetailLayout({
@@ -24,12 +25,11 @@ export default async function EventDetailLayout({
   const locale = await getLocale();
   const t = getDictionary(locale);
 
-  const totalMinutes = event.timeEntries.reduce((s, t) => s + t.minutes, 0);
   const editable = canEditEvent(user, { ownerId: event.ownerId, memberIds: event.members.map((m) => m.userId) });
 
   return (
     <div>
-      <div className="sticky top-0 z-20 -mx-6 mt-0 md:-mt-5 px-6 pt-5 pb-2 backdrop-blur-2xl bg-gradient-to-b from-bg/80 to-bg/50 border-b border-ink/10">
+      <PageHeader pb="pb-2">
         <div className="max-w-6xl">
         <BackLink href="/events">{t.events.backToEvents}</BackLink>
         <div className="flex justify-between items-end flex-wrap gap-2 mt-2">
@@ -37,13 +37,22 @@ export default async function EventDetailLayout({
             <div className="text-[24px] font-bold tracking-tight">
               <span className="placeholder-text font-medium">{event.number}</span> {event.title}
             </div>
-            <div className="placeholder-text text-[12px] mt-1">
-              {event.companyName} · {formatDateRange(event.startDate, event.endDate)}
-              {event.venues[0] ? ` · ${event.venues[0].name}` : ""}
+            <div className="flex flex-wrap items-center gap-x-1.5 gap-y-1 text-[12px] mt-1.5">
+              <span className="placeholder-text">
+                {event.clientId ? (
+                  <Link href={`/clients/${event.clientId}`} className="hover:text-accent">
+                    {event.companyName}
+                  </Link>
+                ) : (
+                  event.companyName
+                )}{" "}
+                · {formatDateRange(event.startDate, event.endDate)}
+                {event.venues[0] ? ` · ${event.venues[0].name}` : ""}
+              </span>
+              <EventStatusPill status={event.status} t={t.statusEvent} />
             </div>
           </div>
           <div className="flex gap-1.5 items-center">
-            <EventStatusPill status={event.status} t={t.statusEvent} />
             {editable && (
               <Link href={`/events/${event.id}/edit`} className="btno">
                 {t.events.editEvent}
@@ -62,15 +71,11 @@ export default async function EventDetailLayout({
           </div>
         </div>
 
-        <EventTabs
-          eventId={event.id}
-          counts={{ expenses: event.expenses.length, time: formatMinutes(totalMinutes), docs: event.quotes.length + event.invoices.length }}
-          locale={locale}
-        />
+        <EventTabs eventId={event.id} showFinance={canViewEventBudget(user)} locale={locale} />
         </div>
-      </div>
+      </PageHeader>
 
-      <div className="mt-4 max-w-6xl">{children}</div>
+      <div className="mt-7 max-w-6xl">{children}</div>
     </div>
   );
 }

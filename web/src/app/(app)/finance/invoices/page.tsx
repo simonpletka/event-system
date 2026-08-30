@@ -1,5 +1,6 @@
 import Link from "next/link";
-import { requireUser, canManageFinance } from "@/lib/authz";
+import { redirect } from "next/navigation";
+import { requireUser, canManageFinance, canViewFinance } from "@/lib/authz";
 import { getInvoiceList, getInvoiceKpis, type InvoiceListFilters } from "@/lib/queries/finance";
 import { formatCurrency, formatDate } from "@/lib/format";
 import { InvoiceStatusPill } from "@/components/StatusPill";
@@ -16,6 +17,7 @@ export default async function InvoicesPage({
   searchParams: Promise<Record<string, string | undefined>>;
 }) {
   const user = await requireUser();
+  if (!canViewFinance(user)) redirect("/finance/expenses");
   const params = await searchParams;
   const locale = await getLocale();
   const t = getDictionary(locale);
@@ -130,10 +132,18 @@ export default async function InvoicesPage({
             <Link href={`/finance/invoices/${inv.id}`} className="font-medium group-hover:text-accent">
               {inv.number}
             </Link>
-            <Link href={`/finance/invoices/${inv.id}`} className="group-hover:text-accent">
+            <Link href={`/events/${inv.event.id}`} className="hover:text-accent">
               {inv.event.title}
             </Link>
-            <div className="placeholder-text group-hover:!text-accent">{inv.event.companyName}</div>
+            <div className="placeholder-text group-hover:!text-accent">
+              {inv.event.clientId ? (
+                <Link href={`/clients/${inv.event.clientId}`} className="hover:text-accent">
+                  {inv.event.companyName}
+                </Link>
+              ) : (
+                inv.event.companyName
+              )}
+            </div>
             <div className="placeholder-text group-hover:!text-accent">{formatDate(inv.issuedAt)}</div>
             <div className="placeholder-text group-hover:!text-accent">{formatDate(inv.dueDate)}</div>
             <div className="font-semibold tabular-nums group-hover:text-accent">
@@ -152,6 +162,7 @@ export default async function InvoicesPage({
           <MobileListRow
             key={inv.id}
             href={`/finance/invoices/${inv.id}`}
+            titleHref={`/events/${inv.event.id}`}
             subLeft={inv.number}
             title={inv.event.title}
             tag={<InvoiceStatusPill status={inv.status} dueDate={inv.dueDate} paidAt={inv.paidAt} t={t.invoicePill} />}

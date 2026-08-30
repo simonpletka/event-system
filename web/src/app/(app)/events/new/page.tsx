@@ -1,10 +1,17 @@
 import { requireUser, canCreateEvent, isAdmin } from "@/lib/authz";
 import { getClientOptions } from "@/lib/queries/clients";
+import { getOverviewUsers } from "@/lib/queries/timetracker";
 import { EventForm } from "@/components/EventForm";
+import { formatClientAddress } from "@/lib/format";
 import { getLocale, getDictionary } from "@/lib/i18n";
 
-export default async function NewEventPage() {
+export default async function NewEventPage({
+  searchParams,
+}: {
+  searchParams: Promise<Record<string, string | undefined>>;
+}) {
   const user = await requireUser();
+  const params = await searchParams;
   // Seed the date pickers with a sane placeholder rather than "now to the
   // minute": next full hour for the start, +2h for the end (the form's own
   // default event length). The user still picks the real dates.
@@ -12,29 +19,43 @@ export default async function NewEventPage() {
   startDefault.setMinutes(0, 0, 0);
   startDefault.setHours(startDefault.getHours() + 1);
   const endDefault = new Date(startDefault.getTime() + 2 * 60 * 60 * 1000);
-  const clients = canCreateEvent(user) ? await getClientOptions() : [];
+  const allowed = canCreateEvent(user);
+  const [clients, teamOptions] = allowed
+    ? await Promise.all([getClientOptions(), getOverviewUsers()])
+    : [[], []];
   const locale = await getLocale();
   const t = getDictionary(locale);
+
+  // Pre-link a client when arriving from a client's detail page ("New event").
+  const preClient = params.clientId ? clients.find((c) => c.id === params.clientId) : undefined;
 
   return (
     <div className="max-w-3xl">
       <h1 className="text-xl font-semibold border-b-2 border-ink pb-2 mb-4">{t.events.newEventH1}</h1>
-      {!canCreateEvent(user) ? (
+      {!allowed ? (
         <p className="text-lg font-semibold text-ink">{t.events.noPermCreate}</p>
       ) : (
         <EventForm
           clients={clients}
+          teamOptions={teamOptions}
           locale={locale}
           canEditBudget={isAdmin(user)}
           defaults={{
             title: "",
             brief: "",
-            clientId: null,
+            clientId: preClient?.id ?? null,
             contacts: [],
-            companyName: "",
-            companyAddress: "",
-            companyIco: "",
-            companyDic: "",
+            companyName: preClient?.name ?? "",
+            companyAddress: preClient
+              ? formatClientAddress({
+                  street: preClient.street ?? "",
+                  city: preClient.city ?? "",
+                  postCode: preClient.postCode ?? "",
+                  state: preClient.state ?? "",
+                })
+              : "",
+            companyIco: preClient?.ico ?? "",
+            companyDic: preClient?.dic ?? "",
             status: "INQUIRY",
             buildDate: null,
             startDate: startDefault,
@@ -44,6 +65,7 @@ export default async function NewEventPage() {
             budgetType: "NONE",
             budgetValue: 0,
             venues: [],
+            memberIds: [user.id],
           }}
         />
       )}
