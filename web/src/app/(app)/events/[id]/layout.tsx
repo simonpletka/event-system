@@ -8,6 +8,7 @@ import { EventTabs } from "@/components/EventTabs";
 import { BackLink } from "@/components/BackLink";
 import { DeleteEventButton } from "@/components/DeleteEventButton";
 import { deleteEventAction } from "@/lib/actions/events";
+import { PageHeader } from "@/components/ui/PageHeader";
 import { getLocale, getDictionary } from "@/lib/i18n";
 
 export default async function EventDetailLayout({
@@ -28,7 +29,7 @@ export default async function EventDetailLayout({
 
   return (
     <div>
-      <div className="sticky top-0 z-20 -mx-6 mt-0 md:-mt-5 px-6 pt-5 pb-2 backdrop-blur-2xl bg-gradient-to-b from-bg/80 to-bg/50 border-b border-ink/10">
+      <PageHeader pb="pb-2">
         <div className="max-w-6xl">
         <BackLink href="/events">{t.events.backToEvents}</BackLink>
         <div className="flex justify-between items-end flex-wrap gap-2 mt-2">
@@ -38,7 +39,14 @@ export default async function EventDetailLayout({
             </div>
             <div className="flex flex-wrap items-center gap-x-1.5 gap-y-1 text-[12px] mt-1.5">
               <span className="placeholder-text">
-                {event.companyName} · {formatDateRange(event.startDate, event.endDate)}
+                {event.clientId ? (
+                  <Link href={`/clients/${event.clientId}`} className="hover:text-accent">
+                    {event.companyName}
+                  </Link>
+                ) : (
+                  event.companyName
+                )}{" "}
+                · {formatDateRange(event.startDate, event.endDate)}
                 {event.venues[0] ? ` · ${event.venues[0].name}` : ""}
               </span>
               <EventStatusPill status={event.status} t={t.statusEvent} />
@@ -65,7 +73,7 @@ export default async function EventDetailLayout({
 
         <EventTabs eventId={event.id} showFinance={canViewEventBudget(user)} locale={locale} />
         </div>
-      </div>
+      </PageHeader>
 
       <div className="mt-7 max-w-6xl">{children}</div>
     </div>

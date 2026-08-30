@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { requireUser, canManageClients, isAdmin } from "@/lib/authz";
+import { requireUser, canManageClients, canCreateEvent, isAdmin } from "@/lib/authz";
 import { getClientDetail } from "@/lib/queries/clients";
 import { formatCurrency, formatDateRange } from "@/lib/format";
 import { deleteClientContactAction, deleteClientAction } from "@/lib/actions/clients";
@@ -9,6 +9,7 @@ import { EventStatusPill } from "@/components/StatusPill";
 import { ConfirmDeleteButton } from "@/components/ui/ConfirmDeleteButton";
 import { AddContactButton } from "@/components/AddContactModal";
 import { MobileListRow } from "@/components/ui/MobileListRow";
+import { PageHeader } from "@/components/ui/PageHeader";
 import { getLocale, getDictionary } from "@/lib/i18n";
 
 export default async function ClientDetailPage({ params }: { params: Promise<{ id: string }> }) {
@@ -23,19 +24,26 @@ export default async function ClientDetailPage({ params }: { params: Promise<{ i
 
   return (
     <div>
-      <div className="sticky top-0 z-20 -mx-6 mt-0 md:-mt-5 px-6 pt-5 pb-4 backdrop-blur-2xl bg-gradient-to-b from-bg/80 to-bg/50 border-b border-ink/10">
+      <PageHeader>
         <div className="max-w-6xl">
         <BackLink href="/clients">{tc.backLink}</BackLink>
         <div className="flex justify-between items-end flex-wrap gap-2 mt-2">
           <div className="text-[2.5rem] font-semibold leading-none">{client.name}</div>
-          {canManage && (
-            <Link href={`/clients/${client.id}/edit`} className="btno">
-              {tc.edit}
-            </Link>
-          )}
+          <div className="flex gap-1.5 items-center">
+            {canCreateEvent(user) && (
+              <Link href={`/events/new?clientId=${client.id}`} className="btn font-semibold">
+                {t.events.newEvent}
+              </Link>
+            )}
+            {canManage && (
+              <Link href={`/clients/${client.id}/edit`} className="btno">
+                {tc.edit}
+              </Link>
+            )}
+          </div>
         </div>
         </div>
-      </div>
+      </PageHeader>
 
       <div className="grid grid-cols-1 md:grid-cols-[1fr_300px] gap-5 mt-5 max-w-6xl">
         <div>

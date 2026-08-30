@@ -13,6 +13,7 @@ import {
 } from "@/lib/actions/finance";
 import { BackLink } from "@/components/BackLink";
 import { ConfirmDeleteButton } from "@/components/ui/ConfirmDeleteButton";
+import { PageHeader } from "@/components/ui/PageHeader";
 import { DownloadPdfButton } from "@/components/finance/DownloadPdfButton";
 import { SendInvoiceEmailButton } from "@/components/finance/SendInvoiceEmailButton";
 import { DocumentPreviewScaler } from "@/components/finance/DocumentPreviewScaler";
@@ -75,7 +76,7 @@ export default async function InvoiceDetailPage({
 
   return (
     <div>
-      <div className="sticky top-0 z-20 -mx-6 mt-0 md:-mt-5 px-6 pt-5 pb-4 backdrop-blur-2xl bg-gradient-to-b from-bg/80 to-bg/50 border-b border-ink/10">
+      <PageHeader>
         <BackLink href="/finance/invoices">{ti.backLink}</BackLink>
         <div className="flex justify-between items-end flex-wrap gap-2 mt-2">
           <div>
@@ -113,7 +114,7 @@ export default async function InvoiceDetailPage({
             )}
           </div>
         </div>
-      </div>
+      </PageHeader>
 
       <div className="grid grid-cols-1 md:grid-cols-[1fr_280px] gap-5 mt-5">
         <div className="min-w-0">

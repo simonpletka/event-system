@@ -7,6 +7,7 @@ import { CancelLink } from "@/components/ui/CancelLink";
 import { DateTimeField } from "@/components/ui/DateTimeField";
 import { AddressAutocompleteInput } from "@/components/ui/AddressAutocompleteInput";
 import { ClientPicker, type PickableClient } from "@/components/ClientPicker";
+import { TeamPicker } from "@/components/events/TeamPicker";
 import { BudgetField } from "@/components/BudgetField";
 import { useAresLookup } from "@/hooks/useAresLookup";
 import type { EventStatus, BudgetType } from "@/generated/prisma/enums";
@@ -36,6 +37,7 @@ export type EventFormDefaults = {
   budgetType: BudgetType;
   budgetValue: number;
   venues: VenueRow[];
+  memberIds: string[];
 };
 
 const initialState: EventFormState = {};
@@ -43,11 +45,13 @@ const initialState: EventFormState = {};
 export function EventForm({
   defaults,
   clients,
+  teamOptions,
   locale,
   canEditBudget = false,
 }: {
   defaults: EventFormDefaults;
   clients: PickableClient[];
+  teamOptions: { id: string; name: string | null }[];
   locale: Locale;
   canEditBudget?: boolean;
 }) {
@@ -250,6 +254,8 @@ export function EventForm({
           {tf.addContact}
         </button>
       </div>
+
+      <TeamPicker options={teamOptions} defaultValue={defaults.memberIds} locale={locale} />
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
         <Field label={tf.icoLabel}>

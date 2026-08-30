@@ -116,7 +116,15 @@ export default async function EventOverviewPage({ params }: { params: Promise<{ 
               </div>
               <div className="rounded-xl bg-ink/4 border border-ink/8 p-3.5">
                 <div className="label">{te.company}</div>
-                <div className="font-medium text-[13px] mt-2">{event.companyName}</div>
+                <div className="font-medium text-[13px] mt-2">
+                  {event.clientId ? (
+                    <Link href={`/clients/${event.clientId}`} className="hover:text-accent">
+                      {event.companyName}
+                    </Link>
+                  ) : (
+                    event.companyName
+                  )}
+                </div>
                 <div className="placeholder-text text-[11px] mt-0.5">
                   {event.companyAddress}
                   {event.companyAddress && <br />}

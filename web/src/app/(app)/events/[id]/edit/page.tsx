@@ -2,6 +2,7 @@ import { notFound } from "next/navigation";
 import { requireUser, canEditEvent, isAdmin } from "@/lib/authz";
 import { getEventDetail } from "@/lib/queries/events";
 import { getClientOptions } from "@/lib/queries/clients";
+import { getOverviewUsers } from "@/lib/queries/timetracker";
 import { EventForm } from "@/components/EventForm";
 import { getLocale, getDictionary } from "@/lib/i18n";
 
@@ -14,7 +15,9 @@ export default async function EditEventPage({ params }: { params: Promise<{ id: 
   const t = getDictionary(locale);
 
   const editable = canEditEvent(user, { ownerId: event.ownerId, memberIds: event.members.map((m) => m.userId) });
-  const clients = editable ? await getClientOptions() : [];
+  const [clients, teamOptions] = editable
+    ? await Promise.all([getClientOptions(), getOverviewUsers()])
+    : [[], []];
 
   return (
     <div className="max-w-3xl">
@@ -24,6 +27,7 @@ export default async function EditEventPage({ params }: { params: Promise<{ id: 
       ) : (
         <EventForm
           clients={clients}
+          teamOptions={teamOptions}
           locale={locale}
           canEditBudget={isAdmin(user)}
           defaults={{
@@ -45,6 +49,7 @@ export default async function EditEventPage({ params }: { params: Promise<{ id: 
             budgetType: event.budgetType,
             budgetValue: event.budgetValue,
             venues: event.venues.map((v) => ({ name: v.name, address: v.address, note: v.note })),
+            memberIds: event.members.map((m) => m.userId),
           }}
         />
       )}

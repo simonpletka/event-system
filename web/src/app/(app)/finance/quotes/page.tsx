@@ -1,5 +1,6 @@
 import Link from "next/link";
-import { requireUser, canManageFinance } from "@/lib/authz";
+import { redirect } from "next/navigation";
+import { requireUser, canManageFinance, canViewFinance } from "@/lib/authz";
 import { getQuoteList, type QuoteListFilters } from "@/lib/queries/finance";
 import { formatCurrency, formatDate } from "@/lib/format";
 import { QuoteStatusPill } from "@/components/StatusPill";
@@ -20,6 +21,7 @@ export default async function QuotesPage({
   searchParams: Promise<Record<string, string | undefined>>;
 }) {
   const user = await requireUser();
+  if (!canViewFinance(user)) redirect("/finance/expenses");
   const params = await searchParams;
   const t = getDictionary(await getLocale());
   const filters: QuoteListFilters = {
