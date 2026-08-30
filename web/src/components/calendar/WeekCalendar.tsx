@@ -394,7 +394,7 @@ export function WeekCalendar({
                     setDraggingKey(null);
                     setDragPreview(null);
                   }}
-                  className={`absolute overflow-hidden rounded-md leading-tight bg-ink/22 border-2 border-ink/45 px-1 py-0.5 box-border cursor-grab active:cursor-grabbing hover:border-accent hover:bg-accent/20 shadow-[0_6px_14px_rgba(0,0,0,0.45)] transition-opacity ${
+                  className={`absolute overflow-clip rounded-md leading-tight bg-ink/22 border-2 border-ink/45 px-1 py-0.5 box-border cursor-grab active:cursor-grabbing hover:border-accent hover:bg-accent/20 shadow-[0_6px_14px_rgba(0,0,0,0.45)] transition-opacity ${
                     draggingKey === milestoneKey ? "opacity-30" : "opacity-100"
                   }`}
                   style={{
@@ -403,7 +403,13 @@ export function WeekCalendar({
                     ...overlapBoxStyle(m.col),
                   }}
                 >
-                  <div className="text-[10.5px] font-bold truncate">{m.eventTitle}</div>
+                  {/* Name pins to the top of the scroll viewport while any part
+                      of the box is on screen (overflow-clip, not hidden, keeps
+                      this sticky against the outer grid scroller). Own opaque
+                      backing so the second line scrolls cleanly under it. */}
+                  <div className="sticky top-0 z-[1] -mx-1 -mt-0.5 px-1 pt-0.5 bg-surface/95 text-[10.5px] font-bold truncate">
+                    {m.eventTitle}
+                  </div>
                   <div className="placeholder-text text-[9px] font-bold truncate">{m.title}</div>
                 </Link>
                 );

@@ -308,14 +308,19 @@ export function TimeTrackerCalendar({
                   tPhases={dict.phases}
                   tDelete={dict.timeTracker.deleteEntry}
                   title={`${(e.event?.title ?? unassignedLabel)}${e.description ? ` — ${e.description}` : ""}`}
-                  className="absolute overflow-hidden rounded-md text-[8.5px] leading-tight bg-ink/14 border border-ink/25 px-1.5 py-1 box-border hover:border-accent flex flex-col text-left shadow-[0_4px_10px_rgba(0,0,0,0.35)]"
+                  className="absolute overflow-clip rounded-md text-[8.5px] leading-tight bg-ink/14 border border-ink/25 px-1.5 py-1 box-border hover:border-accent flex flex-col text-left shadow-[0_4px_10px_rgba(0,0,0,0.35)]"
                   style={{
                     top: (e.startMin / 60) * HOUR_PX,
                     height: Math.max(28, ((e.endMin - e.startMin) / 60) * HOUR_PX),
                     ...overlapBoxStyle(e.col),
                   }}
                 >
-                  <div className="font-semibold truncate">{(e.event?.title ?? unassignedLabel)}</div>
+                  {/* Name pins to the top of the scroll viewport while any part
+                      of the box is visible (overflow-clip, not hidden, so this
+                      sticks against the outer grid scroller). */}
+                  <div className="sticky top-0 z-[1] -mx-1.5 -mt-1 px-1.5 pt-1 bg-surface/95 font-semibold truncate">
+                    {(e.event?.title ?? unassignedLabel)}
+                  </div>
                   {e.description && <div className="placeholder-text truncate">{e.description}</div>}
                   <div className="placeholder-text mt-auto">{formatMinutes(e.minutes)}</div>
                 </EditEntryButton>
