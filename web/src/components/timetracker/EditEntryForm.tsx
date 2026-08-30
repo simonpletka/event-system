@@ -4,6 +4,7 @@ import { useActionState, useEffect, useTransition } from "react";
 import { updateManualEntryAction, deleteTimeEntryAction, type TimeFormState } from "@/lib/actions/timetracker";
 import { useConfirmDialog } from "@/components/ui/ConfirmDialogProvider";
 import { DateTimeField } from "@/components/ui/DateTimeField";
+import { TzOffsetField } from "@/components/ui/TzOffsetField";
 import type { TimePhase } from "@/generated/prisma/enums";
 import type { Dictionary } from "@/lib/dictionary";
 
@@ -71,6 +72,7 @@ export function EditEntryForm({
 
   return (
     <form action={formAction} className="flex flex-col gap-3">
+      <TzOffsetField />
       <input type="hidden" name="id" value={id} />
       <label className="flex flex-col gap-1.5">
         <span className="field-label">{t.eventLabel}</span>

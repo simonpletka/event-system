@@ -2,11 +2,11 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { requireUser, canViewFinance } from "@/lib/authz";
 import { getReports } from "@/lib/queries/finance";
-import { formatCurrency, formatCompactCurrency, niceAxisMax } from "@/lib/format";
+import { formatCurrency, formatCompactCurrency, niceMoneyAxis } from "@/lib/format";
 import { PrintButton } from "@/components/finance/PrintButton";
+import { MonthlyBarChart } from "@/components/finance/MonthlyBarChart";
 import { SegmentedTabs } from "@/components/ui/SegmentedTabs";
 import { MobileListRow } from "@/components/ui/MobileListRow";
-import { ChartAxisGrid } from "@/components/ui/ChartAxisGrid";
 import { INCOME_CHART_COLOR, categoricalColor as categoryColor } from "@/lib/chart-colors";
 import { getLocale, getDictionary } from "@/lib/i18n";
 
@@ -26,8 +26,8 @@ export default async function ReportsPage({
   const report = await getReports(user, year);
 
   const maxMonthly = Math.max(1, ...report.byMonth.flatMap((m) => [m.income, m.expense]));
-  const axisMax = niceAxisMax(maxMonthly);
-  const axisTicks = [axisMax, axisMax * 0.75, axisMax * 0.5, axisMax * 0.25, 0].map((v) => formatCompactCurrency(v));
+  const { axisMax, ticks: axisTickValues } = niceMoneyAxis(maxMonthly);
+  const axisTicks = axisTickValues.map((v) => formatCompactCurrency(v));
   const maxCategory = Math.max(1, ...report.topCategories.map(([, v]) => v));
 
   const tabOptions = (["month", "event", "category"] as const).map((v) => ({
@@ -75,31 +75,13 @@ export default async function ReportsPage({
                 <Legend swatch="bg-accent" label={tr.legendExpenses} />
               </div>
             </div>
-            <div className="overflow-x-auto">
-              <div className="relative h-[200px] mt-2 min-w-[500px]">
-                <ChartAxisGrid ticks={axisTicks} />
-                <div className="absolute left-[74px] right-1 top-0 bottom-0 flex items-end justify-between gap-[3px]">
-                  {report.byMonth.map((m) => (
-                    <div
-                      key={m.month}
-                      className="flex items-end justify-center gap-[2px] flex-1"
-                      style={{ height: 200 }}
-                      title={tr.barTooltip(MONTHS[m.month], formatCurrency(m.income), formatCurrency(m.expense))}
-                    >
-                      <div className="w-2 rounded-t" style={{ height: `${(m.income / axisMax) * 100}%`, background: INCOME_CHART_COLOR }} />
-                      <div className="w-2 rounded-t bg-accent" style={{ height: `${(m.expense / axisMax) * 100}%` }} />
-                    </div>
-                  ))}
-                </div>
-              </div>
-              <div className="flex ml-[74px] mr-1 justify-between mt-2 min-w-[426px]">
-                {MONTHS.map((m) => (
-                  <span key={m} className="label flex-1 text-center">
-                    {m}
-                  </span>
-                ))}
-              </div>
-            </div>
+            <MonthlyBarChart
+              months={report.byMonth.map((m) => ({ label: MONTHS[m.month], income: m.income, expense: m.expense }))}
+              axisMax={axisMax}
+              axisTicks={axisTicks}
+              incomeColor={INCOME_CHART_COLOR}
+              labels={{ income: tr.legendIncome, expenses: tr.legendExpenses, balance: tr.colBalance }}
+            />
           </div>
 
           <div className="card px-4 py-4">

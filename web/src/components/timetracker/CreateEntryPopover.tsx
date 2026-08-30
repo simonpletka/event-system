@@ -2,6 +2,7 @@
 
 import { useActionState, useEffect, useRef, type CSSProperties } from "react";
 import { addCalendarEntryAction, type TimeFormState } from "@/lib/actions/timetracker";
+import { TzOffsetField } from "@/components/ui/TzOffsetField";
 import { isoDate } from "@/lib/calendar";
 import type { Dictionary } from "@/lib/dictionary";
 
@@ -72,6 +73,7 @@ export function CreateEntryPopover({
   return (
     <div ref={ref} style={style} className="fixed z-40 card p-4 w-[260px] shadow-[0_14px_36px_rgba(0,0,0,0.4)]">
       <form action={formAction} className="flex flex-col gap-2.5">
+        <TzOffsetField />
         <input type="hidden" name="date" value={isoDate(day)} />
         <input name="description" placeholder={t.descriptionPlaceholder} className="input" autoFocus />
         <div className="flex gap-2">

@@ -33,11 +33,15 @@ export type CalendarEvent = {
 // controls the visible window and initial scroll position on load, not what
 // exists in the grid (a milestone can still be dropped outside 6–20 by
 // scrolling first, it's just not what's on screen by default).
+// The visible box caps to the viewport height (see the clamp() on the scroll
+// container) so a short window doesn't get an oversized calendar, but never
+// shows fewer than MIN_VISIBLE_HOURS rows.
 const GRID_START_HOUR = 0;
 const GRID_END_HOUR = 24;
 const DEFAULT_VIEW_START_HOUR = 6;
 const DEFAULT_VIEW_END_HOUR = 20;
 const HOUR_PX = 72;
+const MIN_VISIBLE_HOURS = 8;
 const GRID_HEIGHT = (GRID_END_HOUR - GRID_START_HOUR) * HOUR_PX;
 const VISIBLE_VIEWPORT_HEIGHT = (DEFAULT_VIEW_END_HOUR - DEFAULT_VIEW_START_HOUR) * HOUR_PX;
 
@@ -261,6 +265,10 @@ export function WeekCalendar({
       </div>
 
       <div className="hidden md:block">
+      {/* The 7-day grid keeps ~110px/column; below that the wrapper scrolls
+          sideways rather than crushing the columns (phones get the agenda above). */}
+      <div className="overflow-x-auto">
+      <div className="min-w-[820px]">
       <div className="grid grid-cols-[44px_repeat(7,minmax(0,1fr))] border-b border-ink/20 pb-1">
         <div className="heading-label !text-[11px] !tracking-normal whitespace-nowrap">WEEK {isoWeekNumber(weekStart)}</div>
         {days.map((d) => {
@@ -333,7 +341,11 @@ export function WeekCalendar({
         </div>
       )}
 
-      <div ref={scrollRef} className="overflow-y-auto mt-1" style={{ maxHeight: VISIBLE_VIEWPORT_HEIGHT }}>
+      <div
+        ref={scrollRef}
+        className="overflow-y-auto mt-1"
+        style={{ maxHeight: `clamp(${MIN_VISIBLE_HOURS * HOUR_PX}px, calc(100dvh - 15rem), ${VISIBLE_VIEWPORT_HEIGHT}px)` }}
+      >
       <div className="relative grid grid-cols-[44px_repeat(7,minmax(0,1fr))]">
         <div>
           {hours.map((h) => (
@@ -431,6 +443,8 @@ export function WeekCalendar({
             </div>
           </>
         )}
+      </div>
+      </div>
       </div>
       </div>
 

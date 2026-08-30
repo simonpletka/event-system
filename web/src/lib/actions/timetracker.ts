@@ -77,10 +77,22 @@ export async function stopTimerAction(_prev: TimeFormState, formData: FormData):
   return { success: true, discardedTooShort };
 }
 
-function combineDateTime(dateStr: string, timeStr: string) {
+/**
+ * Builds the instant for a wall-clock date+time in the *browser's* timezone,
+ * not the server's. `tzOffsetMinutes` is the client's `Date.getTimezoneOffset()`
+ * (minutes to add to local time to reach UTC — e.g. -120 for CET summer),
+ * passed as a hidden form field. Without this the server would interpret
+ * "14:00" in its own zone, so a UTC-hosted deploy stored/replayed drawn
+ * entries ~2h off (see the "Local dates" gotcha in CLAUDE.md).
+ */
+function combineDateTime(dateStr: string, timeStr: string, tzOffsetMinutes: number) {
   const [y, m, d] = dateStr.split("-").map(Number);
   const [h, min] = timeStr.split(":").map(Number);
-  return new Date(y, m - 1, d, h, min);
+  return new Date(Date.UTC(y, m - 1, d, h, min) + tzOffsetMinutes * 60000);
+}
+
+function tzOffsetOf(formData: FormData) {
+  return Number(formData.get("tzOffsetMinutes") ?? 0);
 }
 
 /**
@@ -93,10 +105,11 @@ function computeMinutesAndTimes(formData: FormData, dateStr: string) {
   const start = String(formData.get("startTime") ?? "");
   const end = String(formData.get("endTime") ?? "");
   const duration = Number(formData.get("duration") ?? 0);
+  const tzOffset = tzOffsetOf(formData);
 
   if (start && end) {
-    const startedAt = combineDateTime(dateStr, start);
-    const endedAt = combineDateTime(dateStr, end);
+    const startedAt = combineDateTime(dateStr, start, tzOffset);
+    const endedAt = combineDateTime(dateStr, end, tzOffset);
     const diff = Math.round((endedAt.getTime() - startedAt.getTime()) / 60000);
     if (diff > 0) return { minutes: diff, startedAt, endedAt };
   }
@@ -226,7 +239,7 @@ export async function adjustRunningTimerStartAction(_prev: TimeFormState, formDa
   const startTime = String(formData.get("startTime") ?? "");
   if (!date || !startTime) return { error: "Start date and time are required." };
 
-  const startedAt = combineDateTime(date, startTime);
+  const startedAt = combineDateTime(date, startTime, tzOffsetOf(formData));
   if (startedAt.getTime() > Date.now()) return { error: "Start time can't be in the future." };
 
   await prisma.timeEntry.update({ where: { id: running.id }, data: { startedAt, date: startedAt } });

@@ -2,6 +2,7 @@
 
 import { useActionState, useEffect, useRef, useState } from "react";
 import { adjustRunningTimerStartAction, type TimeFormState } from "@/lib/actions/timetracker";
+import { TzOffsetField } from "@/components/ui/TzOffsetField";
 import { isoDate, isoTime } from "@/lib/calendar";
 import type { Dictionary } from "@/lib/dictionary";
 
@@ -67,6 +68,7 @@ function StartTimeEditor({ startedAt, t, onSaved }: { startedAt: Date; t: T; onS
   return (
     <div className="absolute left-0 top-[calc(100%+6px)] z-40 card p-3 w-[210px] shadow-[0_14px_36px_rgba(0,0,0,0.4)]">
       <form action={formAction} className="flex flex-col gap-2">
+        <TzOffsetField />
         <div className="grid grid-cols-2 gap-2">
           <label className="flex flex-col gap-1">
             <span className="heading-label !text-[8px]">{t.start}</span>

@@ -84,6 +84,20 @@ export function niceAxisMax(max: number): number {
 }
 
 /**
+ * Money axis that fits the data: the tick *step* is a "nice" 1/2/5/10×10ⁿ
+ * value (via niceAxisMax) and the top is the smallest multiple of that step
+ * that still clears the data — so every gridline label is a round amount and
+ * the tallest bar still fills most of the plot. Returns ticks top-to-0.
+ */
+export function niceMoneyAxis(max: number, targetTicks = 4): { axisMax: number; ticks: number[] } {
+  const step = niceAxisMax(Math.max(1, max) / targetTicks);
+  const axisMax = Math.max(step, Math.ceil(Math.max(1, max) / step) * step);
+  const ticks: number[] = [];
+  for (let v = axisMax; v >= 0; v -= step) ticks.push(v);
+  return { axisMax, ticks };
+}
+
+/**
  * Chart axis for minutes-based data: the max grows to fit whatever's being
  * charted, but the tick step is always a whole or half hour (a multiple of
  * 30 minutes) — never an odd fraction like the proportional niceAxisMax

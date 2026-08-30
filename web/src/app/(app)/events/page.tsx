@@ -5,8 +5,8 @@ import { getWeekCalendarData } from "@/lib/queries/calendar";
 import { formatCurrency, formatDateRange } from "@/lib/format";
 import { EventStatusPill } from "@/components/StatusPill";
 import { WeekCalendar } from "@/components/calendar/WeekCalendar";
-import { WeekNav } from "@/components/calendar/WeekNav";
-import { mondayOf, parseIsoDate } from "@/lib/calendar";
+import { DateNav } from "@/components/calendar/DateNav";
+import { isoDate, mondayOf, parseIsoDate } from "@/lib/calendar";
 import { SegmentedTabs } from "@/components/ui/SegmentedTabs";
 import { MobileListRow } from "@/components/ui/MobileListRow";
 import { EmptyState } from "@/components/ui/EmptyState";
@@ -47,7 +47,13 @@ export default async function EventsPage({
           <ViewHeader canCreate={canCreateEvent(user)} t={t} />
           <div className="flex items-center justify-between gap-2 mt-4 flex-wrap">
             <ViewSwitch view="calendar" t={t} />
-            <WeekNav weekStart={weekStart} hrefFor={(week) => `/events?view=calendar&week=${week}`} todayLabel={t.calendar.today} />
+            <DateNav
+              mode="single"
+              weekStartIso={isoDate(weekStart)}
+              basePath="/events"
+              extraQuery="view=calendar"
+              todayLabel={t.calendar.today}
+            />
           </div>
         </PageHeader>
         <div className="mt-4">

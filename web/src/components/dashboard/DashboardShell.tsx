@@ -2,7 +2,8 @@ import type { ReactNode } from "react";
 import Link from "next/link";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { SegmentedTabs } from "@/components/ui/SegmentedTabs";
-import { WeekNav } from "@/components/calendar/WeekNav";
+import { DateNav } from "@/components/calendar/DateNav";
+import { isoDate } from "@/lib/calendar";
 
 /** Content column width — shared by the header's inner wrapper and the body. */
 const COL = "max-w-[1080px]";
@@ -60,9 +61,11 @@ export function DashboardShell({
                 ]}
               />
               {view === "calendar" && weekStart && weekHrefBase && (
-                <WeekNav
-                  weekStart={weekStart}
-                  hrefFor={(week) => `${weekHrefBase}?view=calendar&week=${week}`}
+                <DateNav
+                  mode="single"
+                  weekStartIso={isoDate(weekStart)}
+                  basePath={weekHrefBase}
+                  extraQuery="view=calendar"
                   todayLabel={todayLabel ?? "Today"}
                 />
               )}
