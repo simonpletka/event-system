@@ -25,9 +25,5 @@ export function EventTabs({
   const seg = pathname.slice(base.length).split("/")[1] || "overview";
   const active = tabs.some((x) => x.value === seg) ? seg : "overview";
 
-  return (
-    <div className="mt-2.5 -mx-6 px-6 overflow-x-auto md:mx-0 md:px-0 md:overflow-visible">
-      <SegmentedTabs options={tabs} active={active} />
-    </div>
-  );
+  return <SegmentedTabs options={tabs} active={active} />;
 }

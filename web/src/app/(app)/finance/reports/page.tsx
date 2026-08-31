@@ -58,7 +58,7 @@ export default async function ReportsPage({
         </div>
       </div>
 
-      <div className="flex overflow-x-auto gap-3 -mx-6 px-6 md:mx-0 md:px-0 md:grid md:grid-cols-4 md:overflow-visible mt-4">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mt-4">
         <ReportKpi label={tr.kpiIncome} value={formatCurrency(report.income)} />
         <ReportKpi label={tr.kpiExpenses} value={formatCurrency(report.expense)} />
         <ReportKpi label={tr.kpiBalance} value={formatCurrency(report.balance)} />
@@ -215,9 +215,9 @@ export default async function ReportsPage({
 
 function ReportKpi({ label, value }: { label: string; value: string }) {
   return (
-    <div className="card shrink-0 w-[132px] md:w-auto px-4 py-4">
+    <div className="card px-4 py-4">
       <div className="heading-label">{label}</div>
-      <div className="text-[20px] font-semibold tracking-tight mt-1">{value}</div>
+      <div className="text-[17px] md:text-[20px] font-semibold tracking-tight mt-1 tabular-nums">{value}</div>
     </div>
   );
 }

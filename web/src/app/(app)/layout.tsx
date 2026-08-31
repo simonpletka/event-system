@@ -30,7 +30,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
 
   return (
     <ConfirmDialogProvider defaultLabels={t.confirmDialog}>
-      <div className="min-h-screen flex">
+      <div className="min-h-dvh flex">
         <Sidebar
           userName={displayName}
           avatarUrl={avatarUrl}
@@ -42,7 +42,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
           tElapsed={t.timeTracker.editableElapsed}
           discardedMessage={t.timeTracker.runningTimer.discardedTooShort}
         />
-        <main className="flex-1 min-w-0 px-6 py-5 pb-24 md:pb-5">
+        <main className="flex-1 min-w-0 px-6 py-5 pb-[calc(6.5rem+env(safe-area-inset-bottom))] md:pb-5">
           <MobileTopBar
             userName={displayName}
             avatarUrl={avatarUrl}

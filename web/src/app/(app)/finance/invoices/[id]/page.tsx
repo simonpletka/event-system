@@ -118,6 +118,61 @@ export default async function InvoiceDetailPage({
 
       <div className="grid grid-cols-1 md:grid-cols-[1fr_280px] gap-5 mt-5">
         <div className="min-w-0">
+          {/* Phone: the scaled-to-fit A4 preview is an unreadable near-empty
+              card at this width (mobile-review finding). Show a native line-item
+              + totals summary instead; the full PDF is one tap away in the
+              header, and repeated here. */}
+          <div className="md:hidden card p-4">
+            <div className="heading-label !text-[12px] mb-2.5">{ti.invoiceN(invoice.number)}</div>
+            {groups.map((g) => (
+              <div key={g.category || "—"} className="mb-3 last:mb-0">
+                {g.category && <div className="label mb-1">{g.category}</div>}
+                {g.items.map((item) => (
+                  <div key={item.id} className="flex justify-between gap-3 py-1.5 border-b border-ink/8 last:border-b-0 text-[13px]">
+                    <span className="min-w-0">
+                      {item.description}
+                      {!invoice.hideItemPrices && (
+                        <span className="placeholder-text">{` · ${item.quantity} × ${formatCurrency(item.unitPrice, invoice.currency)} · ${item.vatRate}%`}</span>
+                      )}
+                    </span>
+                    {!invoice.hideItemPrices && (
+                      <span className="shrink-0 tabular-nums">{formatCurrency(item.quantity * item.unitPrice, invoice.currency)}</span>
+                    )}
+                  </div>
+                ))}
+                {invoice.hideItemPrices && g.category && (
+                  <div className="flex justify-end text-[12px] font-semibold mt-1 tabular-nums">
+                    {formatCurrency(categoryTotal(g.items), invoice.currency)}
+                  </div>
+                )}
+              </div>
+            ))}
+            <div className="flex flex-col gap-1 mt-3 pt-3 border-t border-ink/12 text-[13px]">
+              <div className="flex justify-between">
+                <span className="placeholder-text">{ti.base}</span>
+                <span className="tabular-nums">{formatCurrency(base, invoice.currency)}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="placeholder-text">{ti.vat}</span>
+                <span className="tabular-nums">{formatCurrency(vat, invoice.currency)}</span>
+              </div>
+              {discountAmount > 0 && (
+                <div className="flex justify-between">
+                  <span className="placeholder-text">{ti.discount}</span>
+                  <span className="tabular-nums">-{formatCurrency(discountAmount, invoice.currency)}</span>
+                </div>
+              )}
+              <div className="flex justify-between font-bold text-[15px] mt-1">
+                <span>{ti.toPay}</span>
+                <span className="tabular-nums" style={{ color: accent }}>{formatCurrency(invoice.total, invoice.currency)}</span>
+              </div>
+            </div>
+            <a href={`/api/invoices/${invoice.id}/pdf`} target="_blank" rel="noreferrer" className="btno w-full text-center block mt-3">
+              {t.finance.downloadPdf.downloadPdf}
+            </a>
+          </div>
+
+          <div className="hidden md:block">
           <div className="flex justify-end mb-2">
             <SegmentedTabs
               options={[
@@ -284,6 +339,7 @@ export default async function InvoiceDetailPage({
             </div>
           </div>
           </DocumentPreviewScaler>
+          </div>
           </div>
         </div>
 

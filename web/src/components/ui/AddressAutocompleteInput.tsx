@@ -64,7 +64,7 @@ export function AddressAutocompleteInput({
         onFocus={() => value.trim().length >= 3 && setOpen(true)}
         placeholder={placeholder}
         autoComplete="off"
-        className={className}
+        className={`${className} w-full`}
       />
       {open && (loading || suggestions.length > 0) && (
         <div className="absolute z-20 top-full left-0 right-0 mt-1 bg-surface border border-ink/30 max-h-52 overflow-y-auto">

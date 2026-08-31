@@ -16,6 +16,12 @@ import type { ReactNode } from "react";
  * `pb` is a separate prop rather than something you pass through `className`
  * because two `pb-*` utilities in one class list don't resolve by source
  * order (Tailwind cascade-layer gotcha, see CLAUDE.md).
+ *
+ * Sticky only from `md` up. On phones the full header (back link + title +
+ * meta + actions + tabs) is tall enough that pinning it eats more than half
+ * the viewport, so it scrolls away with the page — section layouts that need
+ * their tab strip to stay reachable render a separate slim `md:hidden`
+ * sticky tab bar instead (see the event / finance / settings layouts).
  */
 export function PageHeader({
   children,
@@ -28,11 +34,11 @@ export function PageHeader({
 }) {
   return (
     <div
-      className={`sticky top-0 z-20 -mx-6 mt-0 md:-mt-5 px-6 pt-5 ${pb} ${className}`}
+      className={`md:sticky md:top-0 z-20 -mx-6 mt-0 md:-mt-5 px-6 pt-5 ${pb} ${className}`}
     >
       <div
         aria-hidden
-        className="absolute inset-y-0 left-[calc(100%_-_100vw)] w-screen z-[-1] backdrop-blur-2xl bg-gradient-to-b from-bg/80 to-bg/50 border-b border-ink/10"
+        className="absolute inset-y-0 left-[calc(100%_-_100vw)] w-screen z-[-1] backdrop-blur-2xl bg-gradient-to-b from-bg/80 to-bg/50 border-b border-ink/10 md:block hidden"
       />
       {children}
     </div>
