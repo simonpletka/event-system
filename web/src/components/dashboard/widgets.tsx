@@ -10,6 +10,7 @@ import {
   formatDateRange,
   formatMinutes,
   formatDurationShort,
+  niceMinutesAxis,
   type CurrencyCode,
 } from "@/lib/format";
 
@@ -256,13 +257,10 @@ export function TrackedTimeChart({
   const td = t.dashboard;
   const nowMs = new Date().getTime();
 
-  // Fixed 2-hour gridlines, matching the old chart's rationale (hours, not
-  // currency — proportional "nice" maxes produced 0:50 / 1:40 ticks).
-  const TWO_HOURS = 120;
-  const dataMax = Math.max(0, ...byBucket);
-  const axisMax = Math.max(TWO_HOURS * 4, Math.ceil(dataMax / TWO_HOURS) * TWO_HOURS);
-  const ticks: string[] = [];
-  for (let m = axisMax; m >= 0; m -= TWO_HOURS) ticks.push(formatDurationShort(m));
+  // Axis fits the week's actual max, but every tick stays a whole or half
+  // hour (niceMinutesAxis steps in multiples of 30m) — never an odd fraction.
+  const { axisMax, ticks: tickValues } = niceMinutesAxis(Math.max(0, ...byBucket));
+  const ticks = tickValues.map(formatDurationShort);
 
   return (
     <div>

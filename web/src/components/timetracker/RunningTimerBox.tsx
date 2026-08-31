@@ -57,8 +57,14 @@ export function RunningTimerBox({
     return () => clearInterval(id);
   }, [running]);
 
-  const wrapClass = compact ? "card p-3.5 flex flex-col gap-2.5" : "card px-4 py-3 flex items-center gap-3 flex-wrap";
-  const pillWidth = compact ? "w-full" : "";
+  // Non-compact still stacks vertically below `sm` — the one-row layout only
+  // has room for the description input + two select pills + timer + button
+  // once there's ~600px to work with; narrower than that and the description
+  // field collapses to an unusable sliver (mobile-review finding).
+  const wrapClass = compact
+    ? "card p-3.5 flex flex-col gap-2.5"
+    : "card px-4 py-3 flex flex-col gap-2.5 sm:flex-row sm:items-center sm:gap-3 sm:flex-wrap";
+  const pillWidth = compact ? "w-full" : "w-full sm:w-auto";
   const elapsedLabel = formatElapsed(running ? now - running.startedAt.getTime() : 0);
 
   const eventOptions = (
@@ -85,7 +91,7 @@ export function RunningTimerBox({
           <input
             name="description"
             placeholder={t.whatWorkingOn}
-            className={`bg-transparent outline-none text-[15px] font-semibold placeholder:text-ink/40 placeholder:font-normal min-w-0 ${compact ? "w-full" : "flex-1"}`}
+            className={`bg-transparent outline-none text-[15px] font-semibold placeholder:text-ink/40 placeholder:font-normal min-w-0 ${compact ? "w-full" : "w-full sm:flex-1"}`}
           />
           <select name="eventId" defaultValue="" className={`${pillClass} ${pillWidth}`}>
             {eventOptions}
@@ -93,7 +99,7 @@ export function RunningTimerBox({
           <select name="phase" defaultValue="PLANNING" className={`${pillClass} ${pillWidth}`}>
             {phaseOptions}
           </select>
-          <div className={`flex items-center gap-2.5 shrink-0 ${compact ? "w-full justify-between" : ""}`}>
+          <div className={`flex items-center gap-2.5 shrink-0 ${compact ? "w-full justify-between" : "w-full justify-between sm:w-auto"}`}>
             <span className="placeholder-text text-[15px] font-semibold tabular-nums px-1">{elapsedLabel}</span>
             <button
               type="submit"
@@ -116,7 +122,7 @@ export function RunningTimerBox({
         defaultValue={running.description}
         placeholder={t.whatWorkingOn}
         form="stop-form"
-        className={`bg-transparent outline-none text-[15px] font-semibold placeholder:text-ink/40 placeholder:font-normal min-w-0 ${compact ? "w-full" : "flex-1"}`}
+        className={`bg-transparent outline-none text-[15px] font-semibold placeholder:text-ink/40 placeholder:font-normal min-w-0 ${compact ? "w-full" : "w-full sm:flex-1"}`}
       />
       <form action={assignRunningTimerEventAction} className={pillWidth}>
         <select
@@ -138,7 +144,7 @@ export function RunningTimerBox({
           {phaseOptions}
         </select>
       </form>
-      <div className={`flex items-center gap-2.5 shrink-0 ${compact ? "w-full justify-between" : ""}`}>
+      <div className={`flex items-center gap-2.5 shrink-0 ${compact ? "w-full justify-between" : "w-full justify-between sm:w-auto"}`}>
         <EditableElapsedTime
           elapsedLabel={elapsedLabel}
           startedAt={running.startedAt}

@@ -60,55 +60,79 @@ export function CompanySettingsForm({ defaults, t }: { defaults: Company | null;
     <div className="grid grid-cols-1 md:grid-cols-[1fr_300px] gap-5 max-w-3xl">
       <form action={formAction} className="card p-5 flex flex-col gap-3">
         <div className="heading-label !text-[12px]">{t.companyDetailsHeading}</div>
-        <div className="flex gap-1.5">
-          <input name="ico" placeholder={t.icoPlaceholder} value={fields.ico} onChange={(e) => set("ico", e.target.value)} required className="input flex-1" />
-          <button type="button" onClick={loadFromAres} disabled={ares.loading} className="btno whitespace-nowrap">
-            {ares.loading ? t.loadingAres : t.loadFromAres}
-          </button>
+        <div className="flex flex-col gap-1">
+          <label htmlFor="cs-ico" className="field-label">{t.icoPlaceholder}</label>
+          <div className="flex flex-col sm:flex-row gap-1.5">
+            <input id="cs-ico" name="ico" placeholder={t.icoPlaceholder} value={fields.ico} onChange={(e) => set("ico", e.target.value)} required className="input flex-1" />
+            <button type="button" onClick={loadFromAres} disabled={ares.loading} className="btno whitespace-nowrap">
+              {ares.loading ? t.loadingAres : t.loadFromAres}
+            </button>
+          </div>
         </div>
         {ares.error && <p className="text-[11px] text-warning -mt-1">{ares.error}</p>}
-        <input name="name" placeholder={t.companyNamePlaceholder} value={fields.name} onChange={(e) => set("name", e.target.value)} required className="input" />
-        <AddressAutocompleteInput
-          name="address"
-          placeholder={t.addressPlaceholder}
-          value={fields.address}
-          onChange={(v) => set("address", v)}
-        />
-        <div className="flex gap-1.5 items-center">
-          <input name="dic" placeholder={t.dicPlaceholder} value={fields.dic} onChange={(e) => set("dic", e.target.value)} className="input flex-1" />
-          <label className="flex items-center gap-1.5 text-[11px] whitespace-nowrap">
-            <input
-              name="isVatPayer"
-              type="checkbox"
-              checked={fields.isVatPayer}
-              onChange={(e) => set("isVatPayer", e.target.checked)}
-            />{" "}
-            {t.vatPayerLabel}
-          </label>
+        <div className="flex flex-col gap-1">
+          <label htmlFor="cs-name" className="field-label">{t.companyNamePlaceholder}</label>
+          <input id="cs-name" name="name" placeholder={t.companyNamePlaceholder} value={fields.name} onChange={(e) => set("name", e.target.value)} required className="input" />
+        </div>
+        <div className="flex flex-col gap-1">
+          <label className="field-label">{t.addressPlaceholder}</label>
+          <AddressAutocompleteInput
+            name="address"
+            placeholder={t.addressPlaceholder}
+            value={fields.address}
+            onChange={(v) => set("address", v)}
+          />
+        </div>
+        <div className="flex flex-col gap-1">
+          <label htmlFor="cs-dic" className="field-label">{t.dicPlaceholder}</label>
+          <div className="flex flex-col sm:flex-row sm:items-center gap-1.5 sm:gap-3">
+            <input id="cs-dic" name="dic" placeholder={t.dicPlaceholder} value={fields.dic} onChange={(e) => set("dic", e.target.value)} className="input flex-1" />
+            <label className="flex items-center gap-1.5 text-[12px] whitespace-nowrap">
+              <input
+                name="isVatPayer"
+                type="checkbox"
+                checked={fields.isVatPayer}
+                onChange={(e) => set("isVatPayer", e.target.checked)}
+              />{" "}
+              {t.vatPayerLabel}
+            </label>
+          </div>
         </div>
 
         <div className="heading-label !text-[12px] mt-2">{t.bankHeading}</div>
-        <input
-          name="accountNumber"
-          placeholder={t.accountNumberPlaceholder}
-          value={fields.accountNumber}
-          onChange={(e) => set("accountNumber", e.target.value)}
-          className="input"
-        />
-        <input
-          name="bankAccount"
-          placeholder={t.ibanPlaceholder}
-          value={fields.bankAccount}
-          onChange={(e) => set("bankAccount", e.target.value)}
-          className="input"
-        />
-        <input
-          name="swiftBic"
-          placeholder={t.swiftPlaceholder}
-          value={fields.swiftBic}
-          onChange={(e) => set("swiftBic", e.target.value)}
-          className="input"
-        />
+        <div className="flex flex-col gap-1">
+          <label htmlFor="cs-acct" className="field-label">{t.accountNumberPlaceholder}</label>
+          <input
+            id="cs-acct"
+            name="accountNumber"
+            placeholder={t.accountNumberPlaceholder}
+            value={fields.accountNumber}
+            onChange={(e) => set("accountNumber", e.target.value)}
+            className="input"
+          />
+        </div>
+        <div className="flex flex-col gap-1">
+          <label htmlFor="cs-iban" className="field-label">{t.ibanPlaceholder}</label>
+          <input
+            id="cs-iban"
+            name="bankAccount"
+            placeholder={t.ibanPlaceholder}
+            value={fields.bankAccount}
+            onChange={(e) => set("bankAccount", e.target.value)}
+            className="input"
+          />
+        </div>
+        <div className="flex flex-col gap-1">
+          <label htmlFor="cs-swift" className="field-label">{t.swiftPlaceholder}</label>
+          <input
+            id="cs-swift"
+            name="swiftBic"
+            placeholder={t.swiftPlaceholder}
+            value={fields.swiftBic}
+            onChange={(e) => set("swiftBic", e.target.value)}
+            className="input"
+          />
+        </div>
         <span className="text-[9px] placeholder-text -mt-1">{t.qrHint}</span>
         <span className="text-[9px] placeholder-text">{t.bankDetailsHint}</span>
 
@@ -169,9 +193,9 @@ export function CompanySettingsForm({ defaults, t }: { defaults: Company | null;
         <div className="flex gap-1.5">
           <div className="input opacity-60 flex-1">{t.numberingScheme}</div>
         </div>
-        <div className="flex gap-1.5 items-center">
+        <div className="flex flex-col sm:flex-row sm:items-center gap-1.5 sm:gap-3">
           <div className="input opacity-60 flex-1">{t.numberingNote}</div>
-          <label className="flex items-center gap-1.5 text-[11px] whitespace-nowrap">
+          <label className="flex items-center gap-1.5 text-[12px] whitespace-nowrap">
             {t.dueLabel}
             <input
               name="defaultDueDays"

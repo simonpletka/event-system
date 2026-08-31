@@ -20,7 +20,7 @@ export default async function LoginPage() {
   const lastEmail = jar.get(LAST_EMAIL_COOKIE)?.value ?? "";
 
   return (
-    <div className="min-h-screen flex items-center justify-center px-4">
+    <div className="min-h-dvh flex items-start justify-center px-4 pt-[18vh] sm:items-center sm:pt-0">
       <div className="w-full max-w-[360px]">
         <div className="text-[11px] font-bold tracking-[0.16em] mb-8">EVENT SYSTEM</div>
         <h1 className="text-2xl font-semibold mb-6">{t.auth.signIn}</h1>

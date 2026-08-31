@@ -9,6 +9,7 @@ import { BackLink } from "@/components/BackLink";
 import { DeleteEventButton } from "@/components/DeleteEventButton";
 import { deleteEventAction } from "@/lib/actions/events";
 import { PageHeader } from "@/components/ui/PageHeader";
+import { MobileStickyTabs } from "@/components/ui/MobileStickyTabs";
 import { getLocale, getDictionary } from "@/lib/i18n";
 
 export default async function EventDetailLayout({
@@ -34,7 +35,7 @@ export default async function EventDetailLayout({
         <BackLink href="/events">{t.events.backToEvents}</BackLink>
         <div className="flex justify-between items-end flex-wrap gap-2 mt-2">
           <div>
-            <div className="text-[24px] font-bold tracking-tight">
+            <div className="text-[19px] md:text-[24px] font-bold tracking-tight">
               <span className="placeholder-text font-medium">{event.number}</span> {event.title}
             </div>
             <div className="flex flex-wrap items-center gap-x-1.5 gap-y-1 text-[12px] mt-1.5">
@@ -71,11 +72,17 @@ export default async function EventDetailLayout({
           </div>
         </div>
 
-        <EventTabs eventId={event.id} showFinance={canViewEventBudget(user)} locale={locale} />
+        <div className="hidden md:block mt-2.5">
+          <EventTabs eventId={event.id} showFinance={canViewEventBudget(user)} locale={locale} />
+        </div>
         </div>
       </PageHeader>
 
-      <div className="mt-7 max-w-6xl">{children}</div>
+      <MobileStickyTabs>
+        <EventTabs eventId={event.id} showFinance={canViewEventBudget(user)} locale={locale} />
+      </MobileStickyTabs>
+
+      <div className="mt-4 md:mt-7 max-w-6xl">{children}</div>
     </div>
   );
 }

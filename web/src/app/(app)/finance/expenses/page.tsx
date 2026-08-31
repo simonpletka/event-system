@@ -231,7 +231,7 @@ export default async function ExpensesPage({
                   pendingLabel={t.common.deleting}
                   confirmMessage={te.confirmDelete(formatCurrency(exp.amount))}
                   title={t.common.delete}
-                  className="shrink-0 grid place-items-center w-8 h-8 rounded-md text-ink/40 hover:text-warning transition-colors ml-auto"
+                  className="shrink-0 grid place-items-center w-10 h-10 -my-1.5 -mr-1.5 rounded-lg text-ink/45 hover:text-warning hover:bg-ink/5 transition-colors ml-auto"
                 >
                   <TrashIcon size={16} />
                 </ConfirmDeleteButton>

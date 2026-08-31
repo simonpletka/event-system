@@ -67,7 +67,7 @@ export default async function InvoicesPage({
         )}
       </div>
 
-      <div className="flex overflow-x-auto gap-3 -mx-6 px-6 md:mx-0 md:px-0 md:grid md:grid-cols-4 md:overflow-visible mt-4">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mt-4">
         <KpiCell label={ti.kpiIssuedUnpaid} value={kpis.issuedUnpaid} locale={locale} />
         <KpiCell label={ti.kpiOverdue} value={kpis.overdue} attention locale={locale} />
         <KpiCell label={ti.kpiDue7} value={kpis.dueSoon} locale={locale} />
@@ -206,7 +206,7 @@ function KpiCell({
     <div className={`card relative overflow-hidden px-5 py-4 ${isWarning ? "border-warning/30" : ""}`}>
       {isWarning && <div className="absolute top-0 left-0 right-0 h-0.5 bg-warning" />}
       <div className={`heading-label ${isWarning ? "text-warning" : ""}`}>{label}</div>
-      <div className={`text-[26px] font-semibold tracking-tight mt-1 ${isWarning ? "text-warning" : ""}`}>{formatCurrency(value.total)}</div>
+      <div className={`text-[18px] md:text-[26px] font-semibold tracking-tight mt-1 tabular-nums ${isWarning ? "text-warning" : ""}`}>{formatCurrency(value.total)}</div>
       <div className="placeholder-text text-[10px] mt-0.5">{countLabel}</div>
     </div>
   );

@@ -1,6 +1,7 @@
 import { requireUser } from "@/lib/authz";
 import { getLocale, getDictionary } from "@/lib/i18n";
 import { PageHeader } from "@/components/ui/PageHeader";
+import { MobileStickyTabs } from "@/components/ui/MobileStickyTabs";
 import { TimeTrackerTabs } from "@/components/TimeTrackerTabs";
 
 export default async function TimeTrackerLayout({ children }: { children: React.ReactNode }) {
@@ -11,11 +12,11 @@ export default async function TimeTrackerLayout({ children }: { children: React.
   return (
     <div>
       <PageHeader pb="pb-2">
-        <h1 className="text-[28px] font-bold tracking-tight">{t.timeTracker.title}</h1>
-        <div className="mt-3 md:hidden">
-          <TimeTrackerTabs locale={locale} />
-        </div>
+        <h1 className="text-[22px] md:text-[28px] font-bold tracking-tight">{t.timeTracker.title}</h1>
       </PageHeader>
+      <MobileStickyTabs>
+        <TimeTrackerTabs locale={locale} />
+      </MobileStickyTabs>
       <div className="mt-4">{children}</div>
     </div>
   );

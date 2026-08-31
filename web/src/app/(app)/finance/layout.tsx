@@ -2,6 +2,7 @@ import { requireUser, canViewFinance, canViewExpenses, quoteWhereForUser, invoic
 import { prisma } from "@/lib/prisma";
 import { getLocale, getDictionary } from "@/lib/i18n";
 import { PageHeader } from "@/components/ui/PageHeader";
+import { MobileStickyTabs } from "@/components/ui/MobileStickyTabs";
 import { FinanceTabs } from "@/components/finance/FinanceTabs";
 
 export default async function FinanceLayout({ children }: { children: React.ReactNode }) {
@@ -38,7 +39,7 @@ export default async function FinanceLayout({ children }: { children: React.Reac
             <h1 className="text-[28px] font-bold tracking-tight mt-1">{t.finance.title}</h1>
           </div>
         </div>
-        <div className="mt-3">
+        <div className="hidden md:block mt-3">
           <FinanceTabs
             counts={{ quotes: quoteCount, invoices: invoiceCount, expenses: expenseCount }}
             locale={locale}
@@ -46,6 +47,15 @@ export default async function FinanceLayout({ children }: { children: React.Reac
           />
         </div>
       </PageHeader>
+
+      <MobileStickyTabs>
+        <FinanceTabs
+          counts={{ quotes: quoteCount, invoices: invoiceCount, expenses: expenseCount }}
+          locale={locale}
+          canFinance={canFinance}
+        />
+      </MobileStickyTabs>
+
       <div className="mt-4">{children}</div>
     </div>
   );

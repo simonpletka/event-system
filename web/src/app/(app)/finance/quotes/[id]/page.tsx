@@ -107,6 +107,54 @@ export default async function QuoteDetailPage({
 
       <div className="grid grid-cols-1 md:grid-cols-[1fr_280px] gap-5 mt-5">
         <div className="min-w-0">
+          {/* Phone: the scaled-to-fit A4 preview is an unreadable near-empty
+              card at this width (mobile-review finding). Native line-item +
+              totals summary instead; full PDF is a tap away in the header. */}
+          <div className="md:hidden card p-4">
+            <div className="heading-label !text-[12px] mb-2.5">{t.finance.quotes.quoteN(quote.number)}</div>
+            {groups.map((g) => (
+              <div key={g.category || "—"} className="mb-3 last:mb-0">
+                {g.category && <div className="label mb-1">{g.category}</div>}
+                {g.items.map((item) => (
+                  <div key={item.id} className="flex justify-between gap-3 py-1.5 border-b border-ink/8 last:border-b-0 text-[13px]">
+                    <span className="min-w-0">
+                      {item.description}
+                      {!quote.hideItemPrices && (
+                        <span className="placeholder-text">{` · ${item.quantity} × ${formatCurrency(item.unitPrice, quote.currency)} · ${item.vatRate}%`}</span>
+                      )}
+                    </span>
+                    {!quote.hideItemPrices && (
+                      <span className="shrink-0 tabular-nums">{formatCurrency(item.quantity * item.unitPrice, quote.currency)}</span>
+                    )}
+                  </div>
+                ))}
+                {quote.hideItemPrices && g.category && (
+                  <div className="flex justify-end text-[12px] font-semibold mt-1 tabular-nums">
+                    {formatCurrency(categoryTotal(g.items), quote.currency)}
+                  </div>
+                )}
+              </div>
+            ))}
+            <div className="flex flex-col gap-1 mt-3 pt-3 border-t border-ink/12 text-[13px]">
+              <div className="flex justify-between">
+                <span className="placeholder-text">{t.finance.quotes.base}</span>
+                <span className="tabular-nums">{formatCurrency(base, quote.currency)}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="placeholder-text">{t.finance.quotes.vat}</span>
+                <span className="tabular-nums">{formatCurrency(vat, quote.currency)}</span>
+              </div>
+              <div className="flex justify-between font-bold text-[15px] mt-1">
+                <span>{t.finance.quotes.total}</span>
+                <span className="tabular-nums" style={{ color: accent }}>{formatCurrency(base + vat, quote.currency)}</span>
+              </div>
+            </div>
+            <a href={`/api/quotes/${quote.id}/pdf`} target="_blank" rel="noreferrer" className="btno w-full text-center block mt-3">
+              {t.finance.downloadPdf.downloadPdf}
+            </a>
+          </div>
+
+          <div className="hidden md:block">
           <div className="flex justify-end mb-2">
             <SegmentedTabs
               options={[
@@ -247,6 +295,7 @@ export default async function QuoteDetailPage({
             </div>
           </div>
           </DocumentPreviewScaler>
+          </div>
           </div>
         </div>
 

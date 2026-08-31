@@ -33,11 +33,15 @@ export type CalendarEvent = {
 // controls the visible window and initial scroll position on load, not what
 // exists in the grid (a milestone can still be dropped outside 6–20 by
 // scrolling first, it's just not what's on screen by default).
+// The visible box caps to the viewport height (see the clamp() on the scroll
+// container) so a short window doesn't get an oversized calendar, but never
+// shows fewer than MIN_VISIBLE_HOURS rows.
 const GRID_START_HOUR = 0;
 const GRID_END_HOUR = 24;
 const DEFAULT_VIEW_START_HOUR = 6;
 const DEFAULT_VIEW_END_HOUR = 20;
 const HOUR_PX = 72;
+const MIN_VISIBLE_HOURS = 8;
 const GRID_HEIGHT = (GRID_END_HOUR - GRID_START_HOUR) * HOUR_PX;
 const VISIBLE_VIEWPORT_HEIGHT = (DEFAULT_VIEW_END_HOUR - DEFAULT_VIEW_START_HOUR) * HOUR_PX;
 
@@ -261,6 +265,10 @@ export function WeekCalendar({
       </div>
 
       <div className="hidden md:block">
+      {/* The 7-day grid keeps ~110px/column; below that the wrapper scrolls
+          sideways rather than crushing the columns (phones get the agenda above). */}
+      <div className="overflow-x-auto">
+      <div className="min-w-[820px]">
       <div className="grid grid-cols-[44px_repeat(7,minmax(0,1fr))] border-b border-ink/20 pb-1">
         <div className="heading-label !text-[11px] !tracking-normal whitespace-nowrap">WEEK {isoWeekNumber(weekStart)}</div>
         {days.map((d) => {
@@ -333,7 +341,11 @@ export function WeekCalendar({
         </div>
       )}
 
-      <div ref={scrollRef} className="overflow-y-auto mt-1" style={{ maxHeight: VISIBLE_VIEWPORT_HEIGHT }}>
+      <div
+        ref={scrollRef}
+        className="overflow-y-auto mt-1"
+        style={{ maxHeight: `clamp(${MIN_VISIBLE_HOURS * HOUR_PX}px, calc(100dvh - 15rem), ${VISIBLE_VIEWPORT_HEIGHT}px)` }}
+      >
       <div className="relative grid grid-cols-[44px_repeat(7,minmax(0,1fr))]">
         <div>
           {hours.map((h) => (
@@ -382,7 +394,7 @@ export function WeekCalendar({
                     setDraggingKey(null);
                     setDragPreview(null);
                   }}
-                  className={`absolute overflow-hidden rounded-md leading-tight bg-ink/22 border-2 border-ink/45 px-1 py-0.5 box-border cursor-grab active:cursor-grabbing hover:border-accent hover:bg-accent/20 shadow-[0_6px_14px_rgba(0,0,0,0.45)] transition-opacity ${
+                  className={`absolute overflow-clip rounded-md leading-tight bg-ink/22 border-2 border-ink/45 px-1 py-0.5 box-border cursor-grab active:cursor-grabbing hover:border-accent hover:bg-accent/20 shadow-[0_6px_14px_rgba(0,0,0,0.45)] transition-opacity ${
                     draggingKey === milestoneKey ? "opacity-30" : "opacity-100"
                   }`}
                   style={{
@@ -391,7 +403,13 @@ export function WeekCalendar({
                     ...overlapBoxStyle(m.col),
                   }}
                 >
-                  <div className="text-[10.5px] font-bold truncate">{m.eventTitle}</div>
+                  {/* Name pins to the top of the scroll viewport while any part
+                      of the box is on screen (overflow-clip, not hidden, keeps
+                      this sticky against the outer grid scroller). Own opaque
+                      backing so the second line scrolls cleanly under it. */}
+                  <div className="sticky top-0 z-[1] -mx-1 -mt-0.5 px-1 pt-0.5 bg-surface/95 text-[10.5px] font-bold truncate">
+                    {m.eventTitle}
+                  </div>
                   <div className="placeholder-text text-[9px] font-bold truncate">{m.title}</div>
                 </Link>
                 );
@@ -431,6 +449,8 @@ export function WeekCalendar({
             </div>
           </>
         )}
+      </div>
+      </div>
       </div>
       </div>
 

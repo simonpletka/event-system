@@ -25,11 +25,15 @@ export type CalendarTimeEntry = {
 // exists in the grid (an entry can still be drawn outside 8–18 by scrolling
 // first, it's just not what's on screen by default). Mirrors WeekCalendar's
 // identical scrollable-grid-with-a-default-window pattern.
+// The visible box caps to the viewport height (see the clamp() on the scroll
+// container) so a short window doesn't get an oversized calendar, but never
+// shows fewer than MIN_VISIBLE_HOURS rows.
 const GRID_START_HOUR = 0;
 const GRID_END_HOUR = 24;
 const DEFAULT_VIEW_START_HOUR = 8;
 const DEFAULT_VIEW_END_HOUR = 18;
 const HOUR_PX = 54;
+const MIN_VISIBLE_HOURS = 8;
 const GRID_HEIGHT = (GRID_END_HOUR - GRID_START_HOUR) * HOUR_PX;
 const VISIBLE_VIEWPORT_HEIGHT = (DEFAULT_VIEW_END_HOUR - DEFAULT_VIEW_START_HOUR) * HOUR_PX;
 
@@ -220,6 +224,10 @@ export function TimeTrackerCalendar({
       </div>
 
       <div className="hidden md:block">
+      {/* Keep ~100px/column; narrower viewports scroll sideways instead of
+          crushing the grid (phones use the day-strip agenda above). */}
+      <div className="overflow-x-auto">
+      <div className="min-w-[760px]">
       <div className="grid grid-cols-[44px_repeat(7,minmax(0,1fr))] border-b border-ink/20 pb-1">
         <div />
         {days.map((d) => (
@@ -258,7 +266,11 @@ export function TimeTrackerCalendar({
         </div>
       )}
 
-      <div ref={scrollRef} className="overflow-y-auto mt-1" style={{ maxHeight: VISIBLE_VIEWPORT_HEIGHT }}>
+      <div
+        ref={scrollRef}
+        className="overflow-y-auto mt-1"
+        style={{ maxHeight: `clamp(${MIN_VISIBLE_HOURS * HOUR_PX}px, calc(100dvh - 15rem), ${VISIBLE_VIEWPORT_HEIGHT}px)` }}
+      >
       <div className="grid grid-cols-[44px_repeat(7,minmax(0,1fr))]">
         <div>
           {hours.map((h) => (
@@ -296,14 +308,19 @@ export function TimeTrackerCalendar({
                   tPhases={dict.phases}
                   tDelete={dict.timeTracker.deleteEntry}
                   title={`${(e.event?.title ?? unassignedLabel)}${e.description ? ` — ${e.description}` : ""}`}
-                  className="absolute overflow-hidden rounded-md text-[8.5px] leading-tight bg-ink/14 border border-ink/25 px-1.5 py-1 box-border hover:border-accent flex flex-col text-left shadow-[0_4px_10px_rgba(0,0,0,0.35)]"
+                  className="absolute overflow-clip rounded-md text-[8.5px] leading-tight bg-ink/14 border border-ink/25 px-1.5 py-1 box-border hover:border-accent flex flex-col text-left shadow-[0_4px_10px_rgba(0,0,0,0.35)]"
                   style={{
                     top: (e.startMin / 60) * HOUR_PX,
                     height: Math.max(28, ((e.endMin - e.startMin) / 60) * HOUR_PX),
                     ...overlapBoxStyle(e.col),
                   }}
                 >
-                  <div className="font-semibold truncate">{(e.event?.title ?? unassignedLabel)}</div>
+                  {/* Name pins to the top of the scroll viewport while any part
+                      of the box is visible (overflow-clip, not hidden, so this
+                      sticks against the outer grid scroller). */}
+                  <div className="sticky top-0 z-[1] -mx-1.5 -mt-1 px-1.5 pt-1 bg-surface/95 font-semibold truncate">
+                    {(e.event?.title ?? unassignedLabel)}
+                  </div>
                   {e.description && <div className="placeholder-text truncate">{e.description}</div>}
                   <div className="placeholder-text mt-auto">{formatMinutes(e.minutes)}</div>
                 </EditEntryButton>
@@ -323,6 +340,8 @@ export function TimeTrackerCalendar({
             </div>
           );
         })}
+      </div>
+      </div>
       </div>
       </div>
       </div>

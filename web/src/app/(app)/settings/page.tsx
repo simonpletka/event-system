@@ -5,6 +5,7 @@ import { getCompanySettings } from "@/lib/queries/finance";
 import { getLocale, getDictionary } from "@/lib/i18n";
 import { getAppColors } from "@/lib/theme";
 import { PageHeader } from "@/components/ui/PageHeader";
+import { MobileStickyTabs } from "@/components/ui/MobileStickyTabs";
 import { UsersTable } from "@/components/settings/UsersTable";
 import { CreateUserForm } from "@/components/settings/CreateUserForm";
 import { GeneralSettingsForm } from "@/components/settings/GeneralSettingsForm";
@@ -63,6 +64,29 @@ export default async function SettingsPage({
               ? t.settings.tabAppSettings
               : t.settings.general.accountHeading;
 
+  const tabLinks = [
+    { key: "general", href: "/settings?tab=general", label: t.settings.tabGeneral, show: true },
+    { key: "company", href: "/settings?tab=company", label: t.settings.tabCompany, show: canCompany },
+    { key: "users", href: "/settings?tab=users", label: t.settings.tabUsers, show: canUsers },
+    { key: "templates", href: "/settings?tab=templates", label: t.settings.tabTemplates, show: canCompany },
+    { key: "invoiceEmailing", href: "/settings?tab=invoiceEmailing", label: t.settings.tabInvoiceEmailing, show: canCompany },
+    { key: "appSettings", href: "/settings?tab=appSettings", label: t.settings.tabAppSettings, show: canCompany },
+  ].filter((x) => x.show);
+
+  const tabNav = (
+    <div className="flex gap-3.5 flex-nowrap overflow-x-auto pb-1 md:pb-0 md:flex-wrap md:overflow-visible">
+      {tabLinks.map((x) => (
+        <Link
+          key={x.key}
+          href={x.href}
+          className={`shrink-0 text-[10px] tracking-[0.14em] uppercase pb-2 border-b-2 ${tab === x.key ? "border-accent text-accent" : "border-transparent placeholder-text hover:text-ink"}`}
+        >
+          {x.label}
+        </Link>
+      ))}
+    </div>
+  );
+
   return (
     <div>
       <PageHeader pb="pb-2">
@@ -70,60 +94,15 @@ export default async function SettingsPage({
         <div className="flex items-end justify-between">
           <div>
             <div className="heading-label">{tabEyebrow}</div>
-            <h1 className="text-[28px] font-bold tracking-tight mt-1">{t.settings.title}</h1>
+            <h1 className="text-[22px] md:text-[28px] font-bold tracking-tight mt-1">{t.settings.title}</h1>
           </div>
         </div>
 
-        <div className="flex gap-3.5 mt-3 flex-nowrap overflow-x-auto pb-1 md:pb-0 md:flex-wrap md:overflow-visible">
-          <Link
-            href="/settings?tab=general"
-            className={`shrink-0 text-[9px] tracking-[0.14em] uppercase pb-2 border-b-2 ${tab === "general" ? "border-accent text-accent" : "border-transparent placeholder-text hover:text-ink"}`}
-          >
-            {t.settings.tabGeneral}
-          </Link>
-          {canCompany && (
-            <Link
-              href="/settings?tab=company"
-              className={`shrink-0 text-[9px] tracking-[0.14em] uppercase pb-2 border-b-2 ${tab === "company" ? "border-accent text-accent" : "border-transparent placeholder-text hover:text-ink"}`}
-            >
-              {t.settings.tabCompany}
-            </Link>
-          )}
-          {canUsers && (
-            <Link
-              href="/settings?tab=users"
-              className={`shrink-0 text-[9px] tracking-[0.14em] uppercase pb-2 border-b-2 ${tab === "users" ? "border-accent text-accent" : "border-transparent placeholder-text hover:text-ink"}`}
-            >
-              {t.settings.tabUsers}
-            </Link>
-          )}
-          {canCompany && (
-            <Link
-              href="/settings?tab=templates"
-              className={`shrink-0 text-[9px] tracking-[0.14em] uppercase pb-2 border-b-2 ${tab === "templates" ? "border-accent text-accent" : "border-transparent placeholder-text hover:text-ink"}`}
-            >
-              {t.settings.tabTemplates}
-            </Link>
-          )}
-          {canCompany && (
-            <Link
-              href="/settings?tab=invoiceEmailing"
-              className={`shrink-0 text-[9px] tracking-[0.14em] uppercase pb-2 border-b-2 ${tab === "invoiceEmailing" ? "border-accent text-accent" : "border-transparent placeholder-text hover:text-ink"}`}
-            >
-              {t.settings.tabInvoiceEmailing}
-            </Link>
-          )}
-          {canCompany && (
-            <Link
-              href="/settings?tab=appSettings"
-              className={`shrink-0 text-[9px] tracking-[0.14em] uppercase pb-2 border-b-2 ${tab === "appSettings" ? "border-accent text-accent" : "border-transparent placeholder-text hover:text-ink"}`}
-            >
-              {t.settings.tabAppSettings}
-            </Link>
-          )}
-        </div>
+        <div className="hidden md:block mt-3">{tabNav}</div>
         </div>
       </PageHeader>
+
+      <MobileStickyTabs>{tabNav}</MobileStickyTabs>
 
       <div className="mt-5 max-w-3xl">
         {tab === "general" && (
