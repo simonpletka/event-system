@@ -39,7 +39,7 @@ export default async function EventsPage({
 
   if (view === "calendar") {
     const weekStart = mondayOf(params.week ? parseIsoDate(params.week) : new Date());
-    const events = await getWeekCalendarData(user, weekStart);
+    const { events, meetings } = await getWeekCalendarData(user, weekStart);
 
     return (
       <div>
@@ -57,7 +57,7 @@ export default async function EventsPage({
           </div>
         </PageHeader>
         <div className="mt-4">
-          <WeekCalendar weekStart={weekStart} events={events} locale={locale} />
+          <WeekCalendar weekStart={weekStart} events={events} meetings={meetings} locale={locale} />
         </div>
       </div>
     );

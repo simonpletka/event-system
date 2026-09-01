@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useLayoutEffect, useRef, useState, type CSSProperties } from "react";
 import type { Dictionary } from "@/lib/dictionary";
 
 const ICONS: Record<string, React.ReactNode> = {
@@ -40,6 +41,21 @@ const ICONS: Record<string, React.ReactNode> = {
   ),
 };
 
+// The active-tab pill. Was applied inline on whichever <span> was active;
+// now it's a single element that slides between tab positions.
+const PILL_STYLE: CSSProperties = {
+  background:
+    "linear-gradient(155deg, color-mix(in srgb, var(--color-ink) 26%, transparent), color-mix(in srgb, var(--color-ink) 7%, transparent) 60%), color-mix(in srgb, var(--color-accent) 16%, transparent)",
+  backdropFilter: "blur(5px)",
+  WebkitBackdropFilter: "blur(5px)",
+  border: "1px solid color-mix(in srgb, var(--color-ink) 28%, transparent)",
+  boxShadow:
+    "inset 0 1px 1.5px color-mix(in srgb, var(--color-ink) 50%, transparent), inset 0 -4px 6px color-mix(in srgb, var(--color-accent) 16%, transparent), 0 3px 10px color-mix(in srgb, var(--color-accent) 20%, transparent)",
+};
+
+const ACTIVE_COLOR = "var(--color-accent)";
+const IDLE_COLOR = "color-mix(in srgb, var(--color-ink) 55%, transparent)";
+
 export function MobileNav({ tNav }: { tNav: Dictionary["nav"] }) {
   const pathname = usePathname();
 
@@ -51,31 +67,74 @@ export function MobileNav({ tNav }: { tNav: Dictionary["nav"] }) {
     { href: "/time-tracker", label: tNav.timeTracker },
   ];
 
+  const activeHref = NAV.find((item) => pathname.startsWith(item.href))?.href ?? null;
+
+  const containerRef = useRef<HTMLDivElement>(null);
+  const pillRefs = useRef(new Map<string, HTMLSpanElement>());
+  const [thumb, setThumb] = useState<{ left: number; top: number; width: number; height: number } | null>(null);
+
+  // Optimistic selection: move the pill on click straight away, then let the
+  // real `activeHref` (driven by pathname) reconcile once navigation lands —
+  // same pattern as SegmentedTabs.
+  const [shown, setShown] = useState<string | null>(activeHref);
+  const [prevActive, setPrevActive] = useState(activeHref);
+  if (activeHref !== prevActive) {
+    setPrevActive(activeHref);
+    setShown(activeHref);
+  }
+
+  useLayoutEffect(() => {
+    const container = containerRef.current;
+    const el = shown ? pillRefs.current.get(shown) : null;
+    // No matching tab (e.g. /settings): keep the last pill position and let
+    // opacity fade it out rather than snapping it away.
+    if (!container || !el) return;
+    const measure = () => {
+      const c = container.getBoundingClientRect();
+      const r = el.getBoundingClientRect();
+      setThumb({ left: r.left - c.left, top: r.top - c.top, width: r.width, height: r.height });
+    };
+    measure();
+    window.addEventListener("resize", measure);
+    return () => window.removeEventListener("resize", measure);
+  }, [shown]);
+
   return (
     <div
+      ref={containerRef}
       className="md:hidden fixed left-3 right-3 bottom-3 z-30 glass-panel rounded-full shadow-[0_14px_36px_rgba(0,0,0,0.45)] flex items-center px-3 py-[9px] print-hide"
       style={{ paddingBottom: "calc(9px + env(safe-area-inset-bottom))" }}
     >
+      {thumb && (
+        <div
+          aria-hidden
+          className="absolute rounded-full transition-[left,top,width,height,opacity] duration-[380ms] ease-[cubic-bezier(0.34,1.3,0.64,1)] motion-reduce:transition-none"
+          style={{
+            ...PILL_STYLE,
+            left: thumb.left,
+            top: thumb.top,
+            width: thumb.width,
+            height: thumb.height,
+            opacity: shown ? 1 : 0,
+          }}
+        />
+      )}
       {NAV.map((item) => {
-        const active = pathname.startsWith(item.href);
+        const active = item.href === shown;
         return (
-          <Link key={item.href} href={item.href} className="flex-1 flex justify-center">
+          <Link
+            key={item.href}
+            href={item.href}
+            onClick={() => setShown(item.href)}
+            className="relative z-[1] flex-1 flex justify-center"
+          >
             <span
-              className="flex flex-col items-center gap-1 rounded-full px-3.5 pt-1.5 pb-[5px]"
-              style={
-                active
-                  ? {
-                      background:
-                        "linear-gradient(155deg, color-mix(in srgb, var(--color-ink) 26%, transparent), color-mix(in srgb, var(--color-ink) 7%, transparent) 60%), color-mix(in srgb, var(--color-accent) 16%, transparent)",
-                      backdropFilter: "blur(5px)",
-                      WebkitBackdropFilter: "blur(5px)",
-                      border: "1px solid color-mix(in srgb, var(--color-ink) 28%, transparent)",
-                      boxShadow:
-                        "inset 0 1px 1.5px color-mix(in srgb, var(--color-ink) 50%, transparent), inset 0 -4px 6px color-mix(in srgb, var(--color-accent) 16%, transparent), 0 3px 10px color-mix(in srgb, var(--color-accent) 20%, transparent)",
-                      color: "var(--color-accent)",
-                    }
-                  : { color: "color-mix(in srgb, var(--color-ink) 55%, transparent)" }
-              }
+              ref={(el) => {
+                if (el) pillRefs.current.set(item.href, el);
+                else pillRefs.current.delete(item.href);
+              }}
+              className="flex flex-col items-center gap-1 rounded-full px-3.5 pt-1.5 pb-[5px] transition-colors duration-300 motion-reduce:transition-none"
+              style={{ color: active ? ACTIVE_COLOR : IDLE_COLOR }}
             >
               <svg
                 viewBox="0 0 24 24"

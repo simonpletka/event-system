@@ -8,6 +8,7 @@ import { resolveClientId, syncClientContacts } from "@/lib/actions/clients";
 import { nextEventNumber } from "@/lib/document-number";
 import { addDays } from "@/lib/calendar";
 import { normaliseBudgetInput } from "@/lib/event-budget";
+import { tryCreateNotionEventPage } from "@/lib/notion";
 import type { EventStatus } from "@/generated/prisma/enums";
 
 export type EventFormState = { error?: string };
@@ -109,6 +110,16 @@ export async function createEventAction(_prev: EventFormState, formData: FormDat
       members: { create: memberIds.map((userId) => ({ userId })) },
     },
   });
+
+  // Best-effort, one-way push to the company Notion dashboard — never blocks
+  // event creation. On success, the returned page id is stashed on the event
+  // so a later Meeting synced to Notion can link back to it via a relation
+  // property (see createNotionMeetingPage); the update is itself wrapped so a
+  // failure here only degrades that link, never the event that already exists.
+  const notionPageId = await tryCreateNotionEventPage(event);
+  if (notionPageId) {
+    await prisma.event.update({ where: { id: event.id }, data: { notionPageId } }).catch(() => {});
+  }
 
   revalidatePath("/events");
   revalidatePath("/dashboard");
