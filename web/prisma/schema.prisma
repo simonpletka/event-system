@@ -181,6 +181,7 @@ model User {
   roadmapItemsCreated RoadmapItem[]     @relation("RoadmapItemCreatedBy")
   roadmapAssignments  RoadmapAssignee[] @relation("RoadmapAssignee")
   roadmapComments     RoadmapComment[]  @relation("RoadmapCommentAuthor")
+  meetingsCreated     Meeting[]
 }
 
 model Event {
@@ -205,6 +206,12 @@ model Event {
   // powers the Clients section's per-client event/revenue rollup.
   clientId String?
   client   Client? @relation(fields: [clientId], references: [id])
+
+  // Set (best-effort) after the event's Notion page is created — see
+  // tryCreateNotionEventPage() in lib/notion.ts. Null when Notion isn't
+  // configured or the push failed; a Meeting synced afterward just skips
+  // this event in its "Events" relation property when null.
+  notionPageId String?
 
   buildDate  DateTime?
   startDate  DateTime
@@ -231,6 +238,7 @@ model Event {
   quotes      Quote[]
   invoices    Invoice[]
   contacts    EventContact[]
+  meetings    MeetingEvent[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -343,6 +351,79 @@ model RoadmapComment {
   createdAt DateTime    @default(now())
 
   @@index([itemId, createdAt])
+}
+
+enum MeetingType {
+  CLIENT
+  INTERNAL
+}
+
+// Computed, not materialized: a recurring Meeting is one row with a rule;
+// occurrences are expanded on demand (see expandMeetingOccurrences() in
+// lib/meetings.ts) for calendar display rather than stored per-instance.
+// Editing a recurring Meeting edits the whole series — no single-occurrence
+// edit/cancel in v1.
+enum RecurrenceFreq {
+  NONE
+  DAILY
+  WEEKLY
+  MONTHLY
+}
+
+// Company-wide meeting, independent of RoadmapItem (which is single-event-
+// scoped) — a Meeting can relate to zero, one, or many events, and an event
+// can have many meetings, via the MeetingEvent join model (same explicit-
+// join-model shape as EventMember/RoadmapAssignee — no implicit many-to-many
+// exists anywhere else in this schema). Synced one-way, best-effort, to a
+// Notion database (Client Meetings or Internal Meetings by type) on create —
+// see tryCreateNotionMeetingPage() in lib/notion.ts.
+model Meeting {
+  id                 String         @id @default(cuid())
+  title              String
+  type               MeetingType
+  date               DateTime // anchor date/time of the first (or only) occurrence
+  allDay             Boolean        @default(false)
+  attendees          String         @default("") // free text — internal and/or external names
+  note               String         @default("")
+  recurrenceFreq     RecurrenceFreq @default(NONE)
+  recurrenceInterval Int            @default(1)
+  recurrenceUntil    DateTime? // inclusive end date; null = no end date (or non-recurring)
+  createdById        String?
+  createdBy          User?          @relation(fields: [createdById], references: [id])
+  createdAt          DateTime       @default(now())
+  updatedAt          DateTime       @updatedAt
+
+  events     MeetingEvent[]
+  exceptions MeetingException[]
+
+  @@index([date])
+  @@index([type])
+}
+
+model MeetingEvent {
+  id        String  @id @default(cuid())
+  meetingId String
+  eventId   String
+  meeting   Meeting @relation(fields: [meetingId], references: [id], onDelete: Cascade)
+  event     Event   @relation(fields: [eventId], references: [id], onDelete: Cascade)
+
+  @@unique([meetingId, eventId])
+}
+
+// A single overridden occurrence of a recurring Meeting — created by
+// dragging one occurrence on the calendar and choosing "this occurrence
+// only" (see rescheduleMeetingOccurrenceAction). `originalDate` is the exact
+// date the base recurrence rule would otherwise produce; `newDate` is where
+// it's displayed instead. Never created for a non-recurring Meeting — those
+// reschedule by updating `Meeting.date` directly.
+model MeetingException {
+  id           String   @id @default(cuid())
+  meetingId    String
+  meeting      Meeting  @relation(fields: [meetingId], references: [id], onDelete: Cascade)
+  originalDate DateTime
+  newDate      DateTime
+
+  @@unique([meetingId, originalDate])
 }
 
 // --- Minimal stubs for later phases; kept here so the event detail's

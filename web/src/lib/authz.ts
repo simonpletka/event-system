@@ -264,6 +264,18 @@ export function canManageClients(user: SessionUser) {
   return canManageFinance(user) || canCreateEvent(user);
 }
 
+// --- Meetings (new — reuses the `events` dimension rather than adding a
+// fifth CustomRole tier, since a meeting is fundamentally an events-adjacent
+// concept: anyone who can see events can see meetings, anyone who can
+// create/edit events can manage them). ---
+export function canViewMeetings(user: SessionUser) {
+  return resolvePermissions(user).events !== "NONE";
+}
+
+export function canManageMeetings(user: SessionUser) {
+  return canCreateEvent(user);
+}
+
 // --- Deletion (events, quotes, invoices, expenses) ---
 
 /**

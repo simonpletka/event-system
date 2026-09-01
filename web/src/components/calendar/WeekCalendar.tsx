@@ -6,16 +6,22 @@ import { addDays, dayHeaderLabel, isSameDay, isoWeekNumber, startOfDay, weekDays
 import { EventStatusPill } from "@/components/StatusPill";
 import { rescheduleEventAction } from "@/lib/actions/events";
 import { rescheduleRoadmapItemAction } from "@/lib/actions/roadmap";
+import { rescheduleMeetingAction, rescheduleMeetingOccurrenceAction, splitMeetingSeriesAction } from "@/lib/actions/meetings";
 import type { EventStatus } from "@/generated/prisma/enums";
 import { getDictionary, type Locale } from "@/lib/dictionary";
 
 type DragPayload =
   | { type: "milestone"; milestoneId: string; eventId: string }
-  | { type: "bar"; eventId: string; anchorCol: number; kind: "prep" | "main" };
+  | { type: "bar"; eventId: string; anchorCol: number; kind: "prep" | "main" }
+  | { type: "meeting"; meetingId: string; originalDate: string; title: string; recurring: boolean };
 
 type DragPreview =
   | { type: "milestone"; dayIdx: number; top: number; label: string }
-  | { type: "bar"; dayIdx: number; kind: "prep" | "main" };
+  | { type: "bar"; dayIdx: number; kind: "prep" | "main" }
+  | { type: "meeting"; dayIdx: number; top: number; label: string };
+
+/** Pending "this occurrence only" vs "this and all future occurrences" choice after dropping a recurring meeting's occurrence — see the dialog rendered near the bottom of this component. */
+type PendingMeetingChoice = { meetingId: string; originalDate: string; newDate: Date; title: string };
 
 export type CalendarEvent = {
   id: string;
@@ -28,6 +34,17 @@ export type CalendarEvent = {
   roadmapItems: { id: string; title: string; date: Date }[];
   venues: { address: string }[];
 };
+
+/**
+ * One already-expanded occurrence of a (possibly recurring) Meeting within
+ * the displayed week — see expandMeetingOccurrences(). `originalDate` is the
+ * un-shifted date this occurrence's underlying rule produced (equal to
+ * `date` unless a prior drag already overrode it) — the key a reschedule
+ * needs to identify which occurrence is being moved. `recurring` decides
+ * whether a drop fires immediately (non-recurring) or opens the "this
+ * occurrence only" vs "this and future" choice dialog.
+ */
+export type CalendarMeeting = { id: string; title: string; date: Date; originalDate: Date; recurring: boolean };
 
 // The grid itself covers the full day, scrollable — DEFAULT_VIEW_* just
 // controls the visible window and initial scroll position on load, not what
@@ -64,10 +81,12 @@ function minutesFromGridStart(d: Date) {
 export function WeekCalendar({
   weekStart,
   events,
+  meetings = [],
   locale,
 }: {
   weekStart: Date;
   events: CalendarEvent[];
+  meetings?: CalendarMeeting[];
   locale: Locale;
 }) {
   const dict = getDictionary(locale);
@@ -85,6 +104,7 @@ export function WeekCalendar({
   const [dragOverIdx, setDragOverIdx] = useState<number | null>(null);
   const [draggingKey, setDraggingKey] = useState<string | null>(null);
   const [dragPreview, setDragPreview] = useState<DragPreview | null>(null);
+  const [pendingChoice, setPendingChoice] = useState<PendingMeetingChoice | null>(null);
 
   const scrollRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
@@ -126,10 +146,10 @@ export function WeekCalendar({
     e.preventDefault();
     setDragOverIdx(dayIdx);
 
-    if (drag.type === "milestone") {
+    if (drag.type === "milestone" || drag.type === "meeting") {
       const snappedMinutes = snapMinutesFromEvent(e);
       const label = `${String(Math.floor(snappedMinutes / 60)).padStart(2, "0")}:${String(snappedMinutes % 60).padStart(2, "0")}`;
-      setDragPreview({ type: "milestone", dayIdx, top: (snappedMinutes / 60) * HOUR_PX, label });
+      setDragPreview({ type: drag.type, dayIdx, top: (snappedMinutes / 60) * HOUR_PX, label });
     } else {
       setDragPreview({ type: "bar", dayIdx, kind: drag.kind });
     }
@@ -159,6 +179,27 @@ export function WeekCalendar({
       startTransition(() => {
         rescheduleRoadmapItemAction(formData);
       });
+    } else if (drag.type === "meeting") {
+      const snappedMinutes = snapMinutesFromEvent(e);
+      const target = days[dayIdx];
+      const newDate = new Date(
+        target.getFullYear(),
+        target.getMonth(),
+        target.getDate(),
+        Math.floor(snappedMinutes / 60),
+        snappedMinutes % 60
+      );
+      if (!drag.recurring) {
+        const formData = new FormData();
+        formData.set("id", drag.meetingId);
+        formData.set("date", newDate.toISOString());
+        startTransition(() => {
+          rescheduleMeetingAction(formData);
+        });
+      } else {
+        // Ambiguous for a recurring series — ask which scope before writing anything.
+        setPendingChoice({ meetingId: drag.meetingId, originalDate: drag.originalDate, newDate, title: drag.title });
+      }
     } else {
       const deltaDays = dayIdx - drag.anchorCol;
       if (deltaDays === 0) return;
@@ -171,8 +212,25 @@ export function WeekCalendar({
     }
   }
 
+  function resolvePendingChoice(scope: "occurrence" | "future") {
+    if (!pendingChoice) return;
+    const formData = new FormData();
+    formData.set("meetingId", pendingChoice.meetingId);
+    formData.set("originalDate", pendingChoice.originalDate);
+    formData.set("newDate", pendingChoice.newDate.toISOString());
+    const action = scope === "occurrence" ? rescheduleMeetingOccurrenceAction : splitMeetingSeriesAction;
+    startTransition(() => {
+      action(formData);
+    });
+    setPendingChoice(null);
+  }
+
   function milestonesFor(day: Date) {
     return events.flatMap((e) => e.roadmapItems.filter((m) => isSameDay(m.date, day)).map((m) => ({ ...m, eventId: e.id, eventTitle: e.title })));
+  }
+
+  function meetingsForDay(day: Date) {
+    return meetings.filter((m) => isSameDay(m.date, day));
   }
 
   type AllDayBar = {
@@ -259,8 +317,21 @@ export function WeekCalendar({
             </Link>
           ))}
 
+          {meetingsForDay(selectedDay).map((m) => (
+            <Link key={`meeting-${m.id}`} href={`/meetings/${m.id}/edit`} className="card flex items-center gap-2.5 px-3.5 py-3">
+              <span className="w-[3px] self-stretch rounded border border-dashed border-accent/60" />
+              <div className="min-w-0">
+                <div className="text-[9.5px] font-semibold text-ink/55">
+                  {String(m.date.getHours()).padStart(2, "0")}:{String(m.date.getMinutes()).padStart(2, "0")}
+                </div>
+                <div className="text-[13.5px] font-semibold truncate">{m.title}</div>
+              </div>
+            </Link>
+          ))}
+
           {bars.filter((bar) => selectedIdx >= bar.colStart && selectedIdx <= bar.colEnd).length === 0 &&
-            milestonesFor(selectedDay).length === 0 && <p className="text-sm placeholder-text">{t.noItemsThisDay}</p>}
+            milestonesFor(selectedDay).length === 0 &&
+            meetingsForDay(selectedDay).length === 0 && <p className="text-sm placeholder-text">{t.noItemsThisDay}</p>}
         </div>
       </div>
 
@@ -363,6 +434,13 @@ export function WeekCalendar({
               endMin: minutesFromGridStart(new Date(m.date.getTime() + 60 * 60000)),
             }))
           );
+          const placedMeetings = assignColumns(
+            meetingsForDay(day).map((m) => ({
+              ...m,
+              startMin: minutesFromGridStart(m.date),
+              endMin: minutesFromGridStart(new Date(m.date.getTime() + 60 * 60000)),
+            }))
+          );
           return (
             <div
               key={day.toISOString()}
@@ -414,9 +492,51 @@ export function WeekCalendar({
                 </Link>
                 );
               })}
-              {dragPreview?.type === "milestone" && dragPreview.dayIdx === dayIdx && (
+              {placedMeetings.map((m) => {
+                const meetingKey = `meeting-${m.id}-${m.originalDate.toISOString()}`;
+                return (
+                <Link
+                  key={meetingKey}
+                  href={`/meetings/${m.id}/edit`}
+                  title={m.title}
+                  draggable
+                  onDragStart={(e) => {
+                    dragRef.current = {
+                      type: "meeting",
+                      meetingId: m.id,
+                      originalDate: m.originalDate.toISOString(),
+                      title: m.title,
+                      recurring: m.recurring,
+                    };
+                    setDraggingKey(meetingKey);
+                    e.dataTransfer.effectAllowed = "move";
+                  }}
+                  onDragEnd={() => {
+                    dragRef.current = null;
+                    setDragOverIdx(null);
+                    setDraggingKey(null);
+                    setDragPreview(null);
+                  }}
+                  className={`absolute overflow-clip rounded-md leading-tight bg-accent/10 border-2 border-dashed border-accent/60 px-1 py-0.5 box-border cursor-grab active:cursor-grabbing hover:bg-accent/20 shadow-[0_6px_14px_rgba(0,0,0,0.45)] transition-opacity ${
+                    draggingKey === meetingKey ? "opacity-30" : "opacity-100"
+                  }`}
+                  style={{
+                    top: (m.startMin / 60) * HOUR_PX,
+                    height: Math.max(16, ((m.endMin - m.startMin) / 60) * HOUR_PX),
+                    ...overlapBoxStyle(m.col),
+                  }}
+                >
+                  <div className="sticky top-0 z-[1] -mx-1 -mt-0.5 px-1 pt-0.5 bg-surface/95 text-[10.5px] font-bold text-accent truncate">
+                    {m.title}
+                  </div>
+                </Link>
+                );
+              })}
+              {(dragPreview?.type === "milestone" || dragPreview?.type === "meeting") && dragPreview.dayIdx === dayIdx && (
                 <div
-                  className="absolute overflow-hidden rounded-md leading-tight bg-accent/25 border-2 border-dashed border-accent px-1 py-0.5 box-border pointer-events-none shadow-[0_10px_24px_rgba(0,0,0,0.5)]"
+                  className={`absolute overflow-hidden rounded-md leading-tight border-2 border-dashed px-1 py-0.5 box-border pointer-events-none shadow-[0_10px_24px_rgba(0,0,0,0.5)] ${
+                    dragPreview.type === "meeting" ? "bg-accent/15 border-accent/60" : "bg-accent/25 border-accent"
+                  }`}
                   style={{ top: dragPreview.top, height: HOUR_PX, left: 0, width: "100%" }}
                 >
                   <div className="text-[10.5px] font-bold text-accent truncate">{dragPreview.label}</div>
@@ -458,8 +578,38 @@ export function WeekCalendar({
         <Legend swatch="bg-accent" label={t.legendEventDays} />
         <Legend swatch="bg-ink/14" label={t.legendPrepBuild} />
         <Legend swatch="border-2 border-ink/45 bg-ink/22" label={t.legendMilestone} />
+        <Legend swatch="border-2 border-dashed border-accent/60 bg-accent/10" label={t.legendMeeting} />
       </div>
       </div>
+
+      {pendingChoice && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-bg/70 backdrop-blur-sm p-4"
+          role="presentation"
+          onClick={() => setPendingChoice(null)}
+        >
+          <div
+            className="glass-panel rounded-2xl shadow-[0_24px_64px_rgba(0,0,0,0.55)] w-full max-w-sm p-6"
+            role="alertdialog"
+            aria-modal="true"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="text-[15px] font-bold mb-2">{dict.meetings.reschedule.title}</div>
+            <p className="text-[14px] leading-relaxed text-ink/85">{dict.meetings.reschedule.question(pendingChoice.title)}</p>
+            <div className="flex flex-col gap-2 mt-6">
+              <button type="button" className="btn" autoFocus onClick={() => resolvePendingChoice("occurrence")}>
+                {dict.meetings.reschedule.thisOccurrence}
+              </button>
+              <button type="button" className="btno" onClick={() => resolvePendingChoice("future")}>
+                {dict.meetings.reschedule.thisAndFuture}
+              </button>
+              <button type="button" className="btno !border-transparent" onClick={() => setPendingChoice(null)}>
+                {dict.common.cancel}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {events.length === 0 && <p className="text-sm placeholder-text mt-3">{t.noEventsThisWeek}</p>}
       {events.length > 0 && (

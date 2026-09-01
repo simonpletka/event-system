@@ -33,6 +33,7 @@ export function Sidebar({
     { href: "/dashboard", label: tNav.dashboard },
     { href: "/clients", label: tNav.clients },
     { href: "/events", label: tNav.events },
+    { href: "/meetings", label: tNav.meetings },
     { href: "/finance", label: tNav.finance },
     { href: "/time-tracker", label: tNav.timeTracker },
   ];

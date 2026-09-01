@@ -100,7 +100,7 @@ export async function AdminDashboard({
 
       {view === "calendar" && calendarEvents ? (
         <div>
-          <WeekCalendar weekStart={weekStart} events={calendarEvents} locale={locale} />
+          <WeekCalendar weekStart={weekStart} events={calendarEvents.events} meetings={calendarEvents.meetings} locale={locale} />
         </div>
       ) : (
         <div>
