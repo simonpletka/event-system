@@ -76,7 +76,12 @@ export default async function ProjectsPage({
   };
   const { projects, total, activeCount, clients, places } = await getProjectList(user, filters);
   const now = new Date();
-  const firstUpcomingId = projects.find((e) => e.endDate >= now)?.id;
+  // The list is sorted by start date descending, so "nearest upcoming" isn't
+  // the first array match — it's whichever not-yet-ended project starts soonest.
+  const firstUpcomingId = projects.reduce<(typeof projects)[number] | undefined>(
+    (nearest, e) => (e.endDate >= now && (!nearest || e.startDate < nearest.startDate) ? e : nearest),
+    undefined
+  )?.id;
   const eventParams = {
     status: filters.status,
     client: filters.client,

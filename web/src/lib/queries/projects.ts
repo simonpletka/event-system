@@ -88,7 +88,7 @@ export async function getProjectList(user: SessionUser, filters: ProjectListFilt
     prisma.project.findMany({
       where,
       include: { venues: true, client: { select: { id: true, name: true } } },
-      orderBy: { startDate: "asc" },
+      orderBy: { startDate: "desc" },
     }),
     prisma.project.count({ where: projectWhereForUser(user) }),
     prisma.project.findMany({
