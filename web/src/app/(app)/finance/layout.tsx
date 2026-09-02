@@ -36,7 +36,7 @@ export default async function FinanceLayout({ children }: { children: React.Reac
         <div className="flex items-end justify-between">
           <div>
             <div className="heading-label">{t.finance.openDocs(quoteCount + invoiceCount + expenseCount)}</div>
-            <h1 className="text-[34px] font-bold tracking-tight mt-1">{t.finance.title}</h1>
+            <h1 className="text-[43px] font-bold tracking-tight mt-1">{t.finance.title}</h1>
           </div>
         </div>
         <div className="hidden md:block mt-3">

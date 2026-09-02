@@ -43,7 +43,7 @@ export default async function MeetingsPage({
         <div className="flex items-end justify-between">
           <div>
             <div className="heading-label">{tm.countHeading(meetings.length)}</div>
-            <h1 className="text-[34px] font-bold tracking-tight mt-1">{tm.title}</h1>
+            <h1 className="text-[43px] font-bold tracking-tight mt-1">{tm.title}</h1>
           </div>
           {canManage && (
             <Link href="/meetings/new" className="btn font-semibold">
