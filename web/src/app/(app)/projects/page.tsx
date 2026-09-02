@@ -248,7 +248,7 @@ function ViewHeader({ canCreate, total, activeCount, t }: { canCreate: boolean; 
         {/* Keep the line's height in both views so the switcher below doesn't jump
             when toggling table <-> calendar (calendar has no count to show). */}
         <div className="heading-label">{total !== undefined ? t.projects.headerCount(total, activeCount ?? 0) : " "}</div>
-        <h1 className="text-[43px] font-bold tracking-tight mt-1">{t.projects.title}</h1>
+        <h1 className="text-[60px] font-bold tracking-tight mt-1">{t.projects.title}</h1>
       </div>
       {canCreate && (
         <Link href="/projects/new" className="btn font-semibold">
