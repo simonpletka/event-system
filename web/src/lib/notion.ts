@@ -96,6 +96,38 @@ export async function tryCreateNotionProjectPage(project: NotionProject): Promis
   }
 }
 
+/**
+ * Flags a synced project's Notion page as deleted rather than removing or
+ * archiving it — the page (and its Meeting relations) stays intact, just
+ * relabeled. "Deleted" isn't one of the app's own ProjectStatus values, so
+ * it's set directly rather than through NOTION_STATUS_LABEL; the Status
+ * property is a plain `select`, which Notion auto-creates a new option for
+ * on first use, same as any other status label.
+ * Throws NotionNotConfiguredError when NOTION_API_KEY is unset — callers on
+ * the hot path should use tryMarkNotionProjectDeleted instead.
+ */
+export async function markNotionProjectDeleted(pageId: string): Promise<void> {
+  const notion = getNotion();
+  if (!notion) throw new NotionNotConfiguredError();
+
+  await notion.pages.update({
+    page_id: pageId,
+    properties: {
+      Status: { select: { name: "Deleted" } },
+    },
+  });
+}
+
+/** Best-effort wrapper: never throws, so a Notion hiccup never fails project deletion. */
+export async function tryMarkNotionProjectDeleted(pageId: string): Promise<void> {
+  try {
+    await markNotionProjectDeleted(pageId);
+  } catch (e) {
+    if (e instanceof NotionNotConfiguredError) return;
+    console.error("Notion project page delete-status update failed:", e);
+  }
+}
+
 type NotionMeeting = {
   type: MeetingType;
   title: string;

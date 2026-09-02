@@ -8,7 +8,7 @@ import { resolveClientId, syncClientContacts } from "@/lib/actions/clients";
 import { nextProjectNumber } from "@/lib/document-number";
 import { addDays } from "@/lib/calendar";
 import { normaliseBudgetInput } from "@/lib/project-budget";
-import { tryCreateNotionProjectPage } from "@/lib/notion";
+import { tryCreateNotionProjectPage, tryMarkNotionProjectDeleted } from "@/lib/notion";
 import { projectHref } from "@/lib/slug";
 import type { ProjectStatus } from "@/generated/prisma/enums";
 
@@ -202,13 +202,18 @@ export async function deleteProjectAction(formData: FormData) {
   if (!isAdmin(user)) return;
 
   const id = String(formData.get("id"));
-  const [expenseCount, invoiceCount] = await Promise.all([
+  const [expenseCount, invoiceCount, existing] = await Promise.all([
     prisma.expense.count({ where: { projectId: id } }),
     prisma.invoice.count({ where: { projectId: id } }),
+    prisma.project.findUnique({ where: { id }, select: { notionPageId: true } }),
   ]);
   if (expenseCount > 0 || invoiceCount > 0) return;
 
   await prisma.project.delete({ where: { id } });
+
+  if (existing?.notionPageId) {
+    await tryMarkNotionProjectDeleted(existing.notionPageId);
+  }
 
   revalidatePath("/projects");
   revalidatePath("/dashboard");
