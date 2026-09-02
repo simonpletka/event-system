@@ -10,6 +10,13 @@ const initialState: LoginState = {};
 export function LoginForm({ t, defaultEmail }: { t: Dictionary["auth"]; defaultEmail?: string }) {
   const [state, formAction, pending] = useActionState(loginAction, initialState);
 
+  const submitOnEnter: React.KeyboardEventHandler<HTMLInputElement> = (e) => {
+    if (e.key === "Enter") {
+      e.preventDefault();
+      e.currentTarget.form?.requestSubmit();
+    }
+  };
+
   return (
     <form action={formAction} className="flex flex-col gap-4">
       <div className="flex flex-col gap-1.5">
@@ -23,6 +30,8 @@ export function LoginForm({ t, defaultEmail }: { t: Dictionary["auth"]; defaultE
           required
           autoComplete="username"
           defaultValue={defaultEmail}
+          onKeyDown={submitOnEnter}
+          enterKeyHint="next"
           className="bg-transparent border border-ink/35 px-3 py-2 text-sm outline-none focus:border-ink"
         />
       </div>
@@ -30,7 +39,14 @@ export function LoginForm({ t, defaultEmail }: { t: Dictionary["auth"]; defaultE
         <label htmlFor="password" className="heading-label">
           {t.password}
         </label>
-        <PasswordInput id="password" name="password" required autoComplete="current-password" holdToShowLabel={t.holdToShowPassword} />
+        <PasswordInput
+          id="password"
+          name="password"
+          required
+          autoComplete="current-password"
+          holdToShowLabel={t.holdToShowPassword}
+          onKeyDown={submitOnEnter}
+        />
       </div>
 
       {state.error && <p className="text-sm text-warning">{state.error}</p>}
