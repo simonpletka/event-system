@@ -13,7 +13,11 @@ export type ProjectListFilters = {
 export async function getProjectList(user: SessionUser, filters: ProjectListFilters) {
   const where: Prisma.ProjectWhereInput = {
     ...projectWhereForUser(user),
-    ...(filters.status ? { status: filters.status } : {}),
+    // Closed projects are still real records (still counted in `total`,
+    // still reachable via a direct link) — just excluded from the default
+    // list view so it doesn't fill up with wrapped-up work. Selecting
+    // "Closed" explicitly in the status filter still shows them.
+    ...(filters.status ? { status: filters.status } : { status: { not: "CLOSED" } }),
     ...(filters.client ? { companyName: filters.client } : {}),
     ...(filters.place ? { venues: { some: { name: filters.place } } } : {}),
     ...(filters.q
