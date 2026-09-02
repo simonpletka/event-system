@@ -1,4 +1,4 @@
-import { requireUser, eventWhereForUser, canPickOtherPayer } from "@/lib/authz";
+import { requireUser, projectWhereForUser, canPickOtherPayer } from "@/lib/authz";
 import { prisma } from "@/lib/prisma";
 import { ExpenseForm } from "@/components/finance/ExpenseForm";
 import { getLocale, getDictionary } from "@/lib/i18n";
@@ -9,8 +9,8 @@ export default async function NewExpensePage() {
   const t = getDictionary(locale);
 
   const [events, cardHolders] = await Promise.all([
-    prisma.event.findMany({
-      where: eventWhereForUser(user),
+    prisma.project.findMany({
+      where: projectWhereForUser(user),
       select: { id: true, title: true, companyName: true },
       orderBy: { title: "asc" },
     }),

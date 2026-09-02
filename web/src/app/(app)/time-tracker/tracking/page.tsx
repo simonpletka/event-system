@@ -2,6 +2,7 @@ import Link from "next/link";
 import { requireUser } from "@/lib/authz";
 import { getMyTimeTrackerData, getTimeTrackerCalendarData } from "@/lib/queries/timetracker";
 import { formatDate, formatMinutes } from "@/lib/format";
+import { projectHref } from "@/lib/slug";
 import { getLocale, getDictionary, type Dictionary } from "@/lib/i18n";
 import { RunningTimerBox } from "@/components/timetracker/RunningTimerBox";
 import { EditEntryButton } from "@/components/timetracker/EditEntryButton";
@@ -55,7 +56,7 @@ export default async function TrackingPage({
   const calendarData = view === "calendar" ? await getTimeTrackerCalendarData(user, weekStart) : null;
 
   const running = listData?.running ?? calendarData?.running ?? null;
-  const events = listData?.events ?? calendarData?.events ?? [];
+  const projects = listData?.projects ?? calendarData?.projects ?? [];
   const runningNormalized = running && running.startedAt ? { ...running, startedAt: running.startedAt } : null;
 
   const viewSwitch = (
@@ -70,7 +71,7 @@ export default async function TrackingPage({
 
   return (
     <div>
-      {view === "calendar" && <RunningTimerBox running={runningNormalized} events={events} locale={locale} />}
+      {view === "calendar" && <RunningTimerBox running={runningNormalized} projects={projects} locale={locale} />}
 
       <div className={`flex items-center justify-between gap-2 flex-wrap ${view === "calendar" ? "mt-5" : ""}`}>
         <div className="heading-label !text-[12px]">{view === "list" ? t.timeTracker.tracking.myEntries : t.timeTracker.tabReport}</div>
@@ -89,7 +90,7 @@ export default async function TrackingPage({
             />
           </div>
           <div className="mt-4">
-            <TimeTrackerCalendar weekStart={weekStart} entries={calendarData!.entries} events={calendarData!.events} locale={locale} />
+            <TimeTrackerCalendar weekStart={weekStart} entries={calendarData!.entries} projects={calendarData!.projects} locale={locale} />
           </div>
         </>
       ) : (
@@ -112,7 +113,7 @@ function ListView({
   t: Dictionary;
   locale: Parameters<typeof RunningTimerBox>[0]["locale"];
 }) {
-  const { entries, events, running } = listData;
+  const { entries, projects, running } = listData;
   const runningNormalized = running && running.startedAt ? { ...running, startedAt: running.startedAt } : null;
   const tt = t.timeTracker.tracking;
 
@@ -131,7 +132,7 @@ function ListView({
         <div className="hidden md:block">
           <div className="grid grid-cols-[56px_1.2fr_1.4fr_.6fr_.5fr] gap-2.5 border-b border-ink/14 pb-1.5 mt-4 px-2.5 [&_.heading-label]:font-bold [&_.heading-label]:!text-[9px]">
             <span className="heading-label">{tt.colDate}</span>
-            <span className="heading-label">{tt.colEvent}</span>
+            <span className="heading-label">{tt.colProject}</span>
             <span className="heading-label">{tt.colWork}</span>
             <span className="heading-label">{tt.colHours}</span>
             <span className="heading-label"></span>
@@ -143,12 +144,12 @@ function ListView({
               className="grid grid-cols-[56px_1.2fr_1.4fr_.6fr_.5fr] gap-2.5 items-center py-3 px-2.5 rounded-lg border-b border-ink/8 last:border-b-0 text-[15px] hover:bg-ink/5"
             >
               <div className="placeholder-text">{formatDate(e.date)}</div>
-              {e.event ? (
-                <Link href={`/events/${e.eventId}`} className="hover:text-accent">
-                  {e.event.title}
+              {e.project ? (
+                <Link href={projectHref(e.project)} className="hover:text-accent">
+                  {e.project.title}
                 </Link>
               ) : (
-                <span className="placeholder-text italic">{t.timeTracker.unassignedEvent}</span>
+                <span className="placeholder-text italic">{t.timeTracker.unassignedProject}</span>
               )}
               <div className="placeholder-text truncate">{e.description || "—"}</div>
               <div className="font-semibold">{formatMinutes(e.minutes)}</div>
@@ -156,7 +157,7 @@ function ListView({
                 <EditEntryButton
                   entry={{
                     id: e.id,
-                    eventId: e.eventId,
+                    projectId: e.projectId,
                     date: isoDate(e.date),
                     minutes: e.minutes,
                     description: e.description,
@@ -164,7 +165,7 @@ function ListView({
                     startTime: e.startedAt ? isoTime(e.startedAt) : undefined,
                     endTime: e.endedAt ? isoTime(e.endedAt) : undefined,
                   }}
-                  events={events}
+                  projects={projects}
                   modalTitle={t.timeTracker.entryEdit.editEntry}
                   t={t.timeTracker.editEntryForm}
                   tPhases={t.phases}
@@ -183,19 +184,19 @@ function ListView({
             <div key={e.id} className="flex items-start justify-between gap-2.5 py-3 px-2.5 rounded-lg border-b border-ink/8 last:border-b-0 text-[13px]">
               <div className="min-w-0 flex-1">
                 <div className="placeholder-text text-[10.5px] mb-0.5">{formatDate(e.date)}</div>
-                {e.event ? (
-                  <Link href={`/events/${e.eventId}`} className="font-semibold hover:text-accent">
-                    {e.event.title}
+                {e.project ? (
+                  <Link href={projectHref(e.project)} className="font-semibold hover:text-accent">
+                    {e.project.title}
                   </Link>
                 ) : (
-                  <span className="font-semibold placeholder-text italic">{t.timeTracker.unassignedEvent}</span>
+                  <span className="font-semibold placeholder-text italic">{t.timeTracker.unassignedProject}</span>
                 )}
                 <div className="placeholder-text text-[11.5px] mt-0.5 truncate">{e.description || "—"}</div>
                 <div className="flex gap-3 text-[9px] tracking-[0.1em] uppercase mt-1.5">
                   <EditEntryButton
                     entry={{
                       id: e.id,
-                      eventId: e.eventId,
+                      projectId: e.projectId,
                       date: isoDate(e.date),
                       minutes: e.minutes,
                       description: e.description,
@@ -203,7 +204,7 @@ function ListView({
                       startTime: e.startedAt ? isoTime(e.startedAt) : undefined,
                       endTime: e.endedAt ? isoTime(e.endedAt) : undefined,
                     }}
-                    events={events}
+                    projects={projects}
                     modalTitle={t.timeTracker.entryEdit.editEntry}
                     t={t.timeTracker.editEntryForm}
                     tPhases={t.phases}
@@ -224,7 +225,7 @@ function ListView({
       </div>
 
       <div className="md:col-span-1 flex flex-col gap-3 order-first md:order-none">
-        <RunningTimerBox running={runningNormalized} events={events} locale={locale} compact />
+        <RunningTimerBox running={runningNormalized} projects={projects} locale={locale} compact />
       </div>
     </div>
   );

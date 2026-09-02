@@ -10,14 +10,14 @@ import type { TimePhase } from "@/generated/prisma/enums";
 
 export type CalendarTimeEntry = {
   id: string;
-  eventId: string | null;
+  projectId: string | null;
   date: Date;
   minutes: number;
   description: string;
   phase: TimePhase;
   startedAt: Date | null;
   endedAt: Date | null;
-  event: { id: string; title: string } | null;
+  project: { id: string; title: string } | null;
 };
 
 // The grid itself covers the full day, scrollable — DEFAULT_VIEW_* just
@@ -52,22 +52,22 @@ type Draft = { dayIdx: number; startMin: number; endMin: number; clientX: number
 export function TimeTrackerCalendar({
   weekStart,
   entries,
-  events,
+  projects,
   locale,
 }: {
   weekStart: Date;
   entries: CalendarTimeEntry[];
-  events: { id: string; title: string }[];
+  projects: { id: string; title: string }[];
   locale: Locale;
 }) {
   const dict = getDictionary(locale);
   const t = dict.timeTracker.calendarView;
-  const unassignedLabel = dict.timeTracker.unassignedEvent;
+  const unassignedLabel = dict.timeTracker.unassignedProject;
 
   function toEditable(e: CalendarTimeEntry) {
     return {
       id: e.id,
-      eventId: e.eventId,
+      projectId: e.projectId,
       date: isoDate(e.date),
       minutes: e.minutes,
       description: e.description,
@@ -178,7 +178,7 @@ export function TimeTrackerCalendar({
             <EditEntryButton
               key={e.id}
               entry={toEditable(e)}
-              events={events}
+              projects={projects}
               modalTitle={dict.timeTracker.entryEdit.editEntry}
               t={dict.timeTracker.editEntryForm}
               tPhases={dict.phases}
@@ -187,7 +187,7 @@ export function TimeTrackerCalendar({
             >
               <span className="w-[3px] self-stretch rounded bg-ink/30" />
               <div className="min-w-0 flex-1">
-                <div className="text-[13.5px] font-semibold truncate">{(e.event?.title ?? unassignedLabel)}</div>
+                <div className="text-[13.5px] font-semibold truncate">{(e.project?.title ?? unassignedLabel)}</div>
                 {e.description && <div className="placeholder-text text-[11px] truncate">{e.description}</div>}
               </div>
               <div className="text-[12px] font-semibold shrink-0">{formatMinutes(e.minutes)}</div>
@@ -198,7 +198,7 @@ export function TimeTrackerCalendar({
             <EditEntryButton
               key={e.id}
               entry={toEditable(e)}
-              events={events}
+              projects={projects}
               modalTitle={dict.timeTracker.entryEdit.editEntry}
               t={dict.timeTracker.editEntryForm}
               tPhases={dict.phases}
@@ -210,7 +210,7 @@ export function TimeTrackerCalendar({
                 <div className="text-[9.5px] font-semibold text-ink/55">
                   {String(e.startedAt!.getHours()).padStart(2, "0")}:{String(e.startedAt!.getMinutes()).padStart(2, "0")}
                 </div>
-                <div className="text-[13.5px] font-semibold truncate">{(e.event?.title ?? unassignedLabel)}</div>
+                <div className="text-[13.5px] font-semibold truncate">{(e.project?.title ?? unassignedLabel)}</div>
                 {e.description && <div className="placeholder-text text-[11px] truncate">{e.description}</div>}
               </div>
               <div className="text-[12px] font-semibold shrink-0">{formatMinutes(e.minutes)}</div>
@@ -248,15 +248,15 @@ export function TimeTrackerCalendar({
                   <EditEntryButton
                     key={e.id}
                     entry={toEditable(e)}
-                    events={events}
+                    projects={projects}
                     modalTitle={dict.timeTracker.entryEdit.editEntry}
                     t={dict.timeTracker.editEntryForm}
                     tPhases={dict.phases}
                     tDelete={dict.timeTracker.deleteEntry}
-                    title={`${(e.event?.title ?? unassignedLabel)}${e.description ? ` — ${e.description}` : ""}`}
+                    title={`${(e.project?.title ?? unassignedLabel)}${e.description ? ` — ${e.description}` : ""}`}
                     className="w-full overflow-hidden rounded-md text-[8.5px] leading-tight bg-ink/14 border border-ink/25 px-1.5 py-1 truncate hover:border-accent text-left"
                   >
-                    <div className="font-semibold truncate">{(e.event?.title ?? unassignedLabel)}</div>
+                    <div className="font-semibold truncate">{(e.project?.title ?? unassignedLabel)}</div>
                     <div className="placeholder-text">{formatMinutes(e.minutes)}</div>
                   </EditEntryButton>
                 ))}
@@ -302,12 +302,12 @@ export function TimeTrackerCalendar({
                 <EditEntryButton
                   key={e.id}
                   entry={toEditable(e)}
-                  events={events}
+                  projects={projects}
                   modalTitle={dict.timeTracker.entryEdit.editEntry}
                   t={dict.timeTracker.editEntryForm}
                   tPhases={dict.phases}
                   tDelete={dict.timeTracker.deleteEntry}
-                  title={`${(e.event?.title ?? unassignedLabel)}${e.description ? ` — ${e.description}` : ""}`}
+                  title={`${(e.project?.title ?? unassignedLabel)}${e.description ? ` — ${e.description}` : ""}`}
                   className="absolute overflow-clip rounded-md text-[8.5px] leading-tight bg-ink/14 border border-ink/25 px-1.5 py-1 box-border hover:border-accent flex flex-col text-left shadow-[0_4px_10px_rgba(0,0,0,0.35)]"
                   style={{
                     top: (e.startMin / 60) * HOUR_PX,
@@ -319,7 +319,7 @@ export function TimeTrackerCalendar({
                       of the box is visible (overflow-clip, not hidden, so this
                       sticks against the outer grid scroller). */}
                   <div className="sticky top-0 z-[1] -mx-1.5 -mt-1 px-1.5 pt-1 bg-surface/95 font-semibold truncate">
-                    {(e.event?.title ?? unassignedLabel)}
+                    {(e.project?.title ?? unassignedLabel)}
                   </div>
                   {e.description && <div className="placeholder-text truncate">{e.description}</div>}
                   <div className="placeholder-text mt-auto">{formatMinutes(e.minutes)}</div>
@@ -354,7 +354,7 @@ export function TimeTrackerCalendar({
           startMin={draft.startMin}
           endMin={draft.endMin}
           style={popoverStyle}
-          events={events}
+          projects={projects}
           t={dict.timeTracker.createEntryPopover}
           tPhases={dict.phases}
           onClose={() => setDraft(null)}

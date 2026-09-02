@@ -5,18 +5,19 @@ import { getWeekCalendarData } from "@/lib/queries/calendar";
 import { WeekCalendar } from "@/components/calendar/WeekCalendar";
 import { getDictionary, type Locale } from "@/lib/i18n";
 import { formatDate } from "@/lib/format";
+import { projectHref } from "@/lib/slug";
 import { mondayOf, parseIsoDate } from "@/lib/calendar";
 import type { SessionUser } from "@/lib/authz";
 import { DashboardShell, NewEventAction } from "./DashboardShell";
 import {
   SectionHeading,
-  EventCard,
-  EventCardGrid,
+  ProjectCard,
+  ProjectCardGrid,
   RowCard,
   Row,
   TrackedTimeChart,
   EmptyState,
-  type DashEventCard,
+  type DashProjectCard,
 } from "./widgets";
 
 const SOON_MS = 3 * 86_400_000;
@@ -43,8 +44,9 @@ export async function ProducerDashboard({
   const myTime = timeData.rows[0];
   const now = new Date().getTime();
 
-  const cards: DashEventCard[] = d.myEvents.map((e) => ({
+  const cards: DashProjectCard[] = d.myProjects.map((e) => ({
     id: e.id,
+    number: e.number,
     title: e.title,
     company: e.companyName,
     status: e.status,
@@ -58,7 +60,7 @@ export async function ProducerDashboard({
   return (
     <DashboardShell
       title={td.title}
-      action={<NewEventAction label={td.newEvent} />}
+      action={<NewEventAction label={td.newProject} />}
       view={view}
       weekStart={weekStart}
       weekHrefBase="/dashboard"
@@ -72,15 +74,15 @@ export async function ProducerDashboard({
         </div>
       ) : (
         <div>
-          <SectionHeading label={td.myEvents} sub={td.myEventsAssignedActive} />
+          <SectionHeading label={td.myProjects} sub={td.myEventsAssignedActive} />
           {cards.length === 0 ? (
-            <EmptyState>{td.noAssignedEvents}</EmptyState>
+            <EmptyState>{td.noAssignedProjects}</EmptyState>
           ) : (
-            <EventCardGrid>
+            <ProjectCardGrid>
               {cards.map((ev) => (
-                <EventCard key={ev.id} ev={ev} t={t} />
+                <ProjectCard key={ev.id} ev={ev} t={t} />
               ))}
-            </EventCardGrid>
+            </ProjectCardGrid>
           )}
         </div>
       )}
@@ -92,13 +94,13 @@ export async function ProducerDashboard({
         ) : (
           <RowCard>
             {d.roadmap.map((item) => (
-              <Link key={item.id} href={`/events/${item.event.id}/roadmap`} className="block">
+              <Link key={item.id} href={projectHref(item.project, "/roadmap")} className="block">
                 <Row>
                   <span className="font-mono text-[11px] text-ink/45 whitespace-nowrap w-[86px] shrink-0">
                     {formatDate(item.date, { weekday: "short", day: "numeric", month: "short" })}
                   </span>
                   <span className="flex-1 min-w-0 truncate">
-                    {item.title} <span className="placeholder-text">· {item.event.title}</span>
+                    {item.title} <span className="placeholder-text">· {item.project.title}</span>
                   </span>
                   {item.date.getTime() - now <= SOON_MS && (
                     <span className="tag tag-attention whitespace-nowrap">{td.dueSoon}</span>

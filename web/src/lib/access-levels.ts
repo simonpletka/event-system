@@ -1,23 +1,23 @@
-import type { EventsAccess, FinanceAccess, ExpensesAccess, SettingsAccess } from "@/generated/prisma/enums";
+import type { ProjectsAccess, FinanceAccess, ExpensesAccess, SettingsAccess } from "@/generated/prisma/enums";
 
-export const EVENTS_ACCESS_LABEL: Record<EventsAccess, string> = {
+export const PROJECTS_ACCESS_LABEL: Record<ProjectsAccess, string> = {
   NONE: "No access",
-  ASSIGNED_READ: "Assigned events, read-only",
-  OWN_EDIT: "Own/assigned events, can edit",
-  ALL_READ: "All events, read-only",
-  ALL_FULL: "All events, full access",
+  ASSIGNED_READ: "Assigned projects, read-only",
+  OWN_EDIT: "Own/assigned projects, can edit",
+  ALL_READ: "All projects, read-only",
+  ALL_FULL: "All projects, full access",
 };
 
 export const FINANCE_ACCESS_LABEL: Record<FinanceAccess, string> = {
   NONE: "No access",
-  READ_OWN_EVENTS: "Read-only, own events",
+  READ_OWN_PROJECTS: "Read-only, own projects",
   FULL: "Full access",
 };
 
 export const EXPENSES_ACCESS_LABEL: Record<ExpensesAccess, string> = {
   NONE: "No access",
   OWN_ONLY: "Own expenses only",
-  ADD_ON_OWN_EVENTS: "Add on own/assigned events",
+  ADD_ON_OWN_PROJECTS: "Add on own/assigned projects",
   FULL: "Full access",
 };
 
@@ -27,7 +27,7 @@ export const SETTINGS_ACCESS_LABEL: Record<SettingsAccess, string> = {
   USERS_AND_COMPANY: "Users, roles & company",
 };
 
-export const EVENTS_ACCESS_OPTIONS = Object.keys(EVENTS_ACCESS_LABEL) as EventsAccess[];
+export const PROJECTS_ACCESS_OPTIONS = Object.keys(PROJECTS_ACCESS_LABEL) as ProjectsAccess[];
 export const FINANCE_ACCESS_OPTIONS = Object.keys(FINANCE_ACCESS_LABEL) as FinanceAccess[];
 export const EXPENSES_ACCESS_OPTIONS = Object.keys(EXPENSES_ACCESS_LABEL) as ExpensesAccess[];
 export const SETTINGS_ACCESS_OPTIONS = Object.keys(SETTINGS_ACCESS_LABEL) as SettingsAccess[];

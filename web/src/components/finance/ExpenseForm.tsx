@@ -4,7 +4,7 @@ import { useActionState, useRef, useEffect } from "react";
 import { createExpenseAction, updateExpenseAction, type FinanceFormState } from "@/lib/actions/finance";
 import { ReceiptInput } from "./ReceiptInput";
 import { EXPENSE_CATEGORIES } from "@/lib/expense-categories";
-import { EventPicker, type PickableEvent } from "@/components/EventPicker";
+import { ProjectPicker, type PickableProject } from "@/components/ProjectPicker";
 import { CancelLink } from "@/components/ui/CancelLink";
 import { DateTimeField } from "@/components/ui/DateTimeField";
 import { isoDate } from "@/lib/calendar";
@@ -15,7 +15,7 @@ const initialState: FinanceFormState = {};
 
 export type ExpenseFormDefaults = {
   id: string;
-  eventId: string | null;
+  projectId: string | null;
   amount: number;
   date: string;
   paidById: string;
@@ -31,7 +31,7 @@ export function ExpenseForm({
   defaults,
   locale,
 }: {
-  events: PickableEvent[];
+  events: PickableProject[];
   payers: { id: string; name: string }[];
   currentUserId: string;
   defaults?: ExpenseFormDefaults;
@@ -78,13 +78,13 @@ export function ExpenseForm({
       </div>
 
       <label className="flex flex-col gap-1.5">
-        <span className="field-label">{tf.eventLabel}</span>
-        <EventPicker
-          name="eventId"
+        <span className="field-label">{tf.projectLabel}</span>
+        <ProjectPicker
+          name="projectId"
           initialEvents={events}
-          defaultValue={defaults?.eventId ?? ""}
+          defaultValue={defaults?.projectId ?? ""}
           extraOption={{ value: "", label: tf.companyOverheadOption }}
-          t={t.events.picker}
+          t={t.projects.picker}
         />
       </label>
 

@@ -4,7 +4,7 @@ import {
   quoteWhereForUser,
   invoiceWhereForUser,
   expenseWhereForUser,
-  eventWhereForUser,
+  projectWhereForUser,
   type SessionUser,
 } from "@/lib/authz";
 import type { ExpenseCategory, Prisma, QuoteStatus } from "@/generated/prisma/client";
@@ -39,51 +39,51 @@ export function financeOrderBy(sort: string | undefined): { issuedAt: "asc" | "d
 
 // --- Quotes ---
 
-export type QuoteListFilters = { q?: string; status?: QuoteStatus; eventId?: string; year?: number; sort?: string };
+export type QuoteListFilters = { q?: string; status?: QuoteStatus; projectId?: string; year?: number; sort?: string };
 
 export async function getQuoteList(user: SessionUser, filters: QuoteListFilters) {
   const year = filters.year ?? new Date().getFullYear();
   const where: Prisma.QuoteWhereInput = {
     ...quoteWhereForUser(user),
     ...(filters.status ? { status: filters.status } : {}),
-    ...(filters.eventId ? { eventId: filters.eventId } : {}),
+    ...(filters.projectId ? { projectId: filters.projectId } : {}),
     issuedAt: { gte: new Date(`${year}-01-01`), lt: new Date(`${year + 1}-01-01`) },
     ...(filters.q
       ? {
           OR: [
             { number: { contains: filters.q } },
-            { event: { title: { contains: filters.q } } },
-            { event: { companyName: { contains: filters.q } } },
+            { project: { title: { contains: filters.q } } },
+            { project: { companyName: { contains: filters.q } } },
           ],
         }
       : {}),
   };
 
-  const [quotes, openValue, events] = await Promise.all([
+  const [quotes, openValue, projects] = await Promise.all([
     prisma.quote.findMany({
       where,
-      include: { event: true, invoices: { select: { id: true, number: true } } },
+      include: { project: true, invoices: { select: { id: true, number: true } } },
       orderBy: financeOrderBy(filters.sort),
     }),
     prisma.quote.aggregate({
       where: { ...quoteWhereForUser(user), status: { in: ["DRAFT", "SENT"] } },
       _sum: { total: true },
     }),
-    prisma.event.findMany({
-      where: eventWhereForUser(user),
+    prisma.project.findMany({
+      where: projectWhereForUser(user),
       select: { id: true, title: true, status: true },
       orderBy: { title: "asc" },
     }),
   ]);
 
-  return { quotes, openValue: openValue._sum.total ?? 0, events, year };
+  return { quotes, openValue: openValue._sum.total ?? 0, projects, year };
 }
 
 export const getQuoteDetail = cache(async function getQuoteDetail(user: SessionUser, id: string) {
   return prisma.quote.findFirst({
     where: { id, ...quoteWhereForUser(user) },
     include: {
-      event: { include: { client: true } },
+      project: { include: { client: true } },
       items: { orderBy: { sortOrder: "asc" } },
       invoices: true,
       createdBy: true,
@@ -93,17 +93,17 @@ export const getQuoteDetail = cache(async function getQuoteDetail(user: SessionU
 
 // --- Invoices ---
 
-export type InvoiceListFilters = { bucket?: "issued" | "paid" | "overdue" | "partly_paid"; eventId?: string; sort?: string };
+export type InvoiceListFilters = { bucket?: "issued" | "paid" | "overdue" | "partly_paid"; projectId?: string; sort?: string };
 
 export async function getInvoiceList(user: SessionUser, filters: InvoiceListFilters) {
   const where: Prisma.InvoiceWhereInput = {
     ...invoiceWhereForUser(user),
-    ...(filters.eventId ? { eventId: filters.eventId } : {}),
+    ...(filters.projectId ? { projectId: filters.projectId } : {}),
   };
 
   const all = await prisma.invoice.findMany({
     where,
-    include: { event: true },
+    include: { project: true },
     orderBy: financeOrderBy(filters.sort),
   });
 
@@ -116,13 +116,13 @@ export async function getInvoiceList(user: SessionUser, filters: InvoiceListFilt
     return true;
   });
 
-  const events = await prisma.event.findMany({
-    where: eventWhereForUser(user),
+  const projects = await prisma.project.findMany({
+    where: projectWhereForUser(user),
     select: { id: true, title: true, status: true },
     orderBy: { title: "asc" },
   });
 
-  return { invoices: filtered, total: all.length, events };
+  return { invoices: filtered, total: all.length, projects };
 }
 
 export async function getInvoiceKpis(user: SessionUser) {
@@ -155,8 +155,8 @@ export const getInvoiceDetail = cache(async function getInvoiceDetail(user: Sess
     where: { id, ...invoiceWhereForUser(user) },
     include: {
       // client + contacts are only needed to resolve who an invoice email goes to
-      // (Client.invoicingEmail first, else the event's first contact with an email).
-      event: { include: { client: true, contacts: { orderBy: { sortOrder: "asc" } } } },
+      // (Client.invoicingEmail first, else the project's first contact with an email).
+      project: { include: { client: true, contacts: { orderBy: { sortOrder: "asc" } } } },
       quote: true,
       items: { orderBy: { sortOrder: "asc" } },
       payments: { include: { recordedBy: true }, orderBy: { date: "desc" } },
@@ -167,25 +167,25 @@ export const getInvoiceDetail = cache(async function getInvoiceDetail(user: Sess
 
 // --- Expenses ---
 
-export type ExpenseListFilters = { eventId?: string; category?: ExpenseCategory };
+export type ExpenseListFilters = { projectId?: string; category?: ExpenseCategory };
 
 export async function getExpenseList(user: SessionUser, filters: ExpenseListFilters) {
   const where: Prisma.ExpenseWhereInput = {
     ...expenseWhereForUser(user),
-    ...(filters.eventId ? (filters.eventId === "overhead" ? { eventId: null } : { eventId: filters.eventId }) : {}),
+    ...(filters.projectId ? (filters.projectId === "overhead" ? { projectId: null } : { projectId: filters.projectId }) : {}),
     ...(filters.category ? { category: filters.category } : {}),
   };
 
-  const [expenses, events] = await Promise.all([
+  const [expenses, projects] = await Promise.all([
     prisma.expense.findMany({
       where,
-      include: { event: true, paidBy: true },
+      include: { project: true, paidBy: true },
       orderBy: { date: "desc" },
     }),
-    prisma.event.findMany({ where: eventWhereForUser(user), select: { id: true, title: true, status: true }, orderBy: { title: "asc" } }),
+    prisma.project.findMany({ where: projectWhereForUser(user), select: { id: true, title: true, status: true }, orderBy: { title: "asc" } }),
   ]);
 
-  return { expenses, total: expenses.reduce((s, e) => s + e.amount, 0), events };
+  return { expenses, total: expenses.reduce((s, e) => s + e.amount, 0), projects };
 }
 
 // --- Reports ---
@@ -199,11 +199,11 @@ export async function getReports(user: SessionUser, year: number) {
   const [invoices, expenses] = await Promise.all([
     prisma.invoice.findMany({
       where: { ...invoiceWhere, issuedAt: { gte: yearStart, lt: yearEnd } },
-      select: { total: true, issuedAt: true, event: { select: { id: true, title: true } } },
+      select: { total: true, issuedAt: true, project: { select: { id: true, number: true, title: true } } },
     }),
     prisma.expense.findMany({
       where: { ...expenseWhere, date: { gte: yearStart, lt: yearEnd } },
-      select: { amount: true, date: true, category: true, event: { select: { id: true, title: true } } },
+      select: { amount: true, date: true, category: true, project: { select: { id: true, number: true, title: true } } },
     }),
   ]);
 
@@ -217,13 +217,13 @@ export async function getReports(user: SessionUser, year: number) {
   for (const inv of invoices) byMonth.get(inv.issuedAt.getMonth())!.income += inv.total;
   for (const exp of expenses) byMonth.get(exp.date.getMonth())!.expense += exp.amount;
 
-  const byEvent = new Map<string, { id: string; title: string; income: number; expense: number }>();
-  const touchEvent = (id: string, title: string) => {
-    if (!byEvent.has(id)) byEvent.set(id, { id, title, income: 0, expense: 0 });
-    return byEvent.get(id)!;
+  const byProject = new Map<string, { id: string; number: string; title: string; income: number; expense: number }>();
+  const touchProject = (id: string, number: string, title: string) => {
+    if (!byProject.has(id)) byProject.set(id, { id, number, title, income: 0, expense: 0 });
+    return byProject.get(id)!;
   };
-  for (const inv of invoices) if (inv.event) touchEvent(inv.event.id, inv.event.title).income += inv.total;
-  for (const exp of expenses) if (exp.event) touchEvent(exp.event.id, exp.event.title).expense += exp.amount;
+  for (const inv of invoices) if (inv.project) touchProject(inv.project.id, inv.project.number, inv.project.title).income += inv.total;
+  for (const exp of expenses) if (exp.project) touchProject(exp.project.id, exp.project.number, exp.project.title).expense += exp.amount;
 
   const byCategory = new Map<string, number>();
   for (const exp of expenses) byCategory.set(exp.category, (byCategory.get(exp.category) ?? 0) + exp.amount);
@@ -236,7 +236,7 @@ export async function getReports(user: SessionUser, year: number) {
     balance,
     margin,
     byMonth: [...byMonth.values()],
-    byEvent: [...byEvent.values()].sort((a, b) => b.income + b.expense - (a.income + a.expense)),
+    byProject: [...byProject.values()].sort((a, b) => b.income + b.expense - (a.income + a.expense)),
     topCategories,
   };
 }

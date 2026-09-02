@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { requireUser, canViewFinance } from "@/lib/authz";
 import { getReports } from "@/lib/queries/finance";
 import { formatCurrency, formatCompactCurrency, niceMoneyAxis } from "@/lib/format";
+import { projectHref } from "@/lib/slug";
 import { PrintButton } from "@/components/finance/PrintButton";
 import { MonthlyBarChart } from "@/components/finance/MonthlyBarChart";
 import { SegmentedTabs } from "@/components/ui/SegmentedTabs";
@@ -21,7 +22,7 @@ export default async function ReportsPage({
   const t = getDictionary(await getLocale());
   const tr = t.finance.reports;
   const MONTHS = tr.months;
-  const view = (params.view as "event" | "month" | "category") || "month";
+  const view = (params.view as "project" | "month" | "category") || "month";
   const year = Number(params.year) || new Date().getFullYear();
   const report = await getReports(user, year);
 
@@ -30,9 +31,9 @@ export default async function ReportsPage({
   const axisTicks = axisTickValues.map((v) => formatCompactCurrency(v));
   const maxCategory = Math.max(1, ...report.topCategories.map(([, v]) => v));
 
-  const tabOptions = (["month", "event", "category"] as const).map((v) => ({
+  const tabOptions = (["month", "project", "category"] as const).map((v) => ({
     value: v,
-    label: v === "month" ? tr.tabOverview : v === "event" ? tr.tabByEvent : tr.tabByCategory,
+    label: v === "month" ? tr.tabOverview : v === "project" ? tr.tabByProject : tr.tabByCategory,
     href: `/finance/reports?view=${v}&year=${year}`,
   }));
 
@@ -132,19 +133,19 @@ export default async function ReportsPage({
         </div>
       )}
 
-      {view === "event" && (
+      {view === "project" && (
         <div className="mt-4">
           <div className="hidden md:block">
             <div className="grid grid-cols-[1fr_.8fr_.8fr_.7fr] gap-2.5 border-b-2 border-ink pb-1.5 [&_.heading-label]:font-bold [&_.heading-label]:!text-[9px]">
-              <span className="heading-label">{tr.colEvent}</span>
+              <span className="heading-label">{tr.colProject}</span>
               <span className="heading-label">{tr.colIncome}</span>
               <span className="heading-label">{tr.colExpenses}</span>
               <span className="heading-label">{tr.colBalance}</span>
             </div>
-            {report.byEvent.map((e) => (
+            {report.byProject.map((e) => (
               <Link
                 key={e.id}
-                href={`/events/${e.id}`}
+                href={projectHref(e)}
                 className="grid grid-cols-[1fr_.8fr_.8fr_.7fr] gap-2.5 items-center py-3 border-b border-ink/13 text-[15px] hover:bg-ink/5"
               >
                 <div>{e.title}</div>
@@ -156,10 +157,10 @@ export default async function ReportsPage({
           </div>
 
           <div className="md:hidden flex flex-col gap-2">
-            {report.byEvent.map((e) => (
+            {report.byProject.map((e) => (
               <MobileListRow
                 key={e.id}
-                href={`/events/${e.id}`}
+                href={projectHref(e)}
                 title={e.title}
                 meta={`${tr.colIncome}: ${formatCurrency(e.income)} · ${tr.colExpenses}: ${formatCurrency(e.expense)}`}
                 trailing={formatCurrency(e.income - e.expense)}
@@ -167,7 +168,7 @@ export default async function ReportsPage({
             ))}
           </div>
 
-          {report.byEvent.length === 0 && <p className="text-sm placeholder-text mt-3">{tr.noDataForYear(year)}</p>}
+          {report.byProject.length === 0 && <p className="text-sm placeholder-text mt-3">{tr.noDataForYear(year)}</p>}
         </div>
       )}
 

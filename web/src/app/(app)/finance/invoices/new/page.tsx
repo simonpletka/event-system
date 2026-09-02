@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { requireUser, canManageFinance, eventWhereForUser, quoteWhereForUser } from "@/lib/authz";
+import { requireUser, canManageFinance, projectWhereForUser, quoteWhereForUser } from "@/lib/authz";
 import { prisma } from "@/lib/prisma";
 import { formatCurrency, formatDate } from "@/lib/format";
 import { convertQuoteToInvoiceAction } from "@/lib/actions/finance";
@@ -23,15 +23,15 @@ export default async function NewInvoicePage() {
   }
 
   const [events, company, eligibleQuotes, categoryRows] = await Promise.all([
-    prisma.event.findMany({
-      where: eventWhereForUser(user),
+    prisma.project.findMany({
+      where: projectWhereForUser(user),
       select: { id: true, title: true, companyName: true, quotedValue: true },
       orderBy: { title: "asc" },
     }),
     prisma.companySettings.findUnique({ where: { id: "singleton" } }),
     prisma.quote.findMany({
       where: { ...quoteWhereForUser(user), status: "ACCEPTED", invoices: { none: {} } },
-      include: { event: true },
+      include: { project: true },
       orderBy: { issuedAt: "desc" },
     }),
     getItemCategories(),
@@ -55,7 +55,7 @@ export default async function NewInvoicePage() {
                   {q.number}
                 </Link>{" "}
                 <span className="placeholder-text">
-                  {ti.quoteLine(q.event.title, formatCurrency(q.total, q.currency), formatDate(q.issuedAt))}
+                  {ti.quoteLine(q.project.title, formatCurrency(q.total, q.currency), formatDate(q.issuedAt))}
                 </span>
               </div>
               <form action={convertQuoteToInvoiceAction}>

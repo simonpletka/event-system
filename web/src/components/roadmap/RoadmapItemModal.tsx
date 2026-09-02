@@ -23,7 +23,7 @@ function toLocalInput(iso: string, allDay: boolean) {
 }
 
 export function RoadmapItemModal({
-  eventId,
+  projectId,
   item,
   editable,
   teamOptions,
@@ -32,7 +32,7 @@ export function RoadmapItemModal({
   cancelLabel,
   onClose,
 }: {
-  eventId: string;
+  projectId: string;
   item: RoadmapItemData | null;
   editable: boolean;
   teamOptions: { id: string; name: string }[];
@@ -92,7 +92,7 @@ export function RoadmapItemModal({
         )}
 
         <form action={formAction} className={`flex-col gap-3 ${editable ? "flex" : "hidden"}`}>
-          <input type="hidden" name={isEdit ? "id" : "eventId"} value={isEdit ? item!.id : eventId} />
+          <input type="hidden" name={isEdit ? "id" : "projectId"} value={isEdit ? item!.id : projectId} />
           {assignees.map((id) => (
             <input key={id} type="hidden" name="assignees" value={id} />
           ))}

@@ -1,9 +1,10 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
-import type { EventStatus } from "@/generated/prisma/enums";
+import type { ProjectStatus } from "@/generated/prisma/enums";
 import type { Dictionary } from "@/lib/i18n";
-import { EventStatusPill } from "@/components/StatusPill";
+import { ProjectStatusPill } from "@/components/StatusPill";
 import { ChartAxisGrid } from "@/components/ui/ChartAxisGrid";
+import { projectHref } from "@/lib/slug";
 import {
   formatCurrency,
   formatDate,
@@ -72,13 +73,14 @@ export function StatTile({
   return <div className={cls}>{inner}</div>;
 }
 
-/* --- event cards ------------------------------------------------------------ */
+/* --- project cards ------------------------------------------------------------ */
 
-export type DashEventCard = {
+export type DashProjectCard = {
   id: string;
+  number: string;
   title: string;
   company: string;
-  status: EventStatus;
+  status: ProjectStatus;
   start: Date;
   end: Date;
   venue: string | null;
@@ -86,19 +88,19 @@ export type DashEventCard = {
   budget?: { amount: number | null; spent: number };
 };
 
-export function EventCardGrid({ children }: { children: ReactNode }) {
+export function ProjectCardGrid({ children }: { children: ReactNode }) {
   return <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3.5">{children}</div>;
 }
 
-export function EventCard({ ev, t }: { ev: DashEventCard; t: Dictionary }) {
+export function ProjectCard({ ev, t }: { ev: DashProjectCard; t: Dictionary }) {
   const td = t.dashboard;
   return (
     <Link
-      href={`/events/${ev.id}`}
+      href={projectHref(ev)}
       className="card block overflow-hidden hover:border-ink/35 transition-colors"
     >
       <div className="p-4 flex flex-col gap-2.5">
-        <EventStatusPill status={ev.status} t={t.statusEvent} />
+        <ProjectStatusPill status={ev.status} t={t.statusProject} />
         <div className="text-[15px] font-semibold leading-snug">{ev.title}</div>
         <div className="text-[12px] placeholder-text leading-relaxed">
           {ev.company}
@@ -167,7 +169,7 @@ export function ExpenseList({
     id: string;
     category: string;
     amount: number;
-    event: { id: string; title: string } | null;
+    project: { id: string; title: string } | null;
     paidBy?: { name: string | null } | null;
   }[];
   t: Dictionary;
@@ -182,7 +184,7 @@ export function ExpenseList({
           <span className="flex-1 min-w-0 truncate">
             {t.expenseCategories[exp.category as keyof typeof t.expenseCategories] ?? exp.category}{" "}
             <span className="placeholder-text">
-              · {exp.event ? exp.event.title : td.companyOverheadShort}
+              · {exp.project ? exp.project.title : td.companyOverheadShort}
             </span>
           </span>
           {showPayer && (

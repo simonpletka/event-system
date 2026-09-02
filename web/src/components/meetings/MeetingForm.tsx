@@ -3,7 +3,7 @@
 import { useActionState, useState } from "react";
 import { createMeetingAction, updateMeetingAction, type MeetingFormState } from "@/lib/actions/meetings";
 import { CancelLink } from "@/components/ui/CancelLink";
-import { EventPicker } from "@/components/meetings/EventPicker";
+import { MeetingProjectPicker } from "@/components/meetings/MeetingProjectPicker";
 import { isoDate } from "@/lib/calendar";
 import { getDictionary, type Locale } from "@/lib/dictionary";
 import type { MeetingType, RecurrenceFreq } from "@/generated/prisma/enums";
@@ -28,7 +28,7 @@ export type MeetingFormDefaults = {
   recurrenceFreq: RecurrenceFreq;
   recurrenceInterval: number;
   recurrenceUntil: Date | null;
-  eventIds: string[];
+  projectIds: string[];
 };
 
 export function MeetingForm({
@@ -128,12 +128,12 @@ export function MeetingForm({
         )}
       </div>
 
-      <EventPicker
+      <MeetingProjectPicker
         options={eventOptions}
-        defaultValue={defaults.eventIds}
-        heading={tf.eventsHeading}
-        note={tf.eventsNote}
-        emptyLabel={tf.eventsEmpty}
+        defaultValue={defaults.projectIds}
+        heading={tf.projectsHeading}
+        note={tf.projectsNote}
+        emptyLabel={tf.projectsEmpty}
       />
 
       {state.error && <p className="text-sm text-warning">{state.error}</p>}

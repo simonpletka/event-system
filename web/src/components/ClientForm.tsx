@@ -6,6 +6,7 @@ import { CancelLink } from "@/components/ui/CancelLink";
 import { StructuredAddressInput, type StructuredAddress } from "@/components/ui/StructuredAddressInput";
 import { useAresLookup } from "@/hooks/useAresLookup";
 import { getDictionary, type Locale } from "@/lib/dictionary";
+import { clientHref } from "@/lib/slug";
 
 const initialState: ClientFormState = {};
 
@@ -89,7 +90,7 @@ export function ClientForm({ defaults, locale }: { defaults: ClientFormDefaults;
         <button type="submit" disabled={pending} className="btn">
           {pending ? tf.saving : isEdit ? tf.saveChanges : tf.createClient}
         </button>
-        <CancelLink href={isEdit ? `/clients/${defaults.id}` : "/clients"} label={t.common.cancel} />
+        <CancelLink href={isEdit && defaults.id ? clientHref({ id: defaults.id, name }) : "/clients"} label={t.common.cancel} />
       </div>
     </form>
   );

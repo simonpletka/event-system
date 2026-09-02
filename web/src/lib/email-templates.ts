@@ -7,7 +7,7 @@ export const EMAIL_TEMPLATE_TOKENS = [
   "invoiceNumber",
   "companyName",
   "clientName",
-  "eventTitle",
+  "projectTitle",
   "amount",
   "dueDate",
   "daysOverdue",
@@ -25,7 +25,7 @@ export function renderEmailTemplate(template: string, vars: EmailTemplateVars): 
 // CompanySettings row exists (the empty-seed dev state has none — see prisma/seed-empty.ts).
 export const DEFAULT_INVOICE_EMAIL_SUBJECT = "Invoice {{invoiceNumber}} from {{companyName}}";
 export const DEFAULT_INVOICE_EMAIL_BODY =
-  "Hi {{clientName}},\n\nPlease find attached invoice {{invoiceNumber}} for {{eventTitle}}, totaling {{amount}}, due {{dueDate}}.\n\nThank you,\n{{companyName}}";
+  "Hi {{clientName}},\n\nPlease find attached invoice {{invoiceNumber}} for {{projectTitle}}, totaling {{amount}}, due {{dueDate}}.\n\nThank you,\n{{companyName}}";
 export const DEFAULT_REMINDER_EMAIL_SUBJECT = "Reminder: invoice {{invoiceNumber}} is overdue";
 export const DEFAULT_REMINDER_EMAIL_BODY =
-  "Hi {{clientName}},\n\nThis is a friendly reminder that invoice {{invoiceNumber}} for {{eventTitle}}, totaling {{amount}}, was due {{dueDate}} ({{daysOverdue}} days ago) and is still unpaid.\n\nThe invoice is attached again for your convenience.\n\nThank you,\n{{companyName}}";
+  "Hi {{clientName}},\n\nThis is a friendly reminder that invoice {{invoiceNumber}} for {{projectTitle}}, totaling {{amount}}, was due {{dueDate}} ({{daysOverdue}} days ago) and is still unpaid.\n\nThe invoice is attached again for your convenience.\n\nThank you,\n{{companyName}}";

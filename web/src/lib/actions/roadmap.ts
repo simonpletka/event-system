@@ -2,34 +2,34 @@
 
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
-import { requireUser, canEditEvent } from "@/lib/authz";
-import { getEventDetail } from "@/lib/queries/events";
+import { requireUser, canEditProject } from "@/lib/authz";
+import { getProjectDetail } from "@/lib/queries/projects";
 import { parseRoadmapType } from "@/lib/roadmap";
 
 export type RoadmapFormState = { error?: string; success?: boolean };
 
-/** Loads the event with members and checks edit rights. Returns null on any failure. */
-async function loadEditableEvent(eventId: string) {
+/** Loads the project with members and checks edit rights. Returns null on any failure. */
+async function loadEditableProject(projectId: string) {
   const user = await requireUser();
-  const event = await prisma.event.findUnique({ where: { id: eventId }, include: { members: true } });
-  if (!event) return null;
-  if (!canEditEvent(user, { ownerId: event.ownerId, memberIds: event.members.map((m) => m.userId) })) return null;
-  return { user, event };
+  const project = await prisma.project.findUnique({ where: { id: projectId }, include: { members: true } });
+  if (!project) return null;
+  if (!canEditProject(user, { ownerId: project.ownerId, memberIds: project.members.map((m) => m.userId) })) return null;
+  return { user, project };
 }
 
-function revalidateEvent(eventId: string) {
-  revalidatePath(`/events/${eventId}`, "layout");
-  revalidatePath("/events");
-  revalidatePath("/events?view=calendar");
+function revalidateProject(projectId: string) {
+  revalidatePath(`/projects/${projectId}`, "layout");
+  revalidatePath("/projects");
+  revalidatePath("/projects?view=calendar");
   revalidatePath("/dashboard");
 }
 
-/** Assigning someone to a roadmap item also makes them an event member so they can see the event. */
-async function ensureMembers(eventId: string, userIds: string[]) {
+/** Assigning someone to a roadmap item also makes them a project member so they can see the project. */
+async function ensureMembers(projectId: string, userIds: string[]) {
   for (const userId of userIds) {
-    await prisma.eventMember.upsert({
-      where: { eventId_userId: { eventId, userId } },
-      create: { eventId, userId },
+    await prisma.projectMember.upsert({
+      where: { projectId_userId: { projectId, userId } },
+      create: { projectId, userId },
       update: {},
     });
   }
@@ -54,20 +54,20 @@ function parseExternalAttendees(formData: FormData) {
 }
 
 export async function addRoadmapItemAction(_prev: RoadmapFormState, formData: FormData): Promise<RoadmapFormState> {
-  const eventId = String(formData.get("eventId"));
-  const ctx = await loadEditableEvent(eventId);
-  if (!ctx) return { error: "You don't have permission to edit this event." };
+  const projectId = String(formData.get("projectId"));
+  const ctx = await loadEditableProject(projectId);
+  if (!ctx) return { error: "You don't have permission to edit this project." };
 
   const title = String(formData.get("title") ?? "").trim();
   const parsed = parseDate(formData);
   if (!title || !parsed) return { error: "A title and a date are required." };
 
   const assigneeIds = [...new Set((formData.getAll("assignees") as string[]).filter(Boolean))];
-  await ensureMembers(eventId, assigneeIds);
+  await ensureMembers(projectId, assigneeIds);
 
   await prisma.roadmapItem.create({
     data: {
-      eventId,
+      projectId,
       type: parseRoadmapType(formData.get("type")),
       title,
       date: parsed.date,
@@ -79,23 +79,23 @@ export async function addRoadmapItemAction(_prev: RoadmapFormState, formData: Fo
     },
   });
 
-  revalidateEvent(eventId);
+  revalidateProject(projectId);
   return { success: true };
 }
 
 export async function updateRoadmapItemAction(_prev: RoadmapFormState, formData: FormData): Promise<RoadmapFormState> {
   const id = String(formData.get("id"));
-  const item = await prisma.roadmapItem.findUnique({ where: { id }, select: { eventId: true } });
+  const item = await prisma.roadmapItem.findUnique({ where: { id }, select: { projectId: true } });
   if (!item) return { error: "Item not found." };
-  const ctx = await loadEditableEvent(item.eventId);
-  if (!ctx) return { error: "You don't have permission to edit this event." };
+  const ctx = await loadEditableProject(item.projectId);
+  if (!ctx) return { error: "You don't have permission to edit this project." };
 
   const title = String(formData.get("title") ?? "").trim();
   const parsed = parseDate(formData);
   if (!title || !parsed) return { error: "A title and a date are required." };
 
   const assigneeIds = [...new Set((formData.getAll("assignees") as string[]).filter(Boolean))];
-  await ensureMembers(item.eventId, assigneeIds);
+  await ensureMembers(item.projectId, assigneeIds);
 
   await prisma.$transaction([
     prisma.roadmapItem.update({
@@ -114,28 +114,28 @@ export async function updateRoadmapItemAction(_prev: RoadmapFormState, formData:
     prisma.roadmapExternalAttendee.createMany({ data: parseExternalAttendees(formData).map((r) => ({ itemId: id, ...r })) }),
   ]);
 
-  revalidateEvent(item.eventId);
+  revalidateProject(item.projectId);
   return { success: true };
 }
 
 export async function deleteRoadmapItemAction(formData: FormData) {
   const id = String(formData.get("id"));
-  const item = await prisma.roadmapItem.findUnique({ where: { id }, select: { eventId: true } });
+  const item = await prisma.roadmapItem.findUnique({ where: { id }, select: { projectId: true } });
   if (!item) return;
-  const ctx = await loadEditableEvent(item.eventId);
+  const ctx = await loadEditableProject(item.projectId);
   if (!ctx) return;
   await prisma.roadmapItem.delete({ where: { id } });
-  revalidateEvent(item.eventId);
+  revalidateProject(item.projectId);
 }
 
 export async function toggleRoadmapItemDoneAction(formData: FormData) {
   const id = String(formData.get("id"));
-  const item = await prisma.roadmapItem.findUnique({ where: { id }, select: { eventId: true, done: true } });
+  const item = await prisma.roadmapItem.findUnique({ where: { id }, select: { projectId: true, done: true } });
   if (!item) return;
-  const ctx = await loadEditableEvent(item.eventId);
+  const ctx = await loadEditableProject(item.projectId);
   if (!ctx) return;
   await prisma.roadmapItem.update({ where: { id }, data: { done: !item.done } });
-  revalidateEvent(item.eventId);
+  revalidateProject(item.projectId);
 }
 
 export async function addRoadmapCommentAction(_prev: RoadmapFormState, formData: FormData): Promise<RoadmapFormState> {
@@ -144,14 +144,14 @@ export async function addRoadmapCommentAction(_prev: RoadmapFormState, formData:
   const body = String(formData.get("body") ?? "").trim();
   if (!body) return { error: "Write something first." };
 
-  const item = await prisma.roadmapItem.findUnique({ where: { id }, select: { eventId: true } });
+  const item = await prisma.roadmapItem.findUnique({ where: { id }, select: { projectId: true } });
   if (!item) return { error: "Item not found." };
-  // Looser gate than editing: anyone who can see the event can comment.
-  const visible = await getEventDetail(user, item.eventId);
-  if (!visible) return { error: "You don't have access to this event." };
+  // Looser gate than editing: anyone who can see the project can comment.
+  const visible = await getProjectDetail(user, item.projectId);
+  if (!visible) return { error: "You don't have access to this project." };
 
   await prisma.roadmapComment.create({ data: { itemId: id, authorId: user.id, body } });
-  revalidatePath(`/events/${item.eventId}/roadmap`);
+  revalidatePath(`/projects/${item.projectId}/roadmap`);
   return { success: true };
 }
 
@@ -163,10 +163,10 @@ export async function rescheduleRoadmapItemAction(formData: FormData) {
   const id = String(formData.get("itemId"));
   const dateRaw = String(formData.get("date") ?? "");
   if (!dateRaw) return;
-  const item = await prisma.roadmapItem.findUnique({ where: { id }, select: { eventId: true } });
+  const item = await prisma.roadmapItem.findUnique({ where: { id }, select: { projectId: true } });
   if (!item) return;
-  const ctx = await loadEditableEvent(item.eventId);
+  const ctx = await loadEditableProject(item.projectId);
   if (!ctx) return;
   await prisma.roadmapItem.update({ where: { id }, data: { date: new Date(dateRaw) } });
-  revalidateEvent(item.eventId);
+  revalidateProject(item.projectId);
 }

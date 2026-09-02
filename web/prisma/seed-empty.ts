@@ -15,7 +15,7 @@ const DEFAULT_CATEGORIES = ["Video", "Audio", "Rigging", "People", "Other"];
 /**
  * Blank-slate seed for testing against real data — wipes every table the
  * same way prisma/seed.ts does (plus CustomRole, which that script never
- * clears), then creates a single Admin login and nothing else: no events,
+ * clears), then creates a single Admin login and nothing else: no projects,
  * quotes, invoices, expenses, time entries or company settings. Everything
  * from here on is entered through the app itself — Settings > Company for
  * the real company profile, Settings > Users for real accounts, etc.
@@ -34,9 +34,9 @@ async function main() {
   await prisma.expense.deleteMany();
   await prisma.roadmapItem.deleteMany();
   await prisma.venue.deleteMany();
-  await prisma.eventMember.deleteMany();
-  await prisma.eventContact.deleteMany();
-  await prisma.event.deleteMany();
+  await prisma.projectMember.deleteMany();
+  await prisma.projectContact.deleteMany();
+  await prisma.project.deleteMany();
   await prisma.clientContact.deleteMany();
   await prisma.client.deleteMany();
   await prisma.user.deleteMany();
@@ -52,8 +52,8 @@ async function main() {
     data: DEFAULT_CATEGORIES.map((name, sortOrder) => ({ name, sortOrder })),
   });
 
-  console.log("Seeded an empty database — no events, quotes, invoices, expenses, time entries or company settings.");
-  console.log(`  Log in as ${ADMIN_EMAIL} (password: ${ADMIN_PASSWORD}), then fill in Settings > Company and add real users/events from there.`);
+  console.log("Seeded an empty database — no projects, quotes, invoices, expenses, time entries or company settings.");
+  console.log(`  Log in as ${ADMIN_EMAIL} (password: ${ADMIN_PASSWORD}), then fill in Settings > Company and add real users/projects from there.`);
 }
 
 main()

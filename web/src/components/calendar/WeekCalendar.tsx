@@ -3,16 +3,17 @@
 import { useEffect, useRef, useState, useTransition, type DragEvent } from "react";
 import Link from "next/link";
 import { addDays, dayHeaderLabel, isSameDay, isoWeekNumber, startOfDay, weekDays, assignColumns, overlapBoxStyle } from "@/lib/calendar";
-import { EventStatusPill } from "@/components/StatusPill";
-import { rescheduleEventAction } from "@/lib/actions/events";
+import { ProjectStatusPill } from "@/components/StatusPill";
+import { rescheduleProjectAction } from "@/lib/actions/projects";
 import { rescheduleRoadmapItemAction } from "@/lib/actions/roadmap";
 import { rescheduleMeetingAction, rescheduleMeetingOccurrenceAction, splitMeetingSeriesAction } from "@/lib/actions/meetings";
-import type { EventStatus } from "@/generated/prisma/enums";
+import type { ProjectStatus } from "@/generated/prisma/enums";
 import { getDictionary, type Locale } from "@/lib/dictionary";
+import { projectHref } from "@/lib/slug";
 
 type DragPayload =
-  | { type: "milestone"; milestoneId: string; eventId: string }
-  | { type: "bar"; eventId: string; anchorCol: number; kind: "prep" | "main" }
+  | { type: "milestone"; milestoneId: string; projectId: string }
+  | { type: "bar"; projectId: string; anchorCol: number; kind: "prep" | "main" }
   | { type: "meeting"; meetingId: string; originalDate: string; title: string; recurring: boolean };
 
 type DragPreview =
@@ -23,10 +24,11 @@ type DragPreview =
 /** Pending "this occurrence only" vs "this and all future occurrences" choice after dropping a recurring meeting's occurrence — see the dialog rendered near the bottom of this component. */
 type PendingMeetingChoice = { meetingId: string; originalDate: string; newDate: Date; title: string };
 
-export type CalendarEvent = {
+export type CalendarProject = {
   id: string;
+  number: string;
   title: string;
-  status: EventStatus;
+  status: ProjectStatus;
   buildDate: Date | null;
   startDate: Date;
   endDate: Date;
@@ -85,14 +87,14 @@ export function WeekCalendar({
   locale,
 }: {
   weekStart: Date;
-  events: CalendarEvent[];
+  events: CalendarProject[];
   meetings?: CalendarMeeting[];
   locale: Locale;
 }) {
   const dict = getDictionary(locale);
   const t = dict.calendar;
-  const tStatus = dict.statusEvent;
-  const eventHref = (id: string) => `/events/${id}`;
+  const tStatus = dict.statusProject;
+  const eventHref = (project: { number: string; title: string }) => projectHref(project);
   const days = weekDays(weekStart);
   const today = new Date();
   const todayIdx = days.findIndex((d) => isSameDay(d, today));
@@ -204,10 +206,10 @@ export function WeekCalendar({
       const deltaDays = dayIdx - drag.anchorCol;
       if (deltaDays === 0) return;
       const formData = new FormData();
-      formData.set("id", drag.eventId);
+      formData.set("id", drag.projectId);
       formData.set("deltaDays", String(deltaDays));
       startTransition(() => {
-        rescheduleEventAction(formData);
+        rescheduleProjectAction(formData);
       });
     }
   }
@@ -226,7 +228,7 @@ export function WeekCalendar({
   }
 
   function milestonesFor(day: Date) {
-    return events.flatMap((e) => e.roadmapItems.filter((m) => isSameDay(m.date, day)).map((m) => ({ ...m, eventId: e.id, eventTitle: e.title })));
+    return events.flatMap((e) => e.roadmapItems.filter((m) => isSameDay(m.date, day)).map((m) => ({ ...m, projectId: e.id, projectNumber: e.number, projectTitle: e.title })));
   }
 
   function meetingsForDay(day: Date) {
@@ -234,9 +236,10 @@ export function WeekCalendar({
   }
 
   type AllDayBar = {
-    eventId: string;
+    projectId: string;
+    number: string;
     title: string;
-    status: EventStatus;
+    status: ProjectStatus;
     kind: "prep" | "main";
     colStart: number;
     colEnd: number;
@@ -248,14 +251,14 @@ export function WeekCalendar({
     const prepStart = event.buildDate ?? event.startDate;
     if (startOfDay(prepStart).getTime() < startOfDay(event.startDate).getTime()) {
       const range = clampRange(prepStart, addDays(event.startDate, -1), weekStart);
-      if (range) bars.push({ eventId: event.id, title: event.title, status: event.status, kind: "prep", colStart: range[0], colEnd: range[1], address });
+      if (range) bars.push({ projectId: event.id, number: event.number, title: event.title, status: event.status, kind: "prep", colStart: range[0], colEnd: range[1], address });
     }
     const mainRange = clampRange(event.startDate, event.endDate, weekStart);
-    if (mainRange) bars.push({ eventId: event.id, title: event.title, status: event.status, kind: "main", colStart: mainRange[0], colEnd: mainRange[1], address });
+    if (mainRange) bars.push({ projectId: event.id, number: event.number, title: event.title, status: event.status, kind: "main", colStart: mainRange[0], colEnd: mainRange[1], address });
     const strikeEnd = event.strikeDate ?? event.endDate;
     if (startOfDay(strikeEnd).getTime() > startOfDay(event.endDate).getTime()) {
       const range = clampRange(addDays(event.endDate, 1), strikeEnd, weekStart);
-      if (range) bars.push({ eventId: event.id, title: event.title, status: event.status, kind: "prep", colStart: range[0], colEnd: range[1], address });
+      if (range) bars.push({ projectId: event.id, number: event.number, title: event.title, status: event.status, kind: "prep", colStart: range[0], colEnd: range[1], address });
     }
   }
 
@@ -293,7 +296,7 @@ export function WeekCalendar({
             .map((bar, i) => (
               <Link
                 key={`bar-${i}`}
-                href={eventHref(bar.eventId)}
+                href={eventHref(bar)}
                 className="card flex items-center gap-2.5 px-3.5 py-3"
               >
                 <span className={`w-[3px] self-stretch rounded ${bar.kind === "main" ? "bg-accent" : "bg-ink/30"}`} />
@@ -305,13 +308,13 @@ export function WeekCalendar({
             ))}
 
           {milestonesFor(selectedDay).map((m) => (
-            <Link key={m.id} href={eventHref(m.eventId)} className="card flex items-center gap-2.5 px-3.5 py-3">
+            <Link key={m.id} href={eventHref({ number: m.projectNumber, title: m.projectTitle })} className="card flex items-center gap-2.5 px-3.5 py-3">
               <span className="w-[3px] self-stretch rounded bg-ink/30" />
               <div className="min-w-0">
                 <div className="text-[9.5px] font-semibold text-ink/55">
                   {String(m.date.getHours()).padStart(2, "0")}:{String(m.date.getMinutes()).padStart(2, "0")}
                 </div>
-                <div className="text-[13.5px] font-semibold truncate">{m.eventTitle}</div>
+                <div className="text-[13.5px] font-semibold truncate">{m.projectTitle}</div>
                 <div className="placeholder-text text-[11px] truncate">{m.title}</div>
               </div>
             </Link>
@@ -370,11 +373,11 @@ export function WeekCalendar({
             return (
             <Link
               key={i}
-              href={eventHref(bar.eventId)}
+              href={eventHref(bar)}
               title={bar.address ? `${bar.title} — ${bar.address}` : bar.title}
               draggable
               onDragStart={(e) => {
-                dragRef.current = { type: "bar", eventId: bar.eventId, anchorCol: bar.colStart, kind: bar.kind };
+                dragRef.current = { type: "bar", projectId: bar.projectId, anchorCol: bar.colStart, kind: bar.kind };
                 setDraggingKey(barKey);
                 e.dataTransfer.effectAllowed = "move";
               }}
@@ -390,7 +393,7 @@ export function WeekCalendar({
               style={{ gridRow: 1, gridColumn: `${bar.colStart + 2} / ${bar.colEnd + 3}` }}
             >
               <span className="text-[10.5px] font-bold truncate leading-tight">
-                {bar.kind === "main" ? t.eventDaysBar(bar.title) : t.prepBuildBar(bar.title)}
+                {bar.kind === "main" ? t.projectDaysBar(bar.title) : t.prepBuildBar(bar.title)}
               </span>
               {bar.address && (
                 <span className="flex items-center gap-1 text-[9px] font-semibold truncate leading-tight opacity-75">
@@ -458,11 +461,11 @@ export function WeekCalendar({
                 return (
                 <Link
                   key={m.id}
-                  href={eventHref(m.eventId)}
-                  title={`${m.eventTitle}: ${m.title}`}
+                  href={eventHref({ number: m.projectNumber, title: m.projectTitle })}
+                  title={`${m.projectTitle}: ${m.title}`}
                   draggable
                   onDragStart={(e) => {
-                    dragRef.current = { type: "milestone", milestoneId: m.id, eventId: m.eventId };
+                    dragRef.current = { type: "milestone", milestoneId: m.id, projectId: m.projectId };
                     setDraggingKey(milestoneKey);
                     e.dataTransfer.effectAllowed = "move";
                   }}
@@ -486,7 +489,7 @@ export function WeekCalendar({
                       this sticky against the outer grid scroller). Own opaque
                       backing so the second line scrolls cleanly under it. */}
                   <div className="sticky top-0 z-[1] -mx-1 -mt-0.5 px-1 pt-0.5 bg-surface/95 text-[10.5px] font-bold truncate">
-                    {m.eventTitle}
+                    {m.projectTitle}
                   </div>
                   <div className="placeholder-text text-[9px] font-bold truncate">{m.title}</div>
                 </Link>
@@ -575,7 +578,7 @@ export function WeekCalendar({
       </div>
 
       <div className="flex gap-3.5 flex-wrap mt-2.5">
-        <Legend swatch="bg-accent" label={t.legendEventDays} />
+        <Legend swatch="bg-accent" label={t.legendProjectDays} />
         <Legend swatch="bg-ink/14" label={t.legendPrepBuild} />
         <Legend swatch="border-2 border-ink/45 bg-ink/22" label={t.legendMilestone} />
         <Legend swatch="border-2 border-dashed border-accent/60 bg-accent/10" label={t.legendMeeting} />
@@ -611,14 +614,14 @@ export function WeekCalendar({
         </div>
       )}
 
-      {events.length === 0 && <p className="text-sm placeholder-text mt-3">{t.noEventsThisWeek}</p>}
+      {events.length === 0 && <p className="text-sm placeholder-text mt-3">{t.noProjectsThisWeek}</p>}
       {events.length > 0 && (
         <div className="mt-3">
-          <div className="label !text-[11px] font-bold mb-1">{t.thisWeeksEvents}</div>
+          <div className="label !text-[11px] font-bold mb-1">{t.thisWeeksProjects}</div>
           <div className="flex flex-col gap-1">
             {events.map((e) => (
-              <Link key={e.id} href={eventHref(e.id)} className="flex items-center gap-2 text-[13px] hover:text-accent">
-                <EventStatusPill status={e.status} t={tStatus} />
+              <Link key={e.id} href={eventHref(e)} className="flex items-center gap-2 text-[13px] hover:text-accent">
+                <ProjectStatusPill status={e.status} t={tStatus} />
                 {e.title}
               </Link>
             ))}

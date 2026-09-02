@@ -7,15 +7,15 @@ import {
   deleteCustomRoleAction,
   type SettingsFormState,
 } from "@/lib/actions/settings";
-import { EVENTS_ACCESS_OPTIONS, FINANCE_ACCESS_OPTIONS, EXPENSES_ACCESS_OPTIONS, SETTINGS_ACCESS_OPTIONS } from "@/lib/access-levels";
+import { PROJECTS_ACCESS_OPTIONS, FINANCE_ACCESS_OPTIONS, EXPENSES_ACCESS_OPTIONS, SETTINGS_ACCESS_OPTIONS } from "@/lib/access-levels";
 import { useConfirmDialog } from "@/components/ui/ConfirmDialogProvider";
-import type { EventsAccess, FinanceAccess, ExpensesAccess, SettingsAccess } from "@/generated/prisma/enums";
+import type { ProjectsAccess, FinanceAccess, ExpensesAccess, SettingsAccess } from "@/generated/prisma/enums";
 import { getDictionary, type Dictionary, type Locale } from "@/lib/dictionary";
 
 export type CustomRoleRow = {
   id: string;
   name: string;
-  events: EventsAccess;
+  projects: ProjectsAccess;
   finance: FinanceAccess;
   expenses: ExpensesAccess;
   settings: SettingsAccess;
@@ -47,10 +47,10 @@ export function RoleReferenceTable({
   const t = getDictionary(locale).settings.roles;
 
   const builtInRows = [
-    { role: tRoles.ADMIN, events: t.builtIn.adminEvents, finance: t.builtIn.full, expenses: t.builtIn.full, settings: t.builtIn.adminSettings },
-    { role: tRoles.ACCOUNTANT, events: t.builtIn.accountantEvents, finance: t.builtIn.full, expenses: t.builtIn.full, settings: t.builtIn.accountantSettings },
-    { role: tRoles.PRODUCER, events: t.builtIn.producerEvents, finance: t.builtIn.producerFinance, expenses: t.builtIn.producerExpenses, settings: t.builtIn.none },
-    { role: tRoles.MEMBER, events: t.builtIn.memberEvents, finance: t.builtIn.none, expenses: t.builtIn.memberExpenses, settings: t.builtIn.none },
+    { role: tRoles.ADMIN, projects: t.builtIn.adminProjects, finance: t.builtIn.full, expenses: t.builtIn.full, settings: t.builtIn.adminSettings },
+    { role: tRoles.ACCOUNTANT, projects: t.builtIn.accountantProjects, finance: t.builtIn.full, expenses: t.builtIn.full, settings: t.builtIn.accountantSettings },
+    { role: tRoles.PRODUCER, projects: t.builtIn.producerProjects, finance: t.builtIn.producerFinance, expenses: t.builtIn.producerExpenses, settings: t.builtIn.none },
+    { role: tRoles.MEMBER, projects: t.builtIn.memberProjects, finance: t.builtIn.none, expenses: t.builtIn.memberExpenses, settings: t.builtIn.none },
   ];
 
   return (
@@ -66,7 +66,7 @@ export function RoleReferenceTable({
 
       <div className={`hidden md:grid ${GRID} border-b border-ink/14 pb-1.5 [&_.heading-label]:font-bold [&_.heading-label]:!text-[9px]`}>
         <span className="heading-label">{t.colRole}</span>
-        <span className="heading-label">{t.colEvents}</span>
+        <span className="heading-label">{t.colProjects}</span>
         <span className="heading-label">{t.colQuotesInvoices}</span>
         <span className="heading-label">{t.colExpenses}</span>
         <span className="heading-label">{t.colSettings}</span>
@@ -76,7 +76,7 @@ export function RoleReferenceTable({
       {builtInRows.map((r) => (
         <div key={r.role} className={`hidden md:grid ${GRID} py-3 border-b border-ink/8 text-[15px]`}>
           <div className="font-medium">{r.role}</div>
-          <div className="placeholder-text">{r.events}</div>
+          <div className="placeholder-text">{r.projects}</div>
           <div className="placeholder-text">{r.finance}</div>
           <div className="placeholder-text">{r.expenses}</div>
           <div className="placeholder-text">{r.settings}</div>
@@ -88,7 +88,7 @@ export function RoleReferenceTable({
         <div key={`m-${r.role}`} className="md:hidden py-2.5 border-b border-ink/8 text-[13px]">
           <div className="font-medium mb-1">{r.role}</div>
           <div className="placeholder-text text-[11.5px] leading-relaxed">
-            {t.colEvents}: {r.events} · {t.colQuotesInvoices}: {r.finance}
+            {t.colProjects}: {r.projects} · {t.colQuotesInvoices}: {r.finance}
             <br />
             {t.colExpenses}: {r.expenses} · {t.colSettings}: {r.settings}
           </div>
@@ -131,7 +131,7 @@ function RoleRow({ role, canManage, t, tAccess }: { role: CustomRoleRow; canMana
         <div className="font-medium flex items-center gap-1.5">
           {role.name} <span className="tag tag-neutral">{t.customTag}</span>
         </div>
-        <div className="placeholder-text">{tAccess.events[role.events]}</div>
+        <div className="placeholder-text">{tAccess.projects[role.projects]}</div>
         <div className="placeholder-text">{tAccess.finance[role.finance]}</div>
         <div className="placeholder-text">{tAccess.expenses[role.expenses]}</div>
         <div className="placeholder-text">{tAccess.settings[role.settings]}</div>
@@ -155,7 +155,7 @@ function RoleRow({ role, canManage, t, tAccess }: { role: CustomRoleRow; canMana
           {role.name} <span className="tag tag-neutral">{t.customTag}</span>
         </div>
         <div className="placeholder-text text-[11.5px] leading-relaxed">
-          {t.colEvents}: {tAccess.events[role.events]} · {t.colQuotesInvoices}: {tAccess.finance[role.finance]}
+          {t.colProjects}: {tAccess.projects[role.projects]} · {t.colQuotesInvoices}: {tAccess.finance[role.finance]}
           <br />
           {t.colExpenses}: {tAccess.expenses[role.expenses]} · {t.colSettings}: {tAccess.settings[role.settings]}
         </div>
@@ -187,7 +187,7 @@ function RoleForm({ existing, onDone, t, tAccess }: { existing?: CustomRoleRow; 
         <input name="name" defaultValue={existing?.name} required className="input max-w-xs" />
       </label>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-        <AccessField label={t.eventsFieldLabel} name="events" options={EVENTS_ACCESS_OPTIONS} labels={tAccess.events} defaultValue={existing?.events ?? "NONE"} />
+        <AccessField label={t.projectsFieldLabel} name="projects" options={PROJECTS_ACCESS_OPTIONS} labels={tAccess.projects} defaultValue={existing?.projects ?? "NONE"} />
         <AccessField label={t.financeFieldLabel} name="finance" options={FINANCE_ACCESS_OPTIONS} labels={tAccess.finance} defaultValue={existing?.finance ?? "NONE"} />
         <AccessField label={t.expensesFieldLabel} name="expenses" options={EXPENSES_ACCESS_OPTIONS} labels={tAccess.expenses} defaultValue={existing?.expenses ?? "NONE"} />
         <AccessField label={t.settingsFieldLabel} name="settings" options={SETTINGS_ACCESS_OPTIONS} labels={tAccess.settings} defaultValue={existing?.settings ?? "NONE"} />

@@ -32,7 +32,7 @@ export default async function EditQuotePage({ params }: { params: Promise<{ id: 
         categories={categoryRows.map((c) => c.name)}
         defaults={{
           id: quote.id,
-          eventId: quote.eventId,
+          projectId: quote.projectId,
           status: quote.status,
           currency: quote.currency,
           validUntil: quote.validUntil,

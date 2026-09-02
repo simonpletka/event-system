@@ -1,5 +1,5 @@
 import { notFound } from "next/navigation";
-import { requireUser, eventWhereForUser, canPickOtherPayer, canEditExpense } from "@/lib/authz";
+import { requireUser, projectWhereForUser, canPickOtherPayer, canEditExpense } from "@/lib/authz";
 import { prisma } from "@/lib/prisma";
 import { ExpenseForm } from "@/components/finance/ExpenseForm";
 import { BackLink } from "@/components/BackLink";
@@ -24,8 +24,8 @@ export default async function EditExpensePage({ params }: { params: Promise<{ id
   }
 
   const [events, cardHolders] = await Promise.all([
-    prisma.event.findMany({
-      where: eventWhereForUser(user),
+    prisma.project.findMany({
+      where: projectWhereForUser(user),
       select: { id: true, title: true, companyName: true },
       orderBy: { title: "asc" },
     }),
@@ -50,7 +50,7 @@ export default async function EditExpensePage({ params }: { params: Promise<{ id
         currentUserId={user.id}
         defaults={{
           id: expense.id,
-          eventId: expense.eventId,
+          projectId: expense.projectId,
           amount: expense.amount,
           date: expense.date.toISOString().slice(0, 10),
           paidById: expense.paidById,

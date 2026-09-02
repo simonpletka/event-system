@@ -3,7 +3,7 @@
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
-import { requireUser, canManageFinance, canAddExpense, canPickOtherPayer, canEditExpense, eventWhereForUser, isAdmin } from "@/lib/authz";
+import { requireUser, canManageFinance, canAddExpense, canPickOtherPayer, canEditExpense, projectWhereForUser, isAdmin } from "@/lib/authz";
 import { nextQuoteNumber, nextInvoiceNumber, variableSymbolFor } from "@/lib/document-number";
 import { saveReceipt, deleteReceipt } from "@/lib/uploads";
 import { getInvoiceDetail, getQuoteDetail, getCompanySettings } from "@/lib/queries/finance";
@@ -71,24 +71,24 @@ export async function createQuoteAction(_prev: FinanceFormState, formData: FormD
   const user = await requireUser();
   if (!canManageFinance(user)) return { error: "You don't have permission to create quotes." };
 
-  const eventId = String(formData.get("eventId") ?? "");
+  const projectId = String(formData.get("projectId") ?? "");
   const validUntil = String(formData.get("validUntil") ?? "");
   const status = (formData.get("status") as QuoteStatus) || "DRAFT";
   const currency = (formData.get("currency") as Currency) || "CZK";
   const hideItemPrices = formData.get("hideItemPrices") === "on";
   const items = parseItems(formData);
 
-  if (!eventId || !validUntil || items.length === 0) {
-    return { error: "Event, valid-until date and at least one line item are required." };
+  if (!projectId || !validUntil || items.length === 0) {
+    return { error: "Project, valid-until date and at least one line item are required." };
   }
 
-  const event = await prisma.event.findUnique({ where: { id: eventId }, select: { number: true } });
-  if (!event) return { error: "Event not found." };
+  const project = await prisma.project.findUnique({ where: { id: projectId }, select: { number: true } });
+  if (!project) return { error: "Project not found." };
 
-  const number = await nextQuoteNumber(eventId, event.number);
+  const number = await nextQuoteNumber(projectId, project.number);
   const quote = await prisma.quote.create({
     data: {
-      eventId,
+      projectId,
       number,
       status,
       currency,
@@ -101,7 +101,7 @@ export async function createQuoteAction(_prev: FinanceFormState, formData: FormD
   });
 
   revalidatePath("/finance/quotes");
-  revalidatePath(`/events/${eventId}`, "layout");
+  revalidatePath(`/projects/${projectId}`, "layout");
   redirect(`/finance/quotes/${quote.id}`);
 }
 
@@ -175,7 +175,7 @@ async function exportQuoteToDrive(user: Awaited<ReturnType<typeof requireUser>>,
   const buffer = await buildQuotePdfBuffer(full, company, "en");
   await tryUploadFinanceDocument({
     category: "quotes",
-    year: full.event.startDate.getFullYear(),
+    year: full.project.startDate.getFullYear(),
     filename: `${full.number}-quote.pdf`,
     buffer,
     mimeType: "application/pdf",
@@ -183,7 +183,7 @@ async function exportQuoteToDrive(user: Awaited<ReturnType<typeof requireUser>>,
 }
 
 /**
- * "Create new" for a declined quote — copies the event, items, currency and
+ * "Create new" for a declined quote — copies the project, items, currency and
  * hide-item-prices setting into a fresh DRAFT quote (own new YY-XXX_v# number,
  * own new creator/issuedAt) and sends the user straight to its edit page, so
  * a rejected quote can be revised and resent without retyping every line
@@ -197,14 +197,14 @@ export async function duplicateQuoteAction(formData: FormData) {
   const id = String(formData.get("id"));
   const quote = await prisma.quote.findUnique({
     where: { id },
-    include: { items: true, event: { select: { number: true } } },
+    include: { items: true, project: { select: { number: true } } },
   });
   if (!quote || quote.status !== "DECLINED") return;
 
-  const number = await nextQuoteNumber(quote.eventId, quote.event.number);
+  const number = await nextQuoteNumber(quote.projectId, quote.project.number);
   const duplicate = await prisma.quote.create({
     data: {
-      eventId: quote.eventId,
+      projectId: quote.projectId,
       number,
       status: "DRAFT",
       currency: quote.currency,
@@ -226,7 +226,7 @@ export async function duplicateQuoteAction(formData: FormData) {
   });
 
   revalidatePath("/finance/quotes");
-  revalidatePath(`/events/${quote.eventId}`, "layout");
+  revalidatePath(`/projects/${quote.projectId}`, "layout");
   redirect(`/finance/quotes/${duplicate.id}/edit`);
 }
 
@@ -236,13 +236,13 @@ export async function deleteQuoteAction(formData: FormData) {
   if (!isAdmin(user)) return;
 
   const id = String(formData.get("id"));
-  const quote = await prisma.quote.findUnique({ where: { id }, select: { eventId: true } });
+  const quote = await prisma.quote.findUnique({ where: { id }, select: { projectId: true } });
   if (!quote) return;
 
   await prisma.quote.delete({ where: { id } });
 
   revalidatePath("/finance/quotes");
-  revalidatePath(`/events/${quote.eventId}`, "layout");
+  revalidatePath(`/projects/${quote.projectId}`, "layout");
   redirect("/finance/quotes");
 }
 
@@ -253,19 +253,19 @@ export async function convertQuoteToInvoiceAction(formData: FormData) {
   const quoteId = String(formData.get("quoteId"));
   const quote = await prisma.quote.findUnique({
     where: { id: quoteId },
-    include: { items: true, invoices: true, event: { select: { number: true } } },
+    include: { items: true, invoices: true, project: { select: { number: true } } },
   });
   if (!quote || quote.status !== "ACCEPTED" || quote.invoices.length > 0) return;
 
   const company = await prisma.companySettings.findUnique({ where: { id: "singleton" } });
   const dueDays = company?.defaultDueDays ?? 14;
 
-  const number = await nextInvoiceNumber(quote.eventId, quote.event.number);
+  const number = await nextInvoiceNumber(quote.projectId, quote.project.number);
   const dueDate = new Date(Date.now() + dueDays * 86400000);
 
   const invoice = await prisma.invoice.create({
     data: {
-      eventId: quote.eventId,
+      projectId: quote.projectId,
       quoteId: quote.id,
       number,
       variableSymbol: variableSymbolFor(number),
@@ -295,7 +295,7 @@ export async function convertQuoteToInvoiceAction(formData: FormData) {
 
   revalidatePath("/finance/quotes");
   revalidatePath("/finance/invoices");
-  revalidatePath(`/events/${quote.eventId}`, "layout");
+  revalidatePath(`/projects/${quote.projectId}`, "layout");
   redirect(`/finance/invoices/${invoice.id}`);
 }
 
@@ -305,25 +305,25 @@ export async function createInvoiceAction(_prev: FinanceFormState, formData: For
   const user = await requireUser();
   if (!canManageFinance(user)) return { error: "You don't have permission to create invoices." };
 
-  const eventId = String(formData.get("eventId") ?? "");
+  const projectId = String(formData.get("projectId") ?? "");
   const dueDate = String(formData.get("dueDate") ?? "");
   const currency = (formData.get("currency") as Currency) || "CZK";
   const hideItemPrices = formData.get("hideItemPrices") === "on";
   const discountType = (formData.get("discountType") as DiscountType) || "NONE";
   const discountValue = Math.max(0, Number(formData.get("discountValue")) || 0);
   const items = parseItems(formData);
-  if (!eventId || !dueDate || items.length === 0) {
-    return { error: "Event, due date and at least one line item are required." };
+  if (!projectId || !dueDate || items.length === 0) {
+    return { error: "Project, due date and at least one line item are required." };
   }
 
-  const event = await prisma.event.findUnique({ where: { id: eventId }, select: { number: true } });
-  if (!event) return { error: "Event not found." };
+  const project = await prisma.project.findUnique({ where: { id: projectId }, select: { number: true } });
+  if (!project) return { error: "Project not found." };
 
   const { total, discountAmount } = applyDiscount(items, discountType, discountValue);
-  const number = await nextInvoiceNumber(eventId, event.number);
+  const number = await nextInvoiceNumber(projectId, project.number);
   const invoice = await prisma.invoice.create({
     data: {
-      eventId,
+      projectId,
       number,
       variableSymbol: variableSymbolFor(number),
       total,
@@ -351,7 +351,7 @@ export async function createInvoiceAction(_prev: FinanceFormState, formData: For
   });
 
   revalidatePath("/finance/invoices");
-  revalidatePath(`/events/${eventId}`, "layout");
+  revalidatePath(`/projects/${projectId}`, "layout");
   redirect(`/finance/invoices/${invoice.id}`);
 }
 
@@ -437,7 +437,7 @@ async function exportInvoiceToDrive(user: Awaited<ReturnType<typeof requireUser>
   const buffer = await buildInvoicePdfBuffer(full, company, "en");
   const result = await tryUploadFinanceDocument({
     category: "invoices-issued",
-    year: full.event.startDate.getFullYear(),
+    year: full.project.startDate.getFullYear(),
     filename: `${full.number}-invoice.pdf`,
     buffer,
     mimeType: "application/pdf",
@@ -494,13 +494,13 @@ export async function deleteInvoiceAction(formData: FormData) {
   if (!isAdmin(user)) return;
 
   const id = String(formData.get("id"));
-  const invoice = await prisma.invoice.findUnique({ where: { id }, select: { eventId: true } });
+  const invoice = await prisma.invoice.findUnique({ where: { id }, select: { projectId: true } });
   if (!invoice) return;
 
   await prisma.invoice.delete({ where: { id } });
 
   revalidatePath("/finance/invoices");
-  revalidatePath(`/events/${invoice.eventId}`, "layout");
+  revalidatePath(`/projects/${invoice.projectId}`, "layout");
   redirect("/finance/invoices");
 }
 
@@ -509,8 +509,8 @@ export async function deleteInvoiceAction(formData: FormData) {
 export async function createExpenseAction(_prev: FinanceFormState, formData: FormData): Promise<FinanceFormState> {
   const user = await requireUser();
 
-  const eventIdRaw = String(formData.get("eventId") ?? "");
-  const eventId = eventIdRaw === "overhead" || eventIdRaw === "" ? null : eventIdRaw;
+  const projectIdRaw = String(formData.get("projectId") ?? "");
+  const projectId = projectIdRaw === "overhead" || projectIdRaw === "" ? null : projectIdRaw;
   const amount = Math.round(Number(formData.get("amount")) || 0);
   const date = String(formData.get("date") ?? "");
   const category = formData.get("category") as ExpenseCategory;
@@ -521,15 +521,15 @@ export async function createExpenseAction(_prev: FinanceFormState, formData: For
     return { error: "Amount, date and category are required." };
   }
 
-  let event: { ownerId: string; number: string; members: { userId: string }[] } | null = null;
-  if (eventId) {
-    event = await prisma.event.findFirst({
-      where: { id: eventId, ...eventWhereForUser(user) },
+  let project: { ownerId: string; number: string; members: { userId: string }[] } | null = null;
+  if (projectId) {
+    project = await prisma.project.findFirst({
+      where: { id: projectId, ...projectWhereForUser(user) },
       include: { members: { select: { userId: true } } },
     });
-    if (!event) return { error: "Event not found or not accessible." };
+    if (!project) return { error: "Project not found or not accessible." };
   }
-  if (!canAddExpense(user, event ? { ownerId: event.ownerId, memberIds: event.members.map((m) => m.userId) } : null)) {
+  if (!canAddExpense(user, project ? { ownerId: project.ownerId, memberIds: project.members.map((m) => m.userId) } : null)) {
     return { error: "You don't have permission to add an expense here." };
   }
 
@@ -556,14 +556,14 @@ export async function createExpenseAction(_prev: FinanceFormState, formData: For
   }
 
   await prisma.expense.create({
-    data: { eventId, paidById, amount, date: new Date(date), category, note, receiptPath },
+    data: { projectId, paidById, amount, date: new Date(date), category, note, receiptPath },
   });
 
-  if (receipt instanceof File && receipt.size > 0) await exportExpenseReceiptToDrive(receipt, event?.number ?? null, date);
+  if (receipt instanceof File && receipt.size > 0) await exportExpenseReceiptToDrive(receipt, project?.number ?? null, date);
 
   revalidatePath("/finance/expenses");
   revalidatePath("/dashboard");
-  if (eventId) revalidatePath(`/events/${eventId}`, "layout");
+  if (projectId) revalidatePath(`/projects/${projectId}`, "layout");
 
   if (formData.get("again") === "1") return { success: true };
   redirect("/finance/expenses");
@@ -571,13 +571,13 @@ export async function createExpenseAction(_prev: FinanceFormState, formData: For
 
 /**
  * Best-effort — a Google Drive hiccup should never block an expense actually being saved.
- * Event-linked expenses go in as "<event number>-<original filename>"; company-overhead
- * expenses (no event) get a date-based name instead, per the user's explicit choice, so
- * nothing is silently skipped just for having no event to name it after.
+ * Project-linked expenses go in as "<project number>-<original filename>"; company-overhead
+ * expenses (no project) get a date-based name instead, per the user's explicit choice, so
+ * nothing is silently skipped just for having no project to name it after.
  */
-async function exportExpenseReceiptToDrive(receipt: File, eventNumber: string | null, dateStr: string) {
+async function exportExpenseReceiptToDrive(receipt: File, projectNumber: string | null, dateStr: string) {
   const buffer = Buffer.from(await receipt.arrayBuffer());
-  const idPart = eventNumber ?? `OVERHEAD_${dateStr}`;
+  const idPart = projectNumber ?? `OVERHEAD_${dateStr}`;
   await tryUploadFinanceDocument({
     category: "invoices-received",
     year: new Date(dateStr).getFullYear(),
@@ -597,8 +597,8 @@ export async function updateExpenseAction(_prev: FinanceFormState, formData: For
     return { error: "You don't have permission to edit this expense." };
   }
 
-  const eventIdRaw = String(formData.get("eventId") ?? "");
-  const eventId = eventIdRaw === "overhead" || eventIdRaw === "" ? null : eventIdRaw;
+  const projectIdRaw = String(formData.get("projectId") ?? "");
+  const projectId = projectIdRaw === "overhead" || projectIdRaw === "" ? null : projectIdRaw;
   const amount = Math.round(Number(formData.get("amount")) || 0);
   const date = String(formData.get("date") ?? "");
   const category = formData.get("category") as ExpenseCategory;
@@ -610,16 +610,16 @@ export async function updateExpenseAction(_prev: FinanceFormState, formData: For
     return { error: "Amount, date and category are required." };
   }
 
-  let event: { ownerId: string; number: string; members: { userId: string }[] } | null = null;
-  if (eventId) {
-    event = await prisma.event.findFirst({
-      where: { id: eventId, ...eventWhereForUser(user) },
+  let project: { ownerId: string; number: string; members: { userId: string }[] } | null = null;
+  if (projectId) {
+    project = await prisma.project.findFirst({
+      where: { id: projectId, ...projectWhereForUser(user) },
       include: { members: { select: { userId: true } } },
     });
-    if (!event) return { error: "Event not found or not accessible." };
+    if (!project) return { error: "Project not found or not accessible." };
   }
-  if (!canAddExpense(user, event ? { ownerId: event.ownerId, memberIds: event.members.map((m) => m.userId) } : null)) {
-    return { error: "You don't have permission to log an expense on that event." };
+  if (!canAddExpense(user, project ? { ownerId: project.ownerId, memberIds: project.members.map((m) => m.userId) } : null)) {
+    return { error: "You don't have permission to log an expense on that project." };
   }
 
   let paidById = existing.paidById;
@@ -651,15 +651,15 @@ export async function updateExpenseAction(_prev: FinanceFormState, formData: For
 
   await prisma.expense.update({
     where: { id },
-    data: { eventId, paidById, amount, date: new Date(date), category, note, receiptPath },
+    data: { projectId, paidById, amount, date: new Date(date), category, note, receiptPath },
   });
 
-  if (newReceipt) await exportExpenseReceiptToDrive(newReceipt, event?.number ?? null, date);
+  if (newReceipt) await exportExpenseReceiptToDrive(newReceipt, project?.number ?? null, date);
 
   revalidatePath("/finance/expenses");
   revalidatePath("/dashboard");
-  if (eventId) revalidatePath(`/events/${eventId}`, "layout");
-  if (existing.eventId && existing.eventId !== eventId) revalidatePath(`/events/${existing.eventId}`, "layout");
+  if (projectId) revalidatePath(`/projects/${projectId}`, "layout");
+  if (existing.projectId && existing.projectId !== projectId) revalidatePath(`/projects/${existing.projectId}`, "layout");
 
   redirect("/finance/expenses");
 }
@@ -670,7 +670,7 @@ export async function deleteExpenseAction(formData: FormData) {
   if (!isAdmin(user)) return;
 
   const id = String(formData.get("id"));
-  const expense = await prisma.expense.findUnique({ where: { id }, select: { eventId: true, receiptPath: true } });
+  const expense = await prisma.expense.findUnique({ where: { id }, select: { projectId: true, receiptPath: true } });
   if (!expense) return;
 
   await prisma.expense.delete({ where: { id } });
@@ -678,18 +678,18 @@ export async function deleteExpenseAction(formData: FormData) {
 
   revalidatePath("/finance/expenses");
   revalidatePath("/dashboard");
-  if (expense.eventId) revalidatePath(`/events/${expense.eventId}`, "layout");
+  if (expense.projectId) revalidatePath(`/projects/${expense.projectId}`, "layout");
 }
 
 // --- Invoice emailing ---
 
 export type EmailActionState = { error?: string; success?: string };
 
-/** Client.invoicingEmail first (the field meant for this), else the event's first contact with an email on file. */
+/** Client.invoicingEmail first (the field meant for this), else the project's first contact with an email on file. */
 function resolveInvoiceRecipient(invoice: NonNullable<Awaited<ReturnType<typeof getInvoiceDetail>>>): string | null {
-  const clientEmail = invoice.event.client?.invoicingEmail.trim();
+  const clientEmail = invoice.project.client?.invoicingEmail.trim();
   if (clientEmail) return clientEmail;
-  const contact = invoice.event.contacts.find((c) => c.email.trim());
+  const contact = invoice.project.contacts.find((c) => c.email.trim());
   return contact ? contact.email.trim() : null;
 }
 
@@ -699,7 +699,7 @@ async function loadInvoiceForEmail(user: Awaited<ReturnType<typeof requireUser>>
   const to = resolveInvoiceRecipient(invoice);
   if (!to) {
     return {
-      error: "No email address on file for this client — add one on the event's contacts, or set the client's invoicing email.",
+      error: "No email address on file for this client — add one on the project's contacts, or set the client's invoicing email.",
     } as const;
   }
   return { invoice, to } as const;
@@ -718,8 +718,8 @@ export async function sendInvoiceEmailAction(_prev: EmailActionState, formData: 
   const vars = {
     invoiceNumber: invoice.number,
     companyName: company?.name ?? "",
-    clientName: invoice.event.companyName,
-    eventTitle: invoice.event.title,
+    clientName: invoice.project.companyName,
+    projectTitle: invoice.project.title,
     amount: formatCurrency(invoice.total - invoice.amountPaid, invoice.currency),
     dueDate: formatDate(invoice.dueDate),
   };
@@ -766,8 +766,8 @@ export async function sendInvoiceReminderAction(_prev: EmailActionState, formDat
   const vars = {
     invoiceNumber: invoice.number,
     companyName: company?.name ?? "",
-    clientName: invoice.event.companyName,
-    eventTitle: invoice.event.title,
+    clientName: invoice.project.companyName,
+    projectTitle: invoice.project.title,
     amount: formatCurrency(invoice.total - invoice.amountPaid, invoice.currency),
     dueDate: formatDate(invoice.dueDate),
     daysOverdue: String(daysOverdue),

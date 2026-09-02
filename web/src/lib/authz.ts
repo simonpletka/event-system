@@ -3,7 +3,7 @@ import { redirect } from "next/navigation";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import type { Prisma } from "@/generated/prisma/client";
-import type { EventsAccess, FinanceAccess, ExpensesAccess, SettingsAccess } from "@/generated/prisma/enums";
+import type { ProjectsAccess, FinanceAccess, ExpensesAccess, SettingsAccess } from "@/generated/prisma/enums";
 
 export type SessionUser = {
   id: string;
@@ -12,7 +12,7 @@ export type SessionUser = {
   role: "ADMIN" | "ACCOUNTANT" | "PRODUCER" | "MEMBER";
   isCardHolder: boolean;
   /** Set only when the user has a CustomRole assigned; overrides `role` entirely when present. */
-  customRole: { events: EventsAccess; finance: FinanceAccess; expenses: ExpensesAccess; settings: SettingsAccess } | null;
+  customRole: { projects: ProjectsAccess; finance: FinanceAccess; expenses: ExpensesAccess; settings: SettingsAccess } | null;
 };
 
 /**
@@ -39,7 +39,7 @@ export const getFreshUserFields = cache(async function getFreshUserFields(id: st
       role: true,
       isCardHolder: true,
       customRoleId: true,
-      customRole: { select: { events: true, finance: true, expenses: true, settings: true } },
+      customRole: { select: { projects: true, finance: true, expenses: true, settings: true } },
     },
   });
 });
@@ -81,16 +81,16 @@ export const requireUser = cache(async function requireUser(): Promise<SessionUs
   };
 });
 
-type Permissions = { events: EventsAccess; finance: FinanceAccess; expenses: ExpensesAccess; settings: SettingsAccess };
+type Permissions = { projects: ProjectsAccess; finance: FinanceAccess; expenses: ExpensesAccess; settings: SettingsAccess };
 
 // What each built-in role resolves to, expressed in the same four-dimension
 // shape a CustomRole uses — this is what lets every check below treat built-in
 // and custom roles identically instead of special-casing one or the other.
 const BUILT_IN_PERMISSIONS: Record<SessionUser["role"], Permissions> = {
-  ADMIN: { events: "ALL_FULL", finance: "FULL", expenses: "FULL", settings: "USERS_AND_COMPANY" },
-  ACCOUNTANT: { events: "ALL_READ", finance: "FULL", expenses: "FULL", settings: "COMPANY" },
-  PRODUCER: { events: "OWN_EDIT", finance: "READ_OWN_EVENTS", expenses: "ADD_ON_OWN_EVENTS", settings: "NONE" },
-  MEMBER: { events: "ASSIGNED_READ", finance: "NONE", expenses: "OWN_ONLY", settings: "NONE" },
+  ADMIN: { projects: "ALL_FULL", finance: "FULL", expenses: "FULL", settings: "USERS_AND_COMPANY" },
+  ACCOUNTANT: { projects: "ALL_READ", finance: "FULL", expenses: "FULL", settings: "COMPANY" },
+  PRODUCER: { projects: "OWN_EDIT", finance: "READ_OWN_PROJECTS", expenses: "ADD_ON_OWN_PROJECTS", settings: "NONE" },
+  MEMBER: { projects: "ASSIGNED_READ", finance: "NONE", expenses: "OWN_ONLY", settings: "NONE" },
 };
 
 function resolvePermissions(user: SessionUser): Permissions {
@@ -98,26 +98,26 @@ function resolvePermissions(user: SessionUser): Permissions {
 }
 
 /**
- * Who can *see* an event at all. Admin/Accountant (ALL_*) and Member
- * (ASSIGNED_READ) can open any event — Member read-only, everyone above per
- * their own edit gate. Only the NONE tier (a custom role with events access
- * switched off) is narrowed to events they're a member of. Editing, finance
- * and budget are gated separately (canEditEvent / canViewFinance /
- * canViewEventBudget), so widening this for Member doesn't grant them anything
+ * Who can *see* a project at all. Admin/Accountant (ALL_*) and Member
+ * (ASSIGNED_READ) can open any project — Member read-only, everyone above per
+ * their own edit gate. Only the NONE tier (a custom role with projects access
+ * switched off) is narrowed to projects they're a member of. Editing, finance
+ * and budget are gated separately (canEditProject / canViewFinance /
+ * canViewProjectBudget), so widening this for Member doesn't grant them anything
  * but visibility.
  */
-export function eventWhereForUser(user: SessionUser): Prisma.EventWhereInput {
-  const p = resolvePermissions(user).events;
+export function projectWhereForUser(user: SessionUser): Prisma.ProjectWhereInput {
+  const p = resolvePermissions(user).projects;
   if (p === "NONE") return { members: { some: { userId: user.id } } };
   return {};
 }
 
 /**
- * Events a user is actually on — owner or an EventMember row. Used by the
- * per-role dashboards' "My events" sections, which stay the assigned set even
- * though `eventWhereForUser` is now unrestricted for Member.
+ * Projects a user is actually on — owner or a ProjectMember row. Used by the
+ * per-role dashboards' "My projects" sections, which stay the assigned set even
+ * though `projectWhereForUser` is now unrestricted for Member.
  */
-export function assignedEventWhere(user: SessionUser): Prisma.EventWhereInput {
+export function assignedProjectWhere(user: SessionUser): Prisma.ProjectWhereInput {
   return { OR: [{ ownerId: user.id }, { members: { some: { userId: user.id } } }] };
 }
 
@@ -132,40 +132,40 @@ export type DashboardVariant = "admin" | "accountant" | "producer" | "member";
 export function dashboardVariant(user: SessionUser): DashboardVariant {
   if (isAdmin(user)) return "admin";
   const p = resolvePermissions(user);
-  if (p.finance === "FULL" && p.events === "ALL_FULL") return "admin";
+  if (p.finance === "FULL" && p.projects === "ALL_FULL") return "admin";
   if (p.finance === "FULL") return "accountant";
-  if (canCreateEvent(user)) return "producer";
+  if (canCreateProject(user)) return "producer";
   return "member";
 }
 
-/** Brief §2.2: only Admin/Producer create events; Accountant/Member cannot. */
-export function canCreateEvent(user: SessionUser) {
-  const p = resolvePermissions(user).events;
+/** Brief §2.2: only Admin/Producer create projects; Accountant/Member cannot. */
+export function canCreateProject(user: SessionUser) {
+  const p = resolvePermissions(user).projects;
   return p === "ALL_FULL" || p === "OWN_EDIT";
 }
 
-/** Brief §2.2: Producer can edit own/assigned events; Member is read-only; Admin always can. */
-export function canEditEvent(user: SessionUser, event: { ownerId: string; memberIds: string[] }) {
-  const p = resolvePermissions(user).events;
+/** Brief §2.2: Producer can edit own/assigned projects; Member is read-only; Admin always can. */
+export function canEditProject(user: SessionUser, project: { ownerId: string; memberIds: string[] }) {
+  const p = resolvePermissions(user).projects;
   if (p === "ALL_FULL") return true;
-  if (p === "OWN_EDIT") return event.ownerId === user.id || event.memberIds.includes(user.id);
+  if (p === "OWN_EDIT") return project.ownerId === user.id || project.memberIds.includes(user.id);
   return false;
 }
 
 /**
- * Who sees the event's internal budget (the read-only tile on the event
+ * Who sees the project's internal budget (the read-only tile on the project
  * detail page): anyone who works with money (Accountant, Admin — via
- * finance access) or runs events (Producer — via create access). Members
+ * finance access) or runs projects (Producer — via create access). Members
  * and finance-less custom roles don't. Editing the budget is a stricter
- * gate still — isAdmin() only, checked on the event form/action.
+ * gate still — isAdmin() only, checked on the project form/action.
  */
-export function canViewEventBudget(user: SessionUser) {
-  return canViewFinance(user) || canCreateEvent(user);
+export function canViewProjectBudget(user: SessionUser) {
+  return canViewFinance(user) || canCreateProject(user);
 }
 
 // --- Finance (brief §2.2 "Finance (nabídky/faktury)" column) ---
 
-/** Full or read-only access: full access. Producer-tier: view-only on own/assigned events. None: no access. */
+/** Full or read-only access: full access. Producer-tier: view-only on own/assigned projects. None: no access. */
 export function canViewFinance(user: SessionUser) {
   return resolvePermissions(user).finance !== "NONE";
 }
@@ -175,7 +175,7 @@ export function canManageFinance(user: SessionUser) {
   return resolvePermissions(user).finance === "FULL";
 }
 
-/** Quotes/invoices scoped like events: full access sees all, read-own-events sees own/assigned. */
+/** Quotes/invoices scoped like projects: full access sees all, read-own-projects sees own/assigned. */
 export function quoteWhereForUser(user: SessionUser): Prisma.QuoteWhereInput {
   return financeWhere(user);
 }
@@ -187,17 +187,17 @@ export function invoiceWhereForUser(user: SessionUser): Prisma.InvoiceWhereInput
 function financeWhere(user: SessionUser) {
   const p = resolvePermissions(user).finance;
   if (p === "FULL") return {};
-  if (p === "READ_OWN_EVENTS") return { event: { members: { some: { userId: user.id } } } };
+  if (p === "READ_OWN_PROJECTS") return { project: { members: { some: { userId: user.id } } } };
   return { id: "" }; // NONE — page-gated by canViewFinance already, this is a defensive no-match fallback
 }
 
 // --- Expenses (brief §2.2 "Výdaje" column) ---
 
-/** Full access: all. Own-events tier: add/view on own/assigned events. Own-only tier: add/view own only. */
+/** Full access: all. Own-projects tier: add/view on own/assigned projects. Own-only tier: add/view own only. */
 export function expenseWhereForUser(user: SessionUser): Prisma.ExpenseWhereInput {
   const p = resolvePermissions(user).expenses;
   if (p === "FULL") return {};
-  if (p === "ADD_ON_OWN_EVENTS") return { event: { members: { some: { userId: user.id } } } };
+  if (p === "ADD_ON_OWN_PROJECTS") return { project: { members: { some: { userId: user.id } } } };
   return { paidById: user.id }; // OWN_ONLY and NONE (page-gated) both fall back to own-only
 }
 
@@ -211,12 +211,12 @@ export function canViewExpenses(user: SessionUser) {
   return resolvePermissions(user).expenses !== "NONE";
 }
 
-export function canAddExpense(user: SessionUser, event: { ownerId: string; memberIds: string[] } | null) {
+export function canAddExpense(user: SessionUser, project: { ownerId: string; memberIds: string[] } | null) {
   const p = resolvePermissions(user).expenses;
   if (p === "FULL") return true;
   if (p === "NONE") return false;
-  if (!event) return true; // company overhead — anyone with any expense access can log their own
-  return event.ownerId === user.id || event.memberIds.includes(user.id);
+  if (!project) return true; // company overhead — anyone with any expense access can log their own
+  return project.ownerId === user.id || project.memberIds.includes(user.id);
 }
 
 /** Restricts the "paid by" field to self unless the user is a card holder (brief §5.3 vs §2.2, see CLAUDE.md). */
@@ -229,15 +229,15 @@ export function canEditExpense(user: SessionUser, expensePaidById: string) {
   return resolvePermissions(user).expenses === "FULL" || expensePaidById === user.id;
 }
 
-// --- Time tracker (brief §6.3: "Member sees own only; Producer sees own events'
+// --- Time tracker (brief §6.3: "Member sees own only; Producer sees own projects'
 // summary; Admin and Accountant ('Finance manažer') see all.") ---
 
 /** Everyone can see their own entries; scoping only matters for entries by *other* people. */
 export function timeEntryWhereForUser(user: SessionUser): Prisma.TimeEntryWhereInput {
-  const p = resolvePermissions(user).events;
+  const p = resolvePermissions(user).projects;
   if (p === "ALL_READ" || p === "ALL_FULL") return {};
   if (p === "OWN_EDIT") {
-    return { OR: [{ userId: user.id }, { event: { members: { some: { userId: user.id } } } }] };
+    return { OR: [{ userId: user.id }, { project: { members: { some: { userId: user.id } } } }] };
   }
   return { userId: user.id };
 }
@@ -257,26 +257,26 @@ export function canManageCompanySettings(user: SessionUser) {
 // --- Clients (new — not in the brief's own RBAC table, since the section
 // itself is new). Deliberately reuses the same two roles who already touch
 // a client's company data day to day — Producer via creating/editing
-// events, Accountant/Admin via Finance — rather than inventing a fifth
+// projects, Accountant/Admin via Finance — rather than inventing a fifth
 // permission dimension for one screen. Member gets neither, same as
 // Finance. Viewing and managing aren't split into separate tiers here. ---
 export function canManageClients(user: SessionUser) {
-  return canManageFinance(user) || canCreateEvent(user);
+  return canManageFinance(user) || canCreateProject(user);
 }
 
-// --- Meetings (new — reuses the `events` dimension rather than adding a
-// fifth CustomRole tier, since a meeting is fundamentally an events-adjacent
-// concept: anyone who can see events can see meetings, anyone who can
-// create/edit events can manage them). ---
+// --- Meetings (new — reuses the `projects` dimension rather than adding a
+// fifth CustomRole tier, since a meeting is fundamentally a projects-adjacent
+// concept: anyone who can see projects can see meetings, anyone who can
+// create/edit projects can manage them). ---
 export function canViewMeetings(user: SessionUser) {
-  return resolvePermissions(user).events !== "NONE";
+  return resolvePermissions(user).projects !== "NONE";
 }
 
 export function canManageMeetings(user: SessionUser) {
-  return canCreateEvent(user);
+  return canCreateProject(user);
 }
 
-// --- Deletion (events, quotes, invoices, expenses) ---
+// --- Deletion (projects, quotes, invoices, expenses) ---
 
 /**
  * Deliberately checks the literal built-in Admin role rather than a

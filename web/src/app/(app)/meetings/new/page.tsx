@@ -1,5 +1,5 @@
 import { requireUser, canManageMeetings } from "@/lib/authz";
-import { getEventOptionsForUser } from "@/lib/queries/meetings";
+import { getProjectOptionsForUser } from "@/lib/queries/meetings";
 import { MeetingForm } from "@/components/meetings/MeetingForm";
 import { getLocale, getDictionary } from "@/lib/i18n";
 
@@ -30,9 +30,9 @@ export default async function NewMeetingPage({
             recurrenceFreq: "NONE",
             recurrenceInterval: 1,
             recurrenceUntil: null,
-            eventIds: params.eventId ? [params.eventId] : [],
+            projectIds: params.projectId ? [params.projectId] : [],
           }}
-          eventOptions={await getEventOptionsForUser(user)}
+          eventOptions={await getProjectOptionsForUser(user)}
           locale={locale}
         />
       )}

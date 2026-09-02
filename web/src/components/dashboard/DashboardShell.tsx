@@ -82,7 +82,7 @@ export function DashboardShell({
 /** The header "New event" button, shown only to roles that can create events. */
 export function NewEventAction({ label }: { label: string }) {
   return (
-    <Link href="/events/new" className="btn font-semibold whitespace-nowrap">
+    <Link href="/projects/new" className="btn font-semibold whitespace-nowrap">
       {label}
     </Link>
   );

@@ -52,12 +52,12 @@ export async function buildInvoicePdfBuffer(invoice: InvoiceDetail, company: Com
   const logoDataUrl = company?.logoPath ? await readLogoAsDataUrl(company.logoPath) : null;
   const qrDataUrl = await getInvoiceQrDataUrl(invoice, supplier);
 
-  // The linked Client (if any) has a real structured address; the Event's
+  // The linked Client (if any) has a real structured address; the Project's
   // own embedded companyAddress — what every other screen actually reads
   // from — is just free text, so it's split on commas as a best-effort
   // approximation instead (see addressLines()).
-  const client = invoice.event.client;
-  const customerAddressLines = client ? clientAddressLines(client) : addressLines(invoice.event.companyAddress);
+  const client = invoice.project.client;
+  const customerAddressLines = client ? clientAddressLines(client) : addressLines(invoice.project.companyAddress);
 
   return renderToBuffer(
     <InvoicePdf
@@ -72,10 +72,10 @@ export async function buildInvoicePdfBuffer(invoice: InvoiceDetail, company: Com
       total={invoice.total}
       supplier={{ ...supplier, addressLines: addressLines(supplier.address) }}
       customer={{
-        name: invoice.event.companyName,
+        name: invoice.project.companyName,
         addressLines: customerAddressLines,
-        ico: invoice.event.companyIco,
-        dic: invoice.event.companyDic,
+        ico: invoice.project.companyIco,
+        dic: invoice.project.companyDic,
       }}
       items={invoice.items.map((i) => ({
         description: i.description,
@@ -106,8 +106,8 @@ async function embedIsdoc(
 ): Promise<Buffer> {
   try {
     const [supplierStreet, supplierCity = ""] = addressLines(supplier.address);
-    const client = invoice.event.client;
-    const customerLines = client ? clientAddressLines(client) : addressLines(invoice.event.companyAddress);
+    const client = invoice.project.client;
+    const customerLines = client ? clientAddressLines(client) : addressLines(invoice.project.companyAddress);
     const [customerStreet, customerCity = ""] = customerLines;
 
     const xml = buildIsdocXml({
@@ -125,9 +125,9 @@ async function embedIsdoc(
         postalZone: "",
       },
       customer: {
-        name: invoice.event.companyName,
-        ico: invoice.event.companyIco,
-        dic: invoice.event.companyDic,
+        name: invoice.project.companyName,
+        ico: invoice.project.companyIco,
+        dic: invoice.project.companyDic,
         street: customerStreet ?? "",
         buildingNumber: "",
         city: customerCity,

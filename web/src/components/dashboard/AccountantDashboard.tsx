@@ -2,6 +2,7 @@ import Link from "next/link";
 import { getAccountantDashboard } from "@/lib/queries/dashboard";
 import { getDictionary, type Locale } from "@/lib/i18n";
 import { formatCurrency, formatDateRange } from "@/lib/format";
+import { projectHref } from "@/lib/slug";
 import type { SessionUser } from "@/lib/authz";
 import { DashboardShell, LinkAction } from "./DashboardShell";
 import {
@@ -30,7 +31,7 @@ export async function AccountantDashboard({ user, locale }: { user: SessionUser;
               <Row key={inv.id}>
                 <span className="font-mono text-[11px] text-ink/45 whitespace-nowrap">{inv.number}</span>
                 <span className="flex-1 min-w-0 truncate">
-                  {inv.event.title}{" "}
+                  {inv.project.title}{" "}
                   <span className="placeholder-text tabular-nums">· {formatCurrency(inv.total, inv.currency)}</span>
                 </span>
                 <span className="tag tag-warning whitespace-nowrap">{td.daysLate(inv.daysOverdue)}</span>
@@ -56,7 +57,7 @@ export async function AccountantDashboard({ user, locale }: { user: SessionUser;
               <Link key={q.id} href={`/finance/quotes/${q.id}`} className="block">
                 <Row>
                   <span className="font-mono text-[11px] text-ink/45 whitespace-nowrap">{q.number}</span>
-                  <span className="flex-1 min-w-0 truncate">{q.event.title}</span>
+                  <span className="flex-1 min-w-0 truncate">{q.project.title}</span>
                   <span className="placeholder-text text-[11.5px] whitespace-nowrap hidden sm:inline">
                     {td.sentAgo(q.daysSinceSent)}
                   </span>
@@ -77,7 +78,7 @@ export async function AccountantDashboard({ user, locale }: { user: SessionUser;
         ) : (
           <RowCard>
             {d.toInvoice.map((e) => (
-              <Link key={e.id} href={`/events/${e.id}`} className="block">
+              <Link key={e.id} href={projectHref(e)} className="block">
                 <Row>
                   <span className="flex-1 min-w-0 truncate">{e.title}</span>
                   <span className="placeholder-text text-[11.5px] whitespace-nowrap">

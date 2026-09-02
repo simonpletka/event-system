@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { requireUser, canManageFinance, isAdmin } from "@/lib/authz";
 import { getInvoiceDetail, getCompanySettings } from "@/lib/queries/finance";
 import { formatCurrency, formatDate, formatDateTime } from "@/lib/format";
+import { projectHref, clientHref } from "@/lib/slug";
 import {
   recordPaymentAction,
   markInvoicePaidAction,
@@ -49,8 +50,8 @@ export default async function InvoiceDetailPage({
 
   const supplier = company ?? FALLBACK_SUPPLIER;
   const supplierAddressLines = addressLines(supplier.address);
-  const client = invoice.event.client;
-  const customerAddressLines = client ? clientAddressLines(client) : addressLines(invoice.event.companyAddress);
+  const client = invoice.project.client;
+  const customerAddressLines = client ? clientAddressLines(client) : addressLines(invoice.project.companyAddress);
   const qrDataUrl = await getInvoiceQrDataUrl(invoice, supplier);
   const accent = company?.accentColor || DEFAULT_ACCENT;
 
@@ -82,7 +83,7 @@ export default async function InvoiceDetailPage({
           <div>
             <div className="text-[24px] font-bold tracking-tight">{ti.invoiceN(invoice.number)}</div>
             <div className="placeholder-text text-[12px] mt-1">
-              {ti.metaLine(invoice.event.title, invoice.event.companyName, formatDate(invoice.issuedAt), formatDate(invoice.dueDate))}
+              {ti.metaLine(invoice.project.title, invoice.project.companyName, formatDate(invoice.issuedAt), formatDate(invoice.dueDate))}
             </div>
           </div>
           <div className="flex gap-1.5 items-start">
@@ -229,13 +230,13 @@ export default async function InvoiceDetailPage({
               </div>
               <div>
                 <div className="label mb-[5px] !text-[8px] !tracking-[1px]">{pt.customer}</div>
-                <div className="font-bold text-[11px] mb-[3px]">{invoice.event.companyName}</div>
+                <div className="font-bold text-[11px] mb-[3px]">{invoice.project.companyName}</div>
                 {customerAddressLines.map((line) => (
                   <div key={line} className="placeholder-text text-[9.5px] leading-[1.5]">
                     {line}
                   </div>
                 ))}
-                <div className="placeholder-text text-[9.5px] leading-[1.5] mt-[3px]">{`IČO ${invoice.event.companyIco || "—"} · DIČ ${invoice.event.companyDic || "—"}`}</div>
+                <div className="placeholder-text text-[9.5px] leading-[1.5] mt-[3px]">{`IČO ${invoice.project.companyIco || "—"} · DIČ ${invoice.project.companyDic || "—"}`}</div>
               </div>
               <div className="break-words">
                 <div className="label mb-[5px] !text-[8px] !tracking-[1px]">{pt.paymentDetails}</div>
@@ -400,13 +401,13 @@ export default async function InvoiceDetailPage({
           <div className="card px-4 py-4">
             <div className="heading-label !text-[12px] mb-1">{ti.linkedHeading}</div>
             <div className="py-1.5 text-[13px]">
-              <Link href={`/events/${invoice.eventId}`} className="hover:text-accent">
-                {ti.eventLink(invoice.event.title)}
+              <Link href={projectHref(invoice.project)} className="hover:text-accent">
+                {ti.projectLink(invoice.project.title)}
               </Link>
             </div>
             {client && (
               <div className="py-1.5 text-[13px]">
-                <Link href={`/clients/${client.id}`} className="hover:text-accent">
+                <Link href={clientHref(client)} className="hover:text-accent">
                   {ti.clientLink(client.name)}
                 </Link>
               </div>
@@ -419,7 +420,7 @@ export default async function InvoiceDetailPage({
               </div>
             )}
             <div className="py-1.5 text-[13px]">
-              <Link href={`/events/${invoice.eventId}/expenses`} className="hover:text-accent">
+              <Link href={projectHref(invoice.project, "/expenses")} className="hover:text-accent">
                 {ti.expensesLink}
               </Link>
             </div>

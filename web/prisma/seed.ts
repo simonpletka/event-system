@@ -50,9 +50,9 @@ async function main() {
   await prisma.expense.deleteMany();
   await prisma.roadmapItem.deleteMany();
   await prisma.venue.deleteMany();
-  await prisma.eventMember.deleteMany();
-  await prisma.eventContact.deleteMany();
-  await prisma.event.deleteMany();
+  await prisma.projectMember.deleteMany();
+  await prisma.projectContact.deleteMany();
+  await prisma.project.deleteMany();
   await prisma.clientContact.deleteMany();
   await prisma.client.deleteMany();
   await prisma.user.deleteMany();
@@ -126,10 +126,10 @@ async function main() {
   });
 
   // --- Clients — one per demo company, so the Clients section has real
-  // data instead of every demo event sitting unlinked. Contacts here match
-  // the EventContact rows created below verbatim (same person, same
+  // data instead of every demo project sitting unlinked. Contacts here match
+  // the ProjectContact rows created below verbatim (same person, same
   // details) since in real usage that's exactly what syncClientContacts()
-  // would produce from saving each event through the UI.
+  // would produce from saving each project through the UI.
   const kobra = await prisma.client.create({
     data: {
       name: "Kobra a.s.",
@@ -210,7 +210,7 @@ async function main() {
   });
 
   // --- Autumn Conference — confirmed, upcoming, fully fleshed out ---
-  await prisma.event.create({
+  await prisma.project.create({
     data: {
       number: "26-001",
       title: "Autumn Conference 2026",
@@ -278,8 +278,8 @@ async function main() {
     },
   });
 
-  const autumn = await prisma.event.findFirstOrThrow({ where: { title: "Autumn Conference 2026" } });
-  const autumnQuote = await prisma.quote.findFirstOrThrow({ where: { eventId: autumn.id } });
+  const autumn = await prisma.project.findFirstOrThrow({ where: { title: "Autumn Conference 2026" } });
+  const autumnQuote = await prisma.quote.findFirstOrThrow({ where: { projectId: autumn.id } });
   const autumnInvoiceData = withTotal([
     { description: "Production management — Autumn Conference", unitPrice: 250000, category: "People" },
     { description: "Stage & light rental", unitPrice: 60000, category: "Rigging" },
@@ -287,7 +287,7 @@ async function main() {
   ]);
   await prisma.invoice.create({
     data: {
-      eventId: autumn.id,
+      projectId: autumn.id,
       quoteId: autumnQuote.id,
       number: "26-001",
       variableSymbol: variableSymbol("26-001"),
@@ -323,11 +323,11 @@ async function main() {
   });
 
   // --- Product launch — quote sent, waiting on client ---
-  await prisma.event.create({
+  await prisma.project.create({
     data: {
       number: "26-002",
       title: "Product launch",
-      brief: "Nordika's autumn product launch — press + partner event.",
+      brief: "Nordika's autumn product launch — press + partner project.",
       clientId: nordika.id,
       contacts: { create: [{ name: "Tomáš Beneš", phone: "+420 602 118 400", email: "benes@nordika.cz" }] },
       companyName: "Nordika",
@@ -360,7 +360,7 @@ async function main() {
   });
 
   // --- Team offsite — in progress, member is assigned; deposit paid, balance due soon ---
-  await prisma.event.create({
+  await prisma.project.create({
     data: {
       number: "26-003",
       title: "Team offsite",
@@ -395,12 +395,12 @@ async function main() {
     },
   });
 
-  const offsite = await prisma.event.findFirstOrThrow({ where: { title: "Team offsite" } });
-  const offsiteQuote = await prisma.quote.findFirstOrThrow({ where: { eventId: offsite.id } });
+  const offsite = await prisma.project.findFirstOrThrow({ where: { title: "Team offsite" } });
+  const offsiteQuote = await prisma.quote.findFirstOrThrow({ where: { projectId: offsite.id } });
   const depositData = withTotal([{ description: "Team offsite — deposit (50%)", unitPrice: 48000 }]);
   await prisma.invoice.create({
     data: {
-      eventId: offsite.id,
+      projectId: offsite.id,
       quoteId: offsiteQuote.id,
       number: "26-003",
       variableSymbol: variableSymbol("26-003"),
@@ -426,7 +426,7 @@ async function main() {
   const balanceData = withTotal([{ description: "Team offsite — balance (50%)", unitPrice: 48000 }]);
   await prisma.invoice.create({
     data: {
-      eventId: offsite.id,
+      projectId: offsite.id,
       quoteId: offsiteQuote.id,
       number: "26-003_v2",
       variableSymbol: variableSymbol("26-003_v2"),
@@ -447,7 +447,7 @@ async function main() {
   });
 
   // --- Summer Gala — ended, waiting to be invoiced (needs-attention tile) ---
-  await prisma.event.create({
+  await prisma.project.create({
     data: {
       number: "26-004",
       title: "Summer Gala",
@@ -468,7 +468,7 @@ async function main() {
   });
 
   // --- Roadshow — closed, initial quote rejected, smaller follow-up job overdue ---
-  await prisma.event.create({
+  await prisma.project.create({
     data: {
       number: "26-005",
       title: "Roadshow",
@@ -499,11 +499,11 @@ async function main() {
     },
   });
 
-  const roadshow = await prisma.event.findFirstOrThrow({ where: { title: "Roadshow" } });
+  const roadshow = await prisma.project.findFirstOrThrow({ where: { title: "Roadshow" } });
   const roadshowInvoiceData = withTotal([{ description: "Roadshow — single-city pop-up (reduced scope)", unitPrice: 23554 }]);
   await prisma.invoice.create({
     data: {
-      eventId: roadshow.id,
+      projectId: roadshow.id,
       number: "26-005",
       variableSymbol: variableSymbol("26-005"),
       status: "ISSUED",
@@ -520,7 +520,7 @@ async function main() {
   });
 
   // --- Dealer meeting — fresh inquiry, quote still in draft ---
-  await prisma.event.create({
+  await prisma.project.create({
     data: {
       number: "26-006",
       title: "Dealer meeting",
@@ -552,11 +552,11 @@ async function main() {
   });
 
   // --- Spring Kickoff — archived, closed and paid ---
-  await prisma.event.create({
+  await prisma.project.create({
     data: {
       number: "26-007",
       title: "Spring Kickoff",
-      brief: "Nordika's spring kickoff event — completed and archived.",
+      brief: "Nordika's spring kickoff project — completed and archived.",
       clientId: nordika.id,
       contacts: { create: [{ name: "Tomáš Beneš", phone: "+420 602 118 400", email: "benes@nordika.cz" }] },
       companyName: "Nordika",
@@ -571,11 +571,11 @@ async function main() {
     },
   });
 
-  const springKickoff = await prisma.event.findFirstOrThrow({ where: { title: "Spring Kickoff" } });
+  const springKickoff = await prisma.project.findFirstOrThrow({ where: { title: "Spring Kickoff" } });
   const springData = withTotal([{ description: "Spring Kickoff — full package", unitPrice: 180000 }]);
   await prisma.invoice.create({
     data: {
-      eventId: springKickoff.id,
+      projectId: springKickoff.id,
       number: "26-007",
       variableSymbol: variableSymbol("26-007"),
       status: "PAID",
@@ -596,7 +596,7 @@ async function main() {
   });
 
   // --- Winter Product Demo — confirmed, further out, new client ---
-  await prisma.event.create({
+  await prisma.project.create({
     data: {
       number: "26-008",
       title: "Winter Product Demo",
@@ -644,7 +644,7 @@ async function main() {
   });
 
   // --- Board Retreat — cancelled after initial planning, real coverage for that status ---
-  await prisma.event.create({
+  await prisma.project.create({
     data: {
       number: "26-009",
       title: "Board Retreat",
@@ -677,7 +677,7 @@ async function main() {
   });
 
   // --- Munich Trade Fair — in progress, EUR currency + a non-Czech client ---
-  await prisma.event.create({
+  await prisma.project.create({
     data: {
       number: "26-010",
       title: "Munich Trade Fair",
@@ -727,15 +727,15 @@ async function main() {
     },
   });
 
-  const munich = await prisma.event.findFirstOrThrow({ where: { title: "Munich Trade Fair" } });
-  const munichQuote = await prisma.quote.findFirstOrThrow({ where: { eventId: munich.id } });
+  const munich = await prisma.project.findFirstOrThrow({ where: { title: "Munich Trade Fair" } });
+  const munichQuote = await prisma.quote.findFirstOrThrow({ where: { projectId: munich.id } });
   const munichInvoiceData = withTotal([
     { description: "Stand build — 24m²", unitPrice: 1200, category: "Rigging" },
     { description: "On-site crew — 3 days", quantity: 3, unitPrice: 250, category: "People" },
   ]);
   await prisma.invoice.create({
     data: {
-      eventId: munich.id,
+      projectId: munich.id,
       quoteId: munichQuote.id,
       number: "26-010",
       variableSymbol: variableSymbol("26-010"),
@@ -754,7 +754,7 @@ async function main() {
   });
 
   // --- Client Appreciation Night — ended, another needs-attention "to invoice" item ---
-  await prisma.event.create({
+  await prisma.project.create({
     data: {
       number: "26-011",
       title: "Client Appreciation Night",
@@ -778,7 +778,7 @@ async function main() {
   });
 
   // --- Charity Gala — quote sent, waiting on client ---
-  await prisma.event.create({
+  await prisma.project.create({
     data: {
       number: "26-012",
       title: "Charity Gala",
@@ -816,7 +816,7 @@ async function main() {
   });
 
   // --- Autumn Trade Expo — late 2025, closed and paid, real history before the 26-XXX sequence starts ---
-  await prisma.event.create({
+  await prisma.project.create({
     data: {
       number: "25-001",
       title: "Autumn Trade Expo",
@@ -849,11 +849,11 @@ async function main() {
     },
   });
 
-  const tradeExpo = await prisma.event.findFirstOrThrow({ where: { title: "Autumn Trade Expo" } });
+  const tradeExpo = await prisma.project.findFirstOrThrow({ where: { title: "Autumn Trade Expo" } });
   const tradeExpoData = withTotal([{ description: "Trade expo — stand build & staffing", unitPrice: 145000, category: "People" }]);
   await prisma.invoice.create({
     data: {
-      eventId: tradeExpo.id,
+      projectId: tradeExpo.id,
       number: "25-001",
       variableSymbol: variableSymbol("25-001"),
       status: "PAID",
@@ -874,7 +874,7 @@ async function main() {
   });
 
   // --- Regional Sales Kickoff — late 2025, closed and paid ---
-  await prisma.event.create({
+  await prisma.project.create({
     data: {
       number: "25-002",
       title: "Regional Sales Kickoff",
@@ -906,11 +906,11 @@ async function main() {
     },
   });
 
-  const salesKickoff = await prisma.event.findFirstOrThrow({ where: { title: "Regional Sales Kickoff" } });
+  const salesKickoff = await prisma.project.findFirstOrThrow({ where: { title: "Regional Sales Kickoff" } });
   const salesKickoffData = withTotal([{ description: "Sales kickoff — full-day package", unitPrice: 98000 }]);
   await prisma.invoice.create({
     data: {
-      eventId: salesKickoff.id,
+      projectId: salesKickoff.id,
       number: "25-002",
       variableSymbol: variableSymbol("25-002"),
       status: "PAID",
@@ -931,7 +931,7 @@ async function main() {
   });
 
   // --- Winter Charity Ball — late 2025, closed and paid, has a build/strike span for calendar coverage ---
-  await prisma.event.create({
+  await prisma.project.create({
     data: {
       number: "25-003",
       title: "Winter Charity Ball",
@@ -970,14 +970,14 @@ async function main() {
     },
   });
 
-  const charityBall = await prisma.event.findFirstOrThrow({ where: { title: "Winter Charity Ball" } });
+  const charityBall = await prisma.project.findFirstOrThrow({ where: { title: "Winter Charity Ball" } });
   const charityBallData = withTotal([
     { description: "Winter Charity Ball — production management", unitPrice: 140000, category: "People" },
     { description: "Live band & staging", unitPrice: 70000, category: "Rigging" },
   ]);
   await prisma.invoice.create({
     data: {
-      eventId: charityBall.id,
+      projectId: charityBall.id,
       number: "25-003",
       variableSymbol: variableSymbol("25-003"),
       status: "PAID",
@@ -997,7 +997,7 @@ async function main() {
     },
   });
 
-  // --- company overhead expenses, not tied to any event ---
+  // --- company overhead expenses, not tied to any project ---
   await prisma.expense.createMany({
     data: [
       { paidById: producer.id, amount: 1490, date: d("2026-08-05"), category: "GENERIC", note: "office supplies" },
@@ -1005,32 +1005,32 @@ async function main() {
     ],
   });
 
-  // --- more time-tracking history so Compare Events has real multi-event, multi-person data ---
-  const gala = await prisma.event.findFirstOrThrow({ where: { title: "Summer Gala" } });
+  // --- more time-tracking history so Compare Projects has real multi-project, multi-person data ---
+  const gala = await prisma.project.findFirstOrThrow({ where: { title: "Summer Gala" } });
   await prisma.timeEntry.createMany({
     data: [
-      { eventId: gala.id, userId: admin.id, minutes: 1830, date: d("2026-07-25"), description: "Vendor sourcing", phase: "SUPPLIERS" },
-      { eventId: gala.id, userId: admin.id, minutes: 1200, date: d("2026-08-01"), description: "Run of show", phase: "PLANNING" },
-      { eventId: gala.id, userId: accountant.id, minutes: 1740, date: d("2026-08-09"), description: "On-site guest list & payments", phase: "ON_SITE" },
-      { eventId: gala.id, userId: producer.id, minutes: 340, date: d("2026-08-10"), description: "Wrap-up notes", phase: "WRAP_UP" },
+      { projectId: gala.id, userId: admin.id, minutes: 1830, date: d("2026-07-25"), description: "Vendor sourcing", phase: "SUPPLIERS" },
+      { projectId: gala.id, userId: admin.id, minutes: 1200, date: d("2026-08-01"), description: "Run of show", phase: "PLANNING" },
+      { projectId: gala.id, userId: accountant.id, minutes: 1740, date: d("2026-08-09"), description: "On-site guest list & payments", phase: "ON_SITE" },
+      { projectId: gala.id, userId: producer.id, minutes: 340, date: d("2026-08-10"), description: "Wrap-up notes", phase: "WRAP_UP" },
     ],
   });
   await prisma.timeEntry.createMany({
     data: [
-      { eventId: springKickoff.id, userId: admin.id, minutes: 1450, date: d("2026-02-20"), description: "Planning workshop", phase: "PLANNING" },
-      { eventId: springKickoff.id, userId: accountant.id, minutes: 1330, date: d("2026-03-01"), description: "Supplier contracts", phase: "SUPPLIERS" },
-      { eventId: springKickoff.id, userId: admin.id, minutes: 970, date: d("2026-03-14"), description: "On-site coordination", phase: "ON_SITE" },
-      { eventId: springKickoff.id, userId: accountant.id, minutes: 155, date: d("2026-03-16"), description: "Final invoice reconciliation", phase: "WRAP_UP" },
+      { projectId: springKickoff.id, userId: admin.id, minutes: 1450, date: d("2026-02-20"), description: "Planning workshop", phase: "PLANNING" },
+      { projectId: springKickoff.id, userId: accountant.id, minutes: 1330, date: d("2026-03-01"), description: "Supplier contracts", phase: "SUPPLIERS" },
+      { projectId: springKickoff.id, userId: admin.id, minutes: 970, date: d("2026-03-14"), description: "On-site coordination", phase: "ON_SITE" },
+      { projectId: springKickoff.id, userId: accountant.id, minutes: 155, date: d("2026-03-16"), description: "Final invoice reconciliation", phase: "WRAP_UP" },
     ],
   });
 
-  const winterDemo = await prisma.event.findFirstOrThrow({ where: { title: "Winter Product Demo" } });
-  const appreciationNight = await prisma.event.findFirstOrThrow({ where: { title: "Client Appreciation Night" } });
+  const winterDemo = await prisma.project.findFirstOrThrow({ where: { title: "Winter Product Demo" } });
+  const appreciationNight = await prisma.project.findFirstOrThrow({ where: { title: "Client Appreciation Night" } });
   await prisma.timeEntry.createMany({
     data: [
-      { eventId: winterDemo.id, userId: producer.id, minutes: 480, date: d("2026-08-16"), description: "Venue sourcing", phase: "PLANNING" },
-      { eventId: winterDemo.id, userId: member.id, minutes: 260, date: d("2026-08-17"), description: "Press-list research", phase: "PLANNING" },
-      { eventId: appreciationNight.id, userId: producer.id, minutes: 690, date: d("2026-08-14"), description: "On-site coordination", phase: "ON_SITE" },
+      { projectId: winterDemo.id, userId: producer.id, minutes: 480, date: d("2026-08-16"), description: "Venue sourcing", phase: "PLANNING" },
+      { projectId: winterDemo.id, userId: member.id, minutes: 260, date: d("2026-08-17"), description: "Press-list research", phase: "PLANNING" },
+      { projectId: appreciationNight.id, userId: producer.id, minutes: 690, date: d("2026-08-14"), description: "On-site coordination", phase: "ON_SITE" },
     ],
   });
 
@@ -1050,7 +1050,7 @@ async function main() {
   ].slice(-recentDayOffsets.length);
   await prisma.timeEntry.createMany({
     data: recentDayOffsets.map((offset, i) => ({
-      eventId: munich.id,
+      projectId: munich.id,
       userId: admin.id,
       minutes: adminWeekEntries[i].minutes,
       date: new Date(thisWeekMonday.getTime() + offset * 86400000),
@@ -1062,7 +1062,7 @@ async function main() {
   // --- one running timer, so the sidebar widget has something real to show ---
   await prisma.timeEntry.create({
     data: {
-      eventId: autumn.id,
+      projectId: autumn.id,
       userId: producer.id,
       description: "Build plan and crew schedule",
       phase: "ON_SITE",
@@ -1072,7 +1072,7 @@ async function main() {
     },
   });
 
-  console.log("Seeded 15 events, 6 clients, 4 users, company settings. Dev login password for all seed accounts:", DEV_PASSWORD);
+  console.log("Seeded 15 projects, 6 clients, 4 users, company settings. Dev login password for all seed accounts:", DEV_PASSWORD);
   console.log("  admin@eventsystem.cz (Admin)");
   console.log("  eva.kucerova@eventsystem.cz (Accountant)");
   console.log("  jan.novak@eventsystem.cz (Producer)");

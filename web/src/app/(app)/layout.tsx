@@ -1,4 +1,4 @@
-import { requireUser, getFreshUserFields, eventWhereForUser } from "@/lib/authz";
+import { requireUser, getFreshUserFields, projectWhereForUser } from "@/lib/authz";
 import { getRunningTimer } from "@/lib/queries/timetracker";
 import { getLocale, getDictionary } from "@/lib/i18n";
 import { prisma } from "@/lib/prisma";
@@ -18,12 +18,12 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   // Only fetched when actually needed (a running-but-unassigned timer, for the
   // sidebar's inline assign-event select) — avoids the extra query on every
   // page load otherwise, since this layout runs on every navigation.
-  const assignableEvents =
-    running && !running.eventId
-      ? await prisma.event.findMany({ where: eventWhereForUser(user), select: { id: true, title: true }, orderBy: { title: "asc" } })
+  const assignableProjects =
+    running && !running.projectId
+      ? await prisma.project.findMany({ where: projectWhereForUser(user), select: { id: true, title: true }, orderBy: { title: "asc" } })
       : [];
   const runningProp = running
-    ? { eventId: running.eventId, eventTitle: running.event?.title ?? null, startedAt: running.startedAt!.toISOString() }
+    ? { projectId: running.projectId, projectTitle: running.project?.title ?? null, startedAt: running.startedAt!.toISOString() }
     : null;
   const displayName = freshUser?.name ?? user.name ?? user.email ?? "Signed in";
   const avatarUrl = freshUser?.avatarPath ? `/api/uploads/avatar/${freshUser.avatarPath}` : null;
@@ -35,7 +35,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
           userName={displayName}
           avatarUrl={avatarUrl}
           running={runningProp}
-          events={assignableEvents}
+          projects={assignableProjects}
           tNav={t.nav}
           tSidebar={t.sidebar}
           tTimeTracker={{ tabTracking: t.timeTracker.tabTracking, tabReport: t.timeTracker.tabReport }}
@@ -47,7 +47,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
             userName={displayName}
             avatarUrl={avatarUrl}
             running={runningProp}
-            events={assignableEvents}
+            projects={assignableProjects}
             tNav={t.nav}
             tSidebar={t.sidebar}
             tElapsed={t.timeTracker.editableElapsed}

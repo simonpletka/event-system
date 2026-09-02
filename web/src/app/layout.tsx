@@ -17,8 +17,8 @@ const neueRegrade = localFont({
 });
 
 export const metadata: Metadata = {
-  title: "Event System",
-  description: "Internal event-agency system — events, finance, time tracking.",
+  title: "Project System",
+  description: "Internal event-agency system — projects, finance, time tracking.",
 };
 
 // viewportFit: "cover" is what makes env(safe-area-inset-*) resolve to real

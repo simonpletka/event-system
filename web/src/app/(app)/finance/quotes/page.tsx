@@ -3,12 +3,13 @@ import { redirect } from "next/navigation";
 import { requireUser, canManageFinance, canViewFinance } from "@/lib/authz";
 import { getQuoteList, type QuoteListFilters } from "@/lib/queries/finance";
 import { formatCurrency, formatDate } from "@/lib/format";
+import { projectHref, clientHref } from "@/lib/slug";
 import { QuoteStatusPill } from "@/components/StatusPill";
 import { convertQuoteToInvoiceAction, duplicateQuoteAction } from "@/lib/actions/finance";
 import { DownloadPdfButton } from "@/components/finance/DownloadPdfButton";
 import { FinanceSortMenu } from "@/components/finance/FinanceSortMenu";
 import { FilterSelect } from "@/components/ui/FilterSelect";
-import { groupEventOptions } from "@/lib/event-status";
+import { groupProjectOptions } from "@/lib/project-status";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { getLocale, getDictionary } from "@/lib/i18n";
 import type { QuoteStatus } from "@/generated/prisma/enums";
@@ -27,15 +28,15 @@ export default async function QuotesPage({
   const filters: QuoteListFilters = {
     q: params.q || undefined,
     status: (params.status as QuoteStatus) || undefined,
-    eventId: params.eventId || undefined,
+    projectId: params.projectId || undefined,
     year: params.year ? Number(params.year) : undefined,
     sort: params.sort || undefined,
   };
-  const { quotes, openValue, events, year } = await getQuoteList(user, filters);
+  const { quotes, openValue, projects, year } = await getQuoteList(user, filters);
   const canManage = canManageFinance(user);
   const quoteParams = {
     status: filters.status,
-    eventId: filters.eventId,
+    projectId: filters.projectId,
     year: String(year),
     q: filters.q,
     sort: filters.sort,
@@ -55,16 +56,16 @@ export default async function QuotesPage({
             anyLabel={t.finance.filters.anyStatus}
           />
           <FilterSelect
-            label={t.finance.quotes.eventFilter}
-            value={filters.eventId ?? ""}
-            groups={groupEventOptions(events, { active: t.finance.filters.activeEvents, inactive: t.finance.filters.pastEvents })}
+            label={t.finance.quotes.projectFilter}
+            value={filters.projectId ?? ""}
+            groups={groupProjectOptions(projects, { active: t.finance.filters.activeProjects, inactive: t.finance.filters.pastProjects })}
             basePath="/finance/quotes"
             params={quoteParams}
-            paramName="eventId"
+            paramName="projectId"
             searchable
-            searchPlaceholder={t.finance.filters.searchEvents}
+            searchPlaceholder={t.finance.filters.searchProjects}
             emptyLabel={t.finance.filters.noMatches}
-            anyLabel={t.finance.filters.anyEvent}
+            anyLabel={t.finance.filters.anyProject}
           />
           <FilterSelect
             label={String(year)}
@@ -88,7 +89,7 @@ export default async function QuotesPage({
       <div className="hidden md:block">
         <div className="grid grid-cols-[.8fr_1.3fr_1fr_.7fr_.7fr_.8fr_.9fr_.9fr_.55fr] gap-2.5 border-b border-ink/14 pb-1.5 mt-5 px-3.5 [&_.heading-label]:font-bold [&_.heading-label]:!text-[9px]">
           <span className="heading-label">{t.finance.quotes.colNumber}</span>
-          <span className="heading-label">{t.finance.quotes.colEvent}</span>
+          <span className="heading-label">{t.finance.quotes.colProject}</span>
           <span className="heading-label">{t.finance.quotes.colClient}</span>
           <span className="heading-label">{t.finance.quotes.colIssued}</span>
           <span className="heading-label">{t.finance.quotes.colValidTo}</span>
@@ -106,16 +107,16 @@ export default async function QuotesPage({
             <Link href={`/finance/quotes/${q.id}`} className="font-medium group-hover:text-accent">
               {q.number}
             </Link>
-            <Link href={`/events/${q.event.id}`} className="hover:text-accent">
-              {q.event.title}
+            <Link href={projectHref(q.project)} className="hover:text-accent">
+              {q.project.title}
             </Link>
             <div className="placeholder-text group-hover:!text-accent">
-              {q.event.clientId ? (
-                <Link href={`/clients/${q.event.clientId}`} className="hover:text-accent">
-                  {q.event.companyName}
+              {q.project.clientId ? (
+                <Link href={clientHref({ id: q.project.clientId!, name: q.project.companyName })} className="hover:text-accent">
+                  {q.project.companyName}
                 </Link>
               ) : (
-                q.event.companyName
+                q.project.companyName
               )}
             </div>
             <div className="placeholder-text group-hover:!text-accent">{formatDate(q.issuedAt)}</div>
@@ -173,20 +174,20 @@ export default async function QuotesPage({
                 <div className="placeholder-text text-[10.5px] mb-0.5">{q.number}</div>
                 <div className="flex items-center gap-1.5 flex-wrap">
                   <Link
-                    href={`/events/${q.event.id}`}
+                    href={projectHref(q.project)}
                     className="relative z-[1] text-[14px] font-semibold truncate hover:text-accent"
                   >
-                    {q.event.title}
+                    {q.project.title}
                   </Link>
                   <QuoteStatusPill status={q.status} t={t.statusQuote} />
                 </div>
                 <div className="placeholder-text text-[11.5px] mt-0.5">
-                  {q.event.clientId ? (
-                    <Link href={`/clients/${q.event.clientId}`} className="relative z-[1] hover:text-accent">
-                      {q.event.companyName}
+                  {q.project.clientId ? (
+                    <Link href={clientHref({ id: q.project.clientId!, name: q.project.companyName })} className="relative z-[1] hover:text-accent">
+                      {q.project.companyName}
                     </Link>
                   ) : (
-                    q.event.companyName
+                    q.project.companyName
                   )}{" "}
                   · {t.finance.quotes.colIssued} {formatDate(q.issuedAt)} · {t.finance.quotes.colValidTo}{" "}
                   {formatDate(q.validUntil)}
@@ -233,7 +234,7 @@ export default async function QuotesPage({
       {quotes.length === 0 && (
         <EmptyState
           message={t.finance.quotes.noQuotesForYear(year)}
-          actionLabel={canManage && !(filters.q || filters.status || filters.eventId) ? t.finance.quotes.newQuote : undefined}
+          actionLabel={canManage && !(filters.q || filters.status || filters.projectId) ? t.finance.quotes.newQuote : undefined}
           actionHref="/finance/quotes/new"
         />
       )}

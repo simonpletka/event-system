@@ -1,4 +1,4 @@
-import { requireUser, canManageFinance, eventWhereForUser } from "@/lib/authz";
+import { requireUser, canManageFinance, projectWhereForUser } from "@/lib/authz";
 import { prisma } from "@/lib/prisma";
 import { getItemCategories } from "@/lib/actions/categories";
 import { QuoteForm } from "@/components/finance/QuoteForm";
@@ -24,8 +24,8 @@ export default async function NewQuotePage({
   }
 
   const [events, categoryRows] = await Promise.all([
-    prisma.event.findMany({
-      where: eventWhereForUser(user),
+    prisma.project.findMany({
+      where: projectWhereForUser(user),
       select: { id: true, title: true, companyName: true, startDate: true },
       orderBy: { title: "asc" },
     }),
@@ -35,7 +35,7 @@ export default async function NewQuotePage({
   return (
     <div className="max-w-3xl">
       <h1 className="text-xl font-semibold border-b-2 border-ink pb-2 mb-4">{t.finance.quotes.newQuoteH1}</h1>
-      <QuoteForm events={events} categories={categoryRows.map((c) => c.name)} initialEventId={params.eventId} locale={locale} />
+      <QuoteForm events={events} categories={categoryRows.map((c) => c.name)} initialEventId={params.projectId} locale={locale} />
     </div>
   );
 }

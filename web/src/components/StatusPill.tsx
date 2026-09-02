@@ -1,4 +1,4 @@
-import type { EventStatus, InvoiceStatus, QuoteStatus } from "@/generated/prisma/enums";
+import type { ProjectStatus, InvoiceStatus, QuoteStatus } from "@/generated/prisma/enums";
 import type { Dictionary } from "@/lib/i18n";
 
 // Four status roles, so a list of pills reads at a glance:
@@ -10,7 +10,7 @@ import type { Dictionary } from "@/lib/i18n";
 // Teal is never used for a CTA, so a status can't be mistaken for a button.
 type TagRole = "positive" | "attention" | "warning" | "neutral";
 
-const EVENT_STATUS_VARIANT: Record<EventStatus, TagRole> = {
+const EVENT_STATUS_VARIANT: Record<ProjectStatus, TagRole> = {
   INQUIRY: "neutral",
   QUOTE_SENT: "attention",
   CONFIRMED: "positive",
@@ -20,7 +20,7 @@ const EVENT_STATUS_VARIANT: Record<EventStatus, TagRole> = {
   CANCELLED: "warning",
 };
 
-export function EventStatusPill({ status, t }: { status: EventStatus; t: Dictionary["statusEvent"] }) {
+export function ProjectStatusPill({ status, t }: { status: ProjectStatus; t: Dictionary["statusProject"] }) {
   return <span className={`tag tag-${EVENT_STATUS_VARIANT[status]}`}>{t[status]}</span>;
 }
 

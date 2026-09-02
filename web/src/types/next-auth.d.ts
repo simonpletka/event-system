@@ -1,8 +1,8 @@
 import type { DefaultSession } from "next-auth";
-import type { EventsAccess, FinanceAccess, ExpensesAccess, SettingsAccess } from "@/generated/prisma/enums";
+import type { ProjectsAccess, FinanceAccess, ExpensesAccess, SettingsAccess } from "@/generated/prisma/enums";
 
 type AppRole = "ADMIN" | "ACCOUNTANT" | "PRODUCER" | "MEMBER";
-type AppCustomRole = { events: EventsAccess; finance: FinanceAccess; expenses: ExpensesAccess; settings: SettingsAccess } | null;
+type AppCustomRole = { projects: ProjectsAccess; finance: FinanceAccess; expenses: ExpensesAccess; settings: SettingsAccess } | null;
 
 declare module "next-auth" {
   interface Session {

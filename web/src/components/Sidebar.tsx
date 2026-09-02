@@ -10,7 +10,7 @@ export function Sidebar({
   userName,
   avatarUrl,
   running,
-  events,
+  projects,
   tNav,
   tSidebar,
   tTimeTracker,
@@ -19,8 +19,8 @@ export function Sidebar({
 }: {
   userName: string;
   avatarUrl: string | null;
-  running: { eventId: string | null; eventTitle: string | null; startedAt: string } | null;
-  events: { id: string; title: string }[];
+  running: { projectId: string | null; projectTitle: string | null; startedAt: string } | null;
+  projects: { id: string; title: string }[];
   tNav: Dictionary["nav"];
   tSidebar: Dictionary["sidebar"];
   tTimeTracker: Pick<Dictionary["timeTracker"], "tabTracking" | "tabReport">;
@@ -32,7 +32,7 @@ export function Sidebar({
   const NAV = [
     { href: "/dashboard", label: tNav.dashboard },
     { href: "/clients", label: tNav.clients },
-    { href: "/events", label: tNav.events },
+    { href: "/projects", label: tNav.projects },
     { href: "/meetings", label: tNav.meetings },
     { href: "/finance", label: tNav.finance },
     { href: "/time-tracker", label: tNav.timeTracker },
@@ -46,7 +46,7 @@ export function Sidebar({
 
   return (
     <div className="hidden md:flex sticky top-3 z-30 h-[calc(100vh-24px)] ml-3 shrink-0 glass-panel rounded-2xl shadow-[0_14px_36px_rgba(0,0,0,0.4)] w-[216px] px-4 pt-4 pb-5 flex-col gap-4 print-hide font-medium overflow-y-auto">
-      <span className="text-[11px] font-bold tracking-[0.16em]">EVENT SYSTEM</span>
+      <span className="text-[11px] font-bold tracking-[0.16em]">PROJECT SYSTEM</span>
 
       <nav className="flex flex-col">
         {NAV.map((item) => {
@@ -76,7 +76,7 @@ export function Sidebar({
 
       <div className="rule-thin" />
 
-      <TimerWidget running={running} events={events} t={tSidebar} tElapsed={tElapsed} discardedMessage={discardedMessage} />
+      <TimerWidget running={running} projects={projects} t={tSidebar} tElapsed={tElapsed} discardedMessage={discardedMessage} />
 
       <div className="mt-auto flex flex-col gap-2.5">
         <Link href="/settings" className={`nav-item ${pathname.startsWith("/settings") ? "active" : ""}`}>

@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { startTimerAction, assignRunningTimerEventAction } from "@/lib/actions/timetracker";
+import { startTimerAction, assignRunningTimerProjectAction } from "@/lib/actions/timetracker";
 import { EditableElapsedTime } from "@/components/timetracker/EditableElapsedTime";
 import { useStopTimerAction } from "@/hooks/useStopTimerAction";
 import type { Dictionary } from "@/lib/dictionary";
@@ -19,20 +19,20 @@ type T = {
   noTimerRunning: string;
   stopTimer: string;
   quickStart: string;
-  assignEventOption: string;
+  assignProjectOption: string;
 };
 
-type Running = { eventId: string | null; eventTitle: string | null; startedAt: string } | null;
+type Running = { projectId: string | null; projectTitle: string | null; startedAt: string } | null;
 
 export function TimerWidget({
   running,
-  events,
+  projects,
   t,
   tElapsed,
   discardedMessage,
 }: {
   running: Running;
-  events: { id: string; title: string }[];
+  projects: { id: string; title: string }[];
   t: T;
   tElapsed: Dictionary["timeTracker"]["editableElapsed"];
   discardedMessage: string;
@@ -74,20 +74,20 @@ export function TimerWidget({
   return (
     <div className="card px-3.5 py-3 flex flex-col gap-2">
       <div className="heading-label">{t.myTracker}</div>
-      {running.eventTitle ? (
-        <div className="label truncate">{running.eventTitle}</div>
+      {running.projectTitle ? (
+        <div className="label truncate">{running.projectTitle}</div>
       ) : (
-        <form action={assignRunningTimerEventAction}>
+        <form action={assignRunningTimerProjectAction}>
           <select
-            name="eventId"
+            name="projectId"
             defaultValue=""
             onChange={(e) => e.currentTarget.form?.requestSubmit()}
             className="input !rounded-full !border-dashed !py-1 text-[10.5px] w-full"
           >
             <option value="" disabled>
-              {t.assignEventOption}
+              {t.assignProjectOption}
             </option>
-            {events.map((e) => (
+            {projects.map((e) => (
               <option key={e.id} value={e.id}>
                 {e.title}
               </option>

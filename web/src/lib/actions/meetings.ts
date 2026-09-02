@@ -8,8 +8,8 @@ import type { MeetingType, RecurrenceFreq } from "@/generated/prisma/enums";
 
 export type MeetingFormState = { error?: string; success?: boolean };
 
-function parseEventIds(formData: FormData) {
-  return [...new Set((formData.getAll("eventIds") as string[]).map((s) => s.trim()).filter(Boolean))];
+function parseProjectIds(formData: FormData) {
+  return [...new Set((formData.getAll("projectIds") as string[]).map((s) => s.trim()).filter(Boolean))];
 }
 
 function parseMeetingType(v: FormDataEntryValue | null): MeetingType {
@@ -45,23 +45,23 @@ function meetingDataFromForm(formData: FormData) {
   };
 }
 
-function revalidateMeetings(eventIds: string[]) {
+function revalidateMeetings(projectIds: string[]) {
   revalidatePath("/meetings");
   revalidatePath("/dashboard");
-  for (const eventId of eventIds) revalidatePath(`/events/${eventId}`, "layout");
+  for (const projectId of projectIds) revalidatePath(`/projects/${projectId}`, "layout");
 }
 
 /** Best-effort push to the correct Notion meeting database — never blocks the caller. */
 async function syncMeetingToNotion(
   meeting: { type: MeetingType; title: string; date: Date; allDay: boolean; attendees: string },
-  eventIds: string[]
+  projectIds: string[]
 ) {
-  const linkedEvents = eventIds.length
-    ? await prisma.event.findMany({ where: { id: { in: eventIds } }, select: { notionPageId: true, companyName: true } })
+  const linkedProjects = projectIds.length
+    ? await prisma.project.findMany({ where: { id: { in: projectIds } }, select: { notionPageId: true, companyName: true } })
     : [];
   await tryCreateNotionMeetingPage(meeting, {
-    linkedEventPageIds: linkedEvents.map((e) => e.notionPageId).filter((id): id is string => !!id),
-    clientName: linkedEvents[0]?.companyName,
+    linkedProjectPageIds: linkedProjects.map((e) => e.notionPageId).filter((id): id is string => !!id),
+    clientName: linkedProjects[0]?.companyName,
   });
 }
 
@@ -71,15 +71,15 @@ export async function createMeetingAction(_prev: MeetingFormState, formData: For
 
   const data = meetingDataFromForm(formData);
   if (!data) return { error: "A title and a date are required." };
-  const eventIds = parseEventIds(formData);
+  const projectIds = parseProjectIds(formData);
 
   const meeting = await prisma.meeting.create({
-    data: { ...data, createdById: user.id, events: { create: eventIds.map((eventId) => ({ eventId })) } },
+    data: { ...data, createdById: user.id, projects: { create: projectIds.map((projectId) => ({ projectId })) } },
   });
 
-  await syncMeetingToNotion(meeting, eventIds);
+  await syncMeetingToNotion(meeting, projectIds);
 
-  revalidateMeetings(eventIds);
+  revalidateMeetings(projectIds);
   return { success: true };
 }
 
@@ -88,21 +88,21 @@ export async function updateMeetingAction(_prev: MeetingFormState, formData: For
   if (!canManageMeetings(user)) return { error: "You don't have permission to edit meetings." };
 
   const id = String(formData.get("id"));
-  const existing = await prisma.meeting.findUnique({ where: { id }, include: { events: true } });
+  const existing = await prisma.meeting.findUnique({ where: { id }, include: { projects: true } });
   if (!existing) return { error: "Meeting not found." };
 
   const data = meetingDataFromForm(formData);
   if (!data) return { error: "A title and a date are required." };
-  const eventIds = parseEventIds(formData);
+  const projectIds = parseProjectIds(formData);
 
   await prisma.$transaction([
     prisma.meeting.update({ where: { id }, data }),
-    prisma.meetingEvent.deleteMany({ where: { meetingId: id } }),
-    prisma.meetingEvent.createMany({ data: eventIds.map((eventId) => ({ meetingId: id, eventId })) }),
+    prisma.meetingProject.deleteMany({ where: { meetingId: id } }),
+    prisma.meetingProject.createMany({ data: projectIds.map((projectId) => ({ meetingId: id, projectId })) }),
   ]);
 
-  const priorEventIds = existing.events.map((e) => e.eventId);
-  revalidateMeetings([...new Set([...priorEventIds, ...eventIds])]);
+  const priorProjectIds = existing.projects.map((e) => e.projectId);
+  revalidateMeetings([...new Set([...priorProjectIds, ...projectIds])]);
   return { success: true };
 }
 
@@ -111,11 +111,11 @@ export async function deleteMeetingAction(formData: FormData) {
   if (!canManageMeetings(user)) return;
 
   const id = String(formData.get("id"));
-  const existing = await prisma.meeting.findUnique({ where: { id }, include: { events: true } });
+  const existing = await prisma.meeting.findUnique({ where: { id }, include: { projects: true } });
   if (!existing) return;
 
   await prisma.meeting.delete({ where: { id } });
-  revalidateMeetings(existing.events.map((e) => e.eventId));
+  revalidateMeetings(existing.projects.map((e) => e.projectId));
 }
 
 /**
@@ -134,11 +134,11 @@ export async function rescheduleMeetingAction(formData: FormData) {
   const dateRaw = String(formData.get("date") ?? "");
   if (!dateRaw) return;
 
-  const meeting = await prisma.meeting.findUnique({ where: { id }, include: { events: true } });
+  const meeting = await prisma.meeting.findUnique({ where: { id }, include: { projects: true } });
   if (!meeting || meeting.recurrenceFreq !== "NONE") return;
 
   await prisma.meeting.update({ where: { id }, data: { date: new Date(dateRaw) } });
-  revalidateMeetings(meeting.events.map((e) => e.eventId));
+  revalidateMeetings(meeting.projects.map((e) => e.projectId));
 }
 
 /**
@@ -156,7 +156,7 @@ export async function rescheduleMeetingOccurrenceAction(formData: FormData) {
   const newDateRaw = String(formData.get("newDate") ?? "");
   if (!originalDateRaw || !newDateRaw) return;
 
-  const meeting = await prisma.meeting.findUnique({ where: { id: meetingId }, include: { events: true } });
+  const meeting = await prisma.meeting.findUnique({ where: { id: meetingId }, include: { projects: true } });
   if (!meeting || meeting.recurrenceFreq === "NONE") return;
 
   const originalDate = new Date(originalDateRaw);
@@ -165,14 +165,14 @@ export async function rescheduleMeetingOccurrenceAction(formData: FormData) {
     create: { meetingId, originalDate, newDate: new Date(newDateRaw) },
     update: { newDate: new Date(newDateRaw) },
   });
-  revalidateMeetings(meeting.events.map((e) => e.eventId));
+  revalidateMeetings(meeting.projects.map((e) => e.projectId));
 }
 
 /**
  * Drag-and-drop reschedule of "this and all future occurrences" — the
  * calendar's other choice-dialog option. Truncates the original series to
  * end just before the dragged occurrence's original date, then starts a
- * fresh series (same title/type/recurrence rule/event links) at the new
+ * fresh series (same title/type/recurrence rule/project links) at the new
  * date. Any exceptions already recorded for occurrences after the split
  * point move with the new series; the split point itself never had one (it
  * IS the split). Also pushes a new Notion page for the continuation series,
@@ -190,7 +190,7 @@ export async function splitMeetingSeriesAction(formData: FormData) {
   const originalDate = new Date(originalDateRaw);
   const newDate = new Date(newDateRaw);
 
-  const meeting = await prisma.meeting.findUnique({ where: { id: meetingId }, include: { events: true } });
+  const meeting = await prisma.meeting.findUnique({ where: { id: meetingId }, include: { projects: true } });
   if (!meeting || meeting.recurrenceFreq === "NONE") return;
 
   const newMeeting = await prisma.meeting.create({
@@ -205,7 +205,7 @@ export async function splitMeetingSeriesAction(formData: FormData) {
       recurrenceInterval: meeting.recurrenceInterval,
       recurrenceUntil: meeting.recurrenceUntil,
       createdById: meeting.createdById,
-      events: { create: meeting.events.map((e) => ({ eventId: e.eventId })) },
+      projects: { create: meeting.projects.map((e) => ({ projectId: e.projectId })) },
     },
   });
 
@@ -217,7 +217,7 @@ export async function splitMeetingSeriesAction(formData: FormData) {
     }),
   ]);
 
-  await syncMeetingToNotion(newMeeting, meeting.events.map((e) => e.eventId));
+  await syncMeetingToNotion(newMeeting, meeting.projects.map((e) => e.projectId));
 
-  revalidateMeetings(meeting.events.map((e) => e.eventId));
+  revalidateMeetings(meeting.projects.map((e) => e.projectId));
 }

@@ -3,7 +3,7 @@ import { requireUser } from "@/lib/authz";
 import {
   getOverviewData,
   getOverviewUsers,
-  getOverviewEvents,
+  getOverviewProjects,
   getOverviewClients,
   type TimePeriod,
   type OverviewAxis,
@@ -23,19 +23,22 @@ import { isoDate, parseIsoDate } from "@/lib/calendar";
 import { stepDate, periodLabel } from "@/lib/period-nav";
 import { categoricalColor } from "@/lib/chart-colors";
 import { overviewHref } from "@/lib/timetracker-report-url";
+import { projectHref } from "@/lib/slug";
 import type { TimePhase } from "@/generated/prisma/enums";
 
 /** The one place a row's raw id/name becomes a displayed label — phase rows carry no name of their own, just a TimePhase key. */
 function rowLabel(row: OverviewRow, axis: OverviewAxis, t: Dictionary) {
   if (axis === "phase") return t.phases[row.id as TimePhase];
-  return row.name ?? t.timeTracker.unassignedEvent;
+  return row.name ?? t.timeTracker.unassignedProject;
 }
 
-/** Same label, but an event row (which carries a real event id + name) links through to that event. */
-function rowLabelNode(row: OverviewRow, axis: OverviewAxis, t: Dictionary) {
-  if (axis === "event" && row.name) {
+/** Same label, but a project row (which carries a real project id + name) links through to that project. */
+function rowLabelNode(row: OverviewRow, axis: OverviewAxis, t: Dictionary, projectsById: Map<string, { number: string; title: string }>) {
+  if (axis === "project" && row.name) {
+    const project = projectsById.get(row.id);
+    if (!project) return row.name;
     return (
-      <Link href={`/events/${row.id}`} className="hover:text-accent">
+      <Link href={projectHref(project)} className="hover:text-accent">
         {row.name}
       </Link>
     );
@@ -56,29 +59,30 @@ export default async function OverviewPage({
   const period: TimePeriod =
     params.period === "day" || params.period === "month" || params.period === "year" ? params.period : "week";
   const anchor = params.date ? parseIsoDate(params.date) : new Date();
-  const axis: OverviewAxis = params.by === "event" ? "event" : params.by === "phase" ? "phase" : "person";
+  const axis: OverviewAxis = params.by === "project" ? "project" : params.by === "phase" ? "phase" : "person";
   const selectedIds = params.users ? params.users.split(",").filter(Boolean) : [user.id];
-  const selectedEventIds = params.events ? params.events.split(",").filter(Boolean) : [];
+  const selectedProjectIds = params.projects ? params.projects.split(",").filter(Boolean) : [];
   const selectedClientIds = params.clients ? params.clients.split(",").filter(Boolean) : [];
 
-  const [allUsers, allEvents, allClients] = await Promise.all([getOverviewUsers(), getOverviewEvents(user), getOverviewClients(user)]);
+  const [allUsers, allProjects, allClients] = await Promise.all([getOverviewUsers(), getOverviewProjects(user), getOverviewClients(user)]);
 
-  const eventOptions = [
-    { id: "unassigned", name: t.timeTracker.unassignedEvent },
-    ...allEvents.map((e) => ({ id: e.id, name: e.title })),
+  const projectOptions = [
+    { id: "unassigned", name: t.timeTracker.unassignedProject },
+    ...allProjects.map((e) => ({ id: e.id, name: e.title })),
   ];
+  const projectsById = new Map(allProjects.map((e) => [e.id, { number: e.number, title: e.title }]));
 
   const { buckets, rows } = await getOverviewData(
     allUsers.filter((u) => selectedIds.includes(u.id)),
     period,
     anchor,
     axis,
-    selectedEventIds.length > 0 ? selectedEventIds : null,
+    selectedProjectIds.length > 0 ? selectedProjectIds : null,
     selectedClientIds.length > 0 ? selectedClientIds : null,
     params.q ?? null
   );
 
-  const baseParams = { users: params.users, events: params.events, clients: params.clients, q: params.q, by: params.by };
+  const baseParams = { users: params.users, projects: params.projects, clients: params.clients, q: params.q, by: params.by };
   const filterBase = { period, date: params.date, ...baseParams };
 
   const periodOptions = [
@@ -126,11 +130,11 @@ export default async function OverviewPage({
             addLabel={to.add}
           />
           <FilterChip
-            label={to.events}
-            options={eventOptions}
-            selectedIds={selectedEventIds}
+            label={to.projects}
+            options={projectOptions}
+            selectedIds={selectedProjectIds}
             params={filterBase}
-            paramName="events"
+            paramName="projects"
             searchPlaceholder={t.common.search}
             emptyLabel={to.noMatches}
             allLabel={to.all}
@@ -165,9 +169,9 @@ export default async function OverviewPage({
       ) : rows.length === 0 ? (
         <p className="text-sm placeholder-text mt-3">{to.noTimeLogged}</p>
       ) : period === "day" ? (
-        <DayBreakdown rows={rows} axis={axis} t={t} />
+        <DayBreakdown rows={rows} axis={axis} t={t} projectsById={projectsById} />
       ) : (
-        <BucketTable buckets={buckets} rows={rows} axis={axis} t={t} />
+        <BucketTable buckets={buckets} rows={rows} axis={axis} t={t} projectsById={projectsById} />
       )}
     </div>
   );
@@ -176,7 +180,7 @@ export default async function OverviewPage({
 function BreakdownBySelect({ axis, hrefFor, t }: { axis: OverviewAxis; hrefFor: (axis: OverviewAxis) => string; t: Dictionary["timeTracker"]["overview"] }) {
   const options: { value: OverviewAxis; label: string }[] = [
     { value: "person", label: t.byPerson },
-    { value: "event", label: t.byEvent },
+    { value: "project", label: t.byProject },
     { value: "phase", label: t.byPhase },
   ];
   const current = options.find((o) => o.value === axis)!;
@@ -191,7 +195,7 @@ function BreakdownBySelect({ axis, hrefFor, t }: { axis: OverviewAxis; hrefFor: 
   );
 }
 
-function DayBreakdown({ rows, axis, t }: { rows: OverviewRow[]; axis: OverviewAxis; t: Dictionary }) {
+function DayBreakdown({ rows, axis, t, projectsById }: { rows: OverviewRow[]; axis: OverviewAxis; t: Dictionary; projectsById: Map<string, { number: string; title: string }> }) {
   return (
     <div className="overflow-x-auto mt-3">
       <div
@@ -200,7 +204,7 @@ function DayBreakdown({ rows, axis, t }: { rows: OverviewRow[]; axis: OverviewAx
       >
         {rows.map((r) => (
           <div key={r.id} className="bg-surface px-3 py-3">
-            <div className="heading-label truncate">{rowLabelNode(r, axis, t)}</div>
+            <div className="heading-label truncate">{rowLabelNode(r, axis, t, projectsById)}</div>
             <div className="text-xl font-semibold tracking-tight mt-0.5">{formatMinutes(r.total)}</div>
           </div>
         ))}
@@ -209,9 +213,9 @@ function DayBreakdown({ rows, axis, t }: { rows: OverviewRow[]; axis: OverviewAx
   );
 }
 
-function BucketTable({ buckets, rows, axis, t }: { buckets: OverviewBucket[]; rows: OverviewRow[]; axis: OverviewAxis; t: Dictionary }) {
+function BucketTable({ buckets, rows, axis, t, projectsById }: { buckets: OverviewBucket[]; rows: OverviewRow[]; axis: OverviewAxis; t: Dictionary; projectsById: Map<string, { number: string; title: string }> }) {
   const to = t.timeTracker.overview;
-  const colHeadingByAxis = { person: to.byPerson, event: to.byEvent, phase: to.byPhase };
+  const colHeadingByAxis = { person: to.byPerson, project: to.byProject, phase: to.byPhase };
   const cols = `minmax(110px,1fr) repeat(${buckets.length}, minmax(56px,.7fr)) minmax(56px,.7fr)`;
   const { axisMax, ticks } = niceMinutesAxis(Math.max(1, ...rows.flatMap((r) => r.byBucket)));
   const axisTicks = ticks.map(formatDurationShort);
@@ -263,7 +267,7 @@ function BucketTable({ buckets, rows, axis, t }: { buckets: OverviewBucket[]; ro
                 {rows.length > 1 && (
                   <span className="w-2.5 h-2.5 rounded-sm shrink-0" style={{ background: categoricalColor(ri) }} />
                 )}
-                {rowLabelNode(r, axis, t)}
+                {rowLabelNode(r, axis, t, projectsById)}
               </div>
               {r.byBucket.map((m, i) => (
                 <div key={i} className="text-center placeholder-text">

@@ -30,7 +30,7 @@ export function CreateEntryPopover({
   startMin,
   endMin,
   style,
-  events,
+  projects,
   t,
   tPhases,
   onClose,
@@ -39,7 +39,7 @@ export function CreateEntryPopover({
   startMin: number;
   endMin: number;
   style: CSSProperties;
-  events: { id: string; title: string }[];
+  projects: { id: string; title: string }[];
   t: T;
   tPhases: TPhases;
   onClose: () => void;
@@ -77,9 +77,9 @@ export function CreateEntryPopover({
         <input type="hidden" name="date" value={isoDate(day)} />
         <input name="description" placeholder={t.descriptionPlaceholder} className="input" autoFocus />
         <div className="flex gap-2">
-          <select name="eventId" defaultValue="" className="input !rounded-full !border-dashed text-[11px] flex-1 min-w-0">
-            <option value="">{t.noEventOption}</option>
-            {events.map((e) => (
+          <select name="projectId" defaultValue="" className="input !rounded-full !border-dashed text-[11px] flex-1 min-w-0">
+            <option value="">{t.noProjectOption}</option>
+            {projects.map((e) => (
               <option key={e.id} value={e.id}>
                 {e.title}
               </option>

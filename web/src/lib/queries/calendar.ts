@@ -1,5 +1,5 @@
 import { prisma } from "@/lib/prisma";
-import { eventWhereForUser, canViewMeetings, type SessionUser } from "@/lib/authz";
+import { projectWhereForUser, canViewMeetings, type SessionUser } from "@/lib/authz";
 import { addDays } from "@/lib/calendar";
 import { expandMeetingOccurrences } from "@/lib/meetings";
 import type { CalendarMeeting } from "@/components/calendar/WeekCalendar";
@@ -7,9 +7,9 @@ import type { CalendarMeeting } from "@/components/calendar/WeekCalendar";
 export async function getWeekCalendarData(user: SessionUser, weekStart: Date) {
   const weekEnd = addDays(weekStart, 7);
 
-  const events = await prisma.event.findMany({
+  const events = await prisma.project.findMany({
     where: {
-      ...eventWhereForUser(user),
+      ...projectWhereForUser(user),
       status: { not: "CANCELLED" },
       OR: [
         // event's effective range (build..strike, falling back to start..end) overlaps the week —

@@ -3,11 +3,12 @@ import { redirect } from "next/navigation";
 import { requireUser, canManageFinance, canViewFinance } from "@/lib/authz";
 import { getInvoiceList, getInvoiceKpis, type InvoiceListFilters } from "@/lib/queries/finance";
 import { formatCurrency, formatDate } from "@/lib/format";
+import { projectHref, clientHref } from "@/lib/slug";
 import { InvoiceStatusPill } from "@/components/StatusPill";
 import { DownloadPdfButton } from "@/components/finance/DownloadPdfButton";
 import { FinanceSortMenu } from "@/components/finance/FinanceSortMenu";
 import { FilterSelect } from "@/components/ui/FilterSelect";
-import { groupEventOptions } from "@/lib/event-status";
+import { groupProjectOptions } from "@/lib/project-status";
 import { MobileListRow } from "@/components/ui/MobileListRow";
 import { getLocale, getDictionary, czCount, type Locale } from "@/lib/i18n";
 
@@ -24,18 +25,18 @@ export default async function InvoicesPage({
   const ti = t.finance.invoices;
   const filters: InvoiceListFilters = {
     bucket: (params.bucket as InvoiceListFilters["bucket"]) || undefined,
-    eventId: params.eventId || undefined,
+    projectId: params.projectId || undefined,
     sort: params.sort || undefined,
   };
   const carry = (over: Record<string, string | undefined>) => {
     const p = new URLSearchParams();
-    for (const [k, v] of Object.entries({ bucket: filters.bucket, eventId: filters.eventId, sort: filters.sort, ...over })) {
+    for (const [k, v] of Object.entries({ bucket: filters.bucket, projectId: filters.projectId, sort: filters.sort, ...over })) {
       if (v) p.set(k, v);
     }
     const qs = p.toString();
     return qs ? `/finance/invoices?${qs}` : "/finance/invoices";
   };
-  const [{ invoices, total, events }, kpis] = await Promise.all([
+  const [{ invoices, total, projects }, kpis] = await Promise.all([
     getInvoiceList(user, filters),
     getInvoiceKpis(user),
   ]);
@@ -92,21 +93,21 @@ export default async function InvoicesPage({
         </div>
         <div className="flex items-center gap-2">
           <FilterSelect
-            label={ti.eventFilter}
-            value={filters.eventId ?? ""}
-            groups={groupEventOptions(events, { active: t.finance.filters.activeEvents, inactive: t.finance.filters.pastEvents })}
+            label={ti.projectFilter}
+            value={filters.projectId ?? ""}
+            groups={groupProjectOptions(projects, { active: t.finance.filters.activeProjects, inactive: t.finance.filters.pastProjects })}
             basePath="/finance/invoices"
             params={{ bucket: filters.bucket, sort: filters.sort }}
-            paramName="eventId"
+            paramName="projectId"
             searchable
-            searchPlaceholder={t.finance.filters.searchEvents}
+            searchPlaceholder={t.finance.filters.searchProjects}
             emptyLabel={t.finance.filters.noMatches}
-            anyLabel={t.finance.filters.anyEvent}
+            anyLabel={t.finance.filters.anyProject}
           />
           <FinanceSortMenu
             current={filters.sort}
             basePath="/finance/invoices"
-            params={{ bucket: filters.bucket, eventId: filters.eventId }}
+            params={{ bucket: filters.bucket, projectId: filters.projectId }}
             t={t.finance.sort}
           />
         </div>
@@ -115,7 +116,7 @@ export default async function InvoicesPage({
       <div className="hidden md:block">
         <div className="grid grid-cols-[.8fr_1.2fr_.9fr_.6fr_.6fr_.8fr_1fr_.7fr] gap-2.5 border-b border-ink/14 pb-1.5 mt-5 px-3.5 [&_.heading-label]:font-bold [&_.heading-label]:!text-[9px]">
           <span className="heading-label">{ti.colNumber}</span>
-          <span className="heading-label">{ti.colEvent}</span>
+          <span className="heading-label">{ti.colProject}</span>
           <span className="heading-label">{ti.colClient}</span>
           <span className="heading-label">{ti.colIssued}</span>
           <span className="heading-label">{ti.colDue}</span>
@@ -132,16 +133,16 @@ export default async function InvoicesPage({
             <Link href={`/finance/invoices/${inv.id}`} className="font-medium group-hover:text-accent">
               {inv.number}
             </Link>
-            <Link href={`/events/${inv.event.id}`} className="hover:text-accent">
-              {inv.event.title}
+            <Link href={projectHref(inv.project)} className="hover:text-accent">
+              {inv.project.title}
             </Link>
             <div className="placeholder-text group-hover:!text-accent">
-              {inv.event.clientId ? (
-                <Link href={`/clients/${inv.event.clientId}`} className="hover:text-accent">
-                  {inv.event.companyName}
+              {inv.project.clientId ? (
+                <Link href={clientHref({ id: inv.project.clientId!, name: inv.project.companyName })} className="hover:text-accent">
+                  {inv.project.companyName}
                 </Link>
               ) : (
-                inv.event.companyName
+                inv.project.companyName
               )}
             </div>
             <div className="placeholder-text group-hover:!text-accent">{formatDate(inv.issuedAt)}</div>
@@ -162,11 +163,11 @@ export default async function InvoicesPage({
           <MobileListRow
             key={inv.id}
             href={`/finance/invoices/${inv.id}`}
-            titleHref={`/events/${inv.event.id}`}
+            titleHref={projectHref(inv.project)}
             subLeft={inv.number}
-            title={inv.event.title}
+            title={inv.project.title}
             tag={<InvoiceStatusPill status={inv.status} dueDate={inv.dueDate} paidAt={inv.paidAt} t={t.invoicePill} />}
-            meta={`${inv.event.companyName} · ${ti.colIssued} ${formatDate(inv.issuedAt)} · ${ti.colDue} ${formatDate(inv.dueDate)}`}
+            meta={`${inv.project.companyName} · ${ti.colIssued} ${formatDate(inv.issuedAt)} · ${ti.colDue} ${formatDate(inv.dueDate)}`}
             trailing={
               <>
                 {formatCurrency(inv.total, inv.currency)}

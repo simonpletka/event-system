@@ -33,7 +33,7 @@ export function FilterChip({
   options: Option[];
   selectedIds: string[];
   params: OverviewUrlParams;
-  paramName: "users" | "events" | "clients";
+  paramName: "users" | "projects" | "clients";
   searchPlaceholder: string;
   emptyLabel: string;
   allLabel: string;

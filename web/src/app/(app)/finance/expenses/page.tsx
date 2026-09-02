@@ -2,6 +2,7 @@ import Link from "next/link";
 import { requireUser, isAdmin, canEditExpense } from "@/lib/authz";
 import { getExpenseList, type ExpenseListFilters } from "@/lib/queries/finance";
 import { formatCurrency, formatDate } from "@/lib/format";
+import { projectHref } from "@/lib/slug";
 import { EXPENSE_CATEGORIES } from "@/lib/expense-categories";
 import { deleteExpenseAction } from "@/lib/actions/finance";
 import { ConfirmDeleteButton } from "@/components/ui/ConfirmDeleteButton";
@@ -9,7 +10,7 @@ import { TrashIcon } from "@/components/ui/icons";
 import { Menu, MenuLink } from "@/components/ui/Menu";
 import { GroupIcon } from "@/components/ui/icons";
 import { FilterSelect } from "@/components/ui/FilterSelect";
-import { groupEventOptions } from "@/lib/event-status";
+import { groupProjectOptions } from "@/lib/project-status";
 import { getLocale, getDictionary } from "@/lib/i18n";
 import type { ExpenseCategory } from "@/generated/prisma/enums";
 
@@ -23,12 +24,12 @@ export default async function ExpensesPage({
   const t = getDictionary(await getLocale());
   const te = t.finance.expenses;
   const filters: ExpenseListFilters = {
-    eventId: params.eventId || undefined,
+    projectId: params.projectId || undefined,
     category: (params.category as ExpenseCategory) || undefined,
   };
-  const { expenses, total, events } = await getExpenseList(user, filters);
+  const { expenses, total, projects } = await getExpenseList(user, filters);
   const admin = isAdmin(user);
-  const grouped = params.group === "event";
+  const grouped = params.group === "project";
 
   // One group per event (plus a company-overhead bucket), each with a subtotal.
   // Not grouped → a single passthrough group so the render path is the same.
@@ -37,8 +38,8 @@ export default async function ExpensesPage({
   if (grouped) {
     const byKey = new Map<string, Group>();
     for (const exp of expenses) {
-      const key = exp.event?.id ?? "overhead";
-      const label = exp.event?.title ?? te.companyOverheadFallback;
+      const key = exp.project?.id ?? "overhead";
+      const label = exp.project?.title ?? te.companyOverheadFallback;
       const g = byKey.get(key) ?? { key, label, rows: [], subtotal: 0 };
       g.rows.push(exp);
       g.subtotal += exp.amount;
@@ -51,7 +52,7 @@ export default async function ExpensesPage({
 
   const groupHref = (g: string) => {
     const p = new URLSearchParams();
-    for (const [k, v] of Object.entries({ eventId: filters.eventId, category: filters.category, group: g || undefined })) {
+    for (const [k, v] of Object.entries({ projectId: filters.projectId, category: filters.category, group: g || undefined })) {
       if (v) p.set(k, v);
     }
     const qs = p.toString();
@@ -63,37 +64,37 @@ export default async function ExpensesPage({
       <div className="flex justify-between items-center gap-2 flex-wrap">
         <div className="flex gap-1.5 items-center flex-nowrap overflow-x-auto pb-1 md:pb-0 md:flex-wrap md:overflow-visible">
           <FilterSelect
-            label={te.eventFilter}
-            value={filters.eventId ?? ""}
+            label={te.projectFilter}
+            value={filters.projectId ?? ""}
             groups={[
               { options: [{ value: "overhead", label: te.companyOverheadOption }] },
-              ...groupEventOptions(events, { active: t.finance.filters.activeEvents, inactive: t.finance.filters.pastEvents }),
+              ...groupProjectOptions(projects, { active: t.finance.filters.activeProjects, inactive: t.finance.filters.pastProjects }),
             ]}
             basePath="/finance/expenses"
             params={{ category: filters.category, group: params.group }}
-            paramName="eventId"
+            paramName="projectId"
             searchable
-            searchPlaceholder={t.finance.filters.searchEvents}
+            searchPlaceholder={t.finance.filters.searchProjects}
             emptyLabel={t.finance.filters.noMatches}
-            anyLabel={t.finance.filters.anyEvent}
+            anyLabel={t.finance.filters.anyProject}
           />
           <FilterSelect
             label={te.categoryFilter}
             value={filters.category ?? ""}
             options={EXPENSE_CATEGORIES.map((c) => ({ value: c, label: t.expenseCategories[c] }))}
             basePath="/finance/expenses"
-            params={{ eventId: filters.eventId, group: params.group }}
+            params={{ projectId: filters.projectId, group: params.group }}
             paramName="category"
             anyLabel={t.finance.filters.anyCategory}
           />
         </div>
         <div className="flex items-center gap-2 shrink-0">
-          <Menu icon={<GroupIcon size={13} />} value={grouped ? t.finance.groupBy.event : t.finance.groupBy.none} width={150}>
+          <Menu icon={<GroupIcon size={13} />} value={grouped ? t.finance.groupBy.project : t.finance.groupBy.none} width={150}>
             <MenuLink href={groupHref("")} active={!grouped}>
               {t.finance.groupBy.none}
             </MenuLink>
-            <MenuLink href={groupHref("event")} active={grouped}>
-              {t.finance.groupBy.event}
+            <MenuLink href={groupHref("project")} active={grouped}>
+              {t.finance.groupBy.project}
             </MenuLink>
           </Menu>
           <Link href="/finance/expenses/new" className="btn font-semibold shrink-0">
@@ -106,7 +107,7 @@ export default async function ExpensesPage({
         <div className="grid grid-cols-[80px_1fr_1fr_1fr_auto_auto_auto] gap-2.5 border-b border-ink/14 pb-1.5 mt-5 px-3.5 [&_.heading-label]:font-bold [&_.heading-label]:!text-[9px]">
           <span className="heading-label">{te.colDate}</span>
           <span className="heading-label">{te.colCategory}</span>
-          <span className="heading-label">{te.colEvent}</span>
+          <span className="heading-label">{te.colProject}</span>
           <span className="heading-label">{te.colPaidBy}</span>
           <span className="heading-label">{te.colAmount}</span>
           <span className="heading-label">{te.colReceipt}</span>
@@ -129,8 +130,8 @@ export default async function ExpensesPage({
             <div className="placeholder-text group-hover:!text-accent">{formatDate(exp.date)}</div>
             <div className="group-hover:text-accent">{t.expenseCategories[exp.category]}</div>
             <div className="placeholder-text group-hover:!text-accent">
-              {exp.event ? (
-                <Link href={`/events/${exp.event.id}`}>{exp.event.title}</Link>
+              {exp.project ? (
+                <Link href={projectHref(exp.project)}>{exp.project.title}</Link>
               ) : (
                 te.companyOverheadFallback
               )}
@@ -197,9 +198,9 @@ export default async function ExpensesPage({
                 <div className="placeholder-text text-[10.5px] mb-0.5">{formatDate(exp.date)}</div>
                 <div className="text-[14px] font-semibold">{t.expenseCategories[exp.category]}</div>
                 <div className="placeholder-text text-[11.5px] mt-0.5">
-                  {exp.event ? (
-                    <Link href={`/events/${exp.event.id}`} className="hover:text-accent">
-                      {exp.event.title}
+                  {exp.project ? (
+                    <Link href={projectHref(exp.project)} className="hover:text-accent">
+                      {exp.project.title}
                     </Link>
                   ) : (
                     te.companyOverheadFallback

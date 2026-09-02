@@ -1,6 +1,7 @@
 import { Client } from "@notionhq/client";
 import { isoDate } from "@/lib/calendar";
-import type { EventStatus, MeetingType } from "@/generated/prisma/enums";
+import { projectHref } from "@/lib/slug";
+import type { ProjectStatus, MeetingType } from "@/generated/prisma/enums";
 
 export class NotionNotConfiguredError extends Error {
   constructor() {
@@ -24,7 +25,7 @@ function getNotion(): Client | null {
 // (those use sentence case, e.g. "Quote sent"), since matching an existing
 // select option by exact string is what avoids Notion silently creating a
 // near-duplicate option on every mismatch.
-const NOTION_STATUS_LABEL: Record<EventStatus, string> = {
+const NOTION_STATUS_LABEL: Record<ProjectStatus, string> = {
   INQUIRY: "Inquiry",
   QUOTE_SENT: "Quote Sent",
   CONFIRMED: "Confirmed",
@@ -38,49 +39,59 @@ function richText(content: string) {
   return { rich_text: [{ text: { content } }] };
 }
 
-type NotionEvent = {
+/** Notion resolves a page URL from its bare id (dashes optional) — no title/workspace slug needed. */
+export function notionPageUrl(pageId: string): string {
+  return `https://www.notion.so/${pageId.replace(/-/g, "")}`;
+}
+
+type NotionProject = {
   id: string;
   title: string;
   companyName: string;
-  status: EventStatus;
+  status: ProjectStatus;
   startDate: Date;
   endDate: Date;
   number: string;
 };
 
 /**
- * Creates a page in the Notion Events database and returns its page id.
- * Throws NotionNotConfiguredError when NOTION_API_KEY/NOTION_EVENTS_DATABASE_ID
- * are unset — callers on the hot path should use tryCreateNotionEventPage instead.
+ * Creates a page in the Notion Events database and returns its page id. The
+ * Notion database itself is still named/structured as "Events" (built before
+ * the in-app Event→Project rename) — renaming the live Notion workspace's
+ * database/properties is a separate, external change not made here, so the
+ * property keys below ("App Link" target, the "Events" relation property
+ * used elsewhere in this file) intentionally still say "Event".
+ * Throws NotionNotConfiguredError when NOTION_API_KEY/NOTION_PROJECTS_DATABASE_ID
+ * are unset — callers on the hot path should use tryCreateNotionProjectPage instead.
  */
-export async function createNotionEventPage(event: NotionEvent): Promise<string> {
+export async function createNotionProjectPage(project: NotionProject): Promise<string> {
   const notion = getNotion();
-  const databaseId = process.env.NOTION_EVENTS_DATABASE_ID;
+  const databaseId = process.env.NOTION_PROJECTS_DATABASE_ID;
   if (!notion || !databaseId) throw new NotionNotConfiguredError();
 
-  const appLink = `${process.env.APP_BASE_URL ?? "http://localhost:3000"}/events/${event.id}`;
+  const appLink = `${process.env.APP_BASE_URL ?? "http://localhost:3000"}${projectHref(project)}`;
   const page = await notion.pages.create({
     parent: { database_id: databaseId },
     properties: {
-      Name: { title: [{ text: { content: event.title } }] },
-      Client: richText(event.companyName),
-      Status: { select: { name: NOTION_STATUS_LABEL[event.status] } },
-      "Start Date": { date: { start: isoDate(event.startDate) } },
-      "End Date": { date: { start: isoDate(event.endDate) } },
-      "Event Number": richText(event.number),
+      Name: { title: [{ text: { content: project.title } }] },
+      Client: richText(project.companyName),
+      Status: { select: { name: NOTION_STATUS_LABEL[project.status] } },
+      "Start Date": { date: { start: isoDate(project.startDate) } },
+      "End Date": { date: { start: isoDate(project.endDate) } },
+      "Event Number": richText(project.number),
       "App Link": { url: appLink },
     },
   });
   return page.id;
 }
 
-/** Best-effort wrapper: never throws, so a Notion hiccup never fails event creation. Returns the new page id on success, or null. */
-export async function tryCreateNotionEventPage(event: NotionEvent): Promise<string | null> {
+/** Best-effort wrapper: never throws, so a Notion hiccup never fails project creation. Returns the new page id on success, or null. */
+export async function tryCreateNotionProjectPage(project: NotionProject): Promise<string | null> {
   try {
-    return await createNotionEventPage(event);
+    return await createNotionProjectPage(project);
   } catch (e) {
     if (e instanceof NotionNotConfiguredError) return null;
-    console.error("Notion event page creation failed:", e);
+    console.error("Notion project page creation failed:", e);
     return null;
   }
 }
@@ -100,17 +111,18 @@ const MEETING_DATABASE_ENV: Record<MeetingType, string> = {
 
 /**
  * Creates a page in the Client Meetings or Internal Meetings Notion database
- * (by meeting.type). `linkedEventPageIds` are the Notion page ids of events
- * already synced (Event.notionPageId) — events with no known page (Notion
- * wasn't configured, or that event predates Notion sync) are just omitted
- * from the Events relation rather than blocking the meeting page. `clientName`
- * (Client Meetings only) is derived by the caller from the first linked
- * event's companyName, since a Meeting itself doesn't store one (it can span
- * several events, possibly for different clients).
+ * (by meeting.type). `linkedProjectPageIds` are the Notion page ids of
+ * projects already synced (Project.notionPageId) — projects with no known
+ * page (Notion wasn't configured, or that project predates Notion sync) are
+ * just omitted from the Notion "Events" relation property rather than
+ * blocking the meeting page. `clientName` (Client Meetings only) is derived
+ * by the caller from the first linked project's companyName, since a
+ * Meeting itself doesn't store one (it can span several projects, possibly
+ * for different clients).
  */
 export async function createNotionMeetingPage(
   meeting: NotionMeeting,
-  opts: { linkedEventPageIds: string[]; clientName?: string }
+  opts: { linkedProjectPageIds: string[]; clientName?: string }
 ): Promise<string> {
   const notion = getNotion();
   const databaseId = process.env[MEETING_DATABASE_ENV[meeting.type]];
@@ -122,8 +134,8 @@ export async function createNotionMeetingPage(
     Date: { date: { start: dateValue } },
     Attendees: richText(meeting.attendees),
   };
-  if (opts.linkedEventPageIds.length > 0) {
-    properties.Events = { relation: opts.linkedEventPageIds.map((id) => ({ id })) };
+  if (opts.linkedProjectPageIds.length > 0) {
+    properties.Events = { relation: opts.linkedProjectPageIds.map((id) => ({ id })) };
   }
   if (meeting.type === "CLIENT") {
     properties.Client = richText(opts.clientName ?? "");
@@ -140,7 +152,7 @@ export async function createNotionMeetingPage(
 /** Best-effort wrapper: never throws, so a Notion hiccup never fails meeting creation. */
 export async function tryCreateNotionMeetingPage(
   meeting: NotionMeeting,
-  opts: { linkedEventPageIds: string[]; clientName?: string }
+  opts: { linkedProjectPageIds: string[]; clientName?: string }
 ): Promise<void> {
   try {
     await createNotionMeetingPage(meeting, opts);

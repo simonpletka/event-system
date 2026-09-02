@@ -1,5 +1,5 @@
 import { prisma } from "@/lib/prisma";
-import { canViewMeetings, eventWhereForUser, type SessionUser } from "@/lib/authz";
+import { canViewMeetings, projectWhereForUser, type SessionUser } from "@/lib/authz";
 import { nextOccurrenceFrom } from "@/lib/meetings";
 import type { MeetingType } from "@/generated/prisma/enums";
 
@@ -7,7 +7,7 @@ export async function getMeetingList(user: SessionUser, type?: MeetingType) {
   if (!canViewMeetings(user)) return [];
   const meetings = await prisma.meeting.findMany({
     where: type ? { type } : undefined,
-    include: { events: { include: { event: { select: { id: true, title: true } } } }, exceptions: true },
+    include: { projects: { include: { project: { select: { id: true, title: true } } } }, exceptions: true },
     orderBy: { date: "desc" },
   });
   const now = new Date();
@@ -20,28 +20,28 @@ export async function getMeetingList(user: SessionUser, type?: MeetingType) {
     attendees: m.attendees,
     recurring: m.recurrenceFreq !== "NONE",
     nextOccurrence: nextOccurrenceFrom(m, now, m.exceptions),
-    events: m.events.map((me) => me.event),
+    projects: m.projects.map((mp) => mp.project),
   }));
 }
 
 export async function getMeetingDetail(user: SessionUser, id: string) {
   if (!canViewMeetings(user)) return null;
-  return prisma.meeting.findUnique({ where: { id }, include: { events: true } });
+  return prisma.meeting.findUnique({ where: { id }, include: { projects: true } });
 }
 
-/** Meetings linked to one event, newest first — for the event detail's Roadmap tab. */
-export async function getMeetingsForEvent(user: SessionUser, eventId: string) {
+/** Meetings linked to one project, newest first — for the project detail's Roadmap tab. */
+export async function getMeetingsForProject(user: SessionUser, projectId: string) {
   if (!canViewMeetings(user)) return [];
   return prisma.meeting.findMany({
-    where: { events: { some: { eventId } } },
+    where: { projects: { some: { projectId } } },
     orderBy: { date: "desc" },
   });
 }
 
-/** Event options for the meeting form's picker, scoped the same way as the rest of the app. */
-export async function getEventOptionsForUser(user: SessionUser) {
-  return prisma.event.findMany({
-    where: eventWhereForUser(user),
+/** Project options for the meeting form's picker, scoped the same way as the rest of the app. */
+export async function getProjectOptionsForUser(user: SessionUser) {
+  return prisma.project.findMany({
+    where: projectWhereForUser(user),
     select: { id: true, title: true },
     orderBy: { startDate: "desc" },
   });

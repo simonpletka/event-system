@@ -16,8 +16,8 @@ type TDelete = Dictionary["timeTracker"]["deleteEntry"];
 
 export function EditEntryForm({
   id,
-  eventId,
-  events,
+  projectId,
+  projects,
   date,
   minutes,
   description,
@@ -31,8 +31,8 @@ export function EditEntryForm({
   tDelete,
 }: {
   id: string;
-  eventId: string | null;
-  events: { id: string; title: string }[];
+  projectId: string | null;
+  projects: { id: string; title: string }[];
   date: string;
   minutes: number;
   description: string;
@@ -75,10 +75,10 @@ export function EditEntryForm({
       <TzOffsetField />
       <input type="hidden" name="id" value={id} />
       <label className="flex flex-col gap-1.5">
-        <span className="field-label">{t.eventLabel}</span>
-        <select name="eventId" defaultValue={eventId ?? ""} className="input">
-          <option value="">{t.noEventOption}</option>
-          {events.map((e) => (
+        <span className="field-label">{t.projectLabel}</span>
+        <select name="projectId" defaultValue={projectId ?? ""} className="input">
+          <option value="">{t.noProjectOption}</option>
+          {projects.map((e) => (
             <option key={e.id} value={e.id}>
               {e.title}
             </option>

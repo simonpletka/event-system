@@ -6,6 +6,7 @@ import { MobileListRow } from "@/components/ui/MobileListRow";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { getLocale, getDictionary } from "@/lib/i18n";
+import { clientHref } from "@/lib/slug";
 
 export default async function ClientsPage({
   searchParams,
@@ -48,20 +49,20 @@ export default async function ClientsPage({
           <span className="heading-label">{tc.colCompany}</span>
           <span className="heading-label">{tc.colIco}</span>
           <span className="heading-label">{tc.colContacts}</span>
-          <span className="heading-label">{tc.colEvents}</span>
+          <span className="heading-label">{tc.colProjects}</span>
           <span className="heading-label">{tc.colTotalCharged}</span>
         </div>
 
         {clients.map((c) => (
           <Link
             key={c.id}
-            href={`/clients/${c.id}`}
+            href={clientHref(c)}
             className="group grid grid-cols-[1.5fr_.8fr_.7fr_.7fr_1fr] gap-2.5 items-center py-3.5 px-3.5 rounded-xl border-b border-ink/8 last:border-b-0 text-[15px] hover:bg-ink/5"
           >
             <div className="font-medium group-hover:text-accent">{c.name}</div>
             <div className="placeholder-text group-hover:!text-accent">{c.ico || "—"}</div>
             <div className="placeholder-text group-hover:!text-accent">{c.contactCount}</div>
-            <div className="placeholder-text group-hover:!text-accent">{c.eventCount}</div>
+            <div className="placeholder-text group-hover:!text-accent">{c.projectCount}</div>
             <div className="font-semibold tabular-nums group-hover:text-accent">
               {formatCurrency(c.totalCharged)}
               {c.totalMixed && <span className="placeholder-text">&thinsp;*</span>}
@@ -74,9 +75,9 @@ export default async function ClientsPage({
         {clients.map((c) => (
           <MobileListRow
             key={c.id}
-            href={`/clients/${c.id}`}
+            href={clientHref(c)}
             title={c.name}
-            meta={`${tc.colIco}: ${c.ico || "—"} · ${c.contactCount} ${tc.colContacts} · ${c.eventCount} ${tc.colEvents}`}
+            meta={`${tc.colIco}: ${c.ico || "—"} · ${c.contactCount} ${tc.colContacts} · ${c.projectCount} ${tc.colProjects}`}
             trailing={`${formatCurrency(c.totalCharged)}${c.totalMixed ? " *" : ""}`}
           />
         ))}

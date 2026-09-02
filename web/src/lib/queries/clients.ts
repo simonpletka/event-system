@@ -1,7 +1,7 @@
 import { cache } from "react";
 import { prisma } from "@/lib/prisma";
 import type { SessionUser } from "@/lib/authz";
-import { eventWhereForUser } from "@/lib/authz";
+import { projectWhereForUser } from "@/lib/authz";
 import { isMixedCurrencyTotal } from "@/lib/format";
 
 export async function getClientList(user: SessionUser, q?: string) {
@@ -9,8 +9,8 @@ export async function getClientList(user: SessionUser, q?: string) {
     where: q ? { name: { contains: q } } : undefined,
     include: {
       contacts: { select: { id: true } },
-      events: {
-        where: eventWhereForUser(user),
+      projects: {
+        where: projectWhereForUser(user),
         select: { id: true, invoices: { select: { total: true, currency: true } } },
       },
     },
@@ -18,13 +18,13 @@ export async function getClientList(user: SessionUser, q?: string) {
   });
 
   return clients.map((c) => {
-    const invoices = c.events.flatMap((e) => e.invoices);
+    const invoices = c.projects.flatMap((e) => e.invoices);
     return {
       id: c.id,
       name: c.name,
       ico: c.ico,
       contactCount: c.contacts.length,
-      eventCount: c.events.length,
+      projectCount: c.projects.length,
       // Deliberately sums raw Int totals across every currency a client's
       // invoices happen to use — same "stats stay CZK, no FX conversion"
       // simplification as Reports/Dashboard. See CLAUDE.md. totalMixed flags
@@ -40,8 +40,8 @@ export const getClientDetail = cache(async function getClientDetail(user: Sessio
     where: { id },
     include: {
       contacts: { orderBy: { name: "asc" } },
-      events: {
-        where: eventWhereForUser(user),
+      projects: {
+        where: projectWhereForUser(user),
         include: { invoices: { select: { id: true, number: true, total: true, currency: true, status: true } } },
         orderBy: { startDate: "desc" },
       },
@@ -49,15 +49,15 @@ export const getClientDetail = cache(async function getClientDetail(user: Sessio
   });
   if (!client) return null;
 
-  const allInvoices = client.events.flatMap((e) => e.invoices);
+  const allInvoices = client.projects.flatMap((e) => e.invoices);
   const totalCharged = allInvoices.reduce((s, i) => s + i.total, 0);
   const totalMixed = isMixedCurrencyTotal(allInvoices.map((i) => i.currency));
   return { ...client, totalCharged, totalMixed };
 });
 
 /**
- * For EventForm's client picker — deliberately unscoped by eventWhereForUser
- * (picking a client isn't the same as seeing their events). Includes the
+ * For ProjectForm's client picker — deliberately unscoped by projectWhereForUser
+ * (picking a client isn't the same as seeing their projects). Includes the
  * full company fields, not just id/name, so selecting a client can actually
  * pre-fill companyName/Address/Ico/Dic instead of leaving them blank.
  */

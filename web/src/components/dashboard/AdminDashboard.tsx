@@ -10,12 +10,12 @@ import {
   SectionHeading,
   StatRow,
   StatTile,
-  EventCard,
-  EventCardGrid,
+  ProjectCard,
+  ProjectCardGrid,
   CashflowPanel,
   ExpenseList,
   EmptyState,
-  type DashEventCard,
+  type DashProjectCard,
 } from "./widgets";
 
 export async function AdminDashboard({
@@ -37,8 +37,9 @@ export async function AdminDashboard({
     view === "calendar" ? getWeekCalendarData(user, weekStart) : Promise.resolve(null),
   ]);
 
-  const cards: DashEventCard[] = d.upcoming.map((e) => ({
+  const cards: DashProjectCard[] = d.upcoming.map((e) => ({
     id: e.id,
+    number: e.number,
     title: e.title,
     company: e.companyName,
     status: e.status,
@@ -51,7 +52,7 @@ export async function AdminDashboard({
   return (
     <DashboardShell
       title={td.title}
-      action={<NewEventAction label={td.newEvent} />}
+      action={<NewEventAction label={td.newProject} />}
       view={view}
       weekStart={weekStart}
       weekHrefBase="/dashboard"
@@ -60,13 +61,13 @@ export async function AdminDashboard({
       calendarLabel={td.viewCalendar}
     >
       <div>
-        <SectionHeading label={td.whereThingsStand} sub={td.acrossEveryEvent} />
+        <SectionHeading label={td.whereThingsStand} sub={td.acrossEveryProject} />
         <StatRow>
           <StatTile
-            label={td.activeEvents}
-            value={String(d.activeEvents)}
+            label={td.activeProjects}
+            value={String(d.activeProjects)}
             sub={d.endingThisMonth > 0 ? td.wrappingThisMonth(d.endingThisMonth) : undefined}
-            href="/events"
+            href="/projects"
           />
           <StatTile
             label={td.overdueInvoicesLabel}
@@ -93,7 +94,7 @@ export async function AdminDashboard({
                 ? td.eventEnded(d.toInvoice[0].title, formatDateRange(d.toInvoice[0].startDate, d.toInvoice[0].endDate))
                 : td.nothingWaiting
             }
-            href="/events?status=TO_INVOICE"
+            href="/projects?status=TO_INVOICE"
           />
         </StatRow>
       </div>
@@ -104,15 +105,15 @@ export async function AdminDashboard({
         </div>
       ) : (
         <div>
-          <SectionHeading label={td.upcomingEvents} sub={td.nextByStart(cards.length)} />
+          <SectionHeading label={td.upcomingProjects} sub={td.nextByStart(cards.length)} />
           {cards.length === 0 ? (
-            <EmptyState>{td.noUpcomingEvents}</EmptyState>
+            <EmptyState>{td.noUpcomingProjects}</EmptyState>
           ) : (
-            <EventCardGrid>
+            <ProjectCardGrid>
               {cards.map((ev) => (
-                <EventCard key={ev.id} ev={ev} t={t} />
+                <ProjectCard key={ev.id} ev={ev} t={t} />
               ))}
-            </EventCardGrid>
+            </ProjectCardGrid>
           )}
         </div>
       )}

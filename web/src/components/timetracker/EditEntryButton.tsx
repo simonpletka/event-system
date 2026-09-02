@@ -12,7 +12,7 @@ type TDelete = Dictionary["timeTracker"]["deleteEntry"];
 
 export type EditableEntry = {
   id: string;
-  eventId: string | null;
+  projectId: string | null;
   date: string;
   minutes: number;
   description: string;
@@ -32,7 +32,7 @@ export type EditableEntry = {
  */
 export function EditEntryButton({
   entry,
-  events,
+  projects,
   modalTitle,
   t,
   tPhases,
@@ -43,7 +43,7 @@ export function EditEntryButton({
   children,
 }: {
   entry: EditableEntry;
-  events: { id: string; title: string }[];
+  projects: { id: string; title: string }[];
   modalTitle: string;
   t: T;
   tPhases: TPhases;
@@ -64,8 +64,8 @@ export function EditEntryButton({
         <Modal title={modalTitle} onClose={() => setOpen(false)} closeLabel={t.cancel}>
           <EditEntryForm
             id={entry.id}
-            eventId={entry.eventId}
-            events={events}
+            projectId={entry.projectId}
+            projects={projects}
             date={entry.date}
             minutes={entry.minutes}
             description={entry.description}

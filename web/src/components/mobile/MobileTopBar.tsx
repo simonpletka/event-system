@@ -11,7 +11,7 @@ export function MobileTopBar({
   userName,
   avatarUrl,
   running,
-  events,
+  projects,
   tNav,
   tSidebar,
   tElapsed,
@@ -19,8 +19,8 @@ export function MobileTopBar({
 }: {
   userName: string;
   avatarUrl: string | null;
-  running: { eventId: string | null; eventTitle: string | null; startedAt: string } | null;
-  events: { id: string; title: string }[];
+  running: { projectId: string | null; projectTitle: string | null; startedAt: string } | null;
+  projects: { id: string; title: string }[];
   tNav: Dictionary["nav"];
   tSidebar: Dictionary["sidebar"];
   tElapsed: Dictionary["timeTracker"]["editableElapsed"];
@@ -35,7 +35,7 @@ export function MobileTopBar({
         className="md:hidden -mx-6 -mt-5 mb-3 px-6 py-3 flex items-center justify-between print-hide"
         style={{ paddingTop: "calc(0.75rem + env(safe-area-inset-top))" }}
       >
-        <span className="text-[10px] font-bold tracking-[0.14em]">EVENT SYSTEM</span>
+        <span className="text-[10px] font-bold tracking-[0.14em]">PROJECT SYSTEM</span>
         <button
           type="button"
           onClick={() => setOpen(true)}
@@ -79,7 +79,7 @@ export function MobileTopBar({
             </div>
 
             <div className="mb-2.5">
-              <TimerWidget running={running} events={events} t={tSidebar} tElapsed={tElapsed} discardedMessage={discardedMessage} />
+              <TimerWidget running={running} projects={projects} t={tSidebar} tElapsed={tElapsed} discardedMessage={discardedMessage} />
             </div>
 
             <Link

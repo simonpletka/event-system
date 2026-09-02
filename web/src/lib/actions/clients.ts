@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
 import { requireUser, canManageClients, isAdmin } from "@/lib/authz";
+import { clientHref } from "@/lib/slug";
 
 export type ClientFormState = { error?: string };
 
@@ -30,7 +31,7 @@ export async function createClientAction(_prev: ClientFormState, formData: FormD
 
   const client = await prisma.client.create({ data });
   revalidatePath("/clients");
-  redirect(`/clients/${client.id}`);
+  redirect(clientHref(client));
 }
 
 export async function updateClientAction(_prev: ClientFormState, formData: FormData): Promise<ClientFormState> {
@@ -44,16 +45,16 @@ export async function updateClientAction(_prev: ClientFormState, formData: FormD
   await prisma.client.update({ where: { id }, data });
   revalidatePath("/clients");
   revalidatePath(`/clients/${id}`);
-  redirect(`/clients/${id}`);
+  redirect(clientHref({ id, name: data.name }));
 }
 
 /**
- * Called from createEventAction/updateEventAction when the event form's
+ * Called from createProjectAction/updateProjectAction when the project form's
  * client picker is left on "New client" but company fields are filled in —
  * auto-creates (or reuses) a Client instead of requiring a separate step,
  * per user's explicit request to drop the old "+ New client" modal.
  * Matches on IČO first (far more reliable than a free-text name), then an
- * exact name match, so re-saving the same event repeatedly — or two events
+ * exact name match, so re-saving the same project repeatedly — or two projects
  * for the same real client — doesn't spawn duplicate Client rows.
  */
 export async function resolveClientId(
@@ -69,7 +70,7 @@ export async function resolveClientId(
   if (existing) return existing.id;
 
   const created = await prisma.client.create({
-    // company.address is one free-text line (from Event's own embedded
+    // company.address is one free-text line (from Project's own embedded
     // companyAddress field, which stays a single string) — same tradeoff as
     // ARES in ClientForm: land it in street, leave city/postCode/state for
     // the user to fill in on the Client's own page later.
@@ -79,16 +80,16 @@ export async function resolveClientId(
 }
 
 /**
- * Called alongside resolveClientId from createEventAction/updateEventAction:
- * copies every contact person entered on the event onto the resolved
+ * Called alongside resolveClientId from createProjectAction/updateProjectAction:
+ * copies every contact person entered on the project onto the resolved
  * Client's own contact list, and — per user request — fills in the
  * client's invoicingEmail from the first contact that has one, but only if
  * it's still blank (never overwrites a value someone set deliberately).
  * Dedupes on email first (the more reliable match), falling back to an
- * exact name match, so re-saving the same event repeatedly doesn't spawn
+ * exact name match, so re-saving the same project repeatedly doesn't spawn
  * duplicate ClientContact rows. These are independent copies, not linked
- * back to the EventContact they came from — deleting one from the Client
- * page never touches the event's own contact list.
+ * back to the ProjectContact they came from — deleting one from the Client
+ * page never touches the project's own contact list.
  */
 export async function syncClientContacts(
   clientId: string | null,
@@ -118,13 +119,13 @@ export async function syncClientContacts(
   }
 }
 
-/** Admin-only, irreversible. Events linked to this client just lose the link (clientId set null via cascade-less optional FK — Prisma requires the relation be nullable, which it is). */
+/** Admin-only, irreversible. Projects linked to this client just lose the link (clientId set null via cascade-less optional FK — Prisma requires the relation be nullable, which it is). */
 export async function deleteClientAction(formData: FormData) {
   const user = await requireUser();
   if (!isAdmin(user)) return;
 
   const id = String(formData.get("id"));
-  await prisma.event.updateMany({ where: { clientId: id }, data: { clientId: null } });
+  await prisma.project.updateMany({ where: { clientId: id }, data: { clientId: null } });
   await prisma.client.delete({ where: { id } });
 
   revalidatePath("/clients");

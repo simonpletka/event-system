@@ -8,7 +8,7 @@ import { toggleRoadmapItemDoneAction } from "@/lib/actions/roadmap";
 import { RoadmapItemModal } from "./RoadmapItemModal";
 import { getDictionary, type Locale } from "@/lib/dictionary";
 
-export type RoadmapDict = ReturnType<typeof getDictionary>["events"]["roadmap"];
+export type RoadmapDict = ReturnType<typeof getDictionary>["projects"]["roadmap"];
 
 export type RoadmapItemData = {
   id: string;
@@ -50,7 +50,7 @@ function dateLabel(iso: string, allDay: boolean) {
 }
 
 export function RoadmapList({
-  eventId,
+  projectId,
   items,
   phases,
   editable,
@@ -58,7 +58,7 @@ export function RoadmapList({
   clientEmails,
   locale,
 }: {
-  eventId: string;
+  projectId: string;
   items: RoadmapItemData[];
   phases: PhaseData[];
   editable: boolean;
@@ -67,7 +67,7 @@ export function RoadmapList({
   locale: Locale;
 }) {
   const dict = getDictionary(locale);
-  const t = dict.events.roadmap;
+  const t = dict.projects.roadmap;
   const cancelLabel = dict.common.cancel;
   const [filter, setFilter] = useState<"all" | "tasks" | "meetings" | "done">("all");
   // `null` = closed, `""` = new item, otherwise an item id. Looked up against
@@ -206,7 +206,7 @@ export function RoadmapList({
       {modalOpen && (
         <RoadmapItemModal
           key={modalId || "new"}
-          eventId={eventId}
+          projectId={projectId}
           item={modalItem}
           editable={editable}
           teamOptions={teamOptions}

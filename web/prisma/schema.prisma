@@ -1,6 +1,8 @@
-// Event system schema. Phase 1: Dashboard, Events. Phase 2: Finance (Quotes,
+// Event-agency ops schema. Phase 1: Dashboard, Projects. Phase 2: Finance (Quotes,
 // Invoices, Expenses, Reports). Time tracker/Settings tables are still stubs.
 // See /CLAUDE.md and docs/system_info/event-system-zadani.pdf for background.
+// "Project" is the renamed former "Event" entity (each agency job/gig) — not
+// to be confused with InvoiceEvent below, an unrelated audit-log concept.
 
 generator client {
   provider = "prisma-client"
@@ -22,24 +24,24 @@ enum Role {
 // the four built-in roles already use (see resolvePermissions() in authz.ts,
 // which maps ADMIN/ACCOUNTANT/PRODUCER/MEMBER onto these same tiers so both
 // built-in and custom roles flow through one set of checks).
-enum EventsAccess {
+enum ProjectsAccess {
   NONE
-  ASSIGNED_READ // Member: assigned events, read-only
-  OWN_EDIT // Producer: own/assigned events, can edit
-  ALL_READ // Accountant: all events, read-only
-  ALL_FULL // Admin: all events, full access
+  ASSIGNED_READ // Member: assigned projects, read-only
+  OWN_EDIT // Producer: own/assigned projects, can edit
+  ALL_READ // Accountant: all projects, read-only
+  ALL_FULL // Admin: all projects, full access
 }
 
 enum FinanceAccess {
   NONE
-  READ_OWN_EVENTS // Producer: view quotes/invoices on own events
+  READ_OWN_PROJECTS // Producer: view quotes/invoices on own projects
   FULL
 }
 
 enum ExpensesAccess {
   NONE
   OWN_ONLY // Member: add/view own expenses only
-  ADD_ON_OWN_EVENTS // Producer: add/view expenses on own/assigned events
+  ADD_ON_OWN_PROJECTS // Producer: add/view expenses on own/assigned projects
   FULL
 }
 
@@ -57,7 +59,7 @@ model CustomRole {
   name      String   @unique
   createdAt DateTime @default(now())
 
-  events   EventsAccess   @default(NONE)
+  projects ProjectsAccess @default(NONE)
   finance  FinanceAccess  @default(NONE)
   expenses ExpensesAccess @default(NONE)
   settings SettingsAccess @default(NONE)
@@ -65,7 +67,7 @@ model CustomRole {
   users User[]
 }
 
-enum EventStatus {
+enum ProjectStatus {
   INQUIRY // Poptávka
   QUOTE_SENT // Nabídka odeslána
   CONFIRMED // Potvrzeno
@@ -104,6 +106,9 @@ enum InvoiceStatus {
   PAID
 }
 
+// Unrelated to the Project entity below — this "Event" is an audit-log-entry
+// concept (an invoice history row), not an agency job. Deliberately not
+// renamed as part of the Event→Project rename.
 enum InvoiceEventType {
   CREATED
   ISSUED
@@ -121,20 +126,20 @@ enum DiscountType {
   FIXED
 }
 
-// Event's internal spend cap (separate from the client-facing quotedValue).
-// Set manually by an Admin on the event form: a percentage of quotedValue,
+// A project's internal spend cap (separate from the client-facing quotedValue).
+// Set manually by an Admin on the project form: a percentage of quotedValue,
 // or a flat amount. Same shape as DiscountType but kept distinct so the two
 // never get accidentally coupled — the budget percent range is wider (a
-// loss-leader event can be budgeted above 100% of what was quoted).
+// loss-leader project can be budgeted above 100% of what was quoted).
 enum BudgetType {
   NONE
   PERCENT
   FIXED
 }
 
-// A single dated thing on an event's Roadmap tab. MILESTONE rows are the old
+// A single dated thing on a project's Roadmap tab. MILESTONE rows are the old
 // Milestone model migrated forward; TASK/MEETING are user-created. Production
-// phases (build / event days / strike) are derived from the Event's own
+// phases (build / event days / strike) are derived from the Project's own
 // date fields at render time, not stored as rows.
 enum RoadmapItemType {
   MILESTONE
@@ -145,7 +150,7 @@ enum RoadmapItemType {
 // Per-document currency (brief: default CZK, switchable when creating a
 // quote; an invoice created from that quote inherits it). Deliberately no
 // exchange-rate conversion anywhere — aggregate stats (Reports, Dashboard,
-// event budget-vs-actual) keep summing the raw Int amounts as before and
+// project budget-vs-actual) keep summing the raw Int amounts as before and
 // are documented as CZK-only, so a stray EUR/USD document will skew them.
 // That's an accepted simplification, not a bug — see CLAUDE.md.
 enum Currency {
@@ -171,8 +176,8 @@ model User {
   customRoleId String?
   customRole   CustomRole? @relation(fields: [customRoleId], references: [id])
 
-  ownedEvents         Event[]           @relation("EventOwner")
-  assignments         EventMember[]
+  ownedProjects       Project[]         @relation("ProjectOwner")
+  assignments         ProjectMember[]
   expenses            Expense[]
   timeEntries         TimeEntry[]
   createdQuotes       Quote[]           @relation("QuoteCreator")
@@ -184,33 +189,33 @@ model User {
   meetingsCreated     Meeting[]
 }
 
-model Event {
+model Project {
   id      String @id @default(cuid())
   // Short display identifier, "YY-XXX" (e.g. "26-001") — see document-number.ts.
   // Assigned once at creation by finding the lowest unused XXX for the
-  // current year, so a permanently-deleted event's number becomes reusable
+  // current year, so a permanently-deleted project's number becomes reusable
   // rather than just skipped. Quote/Invoice numbers are derived from this.
-  number         String      @unique
+  number         String        @unique
   title          String
-  brief          String      @default("")
+  brief          String        @default("")
   companyName    String
-  companyAddress String      @default("")
-  companyIco     String      @default("")
-  companyDic     String      @default("")
-  status         EventStatus @default(INQUIRY)
+  companyAddress String        @default("")
+  companyIco     String        @default("")
+  companyDic     String        @default("")
+  status         ProjectStatus @default(INQUIRY)
 
   // Added going forward — see the Client model's own comment for why old
-  // events aren't auto-migrated onto this. Event's own embedded
+  // projects aren't auto-migrated onto this. Project's own embedded
   // client/company fields above are untouched and still what every other
-  // screen (PDFs, event detail, quotes/invoices) reads from; clientId only
-  // powers the Clients section's per-client event/revenue rollup.
+  // screen (PDFs, project detail, quotes/invoices) reads from; clientId only
+  // powers the Clients section's per-client project/revenue rollup.
   clientId String?
   client   Client? @relation(fields: [clientId], references: [id])
 
-  // Set (best-effort) after the event's Notion page is created — see
-  // tryCreateNotionEventPage() in lib/notion.ts. Null when Notion isn't
+  // Set (best-effort) after the project's Notion page is created — see
+  // tryCreateNotionProjectPage() in lib/notion.ts. Null when Notion isn't
   // configured or the push failed; a Meeting synced afterward just skips
-  // this event in its "Events" relation property when null.
+  // this project in its "Projects" relation property when null.
   notionPageId String?
 
   buildDate  DateTime?
@@ -220,25 +225,25 @@ model Event {
 
   quotedValue Int @default(0) // minor currency units avoided; brief uses whole CZK
 
-  // Internal budget — Admin-set, Admin-editable, visible to finance/event
-  // roles only (see canViewEventBudget). budgetValue holds a percent of
+  // Internal budget — Admin-set, Admin-editable, visible to finance/project
+  // roles only (see canViewProjectBudget). budgetValue holds a percent of
   // quotedValue (0-300) when PERCENT, or a whole-CZK amount when FIXED;
-  // ignored when NONE. Resolve via resolveEventBudget().
+  // ignored when NONE. Resolve via resolveProjectBudget().
   budgetType  BudgetType @default(NONE)
   budgetValue Int        @default(0)
 
   ownerId String
-  owner   User   @relation("EventOwner", fields: [ownerId], references: [id])
+  owner   User   @relation("ProjectOwner", fields: [ownerId], references: [id])
 
   venues       Venue[]
   roadmapItems RoadmapItem[]
-  members      EventMember[]
+  members      ProjectMember[]
   expenses    Expense[]
   timeEntries TimeEntry[]
   quotes      Quote[]
   invoices    Invoice[]
-  contacts    EventContact[]
-  meetings    MeetingEvent[]
+  contacts    ProjectContact[]
+  meetings    MeetingProject[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -247,53 +252,54 @@ model Event {
   @@index([status])
 }
 
-// One or more contact people for an event's client side. Replaces the old
-// single clientName/clientPhone/clientEmail fields — an event can have 1+
-// contacts, and saving the event auto-syncs each onto the linked Client's
+// One or more contact people for a project's client side. Replaces the old
+// single clientName/clientPhone/clientEmail fields — a project can have 1+
+// contacts, and saving the project auto-syncs each onto the linked Client's
 // own contact list (see resolveClientId/syncClientContacts in
 // lib/actions/clients.ts). Deleting a synced ClientContact from the Client
 // page doesn't touch this row — the two are independent copies, not linked
 // by a foreign key, so removing one never silently loses the other.
-model EventContact {
-  id        String @id @default(cuid())
-  eventId   String
-  event     Event  @relation(fields: [eventId], references: [id], onDelete: Cascade)
+model ProjectContact {
+  id        String  @id @default(cuid())
+  projectId String
+  project   Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
   name      String
-  phone     String @default("")
-  email     String @default("")
-  sortOrder Int    @default(0)
+  phone     String  @default("")
+  email     String  @default("")
+  sortOrder Int     @default(0)
 }
 
-// Producer/Member assignment to an event — drives §2.2 visibility rules.
-model EventMember {
-  id      String @id @default(cuid())
-  eventId String
-  userId  String
-  event   Event  @relation(fields: [eventId], references: [id], onDelete: Cascade)
-  user    User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+// Producer/Member assignment to a project — drives §2.2 visibility rules.
+model ProjectMember {
+  id        String  @id @default(cuid())
+  projectId String
+  userId    String
+  project   Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  user      User    @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  @@unique([eventId, userId])
+  @@unique([projectId, userId])
 }
 
 model Venue {
-  id      String @id @default(cuid())
-  eventId String
-  event   Event  @relation(fields: [eventId], references: [id], onDelete: Cascade)
-  name    String
-  address String
-  note    String @default("")
+  id        String  @id @default(cuid())
+  projectId String
+  project   Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  name      String
+  address   String
+  note      String  @default("")
 }
 
-// Replaces the old Milestone model. Drives the event detail's Roadmap tab —
+// Replaces the old Milestone model. Drives the project detail's Roadmap tab —
 // tasks, client meetings and production milestones in one dated list, each
-// assignable to team members (assigning auto-adds an EventMember) and open
+// assignable to team members (assigning auto-adds a ProjectMember) and open
 // to a comment thread. Calendar/Meet sync is deferred (see TODO.md at the
 // repo root); googleCalendarEventId / googleMeetUrl are carried but never
-// populated yet.
+// populated yet (these name a literal Google Calendar API event, unrelated
+// to the Project entity, so left as-is).
 model RoadmapItem {
   id                    String          @id @default(cuid())
-  eventId               String
-  event                 Event           @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  projectId             String
+  project               Project         @relation(fields: [projectId], references: [id], onDelete: Cascade)
   type                  RoadmapItemType
   title                 String
   date                  DateTime
@@ -311,12 +317,12 @@ model RoadmapItem {
   externalAttendees RoadmapExternalAttendee[]
   comments          RoadmapComment[]
 
-  @@index([eventId, date])
+  @@index([projectId, date])
 }
 
-// Team member assigned to a roadmap item. Creating one also upserts an
-// EventMember (see actions/roadmap.ts) so the person can see the event;
-// removing one never touches the EventMember.
+// Team member assigned to a roadmap item. Creating one also upserts a
+// ProjectMember (see actions/roadmap.ts) so the person can see the project;
+// removing one never touches the ProjectMember.
 model RoadmapAssignee {
   id     String      @id @default(cuid())
   itemId String
@@ -329,7 +335,7 @@ model RoadmapAssignee {
 
 // External (non-User) attendee on a MEETING roadmap item — a deliberate
 // free-text copy, no FK back to Client/ClientContact (same pattern as
-// EventContact).
+// ProjectContact).
 model RoadmapExternalAttendee {
   id     String      @id @default(cuid())
   itemId String
@@ -370,13 +376,13 @@ enum RecurrenceFreq {
   MONTHLY
 }
 
-// Company-wide meeting, independent of RoadmapItem (which is single-event-
-// scoped) — a Meeting can relate to zero, one, or many events, and an event
-// can have many meetings, via the MeetingEvent join model (same explicit-
-// join-model shape as EventMember/RoadmapAssignee — no implicit many-to-many
-// exists anywhere else in this schema). Synced one-way, best-effort, to a
-// Notion database (Client Meetings or Internal Meetings by type) on create —
-// see tryCreateNotionMeetingPage() in lib/notion.ts.
+// Company-wide meeting, independent of RoadmapItem (which is single-project-
+// scoped) — a Meeting can relate to zero, one, or many projects, and a
+// project can have many meetings, via the MeetingProject join model (same
+// explicit-join-model shape as ProjectMember/RoadmapAssignee — no implicit
+// many-to-many exists anywhere else in this schema). Synced one-way,
+// best-effort, to a Notion database (Client Meetings or Internal Meetings by
+// type) on create — see tryCreateNotionMeetingPage() in lib/notion.ts.
 model Meeting {
   id                 String         @id @default(cuid())
   title              String
@@ -393,21 +399,21 @@ model Meeting {
   createdAt          DateTime       @default(now())
   updatedAt          DateTime       @updatedAt
 
-  events     MeetingEvent[]
+  projects   MeetingProject[]
   exceptions MeetingException[]
 
   @@index([date])
   @@index([type])
 }
 
-model MeetingEvent {
+model MeetingProject {
   id        String  @id @default(cuid())
   meetingId String
-  eventId   String
+  projectId String
   meeting   Meeting @relation(fields: [meetingId], references: [id], onDelete: Cascade)
-  event     Event   @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  project   Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
 
-  @@unique([meetingId, eventId])
+  @@unique([meetingId, projectId])
 }
 
 // A single overridden occurrence of a recurring Meeting — created by
@@ -426,13 +432,13 @@ model MeetingException {
   @@unique([meetingId, originalDate])
 }
 
-// --- Minimal stubs for later phases; kept here so the event detail's
+// --- Minimal stubs for later phases; kept here so the project detail's
 // counts/sums (expenses, time, quotes & invoices) are real data now. ---
 
 model Expense {
   id          String          @id @default(cuid())
-  eventId     String? // null = company overhead, not tied to an event
-  event       Event?          @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  projectId   String? // null = company overhead, not tied to a project
+  project     Project?        @relation(fields: [projectId], references: [id], onDelete: Cascade)
   paidById    String
   paidBy      User            @relation(fields: [paidById], references: [id])
   amount      Int
@@ -443,7 +449,7 @@ model Expense {
   approved    Boolean         @default(true) // approval workflow not built yet; expenses count immediately
   createdAt   DateTime        @default(now())
 
-  @@index([eventId])
+  @@index([projectId])
   @@index([date])
 }
 
@@ -456,8 +462,8 @@ enum TimePhase {
 
 model TimeEntry {
   id          String    @id @default(cuid())
-  eventId     String? // null = not yet assigned to an event; assign later via edit
-  event       Event?    @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  projectId   String? // null = not yet assigned to a project; assign later via edit
+  project     Project?  @relation(fields: [projectId], references: [id], onDelete: Cascade)
   userId      String
   user        User      @relation(fields: [userId], references: [id])
   minutes     Int       @default(0) // 0 while running; set on stop, or directly for manual entries
@@ -476,8 +482,8 @@ model TimeEntry {
 
 model Quote {
   id         String      @id @default(cuid())
-  eventId    String
-  event      Event       @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  projectId  String
+  project    Project     @relation(fields: [projectId], references: [id], onDelete: Cascade)
   number     String
   total      Int
   currency   Currency    @default(CZK)
@@ -518,8 +524,8 @@ model QuoteItem {
 
 model Invoice {
   id             String        @id @default(cuid())
-  eventId        String
-  event          Event         @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  projectId      String
+  project        Project       @relation(fields: [projectId], references: [id], onDelete: Cascade)
   quoteId        String? // set when created via "convert quote to invoice"
   quote          Quote?        @relation(fields: [quoteId], references: [id])
   number         String
@@ -572,7 +578,8 @@ model Payment {
 }
 
 // Small, targeted action log for the invoice detail's "History" panel —
-// not a general audit log (that's still explicitly out of scope).
+// not a general audit log (that's still explicitly out of scope). "Event"
+// here means a log entry, unrelated to the Project entity above.
 model InvoiceEvent {
   id        String           @id @default(cuid())
   invoiceId String
@@ -612,18 +619,18 @@ model CompanySettings {
   // Editable templates for the invoice "Send"/"Send reminder" buttons (Settings → Invoice emailing).
   // Plain-text with {{token}} placeholders — see src/lib/email.ts's EMAIL_TEMPLATE_TOKENS for the list.
   invoiceEmailSubject  String @default("Invoice {{invoiceNumber}} from {{companyName}}")
-  invoiceEmailBody     String @default("Hi {{clientName}},\n\nPlease find attached invoice {{invoiceNumber}} for {{eventTitle}}, totaling {{amount}}, due {{dueDate}}.\n\nThank you,\n{{companyName}}")
+  invoiceEmailBody     String @default("Hi {{clientName}},\n\nPlease find attached invoice {{invoiceNumber}} for {{projectTitle}}, totaling {{amount}}, due {{dueDate}}.\n\nThank you,\n{{companyName}}")
   reminderEmailSubject String @default("Reminder: invoice {{invoiceNumber}} is overdue")
-  reminderEmailBody    String @default("Hi {{clientName}},\n\nThis is a friendly reminder that invoice {{invoiceNumber}} for {{eventTitle}}, totaling {{amount}}, was due {{dueDate}} ({{daysOverdue}} days ago) and is still unpaid.\n\nThe invoice is attached again for your convenience.\n\nThank you,\n{{companyName}}")
+  reminderEmailBody    String @default("Hi {{clientName}},\n\nThis is a friendly reminder that invoice {{invoiceNumber}} for {{projectTitle}}, totaling {{amount}}, was due {{dueDate}} ({{daysOverdue}} days ago) and is still unpaid.\n\nThe invoice is attached again for your convenience.\n\nThank you,\n{{companyName}}")
 }
 
 // A real client company. Added going forward, not backfilled from existing
-// Event.companyName/companyIco free-text fields — auto-matching those by
+// Project.companyName/companyIco free-text fields — auto-matching those by
 // name/IČO would be fragile (typos, "Kobra a.s." vs "Kobra, a.s." etc.) and
-// silently merging the wrong events under one client is worse than just
-// leaving old events unlinked. New events can pick or quick-create a
-// Client; the Clients section's event list/total-charged figure is only
-// ever as complete as which events actually got linked.
+// silently merging the wrong projects under one client is worse than just
+// leaving old projects unlinked. New projects can pick or quick-create a
+// Client; the Clients section's project list/total-charged figure is only
+// ever as complete as which projects actually got linked.
 model Client {
   id     String @id @default(cuid())
   name   String
@@ -633,7 +640,7 @@ model Client {
   // whatever Photon's own "state" field resolves to for the country in
   // question (a US/CA state/province, a Czech kraj, etc.) — not literal
   // country-level data, which Photon returns separately and isn't stored
-  // here (matches how Event/CompanySettings addresses work today).
+  // here (matches how Project/CompanySettings addresses work today).
   street   String @default("")
   city     String @default("")
   postCode String @default("")
@@ -642,13 +649,13 @@ model Client {
   dic      String @default("")
   note     String @default("")
   // Where invoices should be sent. Editable directly, but also auto-filled
-  // (only if still blank) from the first event contact with an email that
+  // (only if still blank) from the first project contact with an email that
   // gets synced onto this client — see syncClientContacts() in actions/clients.ts.
   invoicingEmail String   @default("")
   createdAt      DateTime @default(now())
 
   contacts ClientContact[]
-  events   Event[]
+  projects Project[]
 
   @@index([name])
 }

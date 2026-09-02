@@ -11,8 +11,8 @@ export async function GET() {
     ["Number", "Event", "Client", "Issued", "Due", "Total", "Paid", "Status"],
     invoices.map((inv) => [
       inv.number,
-      inv.event.title,
-      inv.event.companyName,
+      inv.project.title,
+      inv.project.companyName,
       formatDate(inv.issuedAt),
       formatDate(inv.dueDate),
       inv.total,

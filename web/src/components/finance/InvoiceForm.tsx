@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useActionState } from "react";
 import { createInvoiceAction, type FinanceFormState } from "@/lib/actions/finance";
 import { LineItemsFields, BLANK_ITEM, type LineItem } from "./LineItemsFields";
-import { EventPicker, type PickableEvent } from "@/components/EventPicker";
+import { ProjectPicker, type PickableProject } from "@/components/ProjectPicker";
 import { CancelLink } from "@/components/ui/CancelLink";
 import { DateTimeField } from "@/components/ui/DateTimeField";
 import type { Currency, DiscountType } from "@/generated/prisma/enums";
@@ -18,7 +18,7 @@ export function InvoiceForm({
   defaultDueDate,
   locale,
 }: {
-  events: PickableEvent[];
+  events: PickableProject[];
   categories: string[];
   defaultDueDate: string;
   locale: Locale;
@@ -39,11 +39,11 @@ export function InvoiceForm({
   // invoice, and just as easily edited/cleared afterward. Only kicks in
   // once, and only while the items list is still untouched from the blank
   // default, so it never clobbers something the user already typed.
-  function handleEventSelect(eventId: string) {
+  function handleEventSelect(projectId: string) {
     if (autoFilled) return;
     const isUntouched = items.length === 1 && !items[0].description && items[0].unitPrice === 0;
     if (!isUntouched) return;
-    const event = events.find((e) => e.id === eventId);
+    const event = events.find((e) => e.id === projectId);
     if (!event) return;
     setItems([{ ...BLANK_ITEM, description: event.title, unitPrice: event.quotedValue ?? 0 }]);
     setAutoFilled(true);
@@ -52,8 +52,8 @@ export function InvoiceForm({
   return (
     <form action={formAction} className="w-full flex flex-col gap-4">
       <label className="flex flex-col gap-1.5">
-        <span className="field-label">{tf.eventLabel}</span>
-        <EventPicker name="eventId" initialEvents={events} required onSelect={handleEventSelect} t={t.events.picker} />
+        <span className="field-label">{tf.projectLabel}</span>
+        <ProjectPicker name="projectId" initialEvents={events} required onSelect={handleEventSelect} t={t.projects.picker} />
       </label>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-3 max-w-sm">

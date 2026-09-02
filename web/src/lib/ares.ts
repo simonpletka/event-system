@@ -8,7 +8,7 @@ const ARES_BASE = "https://ares.gov.cz/ekonomicke-subjekty-v-be/rest/ekonomicke-
 export type AresCompany = {
   ico: string;
   name: string;
-  /** Flat one-line address (ARES's own textovaAdresa) — what EventForm/CompanySettingsForm's single free-text address field wants. */
+  /** Flat one-line address (ARES's own textovaAdresa) — what ProjectForm/CompanySettingsForm's single free-text address field wants. */
   address: string;
   /** Street + house/orientation number only, e.g. "Vojtěšská 211/6" — for ClientForm's structured address fields. */
   street: string;

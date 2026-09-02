@@ -1,17 +1,17 @@
 import { prisma } from "@/lib/prisma";
 import {
-  eventWhereForUser,
+  projectWhereForUser,
   expenseWhereForUser,
-  assignedEventWhere,
-  canViewEventBudget,
+  assignedProjectWhere,
+  canViewProjectBudget,
   type SessionUser,
 } from "@/lib/authz";
-import { resolveEventBudget } from "@/lib/event-budget";
+import { resolveProjectBudget } from "@/lib/project-budget";
 import type { Prisma } from "@/generated/prisma/client";
-import type { EventStatus } from "@/generated/prisma/enums";
+import type { ProjectStatus } from "@/generated/prisma/enums";
 
 const DAY_MS = 86_400_000;
-const ACTIVE_STATUSES: { notIn: EventStatus[] } = { notIn: ["CANCELLED", "CLOSED"] };
+const ACTIVE_STATUSES: { notIn: ProjectStatus[] } = { notIn: ["CANCELLED", "CLOSED"] };
 
 function daysBetween(a: Date, b: Date) {
   return Math.floor(Math.abs(a.getTime() - b.getTime()) / DAY_MS);
@@ -19,11 +19,11 @@ function daysBetween(a: Date, b: Date) {
 
 // --- shared building blocks ---------------------------------------------------
 
-async function overdueInvoices(eventWhere: Prisma.EventWhereInput) {
+async function overdueInvoices(projectWhere: Prisma.ProjectWhereInput) {
   const now = new Date();
   const rows = await prisma.invoice.findMany({
-    where: { status: { not: "PAID" }, dueDate: { lt: now }, event: eventWhere },
-    include: { event: { select: { id: true, title: true } } },
+    where: { status: { not: "PAID" }, dueDate: { lt: now }, project: projectWhere },
+    include: { project: { select: { id: true, number: true, title: true } } },
     orderBy: { dueDate: "asc" },
   });
   return rows.map((i) => ({
@@ -32,15 +32,15 @@ async function overdueInvoices(eventWhere: Prisma.EventWhereInput) {
     total: i.total,
     currency: i.currency,
     daysOverdue: daysBetween(now, i.dueDate),
-    event: i.event,
+    project: i.project,
   }));
 }
 
-async function waitingQuotes(eventWhere: Prisma.EventWhereInput) {
+async function waitingQuotes(projectWhere: Prisma.ProjectWhereInput) {
   const now = new Date();
   const rows = await prisma.quote.findMany({
-    where: { status: "SENT", event: eventWhere },
-    include: { event: { select: { id: true, title: true } } },
+    where: { status: "SENT", project: projectWhere },
+    include: { project: { select: { id: true, number: true, title: true } } },
     orderBy: { issuedAt: "asc" },
   });
   return rows.map((q) => ({
@@ -49,22 +49,22 @@ async function waitingQuotes(eventWhere: Prisma.EventWhereInput) {
     total: q.total,
     currency: q.currency,
     daysSinceSent: daysBetween(now, q.issuedAt),
-    event: q.event,
+    project: q.project,
   }));
 }
 
-async function eventsToInvoice(eventWhere: Prisma.EventWhereInput) {
-  return prisma.event.findMany({
-    where: { ...eventWhere, status: "TO_INVOICE" },
-    select: { id: true, title: true, companyName: true, startDate: true, endDate: true },
+async function projectsToInvoice(projectWhere: Prisma.ProjectWhereInput) {
+  return prisma.project.findMany({
+    where: { ...projectWhere, status: "TO_INVOICE" },
+    select: { id: true, number: true, title: true, companyName: true, startDate: true, endDate: true },
     orderBy: { endDate: "asc" },
   });
 }
 
-async function upcomingEvents(eventWhere: Prisma.EventWhereInput, take: number) {
+async function upcomingProjects(projectWhere: Prisma.ProjectWhereInput, take: number) {
   const now = new Date();
-  return prisma.event.findMany({
-    where: { ...eventWhere, endDate: { gte: now }, status: ACTIVE_STATUSES },
+  return prisma.project.findMany({
+    where: { ...projectWhere, endDate: { gte: now }, status: ACTIVE_STATUSES },
     include: {
       venues: { take: 1 },
       roadmapItems: { where: { date: { gte: now } }, orderBy: { date: "asc" }, take: 1 },
@@ -78,7 +78,7 @@ async function latestExpenses(expenseWhere: Prisma.ExpenseWhereInput, take: numb
   return prisma.expense.findMany({
     where: expenseWhere,
     include: {
-      event: { select: { id: true, title: true } },
+      project: { select: { id: true, number: true, title: true } },
       paidBy: { select: { name: true } },
     },
     orderBy: { date: "desc" },
@@ -115,22 +115,22 @@ export async function getMonthlyCashflow() {
 // --- Admin -------------------------------------------------------------------
 
 export async function getAdminDashboard(user: SessionUser) {
-  const eventWhere = eventWhereForUser(user);
+  const projectWhere = projectWhereForUser(user);
   const expenseWhere = expenseWhereForUser(user);
   const now = new Date();
 
-  const [activeEvents, overdue, quotes, toInvoice, upcoming, expenses, cashflow] = await Promise.all([
-    prisma.event.count({ where: { ...eventWhere, status: ACTIVE_STATUSES } }),
-    overdueInvoices(eventWhere),
-    waitingQuotes(eventWhere),
-    eventsToInvoice(eventWhere),
-    upcomingEvents(eventWhere, 3),
+  const [activeProjects, overdue, quotes, toInvoice, upcoming, expenses, cashflow] = await Promise.all([
+    prisma.project.count({ where: { ...projectWhere, status: ACTIVE_STATUSES } }),
+    overdueInvoices(projectWhere),
+    waitingQuotes(projectWhere),
+    projectsToInvoice(projectWhere),
+    upcomingProjects(projectWhere, 3),
     latestExpenses(expenseWhere, 5),
     getMonthlyCashflow(),
   ]);
 
   return {
-    activeEvents,
+    activeProjects,
     endingThisMonth: upcoming.filter((e) => e.endDate < new Date(now.getFullYear(), now.getMonth() + 1, 1)).length,
     overdue: { count: overdue.length, total: overdue.reduce((s, i) => s + i.total, 0), oldestDays: overdue[0]?.daysOverdue ?? 0 },
     quotes: {
@@ -150,13 +150,13 @@ export async function getAdminDashboard(user: SessionUser) {
 // --- Accountant -------------------------------------------------------------
 
 export async function getAccountantDashboard(user: SessionUser) {
-  const eventWhere = eventWhereForUser(user);
+  const projectWhere = projectWhereForUser(user);
   const expenseWhere = expenseWhereForUser(user);
 
   const [overdue, quotes, toInvoice, expenses, cashflow] = await Promise.all([
-    overdueInvoices(eventWhere),
-    waitingQuotes(eventWhere),
-    eventsToInvoice(eventWhere),
+    overdueInvoices(projectWhere),
+    waitingQuotes(projectWhere),
+    projectsToInvoice(projectWhere),
     latestExpenses(expenseWhere, 6),
     getMonthlyCashflow(),
   ]);
@@ -167,13 +167,13 @@ export async function getAccountantDashboard(user: SessionUser) {
 // --- Producer --------------------------------------------------------------
 
 export async function getProducerDashboard(user: SessionUser) {
-  const mine = assignedEventWhere(user);
+  const mine = assignedProjectWhere(user);
   const now = new Date();
   const horizon = new Date(now.getTime() + 14 * DAY_MS);
-  const showBudget = canViewEventBudget(user);
+  const showBudget = canViewProjectBudget(user);
 
-  const [events, roadmap] = await Promise.all([
-    prisma.event.findMany({
+  const [projects, roadmap] = await Promise.all([
+    prisma.project.findMany({
       where: { ...mine, endDate: { gte: now }, status: ACTIVE_STATUSES },
       include: {
         venues: { take: 1 },
@@ -185,17 +185,18 @@ export async function getProducerDashboard(user: SessionUser) {
     }),
     prisma.roadmapItem.findMany({
       where: { assignees: { some: { userId: user.id } }, done: false, date: { gte: now, lte: horizon } },
-      include: { event: { select: { id: true, title: true } } },
+      include: { project: { select: { id: true, number: true, title: true } } },
       orderBy: { date: "asc" },
       take: 8,
     }),
   ]);
 
-  const myEvents = events.map((e) => {
+  const myProjects = projects.map((e) => {
     const spent = e.expenses.reduce((s, x) => s + x.amount, 0);
-    const budget = showBudget ? resolveEventBudget(e) : { type: "NONE" as const, value: 0, amount: null };
+    const budget = showBudget ? resolveProjectBudget(e) : { type: "NONE" as const, value: 0, amount: null };
     return {
       id: e.id,
+      number: e.number,
       title: e.title,
       companyName: e.companyName,
       status: e.status,
@@ -208,17 +209,17 @@ export async function getProducerDashboard(user: SessionUser) {
     };
   });
 
-  return { myEvents, roadmap };
+  return { myProjects, roadmap };
 }
 
 // --- Member ---------------------------------------------------------------
 
 export async function getMemberDashboard(user: SessionUser) {
-  const mine = assignedEventWhere(user);
+  const mine = assignedProjectWhere(user);
   const now = new Date();
 
-  const [events, expenses] = await Promise.all([
-    prisma.event.findMany({
+  const [projects, expenses] = await Promise.all([
+    prisma.project.findMany({
       where: { ...mine, endDate: { gte: now }, status: ACTIVE_STATUSES },
       include: {
         venues: { take: 1 },
@@ -230,7 +231,7 @@ export async function getMemberDashboard(user: SessionUser) {
     prisma.expense.findMany({
       where: { paidById: user.id },
       include: {
-        event: { select: { id: true, title: true } },
+        project: { select: { id: true, number: true, title: true } },
         paidBy: { select: { name: true } },
       },
       orderBy: { date: "desc" },
@@ -238,5 +239,5 @@ export async function getMemberDashboard(user: SessionUser) {
     }),
   ]);
 
-  return { events, expenses };
+  return { projects, expenses };
 }

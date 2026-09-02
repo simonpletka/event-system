@@ -20,7 +20,7 @@ const ICONS: Record<string, React.ReactNode> = {
       <path d="M21.5 20c0-2.6-1.7-4.5-4-5.3" />
     </>
   ),
-  "/events": (
+  "/projects": (
     <>
       <rect x="3" y="4.5" width="18" height="16" rx="2.2" />
       <path d="M8 2.5v4M16 2.5v4M3 9.5h18" />
@@ -62,7 +62,7 @@ export function MobileNav({ tNav }: { tNav: Dictionary["nav"] }) {
   const NAV = [
     { href: "/dashboard", label: tNav.dashboard },
     { href: "/clients", label: tNav.clients },
-    { href: "/events", label: tNav.events },
+    { href: "/projects", label: tNav.projects },
     { href: "/finance", label: tNav.finance },
     { href: "/time-tracker", label: tNav.timeTracker },
   ];

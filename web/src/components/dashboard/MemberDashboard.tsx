@@ -6,12 +6,12 @@ import type { SessionUser } from "@/lib/authz";
 import { DashboardShell, LinkAction } from "./DashboardShell";
 import {
   SectionHeading,
-  EventCard,
-  EventCardGrid,
+  ProjectCard,
+  ProjectCardGrid,
   ExpenseList,
   TrackedTimeChart,
   EmptyState,
-  type DashEventCard,
+  type DashProjectCard,
 } from "./widgets";
 
 export async function MemberDashboard({ user, locale }: { user: SessionUser; locale: Locale }) {
@@ -24,8 +24,9 @@ export async function MemberDashboard({ user, locale }: { user: SessionUser; loc
   ]);
   const myTime = timeData.rows[0];
 
-  const cards: DashEventCard[] = d.events.map((e) => ({
+  const cards: DashProjectCard[] = d.projects.map((e) => ({
     id: e.id,
+    number: e.number,
     title: e.title,
     company: e.companyName,
     status: e.status,
@@ -36,17 +37,17 @@ export async function MemberDashboard({ user, locale }: { user: SessionUser; loc
   }));
 
   return (
-    <DashboardShell title={td.title} action={<LinkAction href="/events" label={td.browseAllEvents} />}>
+    <DashboardShell title={td.title} action={<LinkAction href="/projects" label={td.browseAllProjects} />}>
       <div>
-        <SectionHeading label={td.myEvents} sub={td.myEventsReadOnly} />
+        <SectionHeading label={td.myProjects} sub={td.myProjectsReadOnly} />
         {cards.length === 0 ? (
-          <EmptyState>{td.noAssignedEvents}</EmptyState>
+          <EmptyState>{td.noAssignedProjects}</EmptyState>
         ) : (
-          <EventCardGrid>
+          <ProjectCardGrid>
             {cards.map((ev) => (
-              <EventCard key={ev.id} ev={ev} t={t} />
+              <ProjectCard key={ev.id} ev={ev} t={t} />
             ))}
-          </EventCardGrid>
+          </ProjectCardGrid>
         )}
       </div>
 

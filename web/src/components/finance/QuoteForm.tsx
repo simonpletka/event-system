@@ -5,7 +5,7 @@ import { useActionState } from "react";
 import { createQuoteAction, updateQuoteAction, type FinanceFormState } from "@/lib/actions/finance";
 import { toDateTimeLocal, formatDate } from "@/lib/format";
 import { LineItemsFields, BLANK_ITEM, type LineItem } from "./LineItemsFields";
-import { EventPicker } from "@/components/EventPicker";
+import { ProjectPicker } from "@/components/ProjectPicker";
 import { CancelLink } from "@/components/ui/CancelLink";
 import { DateTimeField } from "@/components/ui/DateTimeField";
 import type { QuoteStatus, Currency } from "@/generated/prisma/enums";
@@ -32,7 +32,7 @@ export function QuoteForm({
   categories: string[];
   defaults?: {
     id: string;
-    eventId: string;
+    projectId: string;
     status: QuoteStatus;
     currency: Currency;
     validUntil: Date;
@@ -50,7 +50,7 @@ export function QuoteForm({
   const tf = t.finance.quoteForm;
   const tl = t.finance.lineItems;
 
-  const [eventId, setEventId] = useState(defaults?.eventId ?? initialEventId ?? "");
+  const [projectId, setEventId] = useState(defaults?.projectId ?? initialEventId ?? "");
   const [currency, setCurrency] = useState<Currency>(defaults?.currency ?? "CZK");
   const [items, setItems] = useState<LineItem[]>(defaults?.items.length ? defaults.items : [{ ...BLANK_ITEM }]);
   const [hideItemPrices, setHideItemPrices] = useState(defaults?.hideItemPrices ?? true);
@@ -59,13 +59,13 @@ export function QuoteForm({
   );
 
   const conflict = useMemo(() => {
-    const event = events.find((e) => e.id === eventId);
+    const event = events.find((e) => e.id === projectId);
     if (!event || !validUntil) return null;
     const validUntilDate = new Date(validUntil);
     const diffMs = event.startDate.getTime() - validUntilDate.getTime();
     if (Math.abs(diffMs) < WEEK_MS) return event.startDate;
     return null;
-  }, [eventId, validUntil, events]);
+  }, [projectId, validUntil, events]);
 
   return (
     <form action={formAction} className="w-full flex flex-col gap-4">
@@ -73,8 +73,8 @@ export function QuoteForm({
 
       {!isEdit && (
         <label className="flex flex-col gap-1.5">
-          <span className="field-label">{tf.eventLabel}</span>
-          <EventPicker name="eventId" initialEvents={events} defaultValue={initialEventId} required onSelect={setEventId} t={t.events.picker} />
+          <span className="field-label">{tf.projectLabel}</span>
+          <ProjectPicker name="projectId" initialEvents={events} defaultValue={initialEventId} required onSelect={setEventId} t={t.projects.picker} />
         </label>
       )}
 
@@ -107,7 +107,7 @@ export function QuoteForm({
           />
           {conflict && (
             <span className="text-[9px] text-warning">
-              {tf.eventTooCloseWarning(formatDate(conflict, { day: "numeric", month: "short", year: "numeric" }))}
+              {tf.projectTooCloseWarning(formatDate(conflict, { day: "numeric", month: "short", year: "numeric" }))}
             </span>
           )}
         </label>

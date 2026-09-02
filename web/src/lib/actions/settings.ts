@@ -7,7 +7,7 @@ import { prisma } from "@/lib/prisma";
 import { requireUser, canManageUsers, canManageCompanySettings } from "@/lib/authz";
 import { saveLogo, deleteLogo, saveAvatar, deleteAvatar } from "@/lib/uploads";
 import { getLocale, getDictionary } from "@/lib/i18n";
-import type { Role, EventsAccess, FinanceAccess, ExpensesAccess, SettingsAccess } from "@/generated/prisma/enums";
+import type { Role, ProjectsAccess, FinanceAccess, ExpensesAccess, SettingsAccess } from "@/generated/prisma/enums";
 
 export type SettingsFormState = { error?: string; success?: string };
 
@@ -140,7 +140,7 @@ export async function reactivateUserAction(formData: FormData) {
 
 function accessFields(formData: FormData) {
   return {
-    events: formData.get("events") as EventsAccess,
+    projects: formData.get("projects") as ProjectsAccess,
     finance: formData.get("finance") as FinanceAccess,
     expenses: formData.get("expenses") as ExpensesAccess,
     settings: formData.get("settings") as SettingsAccess,
@@ -326,7 +326,7 @@ export async function updateOwnProfileAction(_prev: SettingsFormState, formData:
   const firstName = String(formData.get("firstName") ?? "").trim();
   const lastName = String(formData.get("lastName") ?? "").trim();
   // Kept as one `name` column (unchanged everywhere else it's read/displayed
-  // — Users table, "Created by", event owner, team dots, timers, etc.) —
+  // — Users table, "Created by", project owner, team dots, timers, etc.) —
   // first/last only exist as this form's own split of that single field,
   // best-effort-rejoined on save, not a schema change.
   const name = `${firstName} ${lastName}`.trim();

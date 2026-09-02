@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { startTimerAction, assignRunningTimerEventAction, assignRunningTimerPhaseAction } from "@/lib/actions/timetracker";
+import { startTimerAction, assignRunningTimerProjectAction, assignRunningTimerPhaseAction } from "@/lib/actions/timetracker";
 import type { TimePhase } from "@/generated/prisma/enums";
 import { getDictionary, type Locale } from "@/lib/dictionary";
 import { EditableElapsedTime } from "@/components/timetracker/EditableElapsedTime";
@@ -20,7 +20,7 @@ type Running = {
   description: string;
   phase: TimePhase;
   startedAt: Date;
-  event: { id: string; title: string; companyName: string } | null;
+  project: { id: string; title: string; companyName: string } | null;
 } | null;
 
 const pillClass = "input !rounded-full !border-dashed !py-1.5 text-[11px] min-w-0";
@@ -30,19 +30,19 @@ const pillClass = "input !rounded-full !border-dashed !py-1.5 text-[11px] min-w-
  * intentionally has no Task/Tag/$ chips, those are Toggl-specific concepts
  * this app doesn't have. Event/Phase are always-visible dashed pills: a
  * plain <select> feeding startTimerAction while idle, or their own
- * auto-submitting form (assignRunningTimerEventAction/PhaseAction) while
+ * auto-submitting form (assignRunningTimerProjectAction/PhaseAction) while
  * running, so either can be reassigned in place without stopping the timer.
  * `compact` stacks the same elements vertically for the narrow List-view
  * sidebar column instead of laying them out in one row.
  */
 export function RunningTimerBox({
   running,
-  events,
+  projects,
   locale,
   compact = false,
 }: {
   running: Running;
-  events: { id: string; title: string; companyName: string }[];
+  projects: { id: string; title: string; companyName: string }[];
   locale: Locale;
   compact?: boolean;
 }) {
@@ -69,8 +69,8 @@ export function RunningTimerBox({
 
   const eventOptions = (
     <>
-      <option value="">{t.assignEvent}</option>
-      {events.map((e) => (
+      <option value="">{t.assignProject}</option>
+      {projects.map((e) => (
         <option key={e.id} value={e.id}>
           {e.title}
         </option>
@@ -93,7 +93,7 @@ export function RunningTimerBox({
             placeholder={t.whatWorkingOn}
             className={`bg-transparent outline-none text-[15px] font-semibold placeholder:text-ink/40 placeholder:font-normal min-w-0 ${compact ? "w-full" : "w-full sm:flex-1"}`}
           />
-          <select name="eventId" defaultValue="" className={`${pillClass} ${pillWidth}`}>
+          <select name="projectId" defaultValue="" className={`${pillClass} ${pillWidth}`}>
             {eventOptions}
           </select>
           <select name="phase" defaultValue="PLANNING" className={`${pillClass} ${pillWidth}`}>
@@ -124,10 +124,10 @@ export function RunningTimerBox({
         form="stop-form"
         className={`bg-transparent outline-none text-[15px] font-semibold placeholder:text-ink/40 placeholder:font-normal min-w-0 ${compact ? "w-full" : "w-full sm:flex-1"}`}
       />
-      <form action={assignRunningTimerEventAction} className={pillWidth}>
+      <form action={assignRunningTimerProjectAction} className={pillWidth}>
         <select
-          name="eventId"
-          defaultValue={running.event?.id ?? ""}
+          name="projectId"
+          defaultValue={running.project?.id ?? ""}
           onChange={(e) => e.currentTarget.form?.requestSubmit()}
           className={`${pillClass} ${pillWidth}`}
         >

@@ -13,8 +13,8 @@ export async function buildQuotePdfBuffer(quote: QuoteDetail, company: Company, 
   const supplier = company ?? { name: "Company", address: "", ico: "", dic: "", isVatPayer: true };
   const logoDataUrl = company?.logoPath ? await readLogoAsDataUrl(company.logoPath) : null;
 
-  const client = quote.event.client;
-  const customerAddressLines = client ? clientAddressLines(client) : addressLines(quote.event.companyAddress);
+  const client = quote.project.client;
+  const customerAddressLines = client ? clientAddressLines(client) : addressLines(quote.project.companyAddress);
 
   return renderToBuffer(
     <QuotePdf
@@ -26,10 +26,10 @@ export async function buildQuotePdfBuffer(quote: QuoteDetail, company: Company, 
       hideItemPrices={quote.hideItemPrices}
       supplier={{ ...supplier, addressLines: addressLines(supplier.address) }}
       customer={{
-        name: quote.event.companyName,
+        name: quote.project.companyName,
         addressLines: customerAddressLines,
-        ico: quote.event.companyIco,
-        dic: quote.event.companyDic,
+        ico: quote.project.companyIco,
+        dic: quote.project.companyDic,
       }}
       items={quote.items.map((i) => ({
         description: i.description,

@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { requireUser, canManageFinance, isAdmin } from "@/lib/authz";
 import { getQuoteDetail, getCompanySettings } from "@/lib/queries/finance";
 import { formatCurrency, formatDate } from "@/lib/format";
+import { projectHref, clientHref } from "@/lib/slug";
 import { convertQuoteToInvoiceAction, deleteQuoteAction, updateQuoteStatusAction, duplicateQuoteAction } from "@/lib/actions/finance";
 import { BackLink } from "@/components/BackLink";
 import { ConfirmDeleteButton } from "@/components/ui/ConfirmDeleteButton";
@@ -37,8 +38,8 @@ export default async function QuoteDetailPage({
   if (!quote) notFound();
 
   const supplierAddressLines = addressLines(company?.address ?? "");
-  const client = quote.event.client;
-  const customerAddressLines = client ? clientAddressLines(client) : addressLines(quote.event.companyAddress);
+  const client = quote.project.client;
+  const customerAddressLines = client ? clientAddressLines(client) : addressLines(quote.project.companyAddress);
   const accent = company?.accentColor || DEFAULT_ACCENT;
 
   const canManage = canManageFinance(user);
@@ -56,7 +57,7 @@ export default async function QuoteDetailPage({
           <div>
             <div className="text-[24px] font-bold tracking-tight">{t.finance.quotes.quoteN(quote.number)}</div>
             <div className="placeholder-text text-[12px] mt-1">
-              {t.finance.quotes.metaLine(quote.event.title, quote.event.companyName, formatDate(quote.issuedAt), formatDate(quote.validUntil))}
+              {t.finance.quotes.metaLine(quote.project.title, quote.project.companyName, formatDate(quote.issuedAt), formatDate(quote.validUntil))}
             </div>
           </div>
           <div className="flex gap-1.5 items-center">
@@ -214,13 +215,13 @@ export default async function QuoteDetailPage({
               </div>
               <div>
                 <div className="label mb-[5px] !text-[8px] !tracking-[1px]">{pq.customer}</div>
-                <div className="font-bold text-[11px] mb-[3px]">{quote.event.companyName}</div>
+                <div className="font-bold text-[11px] mb-[3px]">{quote.project.companyName}</div>
                 {customerAddressLines.map((line) => (
                   <div key={line} className="placeholder-text text-[9.5px] leading-[1.5]">
                     {line}
                   </div>
                 ))}
-                <div className="placeholder-text text-[9.5px] leading-[1.5] mt-[3px]">{`IČO ${quote.event.companyIco || "—"} · DIČ ${quote.event.companyDic || "—"}`}</div>
+                <div className="placeholder-text text-[9.5px] leading-[1.5] mt-[3px]">{`IČO ${quote.project.companyIco || "—"} · DIČ ${quote.project.companyDic || "—"}`}</div>
               </div>
               <div>
                 <div className="label mb-[5px] !text-[8px] !tracking-[1px]">{pq.createdByHeading}</div>
@@ -311,13 +312,13 @@ export default async function QuoteDetailPage({
           <div className="card px-4 py-4">
             <div className="heading-label !text-[12px] mb-1">{t.finance.quotes.linkedHeading}</div>
             <div className="py-1.5 text-[13px]">
-              <Link href={`/events/${quote.eventId}`} className="hover:text-accent">
-                {t.finance.quotes.eventLink(quote.event.title)}
+              <Link href={projectHref(quote.project)} className="hover:text-accent">
+                {t.finance.quotes.projectLink(quote.project.title)}
               </Link>
             </div>
             {client && (
               <div className="py-1.5 text-[13px]">
-                <Link href={`/clients/${client.id}`} className="hover:text-accent">
+                <Link href={clientHref(client)} className="hover:text-accent">
                   {t.finance.quotes.clientLink(client.name)}
                 </Link>
               </div>

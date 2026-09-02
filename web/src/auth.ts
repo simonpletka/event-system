@@ -2,9 +2,9 @@ import NextAuth from "next-auth";
 import Credentials from "next-auth/providers/credentials";
 import bcrypt from "bcryptjs";
 import { prisma } from "@/lib/prisma";
-import type { EventsAccess, FinanceAccess, ExpensesAccess, SettingsAccess } from "@/generated/prisma/enums";
+import type { ProjectsAccess, FinanceAccess, ExpensesAccess, SettingsAccess } from "@/generated/prisma/enums";
 
-type CustomRolePermissions = { events: EventsAccess; finance: FinanceAccess; expenses: ExpensesAccess; settings: SettingsAccess } | null;
+type CustomRolePermissions = { projects: ProjectsAccess; finance: FinanceAccess; expenses: ExpensesAccess; settings: SettingsAccess } | null;
 
 // Fixed 8-hour session lifetime: updateAge (24h, the NextAuth default) is
 // longer than maxAge, so a session is never silently refreshed/extended
@@ -42,7 +42,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
           isCardHolder: user.isCardHolder,
           customRole: user.customRole
             ? {
-                events: user.customRole.events,
+                projects: user.customRole.projects,
                 finance: user.customRole.finance,
                 expenses: user.customRole.expenses,
                 settings: user.customRole.settings,

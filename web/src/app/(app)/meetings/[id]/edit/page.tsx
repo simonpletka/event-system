@@ -1,6 +1,6 @@
 import { notFound } from "next/navigation";
 import { requireUser, canManageMeetings } from "@/lib/authz";
-import { getMeetingDetail, getEventOptionsForUser } from "@/lib/queries/meetings";
+import { getMeetingDetail, getProjectOptionsForUser } from "@/lib/queries/meetings";
 import { deleteMeetingAction } from "@/lib/actions/meetings";
 import { MeetingForm } from "@/components/meetings/MeetingForm";
 import { ConfirmDeleteButton } from "@/components/ui/ConfirmDeleteButton";
@@ -43,9 +43,9 @@ export default async function EditMeetingPage({ params }: { params: Promise<{ id
             recurrenceFreq: meeting.recurrenceFreq,
             recurrenceInterval: meeting.recurrenceInterval,
             recurrenceUntil: meeting.recurrenceUntil,
-            eventIds: meeting.events.map((e) => e.eventId),
+            projectIds: meeting.projects.map((e) => e.projectId),
           }}
-          eventOptions={await getEventOptionsForUser(user)}
+          eventOptions={await getProjectOptionsForUser(user)}
           locale={locale}
         />
       )}

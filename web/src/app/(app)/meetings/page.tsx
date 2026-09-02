@@ -67,7 +67,7 @@ export default async function MeetingsPage({
           <span className="heading-label">{tm.colType}</span>
           <span className="heading-label">{tm.colDate}</span>
           <span className="heading-label">{tm.colAttendees}</span>
-          <span className="heading-label">{tm.colEvents}</span>
+          <span className="heading-label">{tm.colProjects}</span>
         </div>
 
         {meetings.map((m) => (
@@ -83,7 +83,7 @@ export default async function MeetingsPage({
             <div className="placeholder-text group-hover:!text-accent">{m.type === "CLIENT" ? tm.typeClient : tm.typeInternal}</div>
             <div className="placeholder-text group-hover:!text-accent">{m.allDay ? formatDate(m.date) : formatDateTime(m.date)}</div>
             <div className="placeholder-text group-hover:!text-accent truncate">{m.attendees || "—"}</div>
-            <div className="placeholder-text group-hover:!text-accent truncate">{m.events.map((e) => e.title).join(", ") || "—"}</div>
+            <div className="placeholder-text group-hover:!text-accent truncate">{m.projects.map((e) => e.title).join(", ") || "—"}</div>
           </Link>
         ))}
       </div>
