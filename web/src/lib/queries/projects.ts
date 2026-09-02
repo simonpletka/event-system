@@ -1,23 +1,75 @@
 import { cache } from "react";
 import { prisma } from "@/lib/prisma";
 import { projectWhereForUser, type SessionUser } from "@/lib/authz";
+import { mondayOf, addDays } from "@/lib/calendar";
 import type { ProjectStatus, Prisma } from "@/generated/prisma/client";
+
+export type ProjectPeriod = "week" | "future" | "past" | "month" | "year";
 
 export type ProjectListFilters = {
   q?: string;
-  status?: ProjectStatus;
+  /** Raw `?status=` value — "ACTIVE"/undefined (the default), "ANY", or a literal ProjectStatus. */
+  status?: string;
   client?: string;
   place?: string;
+  period?: ProjectPeriod;
+  /** "YYYY-MM", only meaningful when period === "month". */
+  month?: string;
+  /** "YYYY", only meaningful when period === "year". */
+  year?: string;
 };
+
+const INACTIVE_STATUSES: ProjectStatus[] = ["CLOSED", "CANCELLED"];
+
+/**
+ * "ACTIVE" is a fake status — every real status except Closed/Cancelled —
+ * and is what an unset `status` param means, so the list defaults to
+ * hiding wrapped-up work without that being a silent, unselectable
+ * behavior. "ANY" is the explicit opt-in to see everything, Closed and
+ * Cancelled included.
+ */
+function statusWhere(status: string | undefined): Prisma.ProjectWhereInput {
+  if (!status || status === "ACTIVE") return { status: { notIn: INACTIVE_STATUSES } };
+  if (status === "ANY") return {};
+  return { status: status as ProjectStatus };
+}
+
+/** Project dates overlap the [start, end) range at all — not just start within it. */
+function periodWhere(filters: ProjectListFilters): Prisma.ProjectWhereInput {
+  if (!filters.period) return {};
+  const now = new Date();
+  if (filters.period === "future") return { endDate: { gte: now } };
+  if (filters.period === "past") return { endDate: { lt: now } };
+
+  let start: Date;
+  let end: Date;
+  if (filters.period === "week") {
+    start = mondayOf(now);
+    end = addDays(start, 7);
+  } else if (filters.period === "month" && filters.month) {
+    const [y, m] = filters.month.split("-").map(Number);
+    if (!y || !m) return {};
+    start = new Date(y, m - 1, 1);
+    end = new Date(y, m, 1);
+  } else if (filters.period === "year" && filters.year) {
+    const y = Number(filters.year);
+    if (!y) return {};
+    start = new Date(y, 0, 1);
+    end = new Date(y + 1, 0, 1);
+  } else {
+    return {};
+  }
+  return { startDate: { lt: end }, endDate: { gte: start } };
+}
 
 export async function getProjectList(user: SessionUser, filters: ProjectListFilters) {
   const where: Prisma.ProjectWhereInput = {
     ...projectWhereForUser(user),
-    // Closed projects are still real records (still counted in `total`,
-    // still reachable via a direct link) — just excluded from the default
-    // list view so it doesn't fill up with wrapped-up work. Selecting
-    // "Closed" explicitly in the status filter still shows them.
-    ...(filters.status ? { status: filters.status } : { status: { not: "CLOSED" } }),
+    // Closed/cancelled projects are still real records (still counted in
+    // `total`, still reachable via a direct link) — just excluded from the
+    // default list view so it doesn't fill up with wrapped-up work.
+    ...statusWhere(filters.status),
+    ...periodWhere(filters),
     ...(filters.client ? { companyName: filters.client } : {}),
     ...(filters.place ? { venues: { some: { name: filters.place } } } : {}),
     ...(filters.q
@@ -56,7 +108,7 @@ export async function getProjectList(user: SessionUser, filters: ProjectListFilt
   return {
     projects,
     total,
-    activeCount: projects.filter((e) => !["CLOSED", "CANCELLED"].includes(e.status)).length,
+    activeCount: projects.filter((e) => !INACTIVE_STATUSES.includes(e.status)).length,
     clients: clients.map((c) => c.companyName),
     places: places.map((p) => p.name),
   };

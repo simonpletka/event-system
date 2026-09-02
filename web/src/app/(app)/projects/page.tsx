@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { requireUser, canCreateProject } from "@/lib/authz";
-import { getProjectList, type ProjectListFilters } from "@/lib/queries/projects";
+import { getProjectList, type ProjectListFilters, type ProjectPeriod } from "@/lib/queries/projects";
 import { projectHref, clientHref } from "@/lib/slug";
 import { getWeekCalendarData } from "@/lib/queries/calendar";
 import { formatCurrency, formatDateRange } from "@/lib/format";
@@ -14,6 +14,7 @@ import { EmptyState } from "@/components/ui/EmptyState";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { FilterSelect } from "@/components/ui/FilterSelect";
 import { FilterSearch } from "@/components/ui/FilterSearch";
+import { PeriodFilter } from "@/components/ui/PeriodFilter";
 import { getLocale, getDictionary, type Dictionary } from "@/lib/i18n";
 import type { ProjectStatus } from "@/generated/prisma/enums";
 
@@ -66,14 +67,25 @@ export default async function ProjectsPage({
 
   const filters: ProjectListFilters = {
     q: params.q || undefined,
-    status: (params.status as ProjectStatus) || undefined,
+    status: params.status || undefined,
     client: params.client || undefined,
     place: params.place || undefined,
+    period: (params.period as ProjectPeriod) || undefined,
+    month: params.month || undefined,
+    year: params.year || undefined,
   };
   const { projects, total, activeCount, clients, places } = await getProjectList(user, filters);
   const now = new Date();
   const firstUpcomingId = projects.find((e) => e.endDate >= now)?.id;
-  const eventParams = { status: filters.status, client: filters.client, place: filters.place, q: filters.q };
+  const eventParams = {
+    status: filters.status,
+    client: filters.client,
+    place: filters.place,
+    q: filters.q,
+    period: filters.period,
+    month: filters.month,
+    year: filters.year,
+  };
 
   return (
     <div>
@@ -93,12 +105,31 @@ export default async function ProjectsPage({
           <div className="flex gap-1.5 items-center flex-nowrap overflow-x-auto pb-1 md:pb-0 md:flex-wrap md:overflow-visible">
             <FilterSelect
               label={t.projects.statusFilter}
-              value={filters.status ?? ""}
-              options={STATUSES.map((s) => ({ value: s, label: t.statusProject[s] }))}
+              value={filters.status ?? "ACTIVE"}
+              options={[
+                { value: "ACTIVE", label: t.projects.activeStatus },
+                { value: "ANY", label: t.projects.anyStatus },
+                ...STATUSES.map((s) => ({ value: s, label: t.statusProject[s] })),
+              ]}
               basePath="/projects"
               params={eventParams}
               paramName="status"
-              anyLabel={t.projects.anyStatus}
+            />
+            <PeriodFilter
+              period={filters.period}
+              month={filters.month}
+              year={filters.year}
+              basePath="/projects"
+              params={eventParams}
+              t={{
+                label: t.projects.periodFilter,
+                anyTime: t.projects.anyTime,
+                thisWeek: t.projects.periodThisWeek,
+                future: t.projects.periodFuture,
+                past: t.projects.periodPast,
+                monthLabel: t.projects.periodMonth,
+                yearLabel: t.projects.periodYear,
+              }}
             />
             <FilterSelect
               label={t.projects.clientFilter}
@@ -125,7 +156,7 @@ export default async function ProjectsPage({
               anyLabel={t.projects.anyPlace}
             />
             <FilterSearch value={filters.q ?? ""} basePath="/projects" params={eventParams} placeholder={t.common.search} />
-            {(filters.q || filters.status || filters.client || filters.place) && (
+            {(filters.q || filters.status || filters.client || filters.place || filters.period) && (
               <Link href="/projects" className="text-[9px] placeholder-text hover:text-ink underline underline-offset-2 shrink-0">
                 {t.projects.clear}
               </Link>
@@ -193,7 +224,7 @@ export default async function ProjectsPage({
       {projects.length === 0 && (
         <EmptyState
           message={t.projects.noProjectsMatch}
-          actionLabel={canCreateProject(user) && !(filters.q || filters.status || filters.client || filters.place) ? t.projects.newProject : undefined}
+          actionLabel={canCreateProject(user) && !(filters.q || filters.status || filters.client || filters.place || filters.period) ? t.projects.newProject : undefined}
           actionHref="/projects/new"
         />
       )}
