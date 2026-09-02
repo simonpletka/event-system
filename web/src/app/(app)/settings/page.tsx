@@ -94,7 +94,7 @@ export default async function SettingsPage({
         <div className="flex items-end justify-between">
           <div>
             <div className="heading-label">{tabEyebrow}</div>
-            <h1 className="text-[22px] md:text-[28px] font-bold tracking-tight mt-1">{t.settings.title}</h1>
+            <h1 className="text-[26px] md:text-[34px] font-bold tracking-tight mt-1">{t.settings.title}</h1>
           </div>
         </div>
 

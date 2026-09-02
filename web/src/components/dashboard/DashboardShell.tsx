@@ -43,7 +43,7 @@ export function DashboardShell({
       <PageHeader>
         <div className={COL}>
           <div className="flex items-end justify-between gap-3">
-            <h1 className="text-[28px] font-bold tracking-tight">{title}</h1>
+            <h1 className="text-[34px] font-bold tracking-tight">{title}</h1>
             {action}
           </div>
 

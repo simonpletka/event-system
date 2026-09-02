@@ -27,7 +27,7 @@ export default async function ClientsPage({
         <div className="flex items-end justify-between">
           <div>
             <div className="heading-label">{tc.countHeading(clients.length)}</div>
-            <h1 className="text-[28px] font-bold tracking-tight mt-1">{tc.title}</h1>
+            <h1 className="text-[34px] font-bold tracking-tight mt-1">{tc.title}</h1>
           </div>
           {canManage && (
             <Link href="/clients/new" className="btn font-semibold">

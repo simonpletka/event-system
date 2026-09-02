@@ -12,7 +12,7 @@ export default async function TimeTrackerLayout({ children }: { children: React.
   return (
     <div>
       <PageHeader pb="pb-2">
-        <h1 className="text-[22px] md:text-[28px] font-bold tracking-tight">{t.timeTracker.title}</h1>
+        <h1 className="text-[26px] md:text-[34px] font-bold tracking-tight">{t.timeTracker.title}</h1>
       </PageHeader>
       <MobileStickyTabs>
         <TimeTrackerTabs locale={locale} />
