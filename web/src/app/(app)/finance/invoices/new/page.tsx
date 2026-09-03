@@ -1,7 +1,8 @@
 import Link from "next/link";
 import { requireUser, canManageFinance, projectWhereForUser, quoteWhereForUser } from "@/lib/authz";
 import { prisma } from "@/lib/prisma";
-import { formatCurrency, formatDate } from "@/lib/format";
+import { formatCurrencyWithCzk, formatDate } from "@/lib/format";
+import { toCzkBatch } from "@/lib/fx";
 import { convertQuoteToInvoiceAction } from "@/lib/actions/finance";
 import { getItemCategories } from "@/lib/actions/categories";
 import { InvoiceForm } from "@/components/finance/InvoiceForm";
@@ -37,6 +38,8 @@ export default async function NewInvoicePage() {
     getItemCategories(),
   ]);
 
+  const eligibleQuotesWithCzk = await toCzkBatch(eligibleQuotes.map((q) => ({ ...q, amount: q.total, date: q.issuedAt })));
+
   const dueDays = company?.defaultDueDays ?? 14;
   const defaultDueDate = new Date(new Date().getTime() + dueDays * 86400000).toISOString().slice(0, 10);
 
@@ -44,18 +47,18 @@ export default async function NewInvoicePage() {
     <div className="max-w-3xl">
       <h1 className="text-xl font-semibold border-b-2 border-ink pb-2 mb-4">{ti.newInvoiceH1}</h1>
 
-      {eligibleQuotes.length > 0 && (
+      {eligibleQuotesWithCzk.length > 0 && (
         <div className="border border-ink/25 p-3 mb-5 max-w-2xl">
           <div className="label mb-1.5">{ti.fromAcceptedQuote}</div>
           <p className="text-[10px] placeholder-text mb-2">{ti.carriesOverNote}</p>
-          {eligibleQuotes.map((q) => (
+          {eligibleQuotesWithCzk.map((q) => (
             <div key={q.id} className="flex justify-between items-center py-1.5 border-b border-ink/10 text-[13px] last:border-b-0">
               <div>
                 <Link href={`/finance/quotes/${q.id}`} className="hover:text-accent">
                   {q.number}
                 </Link>{" "}
                 <span className="placeholder-text">
-                  {ti.quoteLine(q.project.title, formatCurrency(q.total, q.currency), formatDate(q.issuedAt))}
+                  {ti.quoteLine(q.project.title, formatCurrencyWithCzk(q.total, q.currency, q.czkAmount), formatDate(q.issuedAt))}
                 </span>
               </div>
               <form action={convertQuoteToInvoiceAction}>

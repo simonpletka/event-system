@@ -9,8 +9,9 @@ import type { BudgetType } from "@/generated/prisma/enums";
  * The Admin-only "Event budget" field on the event form. Emits three form
  * fields the action reads: `budgetType` (NONE|PERCENT|FIXED) plus
  * `budgetPercent` / `budgetAmount`. Shows a live resolved figure against the
- * current quoted value (passed down from ProjectForm, which owns that input's
- * state so this preview stays in sync as it's typed).
+ * project's quoted value — a fixed number for the life of this form, since
+ * quotedValue is derived (latest quote, else invoice) and read-only here,
+ * not something this form can change.
  */
 export function BudgetField({
   locale,

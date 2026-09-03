@@ -20,8 +20,11 @@ function withTotal(items: ItemInput[]) {
   const total = Math.round(
     items.reduce((sum, i) => sum + (i.quantity ?? 1) * i.unitPrice * (1 + (i.vatRate ?? 21) / 100), 0)
   );
+  // Pre-VAT base — no discounts in the seed, so subtotal == sum(qty * unitPrice).
+  const subtotal = Math.round(items.reduce((sum, i) => sum + (i.quantity ?? 1) * i.unitPrice, 0));
   return {
     total,
+    subtotal,
     items: {
       create: items.map((i, idx) => ({
         description: i.description,
@@ -375,7 +378,7 @@ async function main() {
       buildDate: d("2026-09-18T08:00:00"),
       startDate: d("2026-09-19T09:00:00"),
       endDate: d("2026-09-21T18:00:00"),
-      quotedValue: 96000,
+      quotedValue: 86400,
       ownerId: producer.id,
       venues: { create: [{ name: "Lipno resort", address: "Lipno nad Vltavou 250", note: "" }] },
       roadmapItems: { create: [{ type: "MILESTONE" as const, date: d("2026-08-25T11:00:00"), title: "Venue visit" }] },
@@ -388,7 +391,14 @@ async function main() {
             validUntil: d("2026-08-10"),
             issuedAt: d("2026-07-25"),
             createdById: accountant.id,
-            ...withTotal([{ description: "Team offsite — full package", unitPrice: 96000 }]),
+            // The 10% goodwill discount negotiated on this job is counted here,
+            // on the accepted quote — as a discount line against the full
+            // package price (96000 − 9600 = 86400 pre-VAT). The invoices below
+            // bill this quoted figure exactly, so quote total == Σ invoice totals.
+            ...withTotal([
+              { description: "Team offsite — full package", unitPrice: 96000 },
+              { description: "Loyalty discount (10%)", unitPrice: -9600 },
+            ]),
           },
         ],
       },
@@ -397,7 +407,7 @@ async function main() {
 
   const offsite = await prisma.project.findFirstOrThrow({ where: { title: "Team offsite" } });
   const offsiteQuote = await prisma.quote.findFirstOrThrow({ where: { projectId: offsite.id } });
-  const depositData = withTotal([{ description: "Team offsite — deposit (50%)", unitPrice: 48000 }]);
+  const depositData = withTotal([{ description: "Team offsite — deposit (50%)", unitPrice: 43200 }]);
   await prisma.invoice.create({
     data: {
       projectId: offsite.id,
@@ -420,10 +430,10 @@ async function main() {
       },
     },
   });
-  // Demoing the discount feature: 10% off, applied to the pre-VAT base with
-  // VAT recomputed on the discounted amount — base 48000, discount 4800,
-  // discounted base 43200, VAT 21% of that is 9072, total 52272.
-  const balanceData = withTotal([{ description: "Team offsite — balance (50%)", unitPrice: 48000 }]);
+  // Second (balance) invoice for the same job. The 10% discount lives on the
+  // accepted quote, not on the invoices — so deposit + balance bill the quoted
+  // 86400 pre-VAT split 50/50 (43200 each), and Σ invoice totals == quote total.
+  const balanceData = withTotal([{ description: "Team offsite — balance (50%)", unitPrice: 43200 }]);
   await prisma.invoice.create({
     data: {
       projectId: offsite.id,
@@ -434,9 +444,6 @@ async function main() {
       dueDate: d("2026-08-22"),
       issuedAt: d("2026-08-08"),
       ...balanceData,
-      total: 52272,
-      discountType: "PERCENT",
-      discountValue: 10,
       history: {
         create: [
           { type: "CREATED", message: "Created from quote 26-003", createdAt: d("2026-08-08"), userId: accountant.id },
@@ -686,6 +693,7 @@ async function main() {
       contacts: { create: [{ name: "Lukas Wagner", phone: "+49 170 552 3311", email: "wagner@solventia.de" }] },
       companyName: "Solventia GmbH",
       companyAddress: "Leopoldstraße 44, München",
+      companyDic: "DE811128135",
       status: "IN_PROGRESS",
       buildDate: d("2026-08-24T08:00:00"),
       startDate: d("2026-08-26T09:00:00"),
@@ -717,9 +725,10 @@ async function main() {
             issuedAt: d("2026-07-30"),
             createdById: admin.id,
             currency: "EUR",
+            // EU B2B customer with a valid VAT ID — reverse charge, 0% Czech VAT.
             ...withTotal([
-              { description: "Stand build — 24m²", unitPrice: 1200, category: "Rigging" },
-              { description: "On-site crew — 3 days", quantity: 3, unitPrice: 250, category: "People" },
+              { description: "Stand build — 24m²", unitPrice: 1200, category: "Rigging", vatRate: 0 },
+              { description: "On-site crew — 3 days", quantity: 3, unitPrice: 250, category: "People", vatRate: 0 },
             ]),
           },
         ],
@@ -730,8 +739,8 @@ async function main() {
   const munich = await prisma.project.findFirstOrThrow({ where: { title: "Munich Trade Fair" } });
   const munichQuote = await prisma.quote.findFirstOrThrow({ where: { projectId: munich.id } });
   const munichInvoiceData = withTotal([
-    { description: "Stand build — 24m²", unitPrice: 1200, category: "Rigging" },
-    { description: "On-site crew — 3 days", quantity: 3, unitPrice: 250, category: "People" },
+    { description: "Stand build — 24m²", unitPrice: 1200, category: "Rigging", vatRate: 0 },
+    { description: "On-site crew — 3 days", quantity: 3, unitPrice: 250, category: "People", vatRate: 0 },
   ]);
   await prisma.invoice.create({
     data: {
@@ -1004,6 +1013,17 @@ async function main() {
       { paidById: admin.id, amount: 8900, date: d("2026-08-11"), category: "GEAR", note: "replacement laptop charger" },
     ],
   });
+
+  // --- backfill VAT on seeded expenses so Finance → Reports → VAT has input-VAT data.
+  // Most receipts carry reclaimable 21% VAT; representation (food/groceries) is
+  // non-deductible in CZ, so those stay at vatAmount 0. ---
+  for (const e of await prisma.expense.findMany({ select: { id: true, amount: true, category: true } })) {
+    const deductible = !["FOOD", "GROCERY"].includes(e.category);
+    await prisma.expense.update({
+      where: { id: e.id },
+      data: { vatRate: 21, vatAmount: deductible ? Math.round(e.amount - e.amount / 1.21) : 0 },
+    });
+  }
 
   // --- more time-tracking history so Compare Projects has real multi-project, multi-person data ---
   const gala = await prisma.project.findFirstOrThrow({ where: { title: "Summer Gala" } });

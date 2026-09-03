@@ -75,7 +75,6 @@ export function ProjectForm({
 
   const [startDate, setStartDate] = useState(toDateTimeLocal(defaults.startDate));
   const [endDate, setEndDate] = useState(toDateTimeLocal(defaults.endDate));
-  const [quotedValue, setQuotedValue] = useState(defaults.quotedValue);
 
   const tf = t.projects.form;
 
@@ -124,32 +123,20 @@ export function ProjectForm({
         <textarea name="brief" defaultValue={defaults.brief} rows={3} className="input" />
       </Field>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-        <Field label={tf.statusLabel}>
-          <select name="status" defaultValue={defaults.status} className="input">
-            {STATUS_KEYS.map((s) => (
-              <option key={s} value={s}>
-                {t.statusProject[s]}
-              </option>
-            ))}
-          </select>
-        </Field>
-        <Field label={tf.quotedValueLabel}>
-          <input
-            name="quotedValue"
-            type="number"
-            min={0}
-            value={quotedValue}
-            onChange={(e) => setQuotedValue(Math.max(0, Number(e.target.value) || 0))}
-            className="input"
-          />
-        </Field>
-      </div>
+      <Field label={tf.statusLabel}>
+        <select name="status" defaultValue={defaults.status} className="input">
+          {STATUS_KEYS.map((s) => (
+            <option key={s} value={s}>
+              {t.statusProject[s]}
+            </option>
+          ))}
+        </select>
+      </Field>
 
       {canEditBudget && (
         <BudgetField
           locale={locale}
-          quotedValue={quotedValue}
+          quotedValue={defaults.quotedValue}
           defaultType={defaults.budgetType}
           defaultValue={defaults.budgetValue}
         />

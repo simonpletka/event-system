@@ -5,7 +5,6 @@ import { requireUser, canManageClients, canCreateProject, isAdmin } from "@/lib/
 import { getClientDetail } from "@/lib/queries/clients";
 import { formatCurrency, formatDateRange } from "@/lib/format";
 import { deleteClientContactAction, deleteClientAction } from "@/lib/actions/clients";
-import { BackLink } from "@/components/BackLink";
 import { ProjectStatusPill } from "@/components/StatusPill";
 import { ConfirmDeleteButton } from "@/components/ui/ConfirmDeleteButton";
 import { AddContactButton } from "@/components/AddContactModal";
@@ -28,7 +27,6 @@ export default async function ClientDetailPage({ params }: { params: Promise<{ s
     <div>
       <PageHeader>
         <div className="max-w-6xl">
-        <BackLink href="/clients">{tc.backLink}</BackLink>
         <div className="flex justify-between items-end flex-wrap gap-2 mt-2">
           <div className="text-[2.5rem] font-semibold leading-none">{client.name}</div>
           <div className="flex gap-1.5 items-center">
@@ -99,6 +97,14 @@ export default async function ClientDetailPage({ params }: { params: Promise<{ s
           <div className="heading-label !text-[12px]">{tc.projectsHeading(client.projects.length)}</div>
           {client.projects.length === 0 && <p className="text-sm placeholder-text mt-2">{tc.noProjectsLinked}</p>}
           <div className="hidden md:block mt-1.5">
+            {client.projects.length > 0 && (
+              <div className="grid grid-cols-[1.4fr_1fr_.8fr_.8fr] gap-2.5 border-b border-ink/14 pb-1.5 px-2.5 [&_.heading-label]:font-bold [&_.heading-label]:!text-[9px]">
+                <span className="heading-label">{t.projects.colProject}</span>
+                <span className="heading-label">{tc.colDates}</span>
+                <span className="heading-label">{t.projects.colValue}</span>
+                <span className="heading-label">{t.projects.colStatus}</span>
+              </div>
+            )}
             {client.projects.map((e) => (
               <Link
                 key={e.id}

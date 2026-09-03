@@ -1,7 +1,8 @@
 import Link from "next/link";
 import { getAccountantDashboard } from "@/lib/queries/dashboard";
 import { getDictionary, type Locale } from "@/lib/i18n";
-import { formatCurrency, formatDateRange } from "@/lib/format";
+import { formatCurrencyWithCzk, formatDateRange } from "@/lib/format";
+import { toCzkBatch } from "@/lib/fx";
 import { projectHref } from "@/lib/slug";
 import type { SessionUser } from "@/lib/authz";
 import { DashboardShell, LinkAction } from "./DashboardShell";
@@ -18,6 +19,10 @@ export async function AccountantDashboard({ user, locale }: { user: SessionUser;
   const t = getDictionary(locale);
   const td = t.dashboard;
   const d = await getAccountantDashboard(user);
+  const [overdueWithCzk, quotesWithCzk] = await Promise.all([
+    toCzkBatch(d.overdue.map((inv) => ({ ...inv, amount: inv.total, date: inv.issuedAt }))),
+    toCzkBatch(d.quotes.map((q) => ({ ...q, amount: q.total, date: q.issuedAt }))),
+  ]);
 
   return (
     <DashboardShell title={td.title} action={<LinkAction href="/finance" label={td.openFinance} />}>
@@ -27,12 +32,12 @@ export async function AccountantDashboard({ user, locale }: { user: SessionUser;
           <EmptyState>{td.nothingWaiting}</EmptyState>
         ) : (
           <RowCard>
-            {d.overdue.map((inv) => (
+            {overdueWithCzk.map((inv) => (
               <Row key={inv.id}>
                 <span className="font-mono text-[11px] text-ink/45 whitespace-nowrap">{inv.number}</span>
                 <span className="flex-1 min-w-0 truncate">
                   {inv.project.title}{" "}
-                  <span className="placeholder-text tabular-nums">· {formatCurrency(inv.total, inv.currency)}</span>
+                  <span className="placeholder-text tabular-nums">· {formatCurrencyWithCzk(inv.total, inv.currency, inv.czkAmount)}</span>
                 </span>
                 <span className="tag tag-warning whitespace-nowrap">{td.daysLate(inv.daysOverdue)}</span>
                 <Link
@@ -53,7 +58,7 @@ export async function AccountantDashboard({ user, locale }: { user: SessionUser;
           <EmptyState>{td.nothingWaiting}</EmptyState>
         ) : (
           <RowCard>
-            {d.quotes.map((q) => (
+            {quotesWithCzk.map((q) => (
               <Link key={q.id} href={`/finance/quotes/${q.id}`} className="block">
                 <Row>
                   <span className="font-mono text-[11px] text-ink/45 whitespace-nowrap">{q.number}</span>
@@ -62,7 +67,7 @@ export async function AccountantDashboard({ user, locale }: { user: SessionUser;
                     {td.sentAgo(q.daysSinceSent)}
                   </span>
                   <span className="font-semibold tabular-nums whitespace-nowrap">
-                    {formatCurrency(q.total, q.currency)}
+                    {formatCurrencyWithCzk(q.total, q.currency, q.czkAmount)}
                   </span>
                 </Row>
               </Link>

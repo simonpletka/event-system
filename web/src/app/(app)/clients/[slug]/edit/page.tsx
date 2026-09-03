@@ -1,9 +1,8 @@
 import { notFound } from "next/navigation";
-import { parseClientSlug, clientHref } from "@/lib/slug";
+import { parseClientSlug } from "@/lib/slug";
 import { requireUser, canManageClients } from "@/lib/authz";
 import { prisma } from "@/lib/prisma";
 import { ClientForm } from "@/components/ClientForm";
-import { BackLink } from "@/components/BackLink";
 import { getLocale, getDictionary } from "@/lib/i18n";
 
 export default async function EditClientPage({ params }: { params: Promise<{ slug: string }> }) {
@@ -17,7 +16,6 @@ export default async function EditClientPage({ params }: { params: Promise<{ slu
 
   return (
     <div className="max-w-3xl">
-      <BackLink href={clientHref(client)}>{client.name}</BackLink>
       <h1 className="text-[28px] font-bold tracking-tight border-b border-ink/14 pb-4 mb-5 mt-2">{t.clients.editClientH1(client.name)}</h1>
       {!canManageClients(user) ? (
         <p className="text-lg font-semibold text-ink">{t.clients.noPermEdit}</p>

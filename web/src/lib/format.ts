@@ -15,6 +15,19 @@ export function formatCurrency(amount: number, currency: CurrencyCode = "CZK") {
 }
 
 /**
+ * On-screen UI (never the generated PDF, which shows only the document's
+ * real billed currency): a non-CZK amount gets its CZK-converted value in
+ * brackets alongside it. `czkAmount` is computed server-side via
+ * `src/lib/fx.ts`'s toCzk/toCzkBatch (async, needs the document's issue
+ * date) and passed in already-converted, since this stays a sync formatter.
+ */
+export function formatCurrencyWithCzk(amount: number, currency: CurrencyCode, czkAmount: number | null) {
+  const primary = formatCurrency(amount, currency);
+  if (currency === "CZK" || czkAmount === null) return primary;
+  return `${primary} (${formatCurrency(czkAmount, "CZK")})`;
+}
+
+/**
  * True when a raw summed total spans currencies — either a non-CZK amount is
  * present, or more than one currency is. Aggregates in this app sum raw Int
  * amounts with no FX conversion and label the result CZK (see CLAUDE.md); this

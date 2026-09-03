@@ -7,6 +7,7 @@ import {
   type SessionUser,
 } from "@/lib/authz";
 import { resolveProjectBudget } from "@/lib/project-budget";
+import { toCzkBatch } from "@/lib/fx";
 import type { Prisma } from "@/generated/prisma/client";
 import type { ProjectStatus } from "@/generated/prisma/enums";
 
@@ -31,6 +32,7 @@ async function overdueInvoices(projectWhere: Prisma.ProjectWhereInput) {
     number: i.number,
     total: i.total,
     currency: i.currency,
+    issuedAt: i.issuedAt,
     daysOverdue: daysBetween(now, i.dueDate),
     project: i.project,
   }));
@@ -47,7 +49,9 @@ async function waitingQuotes(projectWhere: Prisma.ProjectWhereInput) {
     id: q.id,
     number: q.number,
     total: q.total,
+    subtotal: q.subtotal,
     currency: q.currency,
+    issuedAt: q.issuedAt,
     daysSinceSent: daysBetween(now, q.issuedAt),
     project: q.project,
   }));
@@ -87,27 +91,42 @@ async function latestExpenses(expenseWhere: Prisma.ExpenseWhereInput, take: numb
 }
 
 /**
- * Current calendar month's money movement. Raw cross-currency sums labelled
- * CZK downstream — the same deliberate no-FX simplification the Reports and
- * client rollups use (see CLAUDE.md).
+ * Current calendar month's money movement. Non-CZK invoices/payments convert
+ * to CZK at the CNB fixing rate on the parent invoice's issue date (see
+ * src/lib/fx.ts) rather than summing raw cross-currency amounts.
  */
 export async function getMonthlyCashflow() {
   const now = new Date();
   const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
   const monthEnd = new Date(now.getFullYear(), now.getMonth() + 1, 1);
 
-  const [invoicedAgg, paidAgg, expenseAgg, unpaid] = await Promise.all([
-    prisma.invoice.aggregate({ _sum: { total: true }, where: { issuedAt: { gte: monthStart, lt: monthEnd } } }),
-    prisma.payment.aggregate({ _sum: { amount: true }, where: { date: { gte: monthStart, lt: monthEnd } } }),
+  const [invoicedRows, paidRows, expenseAgg, unpaidRows] = await Promise.all([
+    prisma.invoice.findMany({
+      where: { issuedAt: { gte: monthStart, lt: monthEnd } },
+      select: { total: true, currency: true, issuedAt: true },
+    }),
+    prisma.payment.findMany({
+      where: { date: { gte: monthStart, lt: monthEnd } },
+      select: { amount: true, invoice: { select: { currency: true, issuedAt: true } } },
+    }),
     prisma.expense.aggregate({ _sum: { amount: true }, where: { date: { gte: monthStart, lt: monthEnd } } }),
-    prisma.invoice.findMany({ where: { status: { not: "PAID" } }, select: { total: true, amountPaid: true } }),
+    prisma.invoice.findMany({
+      where: { status: { not: "PAID" } },
+      select: { total: true, amountPaid: true, currency: true, issuedAt: true },
+    }),
+  ]);
+
+  const [invoicedCzk, paidCzk, outstandingCzk] = await Promise.all([
+    toCzkBatch(invoicedRows.map((i) => ({ amount: i.total, currency: i.currency, date: i.issuedAt }))),
+    toCzkBatch(paidRows.map((p) => ({ amount: p.amount, currency: p.invoice.currency, date: p.invoice.issuedAt }))),
+    toCzkBatch(unpaidRows.map((i) => ({ amount: i.total - i.amountPaid, currency: i.currency, date: i.issuedAt }))),
   ]);
 
   return {
     monthStart,
-    invoiced: invoicedAgg._sum.total ?? 0,
-    paid: paidAgg._sum.amount ?? 0,
-    outstanding: unpaid.reduce((s, i) => s + (i.total - i.amountPaid), 0),
+    invoiced: invoicedCzk.reduce((s, i) => s + i.czkAmount, 0),
+    paid: paidCzk.reduce((s, i) => s + i.czkAmount, 0),
+    outstanding: outstandingCzk.reduce((s, i) => s + i.czkAmount, 0),
     expenses: expenseAgg._sum.amount ?? 0,
   };
 }
@@ -129,13 +148,20 @@ export async function getAdminDashboard(user: SessionUser) {
     getMonthlyCashflow(),
   ]);
 
+  const [overdueCzk, quotesCzk] = await Promise.all([
+    // Overdue is real money owed (incl. VAT); quotes aren't invoiced yet, so
+    // their total is pipeline value, not cash — excl. VAT (see openValue).
+    toCzkBatch(overdue.map((i) => ({ amount: i.total, currency: i.currency, date: i.issuedAt }))),
+    toCzkBatch(quotes.map((q) => ({ amount: q.subtotal, currency: q.currency, date: q.issuedAt }))),
+  ]);
+
   return {
     activeProjects,
     endingThisMonth: upcoming.filter((e) => e.endDate < new Date(now.getFullYear(), now.getMonth() + 1, 1)).length,
-    overdue: { count: overdue.length, total: overdue.reduce((s, i) => s + i.total, 0), oldestDays: overdue[0]?.daysOverdue ?? 0 },
+    overdue: { count: overdue.length, total: overdueCzk.reduce((s, i) => s + i.czkAmount, 0), oldestDays: overdue[0]?.daysOverdue ?? 0 },
     quotes: {
       count: quotes.length,
-      total: quotes.reduce((s, q) => s + q.total, 0),
+      total: quotesCzk.reduce((s, q) => s + q.czkAmount, 0),
       rangeDays: quotes.length
         ? ([quotes[quotes.length - 1].daysSinceSent, quotes[0].daysSinceSent] as const)
         : ([0, 0] as const),

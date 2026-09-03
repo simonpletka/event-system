@@ -1,5 +1,6 @@
 import { randomUUID } from "crypto";
 import { isoDate } from "@/lib/calendar";
+import { discountFactor, vatBucketsForInvoice } from "@/lib/vat";
 
 /**
  * ISDOC 6.0.2 ("Národní standard pro elektronickou fakturaci") — the Czech/
@@ -85,24 +86,15 @@ function splitAccountNumber(accountNumber: string): { id: string; bankCode: stri
 }
 
 export function buildIsdocXml(input: IsdocInvoiceInput): string {
-  const base = input.items.reduce((s, i) => s + i.quantity * i.unitPrice, 0);
-  const vat = input.items.reduce((s, i) => s + i.quantity * i.unitPrice * (i.vatRate / 100), 0);
-  const grossBeforeDiscount = base + vat;
-  // Same proportional-scaling identity the app's own applyDiscount() relies on
-  // (see actions/finance.ts): scaling every line by discountedBase/base
-  // reproduces the exact same blended-VAT total, while still letting each
-  // line keep its own real VAT rate for a correct per-rate TaxSubTotal.
-  const factor = grossBeforeDiscount > 0 ? Math.max(0, Math.min(1, input.total / grossBeforeDiscount)) : 1;
+  // Proportional-scaling identity the app's own applyDiscount() relies on (see
+  // actions/finance.ts) — shared with the finance report via lib/vat.ts so the
+  // per-rate split can't drift between the two.
+  const factor = discountFactor(input.items, input.total);
+  const vatBuckets = vatBucketsForInvoice(input.items, input.total);
 
-  const vatBuckets = new Map<number, { base: number; vat: number }>();
   const lines = input.items.map((item, idx) => {
     const lineBase = item.quantity * item.unitPrice * factor;
     const lineVat = lineBase * (item.vatRate / 100);
-    const bucket = vatBuckets.get(item.vatRate) ?? { base: 0, vat: 0 };
-    bucket.base += lineBase;
-    bucket.vat += lineVat;
-    vatBuckets.set(item.vatRate, bucket);
-
     const lineBaseR = Math.round(lineBase);
     const lineVatR = Math.round(lineVat);
     return (
