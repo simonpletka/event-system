@@ -3,7 +3,6 @@ import { requireUser, canManageUsers } from "@/lib/authz";
 import { prisma } from "@/lib/prisma";
 import { getLocale, getDictionary } from "@/lib/i18n";
 import { EditUserForm } from "@/components/settings/EditUserForm";
-import { BackLink } from "@/components/BackLink";
 
 export default async function EditUserPage({ params }: { params: Promise<{ id: string }> }) {
   const user = await requireUser();
@@ -28,7 +27,6 @@ export default async function EditUserPage({ params }: { params: Promise<{ id: s
 
   return (
     <div className="max-w-3xl">
-      <BackLink href="/settings">{t.settings.users.settingsBackLink}</BackLink>
       <h1 className="text-[28px] font-bold tracking-tight border-b border-ink/14 pb-4 mb-5 mt-2">{t.settings.users.editName(target.name)}</h1>
       <EditUserForm
         id={target.id}

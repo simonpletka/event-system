@@ -12,6 +12,7 @@ import { buildQuotePdfBuffer } from "@/lib/pdf/build-quote-pdf";
 import { sendEmail, renderEmailTemplate, EmailNotConfiguredError } from "@/lib/email";
 import { tryUploadFinanceDocument } from "@/lib/gdrive";
 import { formatCurrency, formatDate } from "@/lib/format";
+import { syncQuotedValue } from "@/lib/quoted-value";
 import type { ExpenseCategory, QuoteStatus, Currency, DiscountType } from "@/generated/prisma/enums";
 
 export type FinanceFormState = { error?: string; success?: boolean };
@@ -41,11 +42,18 @@ function itemsTotal(items: { quantity: number; unitPrice: number; vatRate: numbe
   return Math.round(items.reduce((sum, i) => sum + i.quantity * i.unitPrice * (1 + i.vatRate / 100), 0));
 }
 
+/** Pre-VAT base — what a Quote's own `subtotal` stores (an Invoice's goes through applyDiscount instead, since a discount is applied to the base). */
+function itemsBase(items: { quantity: number; unitPrice: number }[]) {
+  return Math.round(items.reduce((sum, i) => sum + i.quantity * i.unitPrice, 0));
+}
+
 /**
  * Discount is applied to the pre-VAT base, then VAT is recomputed on the
  * discounted base — not a flat cut off the final total. That's both the
  * legally correct way to handle a discounted invoice (VAT is owed on what
- * was actually charged) and the more common real-world behavior.
+ * was actually charged) and the more common real-world behavior. Returns
+ * the discounted base too (stored as the invoice's `subtotal`), not just
+ * the final VAT-inclusive total.
  */
 function applyDiscount(
   items: { quantity: number; unitPrice: number; vatRate: number }[],
@@ -55,14 +63,14 @@ function applyDiscount(
   const base = items.reduce((sum, i) => sum + i.quantity * i.unitPrice, 0);
   const vat = items.reduce((sum, i) => sum + i.quantity * i.unitPrice * (i.vatRate / 100), 0);
   if (discountType === "NONE" || discountValue <= 0) {
-    return { total: Math.round(base + vat), discountAmount: 0 };
+    return { total: Math.round(base + vat), subtotal: Math.round(base), discountAmount: 0 };
   }
   const avgVatRate = base > 0 ? vat / base : 0;
   const discountAmount =
     discountType === "PERCENT" ? Math.round(base * (Math.min(100, discountValue) / 100)) : Math.min(base, discountValue);
   const discountedBase = base - discountAmount;
   const discountedVat = discountedBase * avgVatRate;
-  return { total: Math.round(discountedBase + discountedVat), discountAmount };
+  return { total: Math.round(discountedBase + discountedVat), subtotal: Math.round(discountedBase), discountAmount };
 }
 
 // --- Quotes ---
@@ -96,9 +104,11 @@ export async function createQuoteAction(_prev: FinanceFormState, formData: FormD
       createdById: user.id,
       validUntil: new Date(validUntil),
       total: itemsTotal(items),
+      subtotal: itemsBase(items),
       items: { create: items.map((i, idx) => ({ ...i, sortOrder: idx })) },
     },
   });
+  await syncQuotedValue(projectId);
 
   revalidatePath("/finance/quotes");
   revalidatePath(`/projects/${projectId}`, "layout");
@@ -131,10 +141,12 @@ export async function updateQuoteAction(_prev: FinanceFormState, formData: FormD
         hideItemPrices,
         validUntil: new Date(validUntil),
         total: itemsTotal(items),
+        subtotal: itemsBase(items),
         items: { create: items.map((i, idx) => ({ ...i, sortOrder: idx })) },
       },
     }),
   ]);
+  await syncQuotedValue(existing.projectId);
 
   revalidatePath("/finance/quotes");
   redirect(`/finance/quotes/${id}`);
@@ -160,11 +172,17 @@ export async function updateQuoteStatusAction(formData: FormData) {
   if (!quote || quote.status !== "SENT") return;
 
   await prisma.quote.update({ where: { id }, data: { status } });
+  // Status is part of computeQuotedValue's own branching (ACCEPTED wins over
+  // any invoice; DECLINED falls through to summed invoices) — always re-sync.
+  await syncQuotedValue(quote.projectId);
 
   if (status === "ACCEPTED") await exportQuoteToDrive(user, id);
 
   revalidatePath(`/finance/quotes/${id}`);
   revalidatePath("/finance/quotes");
+  revalidatePath(`/projects/${quote.projectId}`, "layout");
+  revalidatePath("/projects");
+  revalidatePath("/clients");
 }
 
 /** Best-effort — a Google Drive hiccup should never block a quote actually being marked accepted. */
@@ -212,6 +230,7 @@ export async function duplicateQuoteAction(formData: FormData) {
       createdById: user.id,
       validUntil: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000),
       total: quote.total,
+      subtotal: quote.subtotal,
       items: {
         create: quote.items.map((i, idx) => ({
           description: i.description,
@@ -224,6 +243,7 @@ export async function duplicateQuoteAction(formData: FormData) {
       },
     },
   });
+  await syncQuotedValue(quote.projectId);
 
   revalidatePath("/finance/quotes");
   revalidatePath(`/projects/${quote.projectId}`, "layout");
@@ -240,6 +260,7 @@ export async function deleteQuoteAction(formData: FormData) {
   if (!quote) return;
 
   await prisma.quote.delete({ where: { id } });
+  await syncQuotedValue(quote.projectId);
 
   revalidatePath("/finance/quotes");
   revalidatePath(`/projects/${quote.projectId}`, "layout");
@@ -270,6 +291,7 @@ export async function convertQuoteToInvoiceAction(formData: FormData) {
       number,
       variableSymbol: variableSymbolFor(number),
       total: quote.total,
+      subtotal: quote.subtotal,
       currency: quote.currency,
       hideItemPrices: quote.hideItemPrices,
       dueDate,
@@ -292,6 +314,7 @@ export async function convertQuoteToInvoiceAction(formData: FormData) {
       },
     },
   });
+  await syncQuotedValue(quote.projectId);
 
   revalidatePath("/finance/quotes");
   revalidatePath("/finance/invoices");
@@ -319,7 +342,7 @@ export async function createInvoiceAction(_prev: FinanceFormState, formData: For
   const project = await prisma.project.findUnique({ where: { id: projectId }, select: { number: true } });
   if (!project) return { error: "Project not found." };
 
-  const { total, discountAmount } = applyDiscount(items, discountType, discountValue);
+  const { total, subtotal, discountAmount } = applyDiscount(items, discountType, discountValue);
   const number = await nextInvoiceNumber(projectId, project.number);
   const invoice = await prisma.invoice.create({
     data: {
@@ -327,6 +350,7 @@ export async function createInvoiceAction(_prev: FinanceFormState, formData: For
       number,
       variableSymbol: variableSymbolFor(number),
       total,
+      subtotal,
       currency,
       hideItemPrices,
       discountType,
@@ -349,6 +373,7 @@ export async function createInvoiceAction(_prev: FinanceFormState, formData: For
       },
     },
   });
+  await syncQuotedValue(projectId);
 
   revalidatePath("/finance/invoices");
   revalidatePath(`/projects/${projectId}`, "layout");
@@ -498,6 +523,7 @@ export async function deleteInvoiceAction(formData: FormData) {
   if (!invoice) return;
 
   await prisma.invoice.delete({ where: { id } });
+  await syncQuotedValue(invoice.projectId);
 
   revalidatePath("/finance/invoices");
   revalidatePath(`/projects/${invoice.projectId}`, "layout");
@@ -506,12 +532,21 @@ export async function deleteInvoiceAction(formData: FormData) {
 
 // --- Expenses ---
 
+/** VAT on a receipt: rate is 21/12/0, deductible amount is clamped to [0, gross]. */
+function parseExpenseVat(formData: FormData, amount: number) {
+  const rate = Math.round(Number(formData.get("vatRate")) || 0);
+  const vatRate = [21, 12, 0].includes(rate) ? rate : 21;
+  const vatAmount = Math.min(Math.max(0, Math.round(Number(formData.get("vatAmount")) || 0)), Math.max(0, amount));
+  return { vatRate, vatAmount };
+}
+
 export async function createExpenseAction(_prev: FinanceFormState, formData: FormData): Promise<FinanceFormState> {
   const user = await requireUser();
 
   const projectIdRaw = String(formData.get("projectId") ?? "");
   const projectId = projectIdRaw === "overhead" || projectIdRaw === "" ? null : projectIdRaw;
   const amount = Math.round(Number(formData.get("amount")) || 0);
+  const { vatRate, vatAmount } = parseExpenseVat(formData, amount);
   const date = String(formData.get("date") ?? "");
   const category = formData.get("category") as ExpenseCategory;
   const note = String(formData.get("note") ?? "");
@@ -556,7 +591,7 @@ export async function createExpenseAction(_prev: FinanceFormState, formData: For
   }
 
   await prisma.expense.create({
-    data: { projectId, paidById, amount, date: new Date(date), category, note, receiptPath },
+    data: { projectId, paidById, amount, vatRate, vatAmount, date: new Date(date), category, note, receiptPath },
   });
 
   if (receipt instanceof File && receipt.size > 0) await exportExpenseReceiptToDrive(receipt, project?.number ?? null, date);
@@ -600,6 +635,7 @@ export async function updateExpenseAction(_prev: FinanceFormState, formData: For
   const projectIdRaw = String(formData.get("projectId") ?? "");
   const projectId = projectIdRaw === "overhead" || projectIdRaw === "" ? null : projectIdRaw;
   const amount = Math.round(Number(formData.get("amount")) || 0);
+  const { vatRate, vatAmount } = parseExpenseVat(formData, amount);
   const date = String(formData.get("date") ?? "");
   const category = formData.get("category") as ExpenseCategory;
   const note = String(formData.get("note") ?? "");
@@ -651,7 +687,7 @@ export async function updateExpenseAction(_prev: FinanceFormState, formData: For
 
   await prisma.expense.update({
     where: { id },
-    data: { projectId, paidById, amount, date: new Date(date), category, note, receiptPath },
+    data: { projectId, paidById, amount, vatRate, vatAmount, date: new Date(date), category, note, receiptPath },
   });
 
   if (newReceipt) await exportExpenseReceiptToDrive(newReceipt, project?.number ?? null, date);

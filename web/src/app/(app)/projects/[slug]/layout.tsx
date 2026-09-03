@@ -7,7 +7,6 @@ import { notionPageUrl } from "@/lib/notion";
 import { formatDateRange } from "@/lib/format";
 import { ProjectStatusPill } from "@/components/StatusPill";
 import { ProjectTabs } from "@/components/ProjectTabs";
-import { BackLink } from "@/components/BackLink";
 import { DeleteProjectButton } from "@/components/DeleteProjectButton";
 import { deleteProjectAction } from "@/lib/actions/projects";
 import { PageHeader } from "@/components/ui/PageHeader";
@@ -38,10 +37,9 @@ export default async function EventDetailLayout({
     <div>
       <PageHeader pb="pb-2">
         <div className="max-w-6xl">
-        <BackLink href="/projects">{t.projects.backToProjects}</BackLink>
         <div className="flex justify-between items-end flex-wrap gap-2 mt-2">
           <div>
-            <div className="text-[19px] md:text-[24px] font-bold tracking-tight">
+            <div className="text-[2.5rem] font-semibold leading-none">
               <span className="placeholder-text font-medium">{project.number}</span> {project.title}
             </div>
             <div className="flex flex-wrap items-center gap-x-1.5 gap-y-1 text-[12px] mt-1.5">

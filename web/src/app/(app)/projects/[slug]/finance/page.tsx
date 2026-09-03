@@ -4,7 +4,8 @@ import { requireUser, canViewProjectBudget, canManageFinance, isAdmin, isAccount
 import { getProjectDetail, resolveProjectIdByNumber } from "@/lib/queries/projects";
 import { parseProjectSlug, projectHref } from "@/lib/slug";
 import { resolveProjectBudget } from "@/lib/project-budget";
-import { formatCurrency, formatDate, isMixedCurrencyTotal } from "@/lib/format";
+import { formatCurrency, formatCurrencyWithCzk, formatDate, isMixedCurrencyTotal } from "@/lib/format";
+import { toCzkBatch } from "@/lib/fx";
 import { QuoteStatusPill, InvoiceStatusPill } from "@/components/StatusPill";
 import { MobileListRow } from "@/components/ui/MobileListRow";
 import { ProjectBudgetTile, budgetBasisLabel } from "@/components/projects/ProjectBudgetTile";
@@ -25,7 +26,11 @@ export default async function EventFinancePage({ params }: { params: Promise<{ s
   const tf = te.finance;
 
   const totalExpenses = project.expenses.reduce((s, e) => s + e.amount, 0);
-  const totalInvoiced = project.invoices.reduce((s, i) => s + i.total, 0);
+  // Excl. VAT — a value/revenue figure (paired with quotedValue's own margin
+  // math below), not a payment-owed figure, so it reads subtotal not total.
+  const totalInvoiced = (
+    await toCzkBatch(project.invoices.map((i) => ({ amount: i.subtotal, currency: i.currency, date: i.issuedAt })))
+  ).reduce((s, i) => s + i.czkAmount, 0);
   const paidInvoices = project.invoices.filter((i) => i.status === "PAID").length;
   const budget = resolveProjectBudget(project);
   const plannedMargin = budget.amount === null ? null : project.quotedValue - budget.amount;
@@ -34,6 +39,8 @@ export default async function EventFinancePage({ params }: { params: Promise<{ s
   const spentPct = spendRatio === null ? null : Math.round(spendRatio * 100);
 
   const mixed = isMixedCurrencyTotal([...project.quotes, ...project.invoices].map((d) => d.currency));
+  const quotesWithCzk = await toCzkBatch(project.quotes.map((q) => ({ ...q, amount: q.total, date: q.issuedAt })));
+  const invoicesWithCzk = await toCzkBatch(project.invoices.map((i) => ({ ...i, amount: i.total, date: i.issuedAt })));
 
   return (
     <div className="flex flex-col gap-6">
@@ -84,7 +91,7 @@ export default async function EventFinancePage({ params }: { params: Promise<{ s
             </div>
             {project.quotes.length === 0 && <p className="text-sm placeholder-text">{tf.noQuotes}</p>}
             <div className="hidden md:block">
-              {project.quotes.map((q) => (
+              {quotesWithCzk.map((q) => (
                 <Link
                   key={q.id}
                   href={`/finance/quotes/${q.id}`}
@@ -92,20 +99,20 @@ export default async function EventFinancePage({ params }: { params: Promise<{ s
                 >
                   <div className="font-medium">{q.number}</div>
                   <div className="placeholder-text">{formatDate(q.issuedAt)}</div>
-                  <div className="tabular-nums">{formatCurrency(q.total, q.currency)}</div>
+                  <div className="tabular-nums">{formatCurrencyWithCzk(q.total, q.currency, q.czkAmount)}</div>
                   <QuoteStatusPill status={q.status} t={t.statusQuote} />
                 </Link>
               ))}
             </div>
             <div className="md:hidden flex flex-col gap-2">
-              {project.quotes.map((q) => (
+              {quotesWithCzk.map((q) => (
                 <MobileListRow
                   key={q.id}
                   href={`/finance/quotes/${q.id}`}
                   title={q.number}
                   tag={<QuoteStatusPill status={q.status} t={t.statusQuote} />}
                   meta={formatDate(q.issuedAt)}
-                  trailing={formatCurrency(q.total, q.currency)}
+                  trailing={formatCurrencyWithCzk(q.total, q.currency, q.czkAmount)}
                 />
               ))}
             </div>
@@ -116,7 +123,7 @@ export default async function EventFinancePage({ params }: { params: Promise<{ s
             <span className="heading-label !text-[11px]">{tf.invoicesHeading}</span>
             {project.invoices.length === 0 && <p className="text-sm placeholder-text mt-2">{tf.noInvoices}</p>}
             <div className="hidden md:block mt-2">
-              {project.invoices.map((inv) => (
+              {invoicesWithCzk.map((inv) => (
                 <Link
                   key={inv.id}
                   href={`/finance/invoices/${inv.id}`}
@@ -124,20 +131,20 @@ export default async function EventFinancePage({ params }: { params: Promise<{ s
                 >
                   <div className="font-medium">{inv.number}</div>
                   <div className="placeholder-text">{t.projects.quotesTab.dueDate(formatDate(inv.dueDate))}</div>
-                  <div className="tabular-nums">{formatCurrency(inv.total, inv.currency)}</div>
+                  <div className="tabular-nums">{formatCurrencyWithCzk(inv.total, inv.currency, inv.czkAmount)}</div>
                   <InvoiceStatusPill status={inv.status} dueDate={inv.dueDate} paidAt={inv.paidAt} t={t.invoicePill} />
                 </Link>
               ))}
             </div>
             <div className="md:hidden flex flex-col gap-2 mt-2">
-              {project.invoices.map((inv) => (
+              {invoicesWithCzk.map((inv) => (
                 <MobileListRow
                   key={inv.id}
                   href={`/finance/invoices/${inv.id}`}
                   title={inv.number}
                   tag={<InvoiceStatusPill status={inv.status} dueDate={inv.dueDate} paidAt={inv.paidAt} t={t.invoicePill} />}
                   meta={t.projects.quotesTab.dueDate(formatDate(inv.dueDate))}
-                  trailing={formatCurrency(inv.total, inv.currency)}
+                  trailing={formatCurrencyWithCzk(inv.total, inv.currency, inv.czkAmount)}
                 />
               ))}
             </div>

@@ -2,7 +2,6 @@ import { notFound } from "next/navigation";
 import { requireUser, projectWhereForUser, canPickOtherPayer, canEditExpense } from "@/lib/authz";
 import { prisma } from "@/lib/prisma";
 import { ExpenseForm } from "@/components/finance/ExpenseForm";
-import { BackLink } from "@/components/BackLink";
 import { getLocale, getDictionary } from "@/lib/i18n";
 
 export default async function EditExpensePage({ params }: { params: Promise<{ id: string }> }) {
@@ -42,7 +41,6 @@ export default async function EditExpensePage({ params }: { params: Promise<{ id
 
   return (
     <div className="max-w-3xl">
-      <BackLink href="/finance/expenses">{t.finance.expenses.backLink}</BackLink>
       <h1 className="text-xl font-semibold border-b-2 border-ink pb-2 mb-4">{t.finance.expenses.editExpense}</h1>
       <ExpenseForm
         events={events}
@@ -52,6 +50,8 @@ export default async function EditExpensePage({ params }: { params: Promise<{ id
           id: expense.id,
           projectId: expense.projectId,
           amount: expense.amount,
+          vatRate: expense.vatRate,
+          vatAmount: expense.vatAmount,
           date: expense.date.toISOString().slice(0, 10),
           paidById: expense.paidById,
           category: expense.category,

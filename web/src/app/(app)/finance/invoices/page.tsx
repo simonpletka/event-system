@@ -2,7 +2,8 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { requireUser, canManageFinance, canViewFinance } from "@/lib/authz";
 import { getInvoiceList, getInvoiceKpis, type InvoiceListFilters } from "@/lib/queries/finance";
-import { formatCurrency, formatDate } from "@/lib/format";
+import { formatCurrency, formatCurrencyWithCzk, formatDate } from "@/lib/format";
+import { toCzkBatch } from "@/lib/fx";
 import { projectHref, clientHref } from "@/lib/slug";
 import { InvoiceStatusPill } from "@/components/StatusPill";
 import { DownloadPdfButton } from "@/components/finance/DownloadPdfButton";
@@ -40,6 +41,7 @@ export default async function InvoicesPage({
     getInvoiceList(user, filters),
     getInvoiceKpis(user),
   ]);
+  const invoicesWithCzk = await toCzkBatch(invoices.map((inv) => ({ ...inv, amount: inv.total, date: inv.issuedAt })));
   const canManage = canManageFinance(user);
 
   const buckets: { key: NonNullable<InvoiceListFilters["bucket"]> | ""; label: string }[] = [
@@ -125,7 +127,7 @@ export default async function InvoicesPage({
           <span className="heading-label">{ti.colPdf}</span>
         </div>
 
-        {invoices.map((inv) => (
+        {invoicesWithCzk.map((inv) => (
           <div
             key={inv.id}
             className="group grid grid-cols-[.8fr_1.2fr_.9fr_.6fr_.6fr_.8fr_1fr_.7fr] gap-2.5 items-center py-3.5 px-3.5 rounded-xl border-b border-ink/8 last:border-b-0 text-[15px] hover:bg-ink/5"
@@ -148,7 +150,7 @@ export default async function InvoicesPage({
             <div className="placeholder-text group-hover:!text-accent">{formatDate(inv.issuedAt)}</div>
             <div className="placeholder-text group-hover:!text-accent">{formatDate(inv.dueDate)}</div>
             <div className="font-semibold tabular-nums group-hover:text-accent">
-              {formatCurrency(inv.total, inv.currency)}
+              {formatCurrencyWithCzk(inv.total, inv.currency, inv.czkAmount)}
             </div>
             <div>
               <InvoiceStatusPill status={inv.status} dueDate={inv.dueDate} paidAt={inv.paidAt} t={t.invoicePill} />
@@ -159,7 +161,7 @@ export default async function InvoicesPage({
       </div>
 
       <div className="md:hidden flex flex-col gap-2 mt-4">
-        {invoices.map((inv) => (
+        {invoicesWithCzk.map((inv) => (
           <MobileListRow
             key={inv.id}
             href={`/finance/invoices/${inv.id}`}
@@ -170,7 +172,7 @@ export default async function InvoicesPage({
             meta={`${inv.project.companyName} · ${ti.colIssued} ${formatDate(inv.issuedAt)} · ${ti.colDue} ${formatDate(inv.dueDate)}`}
             trailing={
               <>
-                {formatCurrency(inv.total, inv.currency)}
+                {formatCurrencyWithCzk(inv.total, inv.currency, inv.czkAmount)}
               </>
             }
           />

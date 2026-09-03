@@ -442,6 +442,14 @@ model Expense {
   paidById    String
   paidBy      User            @relation(fields: [paidById], references: [id])
   amount      Int
+  // VAT on the receipt. `amount` stays the gross total paid; `vatAmount` is the
+  // deductible input VAT (DPH na vstupu) in the same whole-CZK units, 0 when the
+  // receipt carries no reclaimable VAT. Prefilled from `vatRate` in the expense
+  // action but editable, so a supplier's real rounded VAT can be entered exactly.
+  // Net (excl. VAT) expense = amount - vatAmount. Existing rows migrate to
+  // vatRate 21 / vatAmount 0 (nothing reclaimed retroactively until edited).
+  vatRate     Int             @default(21)
+  vatAmount   Int             @default(0)
   date        DateTime
   category    ExpenseCategory
   note        String          @default("")
@@ -486,6 +494,12 @@ model Quote {
   project    Project     @relation(fields: [projectId], references: [id], onDelete: Cascade)
   number     String
   total      Int
+  // Pre-VAT base (sum of quantity*unitPrice across items, no VAT). Czech
+  // accounting practice treats VAT as a pass-through liability, not revenue,
+  // so every "total"/"value" rollup (Project.quotedValue, Client "total
+  // charged", Reports) reads this instead of `total` — the invoice/quote
+  // document itself still shows the full VAT-inclusive `total` as before.
+  subtotal   Int         @default(0)
   currency   Currency    @default(CZK)
   status     QuoteStatus @default(DRAFT)
   validUntil DateTime
@@ -530,10 +544,13 @@ model Invoice {
   quote          Quote?        @relation(fields: [quoteId], references: [id])
   number         String
   variableSymbol String
-  // `total` is the final, post-discount amount actually owed — the same
-  // value every existing consumer (KPIs, reports, payment tracking) already
-  // reads, so nothing downstream needed to change when discounts were added.
+  // `total` is the final, post-discount amount actually owed — payment
+  // tracking (amountPaid, outstanding) reads this, since that's real cash.
   total          Int
+  // Pre-VAT base, post-discount (see Quote.subtotal for why "totals" read
+  // this instead of `total`). A discount is applied to the base before VAT
+  // is recomputed, so this is the discounted base, not the raw item sum.
+  subtotal       Int           @default(0)
   currency       Currency      @default(CZK)
   amountPaid     Int           @default(0)
   status         InvoiceStatus @default(ISSUED)

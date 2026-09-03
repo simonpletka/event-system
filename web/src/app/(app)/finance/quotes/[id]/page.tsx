@@ -2,10 +2,10 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { requireUser, canManageFinance, isAdmin } from "@/lib/authz";
 import { getQuoteDetail, getCompanySettings } from "@/lib/queries/finance";
-import { formatCurrency, formatDate } from "@/lib/format";
+import { formatCurrency, formatCurrencyWithCzk, formatDate } from "@/lib/format";
+import { toCzk } from "@/lib/fx";
 import { projectHref, clientHref } from "@/lib/slug";
 import { convertQuoteToInvoiceAction, deleteQuoteAction, updateQuoteStatusAction, duplicateQuoteAction } from "@/lib/actions/finance";
-import { BackLink } from "@/components/BackLink";
 import { ConfirmDeleteButton } from "@/components/ui/ConfirmDeleteButton";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { QuoteStatusPill } from "@/components/StatusPill";
@@ -45,6 +45,9 @@ export default async function QuoteDetailPage({
   const canManage = canManageFinance(user);
   const base = quote.items.reduce((s, i) => s + i.quantity * i.unitPrice, 0);
   const vat = quote.items.reduce((s, i) => s + i.quantity * i.unitPrice * (i.vatRate / 100), 0);
+  // Mobile's plain-summary card (not the pixel-matched PDF preview below,
+  // which stays PDF-only currency) gets the CZK bracket on the grand total.
+  const totalCzk = await toCzk(base + vat, quote.currency, quote.issuedAt);
   const expired = quote.status !== "ACCEPTED" && quote.status !== "DECLINED" && quote.validUntil < new Date();
   const alreadyInvoiced = quote.invoices.length > 0;
   const groups = groupItemsByCategory(quote.items);
@@ -52,7 +55,6 @@ export default async function QuoteDetailPage({
   return (
     <div>
       <PageHeader>
-        <BackLink href="/finance/quotes">{t.finance.quotes.backLink}</BackLink>
         <div className="flex justify-between items-end flex-wrap gap-2 mt-2">
           <div>
             <div className="text-[24px] font-bold tracking-tight">{t.finance.quotes.quoteN(quote.number)}</div>
@@ -147,7 +149,7 @@ export default async function QuoteDetailPage({
               </div>
               <div className="flex justify-between font-bold text-[15px] mt-1">
                 <span>{t.finance.quotes.total}</span>
-                <span className="tabular-nums" style={{ color: accent }}>{formatCurrency(base + vat, quote.currency)}</span>
+                <span className="tabular-nums" style={{ color: accent }}>{formatCurrencyWithCzk(base + vat, quote.currency, totalCzk)}</span>
               </div>
             </div>
             <a href={`/api/quotes/${quote.id}/pdf`} target="_blank" rel="noreferrer" className="btno w-full text-center block mt-3">

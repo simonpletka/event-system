@@ -2,7 +2,8 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { requireUser, canManageFinance, isAdmin } from "@/lib/authz";
 import { getInvoiceDetail, getCompanySettings } from "@/lib/queries/finance";
-import { formatCurrency, formatDate, formatDateTime } from "@/lib/format";
+import { formatCurrency, formatCurrencyWithCzk, formatDate, formatDateTime } from "@/lib/format";
+import { toCzk } from "@/lib/fx";
 import { projectHref, clientHref } from "@/lib/slug";
 import {
   recordPaymentAction,
@@ -12,7 +13,6 @@ import {
   sendInvoiceEmailAction,
   sendInvoiceReminderAction,
 } from "@/lib/actions/finance";
-import { BackLink } from "@/components/BackLink";
 import { ConfirmDeleteButton } from "@/components/ui/ConfirmDeleteButton";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { DownloadPdfButton } from "@/components/finance/DownloadPdfButton";
@@ -68,6 +68,13 @@ export default async function InvoiceDetailPage({
   // discount applied (e.g. 0.34) and would otherwise show a "-0 Kč" row.
   const discountAmount = Math.round(base + vat) - invoice.total;
   const realAmountPaid = invoice.payments.reduce((s, p) => s + p.amount, 0);
+  // Mobile's plain-summary card and the payment-state widget (not the
+  // pixel-matched PDF preview, which stays PDF-only currency) get the CZK
+  // bracket on their totals.
+  const [totalCzk, amountPaidCzk] = await Promise.all([
+    toCzk(invoice.total, invoice.currency, invoice.issuedAt),
+    toCzk(invoice.amountPaid, invoice.currency, invoice.issuedAt),
+  ]);
   // "Undo mark as paid" only has something to undo when the PAID status
   // isn't already fully backed by real recorded payments — otherwise it's a
   // silent no-op that never lets the invoice go back to "Mark as paid" (a
@@ -78,7 +85,6 @@ export default async function InvoiceDetailPage({
   return (
     <div>
       <PageHeader>
-        <BackLink href="/finance/invoices">{ti.backLink}</BackLink>
         <div className="flex justify-between items-end flex-wrap gap-2 mt-2">
           <div>
             <div className="text-[24px] font-bold tracking-tight">{ti.invoiceN(invoice.number)}</div>
@@ -165,7 +171,7 @@ export default async function InvoiceDetailPage({
               )}
               <div className="flex justify-between font-bold text-[15px] mt-1">
                 <span>{ti.toPay}</span>
-                <span className="tabular-nums" style={{ color: accent }}>{formatCurrency(invoice.total, invoice.currency)}</span>
+                <span className="tabular-nums" style={{ color: accent }}>{formatCurrencyWithCzk(invoice.total, invoice.currency, totalCzk)}</span>
               </div>
             </div>
             <a href={`/api/invoices/${invoice.id}/pdf`} target="_blank" rel="noreferrer" className="btno w-full text-center block mt-3">
@@ -351,7 +357,10 @@ export default async function InvoiceDetailPage({
               {invoice.status === "PAID" ? ti.paid : invoice.status === "PARTLY_PAID" ? ti.partlyPaid : overdue ? ti.overdue : ti.issued}
             </div>
             <div className="placeholder-text text-[10px]">
-              {ti.amountOfTotal(formatCurrency(invoice.amountPaid, invoice.currency), formatCurrency(invoice.total, invoice.currency))}
+              {ti.amountOfTotal(
+                formatCurrencyWithCzk(invoice.amountPaid, invoice.currency, amountPaidCzk),
+                formatCurrencyWithCzk(invoice.total, invoice.currency, totalCzk)
+              )}
               {invoice.paidAt ? ti.receivedOn(formatDate(invoice.paidAt)) : ""}
             </div>
             <div className="h-1.5 rounded-full bg-ink/10 mt-2 overflow-hidden">

@@ -2,7 +2,8 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { requireUser, canManageFinance, canViewFinance } from "@/lib/authz";
 import { getQuoteList, type QuoteListFilters } from "@/lib/queries/finance";
-import { formatCurrency, formatDate } from "@/lib/format";
+import { formatCurrency, formatCurrencyWithCzk, formatDate } from "@/lib/format";
+import { toCzkBatch } from "@/lib/fx";
 import { projectHref, clientHref } from "@/lib/slug";
 import { QuoteStatusPill } from "@/components/StatusPill";
 import { convertQuoteToInvoiceAction, duplicateQuoteAction } from "@/lib/actions/finance";
@@ -33,6 +34,7 @@ export default async function QuotesPage({
     sort: params.sort || undefined,
   };
   const { quotes, openValue, projects, year } = await getQuoteList(user, filters);
+  const quotesWithCzk = await toCzkBatch(quotes.map((q) => ({ ...q, amount: q.total, date: q.issuedAt })));
   const canManage = canManageFinance(user);
   const quoteParams = {
     status: filters.status,
@@ -99,7 +101,7 @@ export default async function QuotesPage({
           <span className="heading-label">{t.finance.quotes.pdf}</span>
         </div>
 
-        {quotes.map((q) => (
+        {quotesWithCzk.map((q) => (
           <div
             key={q.id}
             className="group grid grid-cols-[.8fr_1.3fr_1fr_.7fr_.7fr_.8fr_.9fr_.9fr_.55fr] gap-2.5 items-center py-3.5 px-3.5 rounded-xl border-b border-ink/8 last:border-b-0 text-[15px] hover:bg-ink/5"
@@ -122,7 +124,7 @@ export default async function QuotesPage({
             <div className="placeholder-text group-hover:!text-accent">{formatDate(q.issuedAt)}</div>
             <div className="placeholder-text group-hover:!text-accent">{formatDate(q.validUntil)}</div>
             <div className="font-semibold tabular-nums group-hover:text-accent">
-              {formatCurrency(q.total, q.currency)}
+              {formatCurrencyWithCzk(q.total, q.currency, q.czkAmount)}
             </div>
             <div>
               <QuoteStatusPill status={q.status} t={t.statusQuote} />
@@ -166,7 +168,7 @@ export default async function QuotesPage({
           nest inside MobileListRow's single wrapping <Link>. A navigable header
           plus a separate non-Link action footer keeps every action working. */}
       <div className="md:hidden flex flex-col gap-2 mt-4">
-        {quotes.map((q) => (
+        {quotesWithCzk.map((q) => (
           <div key={q.id} className="card overflow-hidden">
             <div className="relative flex items-center gap-2.5 py-3.5 px-3.5">
               <Link href={`/finance/quotes/${q.id}`} aria-hidden tabIndex={-1} className="absolute inset-0 z-0" />
@@ -194,7 +196,7 @@ export default async function QuotesPage({
                 </div>
               </div>
               <div className="text-right shrink-0 text-[13px] font-semibold">
-                {formatCurrency(q.total, q.currency)}
+                {formatCurrencyWithCzk(q.total, q.currency, q.czkAmount)}
               </div>
             </div>
             <div className="flex items-center justify-between gap-2 text-[9px] tracking-[0.1em] uppercase px-3.5 pb-3 pt-2.5 border-t border-ink/8">

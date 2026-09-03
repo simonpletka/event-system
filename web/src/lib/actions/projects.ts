@@ -74,7 +74,11 @@ function projectDataFromForm(formData: FormData) {
     startDate: new Date(formData.get("startDate") as string),
     endDate: new Date(formData.get("endDate") as string),
     strikeDate: strikeDate ? new Date(strikeDate) : null,
-    quotedValue: Number(formData.get("quotedValue") ?? 0) || 0,
+    // quotedValue is deliberately absent here — it's never form-submitted.
+    // It's derived (latest quote, else latest invoice, else 0) and kept in
+    // sync by syncQuotedValue() at every quote/invoice mutation site in
+    // lib/actions/finance.ts, so a project starts at the schema default (0)
+    // and updates never touch it.
   };
 }
 
