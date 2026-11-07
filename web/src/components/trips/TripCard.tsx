@@ -1,11 +1,12 @@
 import Link from "next/link";
 import { deleteTripAction } from "@/lib/actions/trips";
-import { googleMapsTripUrl, googleMapsUrl, wazeUrl } from "@/lib/routing";
+import { GOOGLE_MAPS_MAX_STOPS, googleMapsNavigateUrl, googleMapsTripUrl, googleMapsUrl, wazeUrl } from "@/lib/routing";
 import { buildSchedule, driveWithBuffer, formatClock, rentalSegments } from "@/lib/trip-schedule";
 import { compareCarsharing, vehicleCost, type PlanInput, type VehicleInput } from "@/lib/trip-cost";
 import { parseIsoDate } from "@/lib/calendar";
 import { formatCurrency, formatDate, formatDurationShort } from "@/lib/format";
 import { ConfirmDeleteButton } from "@/components/ui/ConfirmDeleteButton";
+import { NavigateIcon } from "@/components/ui/icons";
 import { TripMap } from "@/components/trips/TripMap";
 import { getDictionary, type Locale } from "@/lib/dictionary";
 
@@ -69,6 +70,10 @@ export function TripCard({
   const parked = Math.max(0, rental - driving);
   const missingLeg = stops.some((s, i) => i > 0 && s.legKm == null);
   const located = stops.flatMap((s) => (point(s) ? [point(s)!] : []));
+  // A stop Photon couldn't locate still navigates fine by its address text.
+  const places = stops.map((s) => point(s) ?? s.address);
+  const stopName = (s: Stop) => s.label || s.address;
+  const beyondLink = stops[GOOGLE_MAPS_MAX_STOPS + 1];
   const source = (s: Stop) =>
     s.manualMinutes != null ? t.sourceManual : s.legSource === "google" ? t.sourceGoogle : s.legSource === "osm" ? t.sourceOsm : t.sourceNone;
 
@@ -101,6 +106,22 @@ export function TripCard({
       {schedule.start == null && <p className="text-[12px] text-warning mt-3">{t.noPinnedTime}</p>}
       {schedule.incomplete && <p className="text-[12px] text-warning mt-3">{t.incomplete}</p>}
 
+      {stops.length >= 2 && (
+        <div className="md:hidden mt-4">
+          <a
+            href={googleMapsNavigateUrl(places.slice(1))}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="btn !text-[12px] !py-3.5 w-full flex items-center justify-center gap-2"
+          >
+            <NavigateIcon size={16} />
+            {t.startJourney}
+          </a>
+          <p className="text-[11px] placeholder-text mt-2">{t.startJourneyHint(stops.length - 1, stopName(stops[0]))}</p>
+          {beyondLink && <p className="text-[11px] text-warning mt-1">{t.journeyLimit(stopName(beyondLink))}</p>}
+        </div>
+      )}
+
       <div className="mt-4 grid grid-cols-1 md:grid-cols-[minmax(0,1fr)_minmax(0,420px)] gap-4 items-start">
       <ol>
         {stops.map((stop, i) => {
@@ -109,6 +130,7 @@ export function TripCard({
           const from = i > 0 ? point(stops[i - 1]) : null;
           const to = point(stop);
           const stayed = at.arrive != null && at.depart != null ? at.depart - at.arrive : 0;
+          const navigateLabel = i < stops.length - 1 ? t.navigateFrom(stopName(stop)) : t.navigateTo(stopName(stop));
           return (
             <li key={stop.id}>
               {i > 0 && (
@@ -120,10 +142,10 @@ export function TripCard({
                   </span>
                   {from && to && (
                     <>
-                      <a href={googleMapsUrl(from, to)} target="_blank" rel="noopener noreferrer" className="underline hover:text-accent">
+                      <a href={googleMapsUrl(from, to)} target="_blank" rel="noopener noreferrer" className="hidden md:inline underline hover:text-accent">
                         Google Maps
                       </a>
-                      <a href={wazeUrl(to)} target="_blank" rel="noopener noreferrer" className="underline hover:text-accent">
+                      <a href={wazeUrl(to)} target="_blank" rel="noopener noreferrer" className="underline hover:text-accent py-2 -my-2 md:py-0 md:my-0">
                         Waze
                       </a>
                     </>
@@ -137,7 +159,7 @@ export function TripCard({
                     <div className={isFirst ? "font-semibold" : "text-[11px] placeholder-text"}>{formatClock(at.depart)}</div>
                   )}
                 </div>
-                <div className="min-w-0">
+                <div className="min-w-0 flex-1">
                   <div className="font-medium">
                     <span className="placeholder-text">{i + 1}.</span> {stop.label || stop.address}
                   </div>
@@ -151,6 +173,16 @@ export function TripCard({
                   {at.waitMinutes > 0 && <div className="text-[11px] placeholder-text">{t.spare(formatDurationShort(at.waitMinutes))}</div>}
                   {at.lateMinutes > 0 && <div className="text-[11px] text-warning">{t.late(formatDurationShort(at.lateMinutes))}</div>}
                 </div>
+                <a
+                  href={googleMapsNavigateUrl(places.slice(i))}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  aria-label={navigateLabel}
+                  title={navigateLabel}
+                  className="md:hidden shrink-0 size-11 flex items-center justify-center rounded-full border border-ink/25 text-ink"
+                >
+                  <NavigateIcon size={17} />
+                </a>
               </div>
             </li>
           );
@@ -166,7 +198,7 @@ export function TripCard({
             href={googleMapsTripUrl(located)}
             target="_blank"
             rel="noopener noreferrer"
-            className="text-[11px] placeholder-text underline hover:text-accent mt-1.5 inline-block"
+            className="text-[11px] placeholder-text underline hover:text-accent mt-1.5 hidden md:inline-block"
           >
             {t.openWholeRoute}
           </a>

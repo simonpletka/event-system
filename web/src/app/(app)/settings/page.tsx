@@ -6,6 +6,7 @@ import { getLocale, getDictionary } from "@/lib/i18n";
 import { getAppColors } from "@/lib/theme";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { MobileStickyTabs } from "@/components/ui/MobileStickyTabs";
+import { SegmentedTabs } from "@/components/ui/SegmentedTabs";
 import { UsersTable } from "@/components/settings/UsersTable";
 import { CreateUserForm } from "@/components/settings/CreateUserForm";
 import { GeneralSettingsForm } from "@/components/settings/GeneralSettingsForm";
@@ -86,7 +87,7 @@ export default async function SettingsPage({
   ].filter((x) => x.show);
 
   const tabNav = (
-    <div className="flex gap-3.5 flex-nowrap overflow-x-auto pb-1 md:pb-0 md:flex-wrap md:overflow-visible">
+    <div className="flex gap-3.5 flex-wrap">
       {tabLinks.map((x) => (
         <Link
           key={x.key}
@@ -114,7 +115,9 @@ export default async function SettingsPage({
         </div>
       </PageHeader>
 
-      <MobileStickyTabs>{tabNav}</MobileStickyTabs>
+      <MobileStickyTabs>
+        <SegmentedTabs options={tabLinks.map((x) => ({ value: x.key, href: x.href, label: x.label }))} active={tab} />
+      </MobileStickyTabs>
 
       <div className="mt-5 max-w-3xl">
         {tab === "general" && (

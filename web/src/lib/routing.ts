@@ -122,6 +122,23 @@ export function googleMapsTripUrl(points: LatLng[]) {
   return `https://www.google.com/maps/dir/?api=1&origin=${coord(points[0])}&destination=${coord(points[points.length - 1])}${waypoints}&travelmode=driving`;
 }
 
+/** Stops one navigation link can hold: Google's limit of 9 waypoints plus the destination. */
+export const GOOGLE_MAPS_MAX_STOPS = 10;
+
+/**
+ * Turn-by-turn navigation from the phone's own location through these stops, up
+ * to GOOGLE_MAPS_MAX_STOPS. There's deliberately no origin: given one that isn't
+ * near the phone, Google opens a route preview instead of navigating. Must stay
+ * a plain link, because iOS only hands a URL to the Maps app on a direct tap.
+ */
+export function googleMapsNavigateUrl(stops: (LatLng | string)[]) {
+  const place = (s: LatLng | string) => (typeof s === "string" ? s : `${s.lat},${s.lng}`);
+  const route = stops.slice(0, GOOGLE_MAPS_MAX_STOPS).map(place);
+  const via = route.slice(0, -1).join("|");
+  const waypoints = via ? `&waypoints=${encodeURIComponent(via)}` : "";
+  return `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(route[route.length - 1])}${waypoints}&travelmode=driving&dir_action=navigate`;
+}
+
 /** Waze's official deep link. It has no start point: Waze routes from the phone's own location. */
 export function wazeUrl(to: LatLng) {
   return `https://waze.com/ul?ll=${to.lat},${to.lng}&navigate=yes`;
