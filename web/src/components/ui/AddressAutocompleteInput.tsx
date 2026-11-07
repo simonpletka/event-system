@@ -8,6 +8,7 @@ export function AddressAutocompleteInput({
   name,
   value,
   onChange,
+  onSelect,
   placeholder,
   className = "input",
   searchingLabel = "Searching…",
@@ -15,6 +16,7 @@ export function AddressAutocompleteInput({
   name?: string;
   value: string;
   onChange: (value: string) => void;
+  onSelect?: (suggestion: AddressSuggestion) => void;
   placeholder?: string;
   className?: string;
   searchingLabel?: string;
@@ -76,6 +78,7 @@ export function AddressAutocompleteInput({
                 key={i}
                 onClick={() => {
                   onChange(s.label);
+                  onSelect?.(s);
                   setSuggestions([]);
                   setOpen(false);
                 }}

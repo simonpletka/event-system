@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { requireUser, canManageUsers, canManageCompanySettings, getFreshUserFields } from "@/lib/authz";
+import { requireUser, canManageUsers, canManageCompanySettings, getFreshUserFields, isAdmin } from "@/lib/authz";
 import { prisma } from "@/lib/prisma";
 import { getCompanySettings } from "@/lib/queries/finance";
 import { getLocale, getDictionary } from "@/lib/i18n";
@@ -14,6 +14,9 @@ import { RoleReferenceTable } from "@/components/settings/RoleReferenceTable";
 import { CategoriesTab } from "@/components/settings/CategoriesTab";
 import { AppSettingsForm } from "@/components/settings/AppSettingsForm";
 import { InvoiceEmailingForm } from "@/components/settings/InvoiceEmailingForm";
+import { ConnectorTab } from "@/components/settings/ConnectorTab";
+import { TravelTab } from "@/components/settings/TravelTab";
+import { getCarsharingPlans, getUserVehicles } from "@/lib/queries/trips";
 import {
   DEFAULT_INVOICE_EMAIL_SUBJECT,
   DEFAULT_INVOICE_EMAIL_BODY,
@@ -35,9 +38,10 @@ export default async function SettingsPage({
   const canUsers = canManageUsers(user);
   const canCompany = canManageCompanySettings(user);
   const tab =
-    (params.tab as "general" | "company" | "users" | "templates" | "invoiceEmailing" | "appSettings") || "general";
+    (params.tab as "general" | "company" | "users" | "templates" | "invoiceEmailing" | "appSettings" | "claude" | "travel") || "general";
+  const canConnector = isAdmin(user);
 
-  const [users, company, customRoles, categories, freshUser] = await Promise.all([
+  const [users, company, customRoles, categories, freshUser, vehicles, plans] = await Promise.all([
     canUsers ? prisma.user.findMany({ orderBy: { name: "asc" } }) : Promise.resolve([]),
     getCompanySettings(),
     canUsers
@@ -45,6 +49,8 @@ export default async function SettingsPage({
       : Promise.resolve([]),
     canCompany ? getItemCategories() : Promise.resolve([]),
     getFreshUserFields(user.id),
+    tab === "travel" ? getUserVehicles(user.id) : Promise.resolve([]),
+    tab === "travel" && canCompany ? getCarsharingPlans() : Promise.resolve([]),
   ]);
   const roleRows = customRoles.map((r) => ({ ...r, userCount: r._count.users }));
   const colors = getAppColors(company);
@@ -62,15 +68,21 @@ export default async function SettingsPage({
             ? t.settings.tabInvoiceEmailing
             : tab === "appSettings"
               ? t.settings.tabAppSettings
-              : t.settings.general.accountHeading;
+              : tab === "claude"
+                ? t.connector.eyebrow
+                : tab === "travel"
+                  ? t.settings.tabTravel
+                  : t.settings.general.accountHeading;
 
   const tabLinks = [
     { key: "general", href: "/settings?tab=general", label: t.settings.tabGeneral, show: true },
+    { key: "travel", href: "/settings?tab=travel", label: t.settings.tabTravel, show: true },
     { key: "company", href: "/settings?tab=company", label: t.settings.tabCompany, show: canCompany },
     { key: "users", href: "/settings?tab=users", label: t.settings.tabUsers, show: canUsers },
     { key: "templates", href: "/settings?tab=templates", label: t.settings.tabTemplates, show: canCompany },
     { key: "invoiceEmailing", href: "/settings?tab=invoiceEmailing", label: t.settings.tabInvoiceEmailing, show: canCompany },
     { key: "appSettings", href: "/settings?tab=appSettings", label: t.settings.tabAppSettings, show: canCompany },
+    { key: "claude", href: "/settings?tab=claude", label: t.connector.tab, show: canConnector },
   ].filter((x) => x.show);
 
   const tabNav = (
@@ -117,6 +129,7 @@ export default async function SettingsPage({
             locale={locale}
           />
         )}
+        {tab === "travel" && <TravelTab vehicles={vehicles} plans={plans} canEditPlans={canCompany} locale={locale} />}
         {tab === "company" && canCompany && <CompanySettingsForm defaults={company} t={t.settings.company} />}
         {tab === "users" && canUsers && (
           <div>
@@ -157,6 +170,7 @@ export default async function SettingsPage({
             t={t.settings.appSettings}
           />
         )}
+        {tab === "claude" && canConnector && <ConnectorTab t={t.connector} />}
       </div>
     </div>
   );

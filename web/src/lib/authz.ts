@@ -31,6 +31,7 @@ export const getFreshUserFields = cache(async function getFreshUserFields(id: st
     where: { id },
     select: {
       active: true,
+      isAgent: true,
       name: true,
       email: true,
       phone: true,
@@ -69,7 +70,7 @@ export const requireUser = cache(async function requireUser(): Promise<SessionUs
   if (!session?.user) redirect("/login");
 
   const current = await getFreshUserFields(session.user.id);
-  if (!current?.active) redirect("/login");
+  if (!current?.active || current.isAgent) redirect("/login");
 
   return {
     id: session.user.id,

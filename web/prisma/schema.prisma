@@ -172,6 +172,10 @@ model User {
   lastSeenAt   DateTime?
   avatarPath   String? // Settings → General profile photo, same disk-storage pattern as CompanySettings.logoPath
   locale       String? // "en" | "cs"; null inherits CompanySettings.locale — per-account override, see getLocale()
+  // The Claude connector's service account (see src/lib/agent/). Can never
+  // log in through the web UI; only reachable via an OAuth token on /api/mcp,
+  // whose fixed tool list is what actually bounds what it can do.
+  isAgent      Boolean   @default(false)
 
   customRoleId String?
   customRole   CustomRole? @relation(fields: [customRoleId], references: [id])
@@ -187,6 +191,10 @@ model User {
   roadmapAssignments  RoadmapAssignee[] @relation("RoadmapAssignee")
   roadmapComments     RoadmapComment[]  @relation("RoadmapCommentAuthor")
   meetingsCreated     Meeting[]
+  vehicles            Vehicle[]
+  tripsCreated        Trip[]
+  agentTokens         OAuthToken[]      @relation("OAuthTokenAgent")
+  approvedTokens      OAuthToken[]      @relation("OAuthTokenApprover")
 }
 
 model Project {
@@ -244,6 +252,7 @@ model Project {
   invoices    Invoice[]
   contacts    ProjectContact[]
   meetings    MeetingProject[]
+  trips       Trip[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -696,4 +705,145 @@ model ItemCategory {
   id        String @id @default(cuid())
   name      String @unique
   sortOrder Int    @default(0)
+}
+
+// --- Claude connector (OAuth 2.1 for the /api/mcp endpoint) ---
+// claude.ai registers itself via dynamic client registration, then an Admin
+// approves it on /oauth/authorize. Every token acts as the single isAgent
+// User, never as the approving Admin. Codes/tokens are stored as SHA-256
+// hashes only.
+
+model OAuthClient {
+  id           String       @id @default(cuid()) // the OAuth client_id
+  name         String
+  redirectUris String // JSON array of exact-match redirect URIs
+  createdAt    DateTime     @default(now())
+  codes        OAuthCode[]
+  tokens       OAuthToken[]
+}
+
+model OAuthCode {
+  codeHash      String      @id
+  clientId      String
+  client        OAuthClient @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  approvedById  String
+  redirectUri   String
+  codeChallenge String // PKCE S256
+  expiresAt     DateTime
+}
+
+model OAuthToken {
+  id               String      @id @default(cuid())
+  clientId         String
+  client           OAuthClient @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  agentId          String
+  agent            User        @relation("OAuthTokenAgent", fields: [agentId], references: [id])
+  approvedById     String
+  approvedBy       User        @relation("OAuthTokenApprover", fields: [approvedById], references: [id])
+  accessTokenHash  String      @unique
+  refreshTokenHash String      @unique
+  accessExpiresAt  DateTime
+  refreshExpiresAt DateTime
+  revokedAt        DateTime?
+  lastUsedAt       DateTime?
+  createdAt        DateTime    @default(now())
+}
+
+enum FuelType {
+  PETROL
+  DIESEL
+}
+
+// A car a user personally owns, for the own-car side of a Trip's cost
+// comparison. Per user, not company-wide — managed in Settings → Travel.
+model Vehicle {
+  id                  String   @id @default(cuid())
+  ownerId             String
+  owner               User     @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  name                String
+  fuelType            FuelType @default(DIESEL)
+  consumptionPer100Km Float
+  fuelPricePerLitre   Float
+  // Optional non-fuel running cost (wear, servicing), so an own car can be
+  // compared fairly against an all-inclusive carsharing price. 0 = fuel only.
+  extraCostPerKm      Float    @default(0)
+  createdAt           DateTime @default(now())
+
+  @@index([ownerId])
+}
+
+// A planned car journey on a project: an ordered list of stops. The schedule
+// is derived on read from the stops' pinned times (src/lib/trip-schedule.ts),
+// never stored. `date` is a plain YYYY-MM-DD and pinned times are minutes
+// after that local midnight — wall-clock Prague times, so nothing here can
+// shift with the server's timezone.
+model Trip {
+  id              String     @id @default(cuid())
+  projectId       String
+  project         Project    @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  createdById     String
+  createdBy       User       @relation(fields: [createdById], references: [id])
+  title           String
+  date            String
+  // Added to every map-estimated leg for parking and walking. Never added to
+  // a leg with a manual estimate — that number is taken as given.
+  bufferMinutes   Int        @default(5)
+  routesUpdatedAt DateTime?
+  stops           TripStop[]
+  createdAt       DateTime   @default(now())
+  updatedAt       DateTime   @updatedAt
+
+  @@index([projectId])
+}
+
+// leg* describe the drive from the previous stop to this one (null on the
+// first stop), cached from src/lib/routing.ts when the trip is saved.
+model TripStop {
+  id            String  @id @default(cuid())
+  tripId        String
+  trip          Trip    @relation(fields: [tripId], references: [id], onDelete: Cascade)
+  position      Int
+  label         String  @default("")
+  address       String
+  lat           Float?
+  lng           Float?
+  arriveMin     Int?
+  departMin     Int?
+  stayMinutes   Int?
+  manualMinutes Int?
+  legMinutes    Int?
+  legKm         Float?
+  legSource     String?
+  // The leg's road geometry as an encoded polyline (precision 5), for the
+  // route preview. Google and OSRM both return this format.
+  legPolyline   String?
+  // Hand the carsharing car back at this stop and take a new one when leaving,
+  // so the stay here isn't billed. Doesn't affect the schedule or an own car.
+  splitRental   Boolean @default(false)
+  note          String  @default("")
+
+  @@index([tripId])
+}
+
+// Editable carsharing tariffs (Settings → Travel). Operators publish most of
+// their rates only inside their apps, so `verified` records whether a row's
+// numbers come from a complete published tariff or are partly assumed — the
+// cost comparison shows unverified prices as a lower-bound estimate.
+// A row with packagePrice 0 is pay-as-you-go. `bandsJson` holds degressive
+// time bands (see src/lib/trip-cost.ts) and replaces minuteRate/kmRate.
+model CarsharingPlan {
+  id             String  @id @default(cuid())
+  provider       String
+  name           String
+  carClass       String  @default("")
+  packagePrice   Float   @default(0)
+  packageMinutes Int?
+  packageKm      Int     @default(0)
+  minuteRate     Float   @default(0)
+  kmRate         Float   @default(0)
+  bandsJson      String?
+  weekendOnly    Boolean @default(false)
+  verified       Boolean @default(false)
+  active         Boolean @default(true)
+  sortOrder      Int     @default(0)
 }

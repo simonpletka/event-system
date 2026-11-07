@@ -42,11 +42,15 @@ function formatLabel(p: PhotonFeature["properties"]): string {
   return [line1, ...parts.slice(1)].filter(Boolean).join(", ") || p.name || "";
 }
 
-export async function searchAddresses(query: string): Promise<AddressSuggestion[]> {
+export async function searchAddresses(
+  query: string,
+  near?: { lat: number; lon: number }
+): Promise<AddressSuggestion[]> {
   const q = query.trim();
   if (q.length < 3) return [];
 
-  const url = `${PHOTON_BASE}?q=${encodeURIComponent(q)}&limit=5`;
+  const bias = near ? `&lat=${near.lat}&lon=${near.lon}` : "";
+  const url = `${PHOTON_BASE}?q=${encodeURIComponent(q)}&limit=5${bias}`;
   let res: Response;
   try {
     res = await fetch(url, { headers: { Accept: "application/json" } });
@@ -68,4 +72,27 @@ export async function searchAddresses(query: string): Promise<AddressSuggestion[
       state: f.properties.state ?? "",
     }))
     .filter((s) => s.label);
+}
+
+const LOOKUP_ATTEMPTS = 3;
+const RETRY_DELAY_MS = 1500;
+
+/**
+ * Best match per address, for looking up several at once. Photon's public
+ * instance answers 503 to quick bursts and stays closed for a while after, so
+ * these go strictly one at a time, repeats reuse the first answer, and an
+ * empty result is retried because a refusal looks the same as no match.
+ */
+export async function locateAddresses(addresses: string[], near?: { lat: number; lon: number }) {
+  const found = new Map<string, AddressSuggestion | null>();
+  for (const address of addresses) {
+    if (found.has(address)) continue;
+    let match: AddressSuggestion | null = null;
+    for (let attempt = 0; attempt < LOOKUP_ATTEMPTS && !match; attempt++) {
+      if (attempt > 0) await new Promise((resolve) => setTimeout(resolve, attempt * RETRY_DELAY_MS));
+      match = (await searchAddresses(address, near))[0] ?? null;
+    }
+    found.set(address, match);
+  }
+  return found;
 }

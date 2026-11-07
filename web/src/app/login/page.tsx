@@ -3,16 +3,17 @@ import { cookies } from "next/headers";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { getLocale, getDictionary } from "@/lib/i18n";
-import { LAST_EMAIL_COOKIE } from "@/lib/auth-cookies";
+import { LAST_EMAIL_COOKIE, safeNextPath } from "@/lib/auth-cookies";
 import { LoginForm } from "./LoginForm";
 
-export default async function LoginPage() {
+export default async function LoginPage({ searchParams }: { searchParams: Promise<{ next?: string }> }) {
+  const next = safeNextPath((await searchParams).next);
   const session = await auth();
   if (session?.user) {
     // A deactivated account's cookie can still be present (see authz.ts requireUser
     // for why it isn't cleared) — only bounce onward if they're actually still active.
     const current = await prisma.user.findUnique({ where: { id: session.user.id }, select: { active: true } });
-    if (current?.active) redirect("/dashboard");
+    if (current?.active) redirect(next);
   }
 
   const t = getDictionary(await getLocale());
@@ -24,7 +25,7 @@ export default async function LoginPage() {
       <div className="w-full max-w-[360px]">
         <div className="text-[11px] font-bold tracking-[0.16em] mb-8">PROJECT SYSTEM</div>
         <h1 className="text-2xl font-semibold mb-6">{t.auth.signIn}</h1>
-        <LoginForm t={t.auth} defaultEmail={lastEmail} />
+        <LoginForm t={t.auth} defaultEmail={lastEmail} next={next} />
       </div>
     </div>
   );

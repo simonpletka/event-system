@@ -257,3 +257,25 @@ summary,
   body { background: #fff; color: #000; }
   .print-hide { display: none !important; }
 }
+
+/* The only free map tiles are light, so the route preview darkens them to
+   match the app. Only the tiles: the route line and markers keep their colors. */
+.trip-map .leaflet-tile-pane {
+  filter: grayscale(1) invert(1) brightness(0.85) contrast(0.8);
+}
+.trip-map.leaflet-container {
+  background: var(--color-surface);
+  font-family: inherit;
+}
+.trip-map .trip-map-marker {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  background: var(--color-accent);
+  color: #fff;
+  font-size: 11px;
+  font-weight: 600;
+  white-space: nowrap;
+  box-shadow: 0 0 0 2px var(--color-bg);
+}

@@ -27,7 +27,8 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         if (!email || !password) return null;
 
         const user = await prisma.user.findUnique({ where: { email }, include: { customRole: true } });
-        if (!user || !user.active) return null;
+        // The Claude connector's service account is token-only (see src/lib/agent/oauth.ts).
+        if (!user || !user.active || user.isAgent) return null;
 
         const valid = await bcrypt.compare(password, user.passwordHash);
         if (!valid) return null;
