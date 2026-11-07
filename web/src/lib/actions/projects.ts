@@ -3,16 +3,67 @@
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
-import { requireUser, canEditProject, canCreateProject, isAdmin } from "@/lib/authz";
+import { requireUser, canEditProject, canCreateProject, isAdmin, canManageCompanySettings } from "@/lib/authz";
 import { resolveClientId, syncClientContacts } from "@/lib/actions/clients";
 import { nextProjectNumber } from "@/lib/document-number";
 import { addDays } from "@/lib/calendar";
 import { normaliseBudgetInput } from "@/lib/project-budget";
 import { tryCreateNotionProjectPage, tryMarkNotionProjectDeleted } from "@/lib/notion";
+import { deleteProjectFile } from "@/lib/uploads";
+import { ensureDriveStructure, ensureProjectFolder, tryEnsureProjectFolder } from "@/lib/gdrive";
 import { projectHref } from "@/lib/slug";
 import type { ProjectStatus } from "@/generated/prisma/enums";
 
 export type ProjectFormState = { error?: string };
+export type DriveBackfillState = { created?: number; remaining?: number; error?: string };
+
+/** Best-effort, like the Notion push: the project already exists, and the Settings backfill can catch a miss later. */
+async function createProjectFolder(project: { id: string; number: string; title: string; startDate: Date }) {
+  const driveFolderId = await tryEnsureProjectFolder(project);
+  if (driveFolderId) {
+    await prisma.project.update({ where: { id: project.id }, data: { driveFolderId } }).catch(() => {});
+  }
+}
+
+/**
+ * Creates the fixed Drive folders and gives every project without a folder
+ * one (Settings → Company). Stops at the first failure, since one usually means every later call would fail
+ * too; finished projects are saved as it goes, so running it again resumes.
+ */
+export async function createMissingProjectFoldersAction(): Promise<DriveBackfillState> {
+  const user = await requireUser();
+  if (!canManageCompanySettings(user)) return { error: "You don't have permission to do this." };
+
+  const projects = await prisma.project.findMany({
+    where: { driveFolderId: null },
+    select: { id: true, number: true, title: true, startDate: true },
+    orderBy: { number: "asc" },
+  });
+  try {
+    await ensureDriveStructure();
+  } catch (e) {
+    return { created: 0, remaining: projects.length, error: e instanceof Error ? e.message : "Unknown Google Drive error." };
+  }
+
+  let created = 0;
+  for (const project of projects) {
+    try {
+      const driveFolderId = await ensureProjectFolder(project);
+      await prisma.project.update({ where: { id: project.id }, data: { driveFolderId } });
+      created++;
+    } catch (e) {
+      revalidatePath("/settings");
+      return {
+        created,
+        remaining: projects.length - created,
+        error: `${project.number}: ${e instanceof Error ? e.message : "Unknown Google Drive error."}`,
+      };
+    }
+  }
+  revalidatePath("/settings");
+  revalidatePath("/projects", "layout");
+  return { created, remaining: 0 };
+}
 
 function parseVenues(formData: FormData) {
   const names = formData.getAll("venueName") as string[];
@@ -126,6 +177,7 @@ export async function createProjectAction(_prev: ProjectFormState, formData: For
   if (notionPageId) {
     await prisma.project.update({ where: { id: project.id }, data: { notionPageId } }).catch(() => {});
   }
+  await createProjectFolder(project);
 
   revalidatePath("/projects");
   revalidatePath("/dashboard");
@@ -209,11 +261,15 @@ export async function deleteProjectAction(formData: FormData) {
   const [expenseCount, invoiceCount, existing] = await Promise.all([
     prisma.expense.count({ where: { projectId: id } }),
     prisma.invoice.count({ where: { projectId: id } }),
-    prisma.project.findUnique({ where: { id }, select: { notionPageId: true } }),
+    prisma.project.findUnique({
+      where: { id },
+      select: { notionPageId: true, files: { select: { storedName: true } } },
+    }),
   ]);
   if (expenseCount > 0 || invoiceCount > 0) return;
 
   await prisma.project.delete({ where: { id } });
+  await Promise.all((existing?.files ?? []).map((f) => deleteProjectFile(f.storedName)));
 
   if (existing?.notionPageId) {
     await tryMarkNotionProjectDeleted(existing.notionPageId);
@@ -266,6 +322,7 @@ export async function quickCreateProjectAction(_prev: QuickProjectState, formDat
       members: { create: [{ userId: user.id }] },
     },
   });
+  await createProjectFolder(project);
 
   revalidatePath("/projects");
   revalidatePath("/dashboard");
@@ -303,4 +360,20 @@ export async function rescheduleProjectAction(formData: FormData) {
   revalidatePath(`/projects/${id}`, "layout");
   revalidatePath("/projects");
   revalidatePath("/dashboard");
+}
+
+export async function deleteProjectFileAction(formData: FormData) {
+  const user = await requireUser();
+  const file = await prisma.projectFile.findUnique({
+    where: { id: String(formData.get("id")) },
+    include: { project: { include: { members: true } } },
+  });
+  if (!file) return;
+  const { project } = file;
+  const memberIds = project.members.map((m) => m.userId);
+  if (!canEditProject(user, { ownerId: project.ownerId, memberIds })) return;
+
+  await prisma.projectFile.delete({ where: { id: file.id } });
+  await deleteProjectFile(file.storedName);
+  revalidatePath(projectHref(project, "/files"));
 }

@@ -17,6 +17,8 @@ import { AppSettingsForm } from "@/components/settings/AppSettingsForm";
 import { InvoiceEmailingForm } from "@/components/settings/InvoiceEmailingForm";
 import { ConnectorTab } from "@/components/settings/ConnectorTab";
 import { TravelTab } from "@/components/settings/TravelTab";
+import { DriveFoldersPanel } from "@/components/settings/DriveFoldersPanel";
+import { isDriveConfigured } from "@/lib/gdrive";
 import { getCarsharingPlans, getUserVehicles } from "@/lib/queries/trips";
 import {
   DEFAULT_INVOICE_EMAIL_SUBJECT,
@@ -53,6 +55,8 @@ export default async function SettingsPage({
     tab === "travel" ? getUserVehicles(user.id) : Promise.resolve([]),
     tab === "travel" && canCompany ? getCarsharingPlans() : Promise.resolve([]),
   ]);
+  const projectsWithoutFolder =
+    tab === "company" && canCompany ? await prisma.project.count({ where: { driveFolderId: null } }) : 0;
   const roleRows = customRoles.map((r) => ({ ...r, userCount: r._count.users }));
   const colors = getAppColors(company);
 
@@ -133,7 +137,12 @@ export default async function SettingsPage({
           />
         )}
         {tab === "travel" && <TravelTab vehicles={vehicles} plans={plans} canEditPlans={canCompany} locale={locale} />}
-        {tab === "company" && canCompany && <CompanySettingsForm defaults={company} t={t.settings.company} />}
+        {tab === "company" && canCompany && (
+          <>
+            <CompanySettingsForm defaults={company} t={t.settings.company} />
+            <DriveFoldersPanel configured={isDriveConfigured()} missing={projectsWithoutFolder} locale={locale} />
+          </>
+        )}
         {tab === "users" && canUsers && (
           <div>
             <CreateUserForm customRoles={customRoles} locale={locale} tRoles={t.roles} tRoleSelect={t.settings.roleSelect} />

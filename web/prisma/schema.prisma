@@ -192,6 +192,7 @@ model User {
   roadmapComments     RoadmapComment[]  @relation("RoadmapCommentAuthor")
   meetingsCreated     Meeting[]
   vehicles            Vehicle[]
+  projectFiles        ProjectFile[]
   tripsCreated        Trip[]
   agentTokens         OAuthToken[]      @relation("OAuthTokenAgent")
   approvedTokens      OAuthToken[]      @relation("OAuthTokenApprover")
@@ -226,6 +227,11 @@ model Project {
   // this project in its "Projects" relation property when null.
   notionPageId String?
 
+  // Set after the project's Drive folder is created — see
+  // ensureProjectFolder() in lib/gdrive.ts. Null until Drive is configured
+  // or while creating it failed. A deleted project's folder stays in Drive.
+  driveFolderId String?
+
   buildDate  DateTime?
   startDate  DateTime
   endDate    DateTime
@@ -253,6 +259,7 @@ model Project {
   contacts    ProjectContact[]
   meetings    MeetingProject[]
   trips       Trip[]
+  files       ProjectFile[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -846,4 +853,21 @@ model CarsharingPlan {
   verified       Boolean @default(false)
   active         Boolean @default(true)
   sortOrder      Int     @default(0)
+}
+
+// A document uploaded to a project's Files tab. Stored on disk next to the
+// receipts (see saveProjectFile), under a random name so nothing about the
+// file a user picked ever reaches a path.
+model ProjectFile {
+  id           String   @id @default(cuid())
+  projectId    String
+  project      Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  uploadedById String
+  uploadedBy   User     @relation(fields: [uploadedById], references: [id])
+  name         String
+  storedName   String   @unique
+  size         Int
+  createdAt    DateTime @default(now())
+
+  @@index([projectId])
 }
