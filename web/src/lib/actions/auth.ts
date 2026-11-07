@@ -5,7 +5,7 @@ import { redirect } from "next/navigation";
 import { AuthError } from "next-auth";
 import { signIn, signOut } from "@/auth";
 import { getLocale, getDictionary } from "@/lib/i18n";
-import { LAST_EMAIL_COOKIE } from "@/lib/auth-cookies";
+import { LAST_EMAIL_COOKIE, safeNextPath } from "@/lib/auth-cookies";
 
 export async function signOutAction() {
   await signOut({ redirectTo: "/login" });
@@ -44,5 +44,5 @@ export async function loginAction(_prev: LoginState, formData: FormData): Promis
     path: "/",
   });
 
-  redirect("/dashboard");
+  redirect(safeNextPath(String(formData.get("next") ?? "")));
 }

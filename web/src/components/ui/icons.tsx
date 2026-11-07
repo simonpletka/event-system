@@ -28,6 +28,15 @@ export function TrashIcon(p: IconProps) {
   );
 }
 
+/** Navigation arrow — starting a drive. */
+export function NavigateIcon(p: IconProps) {
+  return (
+    <Svg {...p}>
+      <path d="M21 3 3 10.5l7.5 3 3 7.5L21 3Z" />
+    </Svg>
+  );
+}
+
 /** Two arrows, up and down — sorting. */
 export function SortIcon(p: IconProps) {
   return (

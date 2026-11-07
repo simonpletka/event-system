@@ -54,6 +54,9 @@ To start from a genuinely empty database instead of the demo dataset, use
 `npm run dev:empty`. See `CLAUDE.md` for the full list of available
 commands, environment variables, and architecture notes.
 
+To connect the optional Google Routes and Google Drive APIs, follow
+`docs/API_SETUP.md`.
+
 ## Deployment
 
 The `web/` app is deployed to Railway (Node + a persistent volume for the

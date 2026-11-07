@@ -76,7 +76,7 @@ export async function getTimeTrackerCalendarData(user: SessionUser, weekStart: D
 /** Everyone selectable in the Overview person filter — a small internal tool, so visibility isn't scoped further. */
 export async function getOverviewUsers() {
   return prisma.user.findMany({
-    where: { active: true },
+    where: { active: true, isAgent: false },
     select: { id: true, name: true },
     orderBy: { name: "asc" },
   });

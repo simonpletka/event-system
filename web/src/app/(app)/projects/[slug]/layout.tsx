@@ -4,6 +4,7 @@ import { requireUser, canEditProject, isAdmin, canViewProjectBudget } from "@/li
 import { getProjectDetail, resolveProjectIdByNumber } from "@/lib/queries/projects";
 import { parseProjectSlug, projectHref, clientHref } from "@/lib/slug";
 import { notionPageUrl } from "@/lib/notion";
+import { driveFolderUrl } from "@/lib/gdrive";
 import { formatDateRange } from "@/lib/format";
 import { ProjectStatusPill } from "@/components/StatusPill";
 import { ProjectTabs } from "@/components/ProjectTabs";
@@ -58,6 +59,16 @@ export default async function EventDetailLayout({
             </div>
           </div>
           <div className="flex gap-1.5 items-center">
+            {project.driveFolderId && (
+              <Link
+                href={driveFolderUrl(project.driveFolderId)}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="btno"
+              >
+                {t.projects.driveFolder}
+              </Link>
+            )}
             {project.notionPageId && (
               <Link
                 href={notionPageUrl(project.notionPageId)}

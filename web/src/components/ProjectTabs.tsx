@@ -21,6 +21,7 @@ export function ProjectTabs({
     { value: "overview", href: base, label: t.tabOverview },
     { value: "roadmap", href: `${base}/roadmap`, label: t.tabRoadmap },
     ...(showFinance ? [{ value: "finance", href: `${base}/finance`, label: t.tabFinance }] : []),
+    { value: "trips", href: `${base}/trips`, label: t.tabTrips },
     { value: "files", href: `${base}/files`, label: t.tabFiles },
   ];
   const seg = pathname.slice(base.length).split("/")[1] || "overview";

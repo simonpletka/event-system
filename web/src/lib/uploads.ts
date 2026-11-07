@@ -138,3 +138,20 @@ export async function readAvatar(filename: string) {
   const buffer = await readFile(path.join(AVATAR_ROOT, safe));
   return { buffer, contentType };
 }
+
+const PROJECT_FILE_ROOT = path.join(DATA_ROOT, "uploads", "project-files");
+
+export async function saveProjectFile(file: File): Promise<string> {
+  await mkdir(PROJECT_FILE_ROOT, { recursive: true });
+  const storedName = randomUUID();
+  await writeFile(path.join(PROJECT_FILE_ROOT, storedName), Buffer.from(await file.arrayBuffer()));
+  return storedName;
+}
+
+export async function readProjectFile(storedName: string) {
+  return readFile(path.join(PROJECT_FILE_ROOT, path.basename(storedName)));
+}
+
+export async function deleteProjectFile(storedName: string) {
+  await unlink(path.join(PROJECT_FILE_ROOT, path.basename(storedName))).catch(() => {});
+}

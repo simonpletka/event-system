@@ -11,13 +11,14 @@ import type { ReactNode } from "react";
  * only one is ever visible per breakpoint.
  *
  * Full-bleed (`-mx-6 px-6`) with `overflow-x-auto` so a long tab set scrolls
- * horizontally instead of clipping. No sidebar exists at this width, so the
- * frost can sit directly on the element rather than in a viewport-spanning
- * layer the way `PageHeader` needs.
+ * horizontally instead of clipping. The bar itself is transparent, so the
+ * pill floats over the page like the bottom tab bar. That leaves the pill as
+ * the only thing between its labels and the content scrolling behind it, so
+ * it gets a tinted backing here (blur alone leaves sharp text readable).
  */
 export function MobileStickyTabs({ children }: { children: ReactNode }) {
   return (
-    <div className="md:hidden sticky top-0 z-20 -mx-6 mb-1 px-6 py-2 overflow-x-auto backdrop-blur-2xl bg-gradient-to-b from-bg/90 to-bg/70 border-b border-ink/10">
+    <div className="md:hidden sticky top-0 z-20 -mx-6 mb-1 px-6 py-2 overflow-x-auto [&>*]:w-max [&>*]:!bg-bg/72">
       {children}
     </div>
   );

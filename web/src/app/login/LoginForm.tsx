@@ -7,7 +7,7 @@ import type { Dictionary } from "@/lib/dictionary";
 
 const initialState: LoginState = {};
 
-export function LoginForm({ t, defaultEmail }: { t: Dictionary["auth"]; defaultEmail?: string }) {
+export function LoginForm({ t, defaultEmail, next }: { t: Dictionary["auth"]; defaultEmail?: string; next: string }) {
   const [state, formAction, pending] = useActionState(loginAction, initialState);
 
   const submitOnEnter: React.KeyboardEventHandler<HTMLInputElement> = (e) => {
@@ -19,6 +19,7 @@ export function LoginForm({ t, defaultEmail }: { t: Dictionary["auth"]; defaultE
 
   return (
     <form action={formAction} className="flex flex-col gap-4">
+      <input type="hidden" name="next" value={next} />
       <div className="flex flex-col gap-1.5">
         <label htmlFor="email" className="heading-label">
           {t.email}
