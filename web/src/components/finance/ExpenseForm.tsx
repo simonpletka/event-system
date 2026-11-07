@@ -73,9 +73,10 @@ export function ExpenseForm({
   // clears — bump a key so the uncontrolled fields remount at their defaults.
   const [resetKey, setResetKey] = useState(0);
   const [prevSuccess, setPrevSuccess] = useState(false);
-  if (state.success !== prevSuccess) {
-    setPrevSuccess(Boolean(state.success));
-    if (state.success) setResetKey((k) => k + 1);
+  const success = Boolean(state.success);
+  if (success !== prevSuccess) {
+    setPrevSuccess(success);
+    if (success) setResetKey((k) => k + 1);
   }
 
   useEffect(() => {
