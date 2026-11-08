@@ -38,7 +38,7 @@ export function MonthlyBarChart({
 
   return (
     <div className="overflow-x-auto">
-      <div ref={chartRef} className="relative h-[200px] mt-2 min-w-[500px]">
+      <div ref={chartRef} className="relative h-[200px] mt-2">
         <ChartAxisGrid ticks={axisTicks} />
         {hm && (
           <div
@@ -84,13 +84,21 @@ export function MonthlyBarChart({
           ))}
         </div>
       </div>
-      <div className="flex ml-[74px] mr-1 justify-between mt-2 min-w-[426px]">
+      <div className="flex ml-[74px] mr-1 justify-between mt-2">
         {months.map((m, i) => (
           <span
             key={i}
-            className={`label flex-1 text-center transition-colors ${hover?.idx === i ? "!text-ink font-semibold" : ""}`}
+            className={`label flex-1 min-w-0 text-center transition-colors ${hover?.idx === i ? "!text-ink font-semibold" : ""}`}
           >
-            {m.label}
+            {/* A full year doesn't fit a phone with month names; one letter does. */}
+            {months.length > 6 ? (
+              <>
+                <span className="sm:hidden">{m.label.slice(0, 1)}</span>
+                <span className="hidden sm:inline">{m.label}</span>
+              </>
+            ) : (
+              m.label
+            )}
           </span>
         ))}
       </div>

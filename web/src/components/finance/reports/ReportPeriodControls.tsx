@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
-import { SegmentedTabs } from "@/components/ui/SegmentedTabs";
+import { ChipLinks } from "@/components/ui/ChipLinks";
 import { stepAnchor, type ReportPeriod } from "@/lib/finance-period";
 import { isoDate } from "@/lib/calendar";
 
@@ -54,18 +54,18 @@ export function ReportPeriodControls({
   const [to, setTo] = useState(query.to);
 
   const periodOptions = (["month", "quarter", "year", "custom"] as const).map((p) => ({
-    value: p,
+    key: p,
     label: labels[p],
     href: href(query, { period: p }),
   }));
 
   return (
     <div className="flex flex-wrap items-center gap-2 print-hide">
-      <SegmentedTabs options={periodOptions} active={query.period} />
+      <ChipLinks chips={periodOptions} active={query.period} />
 
       {query.period === "custom" ? (
         <form
-          className="flex items-center gap-1.5"
+          className="flex items-center gap-1.5 flex-wrap"
           onSubmit={(e) => {
             e.preventDefault();
             router.push(href(query, { period: "custom", from, to }));
@@ -84,7 +84,7 @@ export function ReportPeriodControls({
           </button>
         </form>
       ) : (
-        <div className="flex items-center gap-1.5">
+        <div className="flex items-center gap-1.5 flex-wrap">
           <Link href={href(query, { anchor: stepAnchor(query.period, query.anchor, -1) })} className="btno px-2 py-1.5">
             ←
           </Link>

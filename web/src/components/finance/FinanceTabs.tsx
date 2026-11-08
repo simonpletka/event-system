@@ -2,7 +2,7 @@
 
 import { usePathname } from "next/navigation";
 import { getDictionary, type Locale } from "@/lib/dictionary";
-import { SegmentedTabs } from "@/components/ui/SegmentedTabs";
+import { SlidingTabs } from "@/components/ui/SlidingTabs";
 
 export function FinanceTabs({
   counts,
@@ -30,5 +30,5 @@ export function FinanceTabs({
 
   if (tabs.length === 1) return null;
 
-  return <SegmentedTabs options={tabs} active={active} />;
+  return <SlidingTabs tabs={tabs} active={active} />;
 }

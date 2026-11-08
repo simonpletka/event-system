@@ -84,6 +84,10 @@ body {
   border-radius: 16px;
 }
 
+.finance-scope .card {
+  border-radius: 22px;
+}
+
 /* Frosted-glass surface for the sidebar and sticky toolbars. The dark
    color-mix(bg) layer is load-bearing, not decorative: when this sits as a
    floating overlay above real page content (the unpinned sidebar, revealed

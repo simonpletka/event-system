@@ -9,7 +9,9 @@ import { isoDate } from "@/lib/calendar";
 import { PrintButton } from "@/components/finance/PrintButton";
 import { MonthlyBarChart } from "@/components/finance/MonthlyBarChart";
 import { ReportPeriodControls, type ReportQuery } from "@/components/finance/reports/ReportPeriodControls";
-import { SegmentedTabs } from "@/components/ui/SegmentedTabs";
+import { ByProjectCard } from "@/components/finance/reports/ByProjectCard";
+import { ChipLinks } from "@/components/ui/ChipLinks";
+import { EXPENSE_CATEGORIES } from "@/lib/expense-categories";
 import { INCOME_CHART_COLOR, categoricalColor } from "@/lib/chart-colors";
 import { getLocale, getDictionary } from "@/lib/i18n";
 import type { VatRegime } from "@/lib/vat-regime";
@@ -52,7 +54,7 @@ export default async function ReportsPage({
   };
 
   const tabOptions = TABS.map((v) => ({
-    value: v,
+    key: v as string,
     label: v === "overview" ? tr.tabOverview : v === "vat" ? tr.tabVat : v === "receivables" ? tr.tabReceivables : tr.tabDocuments,
     href: `/finance/reports?tab=${v}&period=${period}${period === "custom" ? `&from=${from}&to=${to}` : `&anchor=${anchor}`}`,
   }));
@@ -101,10 +103,10 @@ export default async function ReportsPage({
       </div>
 
       <div className="mt-5 print-hide">
-        <SegmentedTabs options={tabOptions} active={tab} />
+        <ChipLinks chips={tabOptions} active={tab} />
       </div>
 
-      {(printAll || tab === "overview") && <OverviewSection report={report} tr={tr} t={t} />}
+      {(printAll || tab === "overview") && <OverviewSection report={report} tr={tr} t={t} printAll={printAll} />}
       {(printAll || tab === "vat") && <VatSection report={report} tr={tr} />}
       {(printAll || tab === "receivables") && <ReceivablesSection report={report} tr={tr} />}
       {(printAll || tab === "documents") && <DocumentsSection report={report} tr={tr} t={t} csvHref={csvHref} />}
@@ -171,10 +173,13 @@ function agingLabel(b: AgingBucket, tr: Tr) {
 
 /* --------------------------------------------------------------- Overview */
 
-function OverviewSection({ report, tr, t }: { report: FinanceReport; tr: Tr; t: Dict }) {
+function OverviewSection({ report, tr, t, printAll }: { report: FinanceReport; tr: Tr; t: Dict; printAll: boolean }) {
+  // Every category in the app, so one with no spend this period still shows at 0 Kč.
+  const spent = new Map(report.topCategories);
+  const categories = EXPENSE_CATEGORIES.map((c) => [c, spent.get(c) ?? 0] as const).sort((a, b) => b[1] - a[1]);
   const maxBucket = Math.max(1, ...report.byBucket.flatMap((b) => [b.income, b.expense]));
   const { axisMax, ticks } = niceMoneyAxis(maxBucket);
-  const maxCategory = Math.max(1, ...report.topCategories.map(([, v]) => v));
+  const maxCategory = Math.max(1, ...categories.map(([, v]) => v));
 
   return (
     <div className="mt-4 grid grid-cols-1 lg:grid-cols-[1.4fr_1fr] gap-4">
@@ -197,22 +202,19 @@ function OverviewSection({ report, tr, t }: { report: FinanceReport; tr: Tr; t: 
           {report.byProject.length === 0 ? (
             <p className="text-sm placeholder-text">{tr.empty}</p>
           ) : (
-            <>
-              <HeadRow cols={[tr.colProject, tr.colIncome, tr.colExpenses, tr.colBalance]} template="1fr .8fr .8fr .8fr" />
-              {report.byProject.map((p) => (
-                <Link
-                  key={p.id}
-                  href={projectHref(p)}
-                  className="grid gap-2 items-center py-2.5 border-b border-ink/12 text-[14px] hover:bg-ink/5"
-                  style={{ gridTemplateColumns: "1fr .8fr .8fr .8fr" }}
-                >
-                  <span className="truncate">{p.title}</span>
-                  <span className="text-right tabular-nums placeholder-text">{money(p.income)}</span>
-                  <span className="text-right tabular-nums placeholder-text">{money(p.expense)}</span>
-                  <span className="text-right tabular-nums">{money(p.income - p.expense)}</span>
-                </Link>
-              ))}
-            </>
+            <ByProjectCard
+              rows={report.byProject.map((p) => ({ id: p.id, title: p.title, href: projectHref(p), income: p.income, expense: p.expense }))}
+              expandedByDefault={printAll}
+              labels={{
+                project: tr.colProject,
+                income: tr.colIncome,
+                expenses: tr.colExpenses,
+                balance: tr.colBalance,
+                total: tr.totalRow,
+                showAll: tr.showAllProjects(report.byProject.length),
+                showTop: tr.showTopProjects,
+              }}
+            />
           )}
         </Card>
       </div>
@@ -227,7 +229,7 @@ function OverviewSection({ report, tr, t }: { report: FinanceReport; tr: Tr; t: 
           <PlRow label={tr.plExpensesGross} value={money(report.expenseGross)} muted />
         </Card>
 
-        {report.currencyExposure.length > 0 && (
+        {report.mixedCurrency && report.currencyExposure.length > 0 && (
           <Card title={tr.currencyExposureTitle}>
             <HeadRow cols={[tr.colCurrency, tr.colOriginal, tr.colCzk]} template="1fr 1fr 1fr" />
             {report.currencyExposure.map((c) => (
@@ -242,25 +244,20 @@ function OverviewSection({ report, tr, t }: { report: FinanceReport; tr: Tr; t: 
         )}
 
         <Card title={tr.topCategories}>
-          {report.topCategories.length === 0 ? (
-            <p className="text-sm placeholder-text">{tr.empty}</p>
-          ) : (
-            report.topCategories.map(([cat, value], i) => (
-              <div key={cat} className="flex flex-col gap-1 py-1.5">
-                <div className="flex items-center justify-between text-[13px]">
-                  <span className="flex items-center gap-1.5">
-                    <span className="w-2 h-2 rounded-sm shrink-0" style={{ background: categoricalColor(i) }} />
-                    {t.expenseCategories[cat as keyof typeof t.expenseCategories] ?? cat}
-                  </span>
-                  <span className="placeholder-text tabular-nums text-[12px]">{money(value)}</span>
-                </div>
-                <div
-                  className="h-1.5 rounded-full"
-                  style={{ width: `${(value / maxCategory) * 100}%`, maxWidth: 180, background: categoricalColor(i) }}
-                />
+          {categories.map(([cat, value], i) => (
+            <div key={cat} className="flex flex-col gap-1 py-1.5">
+              <div className="flex items-center justify-between gap-2 text-[13px]">
+                <span className="flex items-center gap-1.5 min-w-0">
+                  <span className="w-2 h-2 rounded-sm shrink-0" style={{ background: categoricalColor(i) }} />
+                  <span className="truncate">{t.expenseCategories[cat]}</span>
+                </span>
+                <span className={`tabular-nums text-[12px] whitespace-nowrap ${value === 0 ? "placeholder-text opacity-60" : "placeholder-text"}`}>{money(value)}</span>
               </div>
-            ))
-          )}
+              <div className="h-1.5 rounded-full bg-ink/8 overflow-hidden">
+                <div className="h-full rounded-full" style={{ width: `${(value / maxCategory) * 100}%`, background: categoricalColor(i) }} />
+              </div>
+            </div>
+          ))}
         </Card>
       </div>
     </div>
@@ -398,22 +395,30 @@ function ReceivablesSection({ report, tr }: { report: FinanceReport; tr: Tr }) {
           <p className="text-sm placeholder-text">{tr.receivablesEmpty}</p>
         ) : (
           <>
-            <HeadRow
-              cols={[tr.colInvoice, tr.colDue, tr.colOverdue, tr.colRemaining]}
-              template="1fr 1fr .7fr 1fr"
-            />
-            {report.outstandingInvoices.map((i) => (
-              <div key={i.id} className="grid gap-2 py-2 text-[14px]" style={{ gridTemplateColumns: "1fr 1fr .7fr 1fr" }}>
-                <span className="truncate">
-                  {i.number} · <span className="placeholder-text">{i.company}</span>
-                </span>
-                <span className="tabular-nums">{formatDate(i.dueDate, { day: "numeric", month: "short", year: "numeric" })}</span>
-                <span className={`text-right tabular-nums ${i.overdueDays > 0 ? "text-warning" : "placeholder-text"}`}>
-                  {i.overdueDays > 0 ? tr.days(i.overdueDays) : "—"}
-                </span>
-                <span className="text-right tabular-nums">{money(i.remainingCzk)}</span>
-              </div>
-            ))}
+            <div className="grid gap-2 grid-cols-[minmax(0,1fr)_auto_auto] md:grid-cols-[1fr_1fr_.7fr_1fr] border-b-2 border-ink pb-1.5">
+              <span className="heading-label !text-[9px] font-bold">{tr.colInvoice}</span>
+              <span className="heading-label !text-[9px] font-bold hidden md:block">{tr.colDue}</span>
+              <span className="heading-label !text-[9px] font-bold text-right">{tr.colOverdue}</span>
+              <span className="heading-label !text-[9px] font-bold text-right">{tr.colRemaining}</span>
+            </div>
+            {[...report.outstandingInvoices]
+              .sort((a, b) => b.overdueDays - a.overdueDays)
+              .map((i) => (
+                <Link
+                  key={i.id}
+                  href={`/finance/invoices/${i.id}`}
+                  className="grid gap-2 items-center py-2 text-[14px] grid-cols-[minmax(0,1fr)_auto_auto] md:grid-cols-[1fr_1fr_.7fr_1fr] border-b border-ink/8 last:border-b-0 hover:bg-ink/5"
+                >
+                  <span className="truncate">
+                    {i.number} · <span className="placeholder-text">{i.company}</span>
+                  </span>
+                  <span className="tabular-nums hidden md:block">{formatDate(i.dueDate, { day: "numeric", month: "short", year: "numeric" })}</span>
+                  <span className={`text-right tabular-nums whitespace-nowrap ${i.overdueDays > 0 ? "text-warning" : "placeholder-text"}`}>
+                    {i.overdueDays > 0 ? tr.days(i.overdueDays) : "—"}
+                  </span>
+                  <span className="text-right tabular-nums whitespace-nowrap">{money(i.remainingCzk)}</span>
+                </Link>
+              ))}
           </>
         )}
       </Card>
@@ -447,8 +452,23 @@ function DocumentsSection({
         {report.invoices.length === 0 ? (
           <p className="text-sm placeholder-text">{tr.empty}</p>
         ) : (
-          <div className="overflow-x-auto">
-            <div className="min-w-[720px]">
+          <>
+          <ul className="md:hidden">
+            {report.invoices.map((i) => (
+              <li key={i.id} className="flex items-start justify-between gap-3 py-2.5 border-b border-ink/10 last:border-b-0 text-[13px]">
+                <span className="min-w-0">
+                  <span className="block truncate">{i.number} · <span className="placeholder-text">{i.company}</span></span>
+                  <span className="block text-[11.5px] placeholder-text">{formatDate(i.issuedAt, { day: "numeric", month: "short", year: "numeric" })}</span>
+                </span>
+                <span className="text-right shrink-0">
+                  <span className="block tabular-nums">{formatCurrency(i.total, i.currency)}</span>
+                  <span className={`block text-[11.5px] ${i.paid ? "text-positive" : "text-warning"}`}>{i.paid ? tr.statusPaid : tr.statusUnpaid}</span>
+                </span>
+              </li>
+            ))}
+          </ul>
+          <div className="hidden md:block">
+            <div>
               <HeadRow
                 cols={[tr.colInvoice, tr.colDate, tr.colRegime, tr.colBase, tr.colVat, tr.colTotal, tr.colStatus]}
                 template="1.1fr .8fr .9fr .9fr .8fr .9fr .7fr"
@@ -477,6 +497,7 @@ function DocumentsSection({
               ))}
             </div>
           </div>
+          </>
         )}
       </Card>
 
@@ -491,8 +512,22 @@ function DocumentsSection({
         {report.expenses.length === 0 ? (
           <p className="text-sm placeholder-text">{tr.empty}</p>
         ) : (
-          <div className="overflow-x-auto">
-            <div className="min-w-[720px]">
+          <>
+          <ul className="md:hidden">
+            {report.expenses.map((e) => (
+              <li key={e.id} className="flex items-start justify-between gap-3 py-2.5 border-b border-ink/10 last:border-b-0 text-[13px]">
+                <span className="min-w-0">
+                  <span className="block truncate">{t.expenseCategories[e.category as keyof typeof t.expenseCategories] ?? e.category}</span>
+                  <span className="block text-[11.5px] placeholder-text truncate">
+                    {formatDate(e.date, { day: "numeric", month: "short", year: "numeric" })} · {e.projectLabel ?? tr.overhead}
+                  </span>
+                </span>
+                <span className="block tabular-nums shrink-0">{money(e.net)}</span>
+              </li>
+            ))}
+          </ul>
+          <div className="hidden md:block">
+            <div>
               <HeadRow
                 cols={[tr.colDate, tr.colCategory, tr.colProject, tr.colGross, tr.colVat, tr.colNet, tr.colReceipt]}
                 template=".8fr 1fr 1fr .8fr .7fr .8fr .5fr"
@@ -514,6 +549,7 @@ function DocumentsSection({
               ))}
             </div>
           </div>
+          </>
         )}
       </Card>
     </div>

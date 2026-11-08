@@ -9,6 +9,7 @@ import { InvoiceStatusPill } from "@/components/StatusPill";
 import { DownloadPdfButton } from "@/components/finance/DownloadPdfButton";
 import { FinanceSortMenu } from "@/components/finance/FinanceSortMenu";
 import { FilterSelect } from "@/components/ui/FilterSelect";
+import { ChipLinks } from "@/components/ui/ChipLinks";
 import { groupProjectOptions } from "@/lib/project-status";
 import { MobileListRow } from "@/components/ui/MobileListRow";
 import { getLocale, getDictionary, czCount, type Locale } from "@/lib/i18n";
@@ -78,22 +79,12 @@ export default async function InvoicesPage({
       </div>
 
       <div className="flex items-center justify-between gap-2 flex-wrap mt-4">
-        <div className="flex gap-2 flex-nowrap overflow-x-auto pb-1 md:pb-0 md:flex-wrap md:overflow-visible -mx-6 px-6 md:mx-0 md:px-0">
-          {buckets.map((b) => (
-            <Link
-              key={b.key}
-              href={carry({ bucket: b.key || undefined })}
-              className={`shrink-0 text-[11px] font-semibold tracking-[0.04em] px-3.5 py-2 rounded-full border ${
-                (filters.bucket ?? "") === b.key
-                  ? "bg-accent border-accent text-ink"
-                  : "border-ink/16 bg-ink/4 text-ink/65 hover:text-ink"
-              }`}
-            >
-              {b.label}
-            </Link>
-          ))}
-        </div>
-        <div className="flex items-center gap-2">
+        <ChipLinks
+          label={ti.colPayment}
+          active={filters.bucket ?? ""}
+          chips={buckets.map((b) => ({ key: b.key, label: b.label, href: carry({ bucket: b.key || undefined }) }))}
+        />
+        <div className="flex items-center gap-2 flex-wrap">
           <FilterSelect
             label={ti.projectFilter}
             value={filters.projectId ?? ""}
@@ -115,8 +106,8 @@ export default async function InvoicesPage({
         </div>
       </div>
 
-      <div className="hidden md:block">
-        <div className="grid grid-cols-[.8fr_1.2fr_.9fr_.6fr_.6fr_.8fr_1fr_.7fr] gap-2.5 border-b border-ink/14 pb-1.5 mt-5 px-3.5 [&_.heading-label]:font-bold [&_.heading-label]:!text-[9px]">
+      <div className="hidden md:block card p-3 lg:p-4 mt-4">
+        <div className="grid grid-cols-[minmax(0,.8fr)_minmax(0,1.2fr)_minmax(0,.9fr)_minmax(0,.6fr)_minmax(0,.6fr)_minmax(0,.9fr)_minmax(0,1fr)_minmax(0,.7fr)] gap-2.5 border-b border-ink/14 pb-1.5 px-3.5 [&_.heading-label]:font-bold [&_.heading-label]:!text-[9px]">
           <span className="heading-label">{ti.colNumber}</span>
           <span className="heading-label">{ti.colProject}</span>
           <span className="heading-label">{ti.colClient}</span>
@@ -130,7 +121,7 @@ export default async function InvoicesPage({
         {invoicesWithCzk.map((inv) => (
           <div
             key={inv.id}
-            className="group grid grid-cols-[.8fr_1.2fr_.9fr_.6fr_.6fr_.8fr_1fr_.7fr] gap-2.5 items-center py-3.5 px-3.5 rounded-xl border-b border-ink/8 last:border-b-0 text-[15px] hover:bg-ink/5"
+            className="group grid grid-cols-[minmax(0,.8fr)_minmax(0,1.2fr)_minmax(0,.9fr)_minmax(0,.6fr)_minmax(0,.6fr)_minmax(0,.9fr)_minmax(0,1fr)_minmax(0,.7fr)] gap-2.5 items-center py-3.5 px-3.5 rounded-xl border-b border-ink/8 last:border-b-0 text-[15px] hover:bg-ink/5"
           >
             <Link href={`/finance/invoices/${inv.id}`} className="font-medium group-hover:text-accent">
               {inv.number}
