@@ -116,12 +116,7 @@ export function ProjectsList({
 
         <div className="flex items-center justify-between gap-3 flex-wrap mt-4 pb-2 border-b border-ink/10 text-[12px] placeholder-text">
           <span aria-live="polite">{tp.matchingCount(shown.length)}</span>
-          <span>
-            {tp.sortedByStart} ·{" "}
-            <Link href="/projects?view=calendar" className="hover:text-accent underline underline-offset-2">
-              {tp.weekCalendar}
-            </Link>
-          </span>
+          <span>{tp.sortedByStart}</span>
         </div>
 
         {shown.length === 0 ? (
@@ -135,11 +130,11 @@ export function ProjectsList({
                   className="group flex flex-wrap md:flex-nowrap items-center gap-x-4 gap-y-1.5 py-3.5 px-2 -mx-2 rounded-xl hover:bg-ink/5"
                 >
                   <span className="min-w-0 basis-full md:basis-auto md:flex-1">
-                    <span className="block text-[11px] placeholder-text">{p.number}</span>
+                    <span className="hidden md:block text-[11px] placeholder-text">{p.number}</span>
                     <span className="block text-[17px] font-semibold truncate group-hover:text-accent">{p.title}</span>
-                    <span className="block text-[13px] placeholder-text truncate">{p.client}</span>
+                    <span className="hidden md:block text-[13px] placeholder-text truncate">{p.client}</span>
                   </span>
-                  <span className="min-w-0 flex-1 md:flex-none md:w-[190px] text-[13px] placeholder-text">
+                  <span className="hidden md:block min-w-0 md:w-[190px] text-[13px] placeholder-text">
                     <span className="block truncate">{p.venue ?? "—"}</span>
                     <span className="block">{formatPragueRange(p.start, p.end, locale)}</span>
                   </span>

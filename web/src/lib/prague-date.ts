@@ -62,3 +62,47 @@ export function formatMonthKey(monthKey: string, locale: "en" | "cs") {
     new Date(Date.UTC(y, m - 1, 15))
   );
 }
+
+/** The UTC instant of a wall-clock time in Prague, DST included. */
+export function pragueInstant(date: string, minutes: number) {
+  const [y, m, d] = date.split("-").map(Number);
+  const asUtc = Date.UTC(y, m - 1, d, 0, minutes);
+  const parts = new Intl.DateTimeFormat("en-US", {
+    timeZone: "Europe/Prague",
+    hourCycle: "h23",
+    year: "numeric",
+    month: "numeric",
+    day: "numeric",
+    hour: "numeric",
+    minute: "numeric",
+  }).formatToParts(new Date(asUtc));
+  const get = (type: string) => Number(parts.find((p) => p.type === type)!.value);
+  const shownAsUtc = Date.UTC(get("year"), get("month") - 1, get("day"), get("hour"), get("minute"));
+  return new Date(asUtc - (shownAsUtc - asUtc));
+}
+
+/** The calendar day `by` days after a "YYYY-MM-DD" key. Plain date arithmetic, so DST can't shift it. */
+export function shiftDateKey(dateKey: string, by: number) {
+  const [y, m, d] = dateKey.split("-").map(Number);
+  return new Date(Date.UTC(y, m - 1, d + by)).toISOString().slice(0, 10);
+}
+
+/** Whole days from one "YYYY-MM-DD" key to another. */
+export function daysBetweenKeys(from: string, to: string) {
+  return Math.round((Date.parse(`${to}T00:00:00Z`) - Date.parse(`${from}T00:00:00Z`)) / 86_400_000);
+}
+
+/** The Monday of the week containing a "YYYY-MM-DD" key. */
+export function mondayKey(dateKey: string) {
+  const weekday = (new Date(`${dateKey}T00:00:00Z`).getUTCDay() + 6) % 7;
+  return shiftDateKey(dateKey, -weekday);
+}
+
+/** Minutes after midnight of the instant's wall-clock time in Prague. */
+export function pragueMinutes(date: Date | string) {
+  const parts = new Intl.DateTimeFormat("en-US", { timeZone: PRAGUE, hourCycle: "h23", hour: "numeric", minute: "numeric" }).formatToParts(
+    typeof date === "string" ? new Date(date) : date
+  );
+  const get = (type: string) => Number(parts.find((p) => p.type === type)!.value);
+  return get("hour") * 60 + get("minute");
+}

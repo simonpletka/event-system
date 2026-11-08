@@ -341,11 +341,11 @@ export async function rescheduleProjectAction(formData: FormData) {
   const user = await requireUser();
   const id = String(formData.get("id"));
   const deltaDays = Number(formData.get("deltaDays"));
-  if (!Number.isFinite(deltaDays) || deltaDays === 0) return;
+  if (!Number.isFinite(deltaDays) || deltaDays === 0) return { ok: false };
 
   const project = await prisma.project.findUnique({ where: { id }, include: { members: true } });
-  if (!project) return;
-  if (!canEditProject(user, { ownerId: project.ownerId, memberIds: project.members.map((m) => m.userId) })) return;
+  if (!project) return { ok: false };
+  if (!canEditProject(user, { ownerId: project.ownerId, memberIds: project.members.map((m) => m.userId) })) return { ok: false };
 
   await prisma.project.update({
     where: { id },
@@ -360,6 +360,7 @@ export async function rescheduleProjectAction(formData: FormData) {
   revalidatePath(`/projects/${id}`, "layout");
   revalidatePath("/projects");
   revalidatePath("/dashboard");
+  return { ok: true };
 }
 
 export async function deleteProjectFileAction(formData: FormData) {

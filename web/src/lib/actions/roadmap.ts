@@ -157,16 +157,17 @@ export async function addRoadmapCommentAction(_prev: RoadmapFormState, formData:
 
 /**
  * Drag-and-drop reschedule from the weekly calendar (WeekCalendar.tsx).
- * Silently no-ops on failure — fired from a drag gesture with no error UI.
+ * `ok: false` makes the calendar move the item back and say so.
  */
 export async function rescheduleRoadmapItemAction(formData: FormData) {
   const id = String(formData.get("itemId"));
   const dateRaw = String(formData.get("date") ?? "");
-  if (!dateRaw) return;
+  if (!dateRaw) return { ok: false };
   const item = await prisma.roadmapItem.findUnique({ where: { id }, select: { projectId: true } });
-  if (!item) return;
+  if (!item) return { ok: false };
   const ctx = await loadEditableProject(item.projectId);
-  if (!ctx) return;
+  if (!ctx) return { ok: false };
   await prisma.roadmapItem.update({ where: { id }, data: { date: new Date(dateRaw) } });
   revalidateProject(item.projectId);
+  return { ok: true };
 }

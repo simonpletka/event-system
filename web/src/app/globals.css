@@ -85,7 +85,8 @@ body {
 }
 
 .finance-scope .card,
-.meetings-scope .card {
+.meetings-scope .card,
+.projects-scope .card {
   border-radius: 22px;
 }
 
