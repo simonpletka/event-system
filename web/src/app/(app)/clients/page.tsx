@@ -1,96 +1,39 @@
 import Link from "next/link";
 import { requireUser, canManageClients } from "@/lib/authz";
 import { getClientList } from "@/lib/queries/clients";
-import { formatCurrency } from "@/lib/format";
-import { MobileListRow } from "@/components/ui/MobileListRow";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { PageHeader } from "@/components/ui/PageHeader";
+import { ClientsList } from "@/components/clients/ClientsList";
 import { getLocale, getDictionary } from "@/lib/i18n";
 import { clientHref } from "@/lib/slug";
 
-export default async function ClientsPage({
-  searchParams,
-}: {
-  searchParams: Promise<Record<string, string | undefined>>;
-}) {
+export default async function ClientsPage() {
   const user = await requireUser();
-  const params = await searchParams;
-  const clients = await getClientList(user, params.q);
+  const locale = await getLocale();
+  const clients = await getClientList(user);
   const canManage = canManageClients(user);
-  const t = getDictionary(await getLocale());
-  const tc = t.clients;
-  const anyMixed = clients.some((c) => c.totalMixed);
+  const tc = getDictionary(locale).clients;
 
   return (
     <div>
       <PageHeader>
-        <div className="flex items-end justify-between">
-          <div>
-            <div className="heading-label">{tc.countHeading(clients.length)}</div>
-            <h1 className="text-[60px] font-bold tracking-tight mt-1">{tc.title}</h1>
-          </div>
+        <div className="max-w-[1080px] flex items-end justify-between gap-3 flex-wrap">
+          <h1 className="text-[46px] md:text-[60px] font-bold tracking-tight">{tc.title}</h1>
           {canManage && (
             <Link href="/clients/new" className="btn font-semibold">
               {tc.newClient}
             </Link>
           )}
         </div>
-
-        <form method="get" className="flex gap-1.5 mt-4">
-          <input name="q" defaultValue={params.q ?? ""} placeholder={tc.searchPlaceholder} className="input text-[12px] py-2 w-[240px]" />
-          <button type="submit" className="btno text-[9px]">
-            {tc.apply}
-          </button>
-        </form>
       </PageHeader>
 
-      <div className="hidden md:block">
-        <div className="grid grid-cols-[1.5fr_.8fr_.7fr_.7fr_1fr] gap-2.5 border-b border-ink/14 pb-1.5 mt-5 px-3.5 [&_.heading-label]:font-bold [&_.heading-label]:!text-[9px]">
-          <span className="heading-label">{tc.colCompany}</span>
-          <span className="heading-label">{tc.colIco}</span>
-          <span className="heading-label">{tc.colContacts}</span>
-          <span className="heading-label">{tc.colProjects}</span>
-          <span className="heading-label">{tc.colTotalCharged}</span>
-        </div>
-
-        {clients.map((c) => (
-          <Link
-            key={c.id}
-            href={clientHref(c)}
-            className="group grid grid-cols-[1.5fr_.8fr_.7fr_.7fr_1fr] gap-2.5 items-center py-3.5 px-3.5 rounded-xl border-b border-ink/8 last:border-b-0 text-[15px] hover:bg-ink/5"
-          >
-            <div className="text-[17px] font-bold group-hover:text-accent">{c.name}</div>
-            <div className="placeholder-text group-hover:!text-accent">{c.ico || "—"}</div>
-            <div className="placeholder-text group-hover:!text-accent">{c.contactCount}</div>
-            <div className="placeholder-text group-hover:!text-accent">{c.projectCount}</div>
-            <div className="font-semibold tabular-nums group-hover:text-accent">
-              {formatCurrency(c.totalCharged)}
-              {c.totalMixed && <span className="placeholder-text">&thinsp;*</span>}
-            </div>
-          </Link>
-        ))}
+      <div className="max-w-[1080px] mt-7">
+        {clients.length === 0 ? (
+          <EmptyState message={tc.noClientsYet} actionLabel={canManage ? tc.newClient : undefined} actionHref="/clients/new" />
+        ) : (
+          <ClientsList clients={clients.map((c) => ({ ...c, href: clientHref(c) }))} locale={locale} />
+        )}
       </div>
-
-      <div className="md:hidden flex flex-col gap-2 mt-4">
-        {clients.map((c) => (
-          <MobileListRow
-            key={c.id}
-            href={clientHref(c)}
-            title={c.name}
-            meta={`${tc.colIco}: ${c.ico || "—"} · ${c.contactCount} ${tc.colContacts} · ${c.projectCount} ${tc.colProjects}`}
-            trailing={`${formatCurrency(c.totalCharged)}${c.totalMixed ? " *" : ""}`}
-          />
-        ))}
-      </div>
-
-      {clients.length === 0 && (
-        <EmptyState
-          message={tc.noClientsYet}
-          actionLabel={canManage && !params.q ? tc.newClient : undefined}
-          actionHref="/clients/new"
-        />
-      )}
-      {anyMixed && <p className="label mt-4 px-3.5">{tc.mixedCurrencyNote}</p>}
     </div>
   );
 }
