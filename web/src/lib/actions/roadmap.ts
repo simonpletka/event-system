@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
+import { parsePragueDateTime } from "@/lib/prague-date";
 import { requireUser, canEditProject } from "@/lib/authz";
 import { getProjectDetail } from "@/lib/queries/projects";
 import { parseRoadmapType } from "@/lib/roadmap";
@@ -39,7 +40,7 @@ function parseDate(formData: FormData): { date: Date; allDay: boolean } | null {
   const raw = String(formData.get("date") ?? "");
   const allDay = formData.get("allDay") === "on";
   if (!raw) return null;
-  const date = new Date(raw);
+  const date = parsePragueDateTime(raw);
   if (Number.isNaN(date.getTime())) return null;
   return { date, allDay };
 }

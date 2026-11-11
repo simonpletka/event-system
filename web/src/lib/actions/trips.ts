@@ -168,6 +168,26 @@ export async function saveTripAction(_prev: TripFormState, formData: FormData): 
   redirect(href);
 }
 
+/** Remembers the car type picked for one operator in a trip's cost comparison. */
+export async function setTripCarsharingModelAction(formData: FormData) {
+  const trip = await prisma.trip.findUnique({ where: { id: String(formData.get("tripId")) } });
+  if (!trip) return { ok: false };
+  const ctx = await loadEditableProject(trip.projectId);
+  if (!ctx) return { ok: false };
+  const provider = String(formData.get("provider") ?? "");
+  const carClass = String(formData.get("carClass") ?? "");
+  if (!provider) return { ok: false };
+  let models: Record<string, string> = {};
+  try {
+    models = JSON.parse(trip.carsharingModels);
+  } catch {
+    // A damaged value is replaced below.
+  }
+  await prisma.trip.update({ where: { id: trip.id }, data: { carsharingModels: JSON.stringify({ ...models, [provider]: carClass }) } });
+  revalidatePath(projectHref(ctx.project, "/trips"));
+  return { ok: true };
+}
+
 export async function deleteTripAction(formData: FormData) {
   const trip = await prisma.trip.findUnique({ where: { id: String(formData.get("tripId")) } });
   if (!trip) return;
@@ -180,15 +200,18 @@ export async function deleteTripAction(formData: FormData) {
 export async function saveVehicleAction(_prev: TravelFormState, formData: FormData): Promise<TravelFormState> {
   const user = await requireUser();
   const id = String(formData.get("id") ?? "");
-  const name = String(formData.get("name") ?? "").trim();
+  const brand = String(formData.get("brand") ?? "").trim();
+  const model = String(formData.get("model") ?? "").trim();
   const fuelType: FuelType = formData.get("fuelType") === "PETROL" ? "PETROL" : "DIESEL";
   const consumptionPer100Km = parseDecimal(formData.get("consumptionPer100Km"));
   const fuelPricePerLitre = parseDecimal(formData.get("fuelPricePerLitre"));
+  const amortizationPerKm = parseDecimal(formData.get("amortizationPerKm"));
   const extraCostPerKm = parseDecimal(formData.get("extraCostPerKm")) || 0;
-  if (!name) return { error: "Name the car." };
+  if (!brand || !model) return { error: "Enter the car's brand and type." };
   if (!(consumptionPer100Km > 0) || !(fuelPricePerLitre > 0)) return { error: "Enter consumption and fuel price." };
+  if (!(amortizationPerKm >= 0)) return { error: "Enter the amortization per km, or 0." };
 
-  const data = { name, fuelType, consumptionPer100Km, fuelPricePerLitre, extraCostPerKm };
+  const data = { brand, model, fuelType, consumptionPer100Km, fuelPricePerLitre, amortizationPerKm, extraCostPerKm };
   if (id) {
     await prisma.vehicle.updateMany({ where: { id, ownerId: user.id }, data });
   } else {
@@ -222,6 +245,7 @@ export async function saveCarsharingPlanAction(_prev: TravelFormState, formData:
     packageMinutes: hours > 0 ? Math.round(hours * 60) : null,
     packageKm: parseInt(String(formData.get("packageKm") ?? ""), 10) || 0,
     minuteRate: parseDecimal(formData.get("minuteRate")) || 0,
+    nightMinuteRate: parseDecimal(formData.get("nightMinuteRate")) || 0,
     kmRate: parseDecimal(formData.get("kmRate")) || 0,
     weekendOnly: formData.get("weekendOnly") === "on",
     verified: formData.get("verified") === "on",

@@ -5,7 +5,7 @@ import { createMeetingAction, updateMeetingAction, type MeetingFormState } from 
 import { CancelLink } from "@/components/ui/CancelLink";
 import { MeetingProjectPicker } from "@/components/meetings/MeetingProjectPicker";
 import { isoDate } from "@/lib/calendar";
-import { formatPragueDate, pragueDateKey } from "@/lib/prague-date";
+import { toPragueInput } from "@/lib/prague-date";
 import { getDictionary, type Locale } from "@/lib/dictionary";
 import type { MeetingType, RecurrenceFreq } from "@/generated/prisma/enums";
 
@@ -13,8 +13,7 @@ const initialState: MeetingFormState = {};
 
 /** A single field, "date" or "datetime-local" depending on allDay, always in Prague time so server and browser agree. */
 function toLocalInput(d: Date, allDay: boolean) {
-  const date = pragueDateKey(d);
-  return allDay ? date : `${date}T${formatPragueDate(d, "en", { hour: "2-digit", minute: "2-digit", hourCycle: "h23" })}`;
+  return toPragueInput(d, !allDay);
 }
 
 export type MeetingFormDefaults = {

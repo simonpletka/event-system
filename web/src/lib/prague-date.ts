@@ -67,7 +67,7 @@ export function formatMonthKey(monthKey: string, locale: "en" | "cs") {
 export function pragueInstant(date: string, minutes: number) {
   const [y, m, d] = date.split("-").map(Number);
   const asUtc = Date.UTC(y, m - 1, d, 0, minutes);
-  const parts = new Intl.DateTimeFormat("en-US", {
+  const format = new Intl.DateTimeFormat("en-US", {
     timeZone: "Europe/Prague",
     hourCycle: "h23",
     year: "numeric",
@@ -75,10 +75,17 @@ export function pragueInstant(date: string, minutes: number) {
     day: "numeric",
     hour: "numeric",
     minute: "numeric",
-  }).formatToParts(new Date(asUtc));
-  const get = (type: string) => Number(parts.find((p) => p.type === type)!.value);
-  const shownAsUtc = Date.UTC(get("year"), get("month") - 1, get("day"), get("hour"), get("minute"));
-  return new Date(asUtc - (shownAsUtc - asUtc));
+  });
+  /** How far Prague's clock is ahead of UTC at an instant, in ms. */
+  const offset = (instant: number) => {
+    const parts = format.formatToParts(new Date(instant));
+    const get = (type: string) => Number(parts.find((p) => p.type === type)!.value);
+    return Date.UTC(get("year"), get("month") - 1, get("day"), get("hour"), get("minute")) - instant;
+  };
+  // The offset is checked again at the first guess, so a time just before a
+  // clock change isn't read with the offset from just after it.
+  const guess = asUtc - offset(asUtc);
+  return new Date(asUtc - offset(guess));
 }
 
 /** The calendar day `by` days after a "YYYY-MM-DD" key. Plain date arithmetic, so DST can't shift it. */
@@ -105,4 +112,23 @@ export function pragueMinutes(date: Date | string) {
   );
   const get = (type: string) => Number(parts.find((p) => p.type === type)!.value);
   return get("hour") * 60 + get("minute");
+}
+
+/**
+ * A form's "YYYY-MM-DDTHH:mm" value, read as Prague wall-clock time. Plain
+ * `new Date()` would read it in the server's timezone, so on a UTC host 10:00
+ * would be saved as 11:00. A plain "YYYY-MM-DD" is returned as `new Date()`
+ * reads it (UTC midnight), which every all-day value already relies on.
+ */
+export function parsePragueDateTime(raw: string) {
+  const timed = /^(\d{4}-\d{2}-\d{2})T(\d{2}):(\d{2})/.exec(raw);
+  return timed ? pragueInstant(timed[1], Number(timed[2]) * 60 + Number(timed[3])) : new Date(raw);
+}
+
+/** The value for a date or date-and-time field, in Prague time, so the server and the browser render the same thing. */
+export function toPragueInput(date: Date | string, withTime = true) {
+  const day = pragueDateKey(date);
+  if (!withTime) return day;
+  const minutes = pragueMinutes(date);
+  return `${day}T${String(Math.floor(minutes / 60)).padStart(2, "0")}:${String(minutes % 60).padStart(2, "0")}`;
 }
