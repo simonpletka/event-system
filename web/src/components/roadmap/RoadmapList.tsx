@@ -2,7 +2,7 @@
 
 import { useMemo, useState, useTransition } from "react";
 import type { RoadmapItemType } from "@/generated/prisma/enums";
-import { formatDate } from "@/lib/format";
+import { formatPragueDate } from "@/lib/prague-date";
 import { groupRoadmapItems, type RoadmapGroup } from "@/lib/roadmap";
 import { toggleRoadmapItemDoneAction } from "@/lib/actions/roadmap";
 import { RoadmapItemModal } from "./RoadmapItemModal";
@@ -42,11 +42,15 @@ function initials(name: string) {
     .toUpperCase();
 }
 
-function dateLabel(iso: string, allDay: boolean) {
-  const d = new Date(iso);
-  const day = formatDate(d, { day: "numeric", month: "short" });
+/**
+ * In Prague time on purpose: this component also renders on the server, which
+ * runs in UTC on Railway, and a timezone-dependent label would make the
+ * server and browser HTML disagree (React hydration error #418).
+ */
+function dateLabel(iso: string, allDay: boolean, locale: Locale) {
+  const day = formatPragueDate(iso, locale, { day: "numeric", month: "short" });
   if (allDay) return day;
-  return `${day} · ${d.toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" })}`;
+  return `${day} · ${formatPragueDate(iso, locale, { hour: "2-digit", minute: "2-digit" })}`;
 }
 
 export function RoadmapList({
@@ -110,8 +114,9 @@ export function RoadmapList({
             <button
               key={k}
               onClick={() => setFilter(k)}
-              className={`text-[10px] font-semibold tracking-[0.05em] uppercase px-3 py-1.5 rounded-full border transition-colors ${
-                filter === k ? "border-accent/45 bg-accent/8 text-accent" : "border-ink/12 text-ink/55 hover:text-ink/80"
+              aria-pressed={filter === k}
+              className={`text-[10px] font-semibold tracking-[0.05em] uppercase px-3 py-1.5 rounded-full border transition-colors focus-visible:outline focus-visible:outline-1 focus-visible:outline-offset-2 focus-visible:outline-accent ${
+                filter === k ? "bg-accent border-accent text-white" : "border-ink/12 text-ink/55 hover:text-ink"
               }`}
             >
               {label}
@@ -141,8 +146,8 @@ export function RoadmapList({
               <span className="flex-1">{p.label}</span>
               <span className="placeholder-text text-[11px] tabular-nums">
                 {p.endDate
-                  ? `${formatDate(new Date(p.date))} – ${formatDate(new Date(p.endDate))}`
-                  : dateLabel(p.date, true)}
+                  ? `${formatPragueDate(p.date, locale, { day: "numeric", month: "short" })} – ${formatPragueDate(p.endDate, locale, { day: "numeric", month: "short" })}`
+                  : dateLabel(p.date, true, locale)}
               </span>
             </div>
           ))}
@@ -194,7 +199,7 @@ export function RoadmapList({
                         </span>
                       ))}
                     </div>
-                    <span className="placeholder-text text-[11px] tabular-nums w-[110px] text-right">{dateLabel(it.date, it.allDay)}</span>
+                    <span className="placeholder-text text-[11px] tabular-nums w-[110px] text-right">{dateLabel(it.date, it.allDay, locale)}</span>
                   </div>
                 </div>
               );

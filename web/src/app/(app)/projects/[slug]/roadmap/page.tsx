@@ -55,6 +55,7 @@ export default async function RoadmapTab({ params }: { params: Promise<{ slug: s
 
   return (
     <>
+      <section className="card p-4 md:p-5">
       <RoadmapList
         projectId={event.id}
         items={items}
@@ -64,6 +65,7 @@ export default async function RoadmapTab({ params }: { params: Promise<{ slug: s
         clientEmails={event.contacts.filter((c) => c.email).map((c) => ({ name: c.name, email: c.email }))}
         locale={locale}
       />
+      </section>
 
       {canViewMeetings(user) && (
         <div className="card p-4 mt-4">

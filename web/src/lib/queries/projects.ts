@@ -167,3 +167,17 @@ export const getProjectRoadmap = cache(async function getProjectRoadmap(user: Se
     },
   });
 });
+
+/**
+ * Every project the user can see, for the Projects list card, which filters
+ * by status and search text in the browser. Newest start first, like the
+ * table it replaced. Closed and cancelled projects are included and are only
+ * shown under "All".
+ */
+export async function getProjectRows(user: SessionUser) {
+  return prisma.project.findMany({
+    where: projectWhereForUser(user),
+    include: { venues: { take: 1 }, contacts: { select: { name: true } } },
+    orderBy: { startDate: "desc" },
+  });
+}

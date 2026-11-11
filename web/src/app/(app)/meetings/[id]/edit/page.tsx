@@ -16,9 +16,9 @@ export default async function EditMeetingPage({ params }: { params: Promise<{ id
   const canManage = canManageMeetings(user);
 
   return (
-    <div className="max-w-3xl">
-      <div className="flex items-end justify-between border-b border-ink/14 pb-4 mb-5">
-        <h1 className="text-[28px] font-bold tracking-tight">{t.meetings.editMeetingH1(meeting.title)}</h1>
+    <div className="meetings-scope max-w-3xl">
+      <div className="flex items-end justify-between gap-3 flex-wrap pb-4">
+        <h1 className="text-[48px] leading-tight font-bold tracking-tight min-w-0 break-words">{t.meetings.editMeetingH1(meeting.title)}</h1>
         {canManage && (
           <ConfirmDeleteButton
             action={deleteMeetingAction}

@@ -15,7 +15,7 @@ import { addDays, isoDate, mondayOf, parseIsoDate, rangeLabel, weekLabel } from 
  * nav (two-click range picker), each preserving its own other query params.
  */
 type Props =
-  | { mode: "single"; weekStartIso: string; basePath: string; extraQuery?: string; todayLabel: string }
+  | { mode: "single"; weekStartIso: string; todayWeekIso?: string; basePath: string; extraQuery?: string; todayLabel: string }
   | { mode: "range"; fromIso: string; toIso: string; basePath: string; extraQuery?: string; todayLabel: string };
 
 function buildHref(basePath: string, extraQuery: string | undefined, params: Record<string, string>) {
@@ -57,7 +57,7 @@ export function DateNav(props: Props) {
     label = weekLabel(weekStart);
     prevHref = buildHref(props.basePath, props.extraQuery, { week: isoDate(addDays(weekStart, -7)) });
     nextHref = buildHref(props.basePath, props.extraQuery, { week: isoDate(addDays(weekStart, 7)) });
-    todayHref = buildHref(props.basePath, props.extraQuery, { week: isoDate(mondayOf(new Date())) });
+    todayHref = buildHref(props.basePath, props.extraQuery, { week: props.todayWeekIso ?? isoDate(mondayOf(new Date())) });
     initialMonth = weekStart;
   } else {
     const from = parseIsoDate(props.fromIso);
@@ -79,7 +79,7 @@ export function DateNav(props: Props) {
 
   return (
     <div className="relative inline-block" ref={ref}>
-      <div className="flex items-center gap-1.5">
+      <div className="flex flex-wrap items-center gap-1.5">
         <Link href={prevHref} className="btno px-2 py-1.5">
           ←
         </Link>

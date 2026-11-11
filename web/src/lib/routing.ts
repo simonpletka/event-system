@@ -1,3 +1,5 @@
+import { pragueInstant } from "@/lib/prague-date";
+
 /**
  * Drive time and distance for a trip leg. Google's Routes API is used when
  * GOOGLE_MAPS_API_KEY is set — it's the only source here with predicted
@@ -8,6 +10,8 @@
  * Waze has no public routing API, only deep links, so it can't be a source
  * here — see wazeUrl() below.
  */
+export { pragueInstant };
+
 export type LatLng = { lat: number; lng: number };
 export type RouteSource = "google" | "osm";
 export type RouteEstimate = { minutes: number; km: number; source: RouteSource; polyline: string | null };
@@ -82,23 +86,6 @@ export async function estimateRoute(from: LatLng, to: LatLng, departure: Date | 
   return (await googleRoute(from, to, departure)) ?? (await osmRoute(from, to));
 }
 
-/** The UTC instant of a wall-clock time in Prague, DST included. */
-export function pragueInstant(date: string, minutes: number) {
-  const [y, m, d] = date.split("-").map(Number);
-  const asUtc = Date.UTC(y, m - 1, d, 0, minutes);
-  const parts = new Intl.DateTimeFormat("en-US", {
-    timeZone: "Europe/Prague",
-    hourCycle: "h23",
-    year: "numeric",
-    month: "numeric",
-    day: "numeric",
-    hour: "numeric",
-    minute: "numeric",
-  }).formatToParts(new Date(asUtc));
-  const get = (type: string) => Number(parts.find((p) => p.type === type)!.value);
-  const shownAsUtc = Date.UTC(get("year"), get("month") - 1, get("day"), get("hour"), get("minute"));
-  return new Date(asUtc - (shownAsUtc - asUtc));
-}
 
 /**
  * Traffic prediction needs a future departure, so a date already past moves

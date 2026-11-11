@@ -148,3 +148,15 @@ export function overlapBoxStyle(col: number) {
   const width = Math.max(OVERLAP_STEP_PCT, 100 - left);
   return { left: `${left}%`, width: `${width}%`, zIndex: col + 1 };
 }
+
+/** First lane where each `[colStart, colEnd]` span fits, so overlapping all-day bars stack instead of covering each other. */
+export function assignLanes<T extends { colStart: number; colEnd: number }>(items: T[]): (T & { lane: number })[] {
+  const sorted = [...items].sort((a, b) => a.colStart - b.colStart || b.colEnd - a.colEnd);
+  const laneEnds: number[] = [];
+  return sorted.map((item) => {
+    let lane = laneEnds.findIndex((end) => end < item.colStart);
+    if (lane === -1) lane = laneEnds.length;
+    laneEnds[lane] = item.colEnd;
+    return { ...item, lane };
+  });
+}

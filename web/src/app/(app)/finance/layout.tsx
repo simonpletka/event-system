@@ -31,12 +31,12 @@ export default async function FinanceLayout({ children }: { children: React.Reac
   ]);
 
   return (
-    <div>
+    <div className="finance-scope">
       <PageHeader pb="pb-2">
         <div className="flex items-end justify-between">
           <div>
             <div className="heading-label">{t.finance.openDocs(quoteCount + invoiceCount + expenseCount)}</div>
-            <h1 className="text-[60px] font-bold tracking-tight mt-1">{t.finance.title}</h1>
+            <h1 className="text-[48px] font-bold tracking-tight mt-1">{t.finance.title}</h1>
           </div>
         </div>
         <div className="hidden md:block mt-3">

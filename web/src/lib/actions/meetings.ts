@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
 import { requireUser, canManageMeetings } from "@/lib/authz";
 import { tryCreateNotionMeetingPage } from "@/lib/notion";
+import { pragueInstant } from "@/lib/routing";
 import type { MeetingType, RecurrenceFreq } from "@/generated/prisma/enums";
 
 export type MeetingFormState = { error?: string; success?: boolean };
@@ -20,6 +21,16 @@ function parseRecurrenceFreq(v: FormDataEntryValue | null): RecurrenceFreq {
   return v === "DAILY" || v === "WEEKLY" || v === "MONTHLY" ? v : "NONE";
 }
 
+/**
+ * A timed meeting's form value is Prague wall-clock time. Parsed with plain
+ * `new Date()` it would be read in the server's timezone, so on a UTC host a
+ * 10:00 meeting would show as 11:00. An all-day value is a plain date.
+ */
+function parseMeetingDate(raw: string) {
+  const timed = /^(\d{4}-\d{2}-\d{2})T(\d{2}):(\d{2})/.exec(raw);
+  return timed ? pragueInstant(timed[1], Number(timed[2]) * 60 + Number(timed[3])) : new Date(raw);
+}
+
 function meetingDataFromForm(formData: FormData) {
   const title = String(formData.get("title") ?? "").trim();
   const dateRaw = String(formData.get("date") ?? "");
@@ -29,7 +40,7 @@ function meetingDataFromForm(formData: FormData) {
   const intervalRaw = Number(formData.get("recurrenceInterval") ?? 1);
 
   if (!title || !dateRaw) return null;
-  const date = new Date(dateRaw);
+  const date = parseMeetingDate(dateRaw);
   if (Number.isNaN(date.getTime())) return null;
 
   return {
@@ -47,6 +58,7 @@ function meetingDataFromForm(formData: FormData) {
 
 function revalidateMeetings(projectIds: string[]) {
   revalidatePath("/meetings");
+  revalidatePath("/projects");
   revalidatePath("/dashboard");
   for (const projectId of projectIds) revalidatePath(`/projects/${projectId}`, "layout");
 }
@@ -123,22 +135,22 @@ export async function deleteMeetingAction(formData: FormData) {
  * non-recurring meeting only — unambiguous, so it fires immediately with no
  * choice dialog. Recurring meetings go through
  * rescheduleMeetingOccurrenceAction / splitMeetingSeriesAction instead.
- * Silently no-ops on failure, matching rescheduleRoadmapItemAction — fired
- * from a drag gesture with no error UI.
+ * `ok: false` makes the calendar move the item back and say so.
  */
 export async function rescheduleMeetingAction(formData: FormData) {
   const user = await requireUser();
-  if (!canManageMeetings(user)) return;
+  if (!canManageMeetings(user)) return { ok: false };
 
   const id = String(formData.get("id"));
   const dateRaw = String(formData.get("date") ?? "");
-  if (!dateRaw) return;
+  if (!dateRaw) return { ok: false };
 
   const meeting = await prisma.meeting.findUnique({ where: { id }, include: { projects: true } });
-  if (!meeting || meeting.recurrenceFreq !== "NONE") return;
+  if (!meeting || meeting.recurrenceFreq !== "NONE") return { ok: false };
 
   await prisma.meeting.update({ where: { id }, data: { date: new Date(dateRaw) } });
   revalidateMeetings(meeting.projects.map((e) => e.projectId));
+  return { ok: true };
 }
 
 /**
@@ -149,15 +161,15 @@ export async function rescheduleMeetingAction(formData: FormData) {
  */
 export async function rescheduleMeetingOccurrenceAction(formData: FormData) {
   const user = await requireUser();
-  if (!canManageMeetings(user)) return;
+  if (!canManageMeetings(user)) return { ok: false };
 
   const meetingId = String(formData.get("meetingId"));
   const originalDateRaw = String(formData.get("originalDate") ?? "");
   const newDateRaw = String(formData.get("newDate") ?? "");
-  if (!originalDateRaw || !newDateRaw) return;
+  if (!originalDateRaw || !newDateRaw) return { ok: false };
 
   const meeting = await prisma.meeting.findUnique({ where: { id: meetingId }, include: { projects: true } });
-  if (!meeting || meeting.recurrenceFreq === "NONE") return;
+  if (!meeting || meeting.recurrenceFreq === "NONE") return { ok: false };
 
   const originalDate = new Date(originalDateRaw);
   await prisma.meetingException.upsert({
@@ -166,6 +178,7 @@ export async function rescheduleMeetingOccurrenceAction(formData: FormData) {
     update: { newDate: new Date(newDateRaw) },
   });
   revalidateMeetings(meeting.projects.map((e) => e.projectId));
+  return { ok: true };
 }
 
 /**
@@ -180,18 +193,18 @@ export async function rescheduleMeetingOccurrenceAction(formData: FormData) {
  */
 export async function splitMeetingSeriesAction(formData: FormData) {
   const user = await requireUser();
-  if (!canManageMeetings(user)) return;
+  if (!canManageMeetings(user)) return { ok: false };
 
   const meetingId = String(formData.get("meetingId"));
   const originalDateRaw = String(formData.get("originalDate") ?? "");
   const newDateRaw = String(formData.get("newDate") ?? "");
-  if (!originalDateRaw || !newDateRaw) return;
+  if (!originalDateRaw || !newDateRaw) return { ok: false };
 
   const originalDate = new Date(originalDateRaw);
   const newDate = new Date(newDateRaw);
 
   const meeting = await prisma.meeting.findUnique({ where: { id: meetingId }, include: { projects: true } });
-  if (!meeting || meeting.recurrenceFreq === "NONE") return;
+  if (!meeting || meeting.recurrenceFreq === "NONE") return { ok: false };
 
   const newMeeting = await prisma.meeting.create({
     data: {
@@ -220,4 +233,5 @@ export async function splitMeetingSeriesAction(formData: FormData) {
   await syncMeetingToNotion(newMeeting, meeting.projects.map((e) => e.projectId));
 
   revalidateMeetings(meeting.projects.map((e) => e.projectId));
+  return { ok: true };
 }

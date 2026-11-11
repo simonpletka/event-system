@@ -1,31 +1,48 @@
-import { requireUser, dashboardVariant } from "@/lib/authz";
-import { getLocale } from "@/lib/i18n";
-import { AdminDashboard } from "@/components/dashboard/AdminDashboard";
-import { AccountantDashboard } from "@/components/dashboard/AccountantDashboard";
-import { ProducerDashboard } from "@/components/dashboard/ProducerDashboard";
-import { MemberDashboard } from "@/components/dashboard/MemberDashboard";
+import { requireUser, canCreateProject } from "@/lib/authz";
+import { getLocale, getDictionary } from "@/lib/i18n";
+import { getDashboardData } from "@/lib/queries/dashboard";
+import { loadDashboardMonthAction } from "@/lib/actions/dashboard";
+import { PageHeader } from "@/components/ui/PageHeader";
+import { DashboardView } from "@/components/dashboard/DashboardView";
+import Link from "next/link";
 
 /**
- * Thin dispatcher: one of four role-scoped dashboards, chosen from the user's
- * resolved permissions (see dashboardVariant). Each variant owns its own
- * queries, layout and section set — there is no shared "one dashboard for
- * everyone" render path any more.
+ * One dashboard layout for every role. Each section only renders for roles
+ * that can see its data: Finance needs full finance access, Latest expenses
+ * follows expense access, and Projects/Tasks cover what the role can see
+ * (company-wide for Admin and Accountant, assigned projects otherwise).
  */
-export default async function DashboardPage({
-  searchParams,
-}: {
-  searchParams: Promise<Record<string, string | undefined>>;
-}) {
-  const [user, locale, params] = await Promise.all([requireUser(), getLocale(), searchParams]);
+export default async function DashboardPage() {
+  const [user, locale] = await Promise.all([requireUser(), getLocale()]);
+  const t = getDictionary(locale).dashboard;
+  const d = await getDashboardData(user);
 
-  switch (dashboardVariant(user)) {
-    case "admin":
-      return <AdminDashboard user={user} locale={locale} params={params} />;
-    case "accountant":
-      return <AccountantDashboard user={user} locale={locale} />;
-    case "producer":
-      return <ProducerDashboard user={user} locale={locale} params={params} />;
-    case "member":
-      return <MemberDashboard user={user} locale={locale} />;
-  }
+  return (
+    <>
+      <PageHeader>
+        <div className="max-w-[1080px] flex flex-wrap items-end justify-between gap-3">
+          <h1 className="text-[46px] md:text-[60px] font-bold tracking-tight">{t.title}</h1>
+          {canCreateProject(user) && (
+            <Link href="/projects/new" className="btn font-semibold whitespace-nowrap">
+              {t.newProject}
+            </Link>
+          )}
+        </div>
+      </PageHeader>
+      <div className="max-w-[1080px] mt-7">
+        <DashboardView
+          locale={locale}
+          today={d.today}
+          upcoming={d.upcoming}
+          month={d.month}
+          loadMonth={loadDashboardMonthAction}
+          tasks={d.tasks}
+          meetings={d.meetings}
+          canCreateMeeting={d.canCreateMeeting}
+          finance={d.finance}
+          expenses={d.expenses}
+        />
+      </div>
+    </>
+  );
 }

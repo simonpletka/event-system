@@ -62,7 +62,7 @@ export default async function ExpensesPage({
   return (
     <div>
       <div className="flex justify-between items-center gap-2 flex-wrap">
-        <div className="flex gap-1.5 items-center flex-nowrap overflow-x-auto pb-1 md:pb-0 md:flex-wrap md:overflow-visible">
+        <div className="flex gap-1.5 items-center flex-wrap">
           <FilterSelect
             label={te.projectFilter}
             value={filters.projectId ?? ""}
@@ -88,7 +88,7 @@ export default async function ExpensesPage({
             anyLabel={t.finance.filters.anyCategory}
           />
         </div>
-        <div className="flex items-center gap-2 shrink-0">
+        <div className="flex items-center gap-2 flex-wrap">
           <Menu icon={<GroupIcon size={13} />} value={grouped ? t.finance.groupBy.project : t.finance.groupBy.none} width={150}>
             <MenuLink href={groupHref("")} active={!grouped}>
               {t.finance.groupBy.none}
@@ -103,8 +103,8 @@ export default async function ExpensesPage({
         </div>
       </div>
 
-      <div className="hidden md:block">
-        <div className="grid grid-cols-[80px_1fr_1fr_1fr_auto_auto_auto] gap-2.5 border-b border-ink/14 pb-1.5 mt-5 px-3.5 [&_.heading-label]:font-bold [&_.heading-label]:!text-[9px]">
+      <div className="hidden md:block card p-3 lg:p-4 mt-4">
+        <div className="grid grid-cols-[80px_minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)_110px_90px_70px] gap-2.5 border-b border-ink/14 pb-1.5 px-3.5 [&_.heading-label]:font-bold [&_.heading-label]:!text-[9px]">
           <span className="heading-label">{te.colDate}</span>
           <span className="heading-label">{te.colCategory}</span>
           <span className="heading-label">{te.colProject}</span>
@@ -125,7 +125,7 @@ export default async function ExpensesPage({
           {g.rows.map((exp) => (
           <div
             key={exp.id}
-            className="group grid grid-cols-[80px_1fr_1fr_1fr_auto_auto_auto] gap-2.5 items-center py-3.5 px-3.5 rounded-xl border-b border-ink/8 last:border-b-0 text-[15px] hover:bg-ink/5"
+            className="group grid grid-cols-[80px_minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)_110px_90px_70px] gap-2.5 items-center py-3.5 px-3.5 rounded-xl border-b border-ink/8 last:border-b-0 text-[15px] hover:bg-ink/5"
           >
             <div className="placeholder-text group-hover:!text-accent">{formatDate(exp.date)}</div>
             <div className="group-hover:text-accent">{t.expenseCategories[exp.category]}</div>

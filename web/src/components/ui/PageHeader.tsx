@@ -10,7 +10,7 @@ import type { ReactNode } from "react";
  * (`left-[calc(100%-100vw)] w-screen`) — so the strip continues left behind
  * the floating sidebar (which sits above it at `z-30`). Put the page's
  * `max-w-*` on a wrapper *inside* here (and on the body) so the header
- * content aligns with the content under it. See `DashboardShell` /
+ * content aligns with the content under it. See `dashboard/page.tsx` /
  * `settings/page.tsx` for the pattern.
  *
  * `pb` is a separate prop rather than something you pass through `className`

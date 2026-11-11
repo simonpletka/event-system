@@ -14,8 +14,8 @@ export default async function NewMeetingPage({
   const params = await searchParams;
 
   return (
-    <div className="max-w-3xl">
-      <h1 className="text-[28px] font-bold tracking-tight border-b border-ink/14 pb-4 mb-5">{t.meetings.newMeetingH1}</h1>
+    <div className="meetings-scope max-w-3xl">
+      <h1 className="text-[48px] leading-tight font-bold tracking-tight pb-4">{t.meetings.newMeetingH1}</h1>
       {!canManageMeetings(user) ? (
         <p className="text-lg font-semibold text-ink">{t.meetings.noPermAdd}</p>
       ) : (

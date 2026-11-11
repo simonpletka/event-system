@@ -1,7 +1,7 @@
 "use client";
 
 import { usePathname } from "next/navigation";
-import { SegmentedTabs } from "@/components/ui/SegmentedTabs";
+import { SlidingTabs } from "@/components/ui/SlidingTabs";
 import { projectHref } from "@/lib/slug";
 import { getDictionary, type Locale } from "@/lib/dictionary";
 
@@ -27,5 +27,5 @@ export function ProjectTabs({
   const seg = pathname.slice(base.length).split("/")[1] || "overview";
   const active = tabs.some((x) => x.value === seg) ? seg : "overview";
 
-  return <SegmentedTabs options={tabs} active={active} />;
+  return <SlidingTabs tabs={tabs} active={active} />;
 }

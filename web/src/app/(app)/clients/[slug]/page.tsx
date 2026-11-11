@@ -27,113 +27,127 @@ export default async function ClientDetailPage({ params }: { params: Promise<{ s
     <div>
       <PageHeader>
         <div className="max-w-6xl">
-        <div className="flex justify-between items-end flex-wrap gap-2 mt-2">
-          <div className="text-[2.5rem] font-semibold leading-none">{client.name}</div>
-          <div className="flex gap-1.5 items-center">
-            {canCreateProject(user) && (
-              <Link href={`/projects/new?clientId=${client.id}`} className="btn font-semibold">
-                {t.projects.newProject}
-              </Link>
-            )}
-            {canManage && (
-              <Link href={clientHref(client, "/edit")} className="btno">
-                {tc.edit}
-              </Link>
-            )}
+          <Link href="/clients" className="inline-block text-[12px] placeholder-text hover:text-accent mt-1">
+            ← {tc.backLink}
+          </Link>
+          <div className="flex justify-between items-end flex-wrap gap-3 mt-2">
+            <div className="min-w-0">
+              <h1 className="text-[2.5rem] font-semibold leading-none break-words">{client.name}</h1>
+              <p className="text-[13px] placeholder-text mt-2">
+                {tc.icoHeading} {client.ico || "—"}
+              </p>
+            </div>
+            <div className="flex gap-1.5 items-center">
+              {canCreateProject(user) && (
+                <Link href={`/projects/new?clientId=${client.id}`} className="btn font-semibold">
+                  {t.projects.newProject}
+                </Link>
+              )}
+              {canManage && (
+                <Link href={clientHref(client, "/edit")} className="btno">
+                  {tc.edit}
+                </Link>
+              )}
+            </div>
           </div>
-        </div>
         </div>
       </PageHeader>
 
-      <div className="grid grid-cols-1 md:grid-cols-[1fr_300px] gap-5 mt-5 max-w-6xl">
-        <div>
-          <div className="flex items-center justify-between mb-2">
-            <div className="heading-label !text-[12px]">{tc.contactsHeading}</div>
-            {canManage && <AddContactButton clientId={client.id} t={tc.addContact} />}
-          </div>
-          {client.contacts.length === 0 && <p className="text-sm placeholder-text">{tc.noContactsAdded}</p>}
-          {client.contacts.map((contact) => (
-            <div
-              key={contact.id}
-              className="hidden md:grid grid-cols-[1fr_1fr_1fr_1fr_auto] gap-2.5 items-center py-3.5 px-2.5 border-b border-ink/8 last:border-b-0 text-[15px]"
-            >
-              <div className="font-medium">{contact.name}</div>
-              <div className="placeholder-text">{contact.role || "—"}</div>
-              <div className="placeholder-text">{contact.phone || "—"}</div>
-              <div className="placeholder-text truncate">{contact.email || "—"}</div>
-              {canManage && (
-                <form action={deleteClientContactAction}>
-                  <input type="hidden" name="id" value={contact.id} />
-                  <input type="hidden" name="clientId" value={client.id} />
-                  <button type="submit" className="text-[9px] tracking-[0.1em] uppercase placeholder-text hover:text-warning">
-                    {tc.remove}
-                  </button>
-                </form>
-              )}
+      <div className="grid grid-cols-1 md:grid-cols-[minmax(0,1fr)_300px] gap-5 mt-7 max-w-6xl">
+        <div className="flex flex-col gap-5 min-w-0">
+          <section aria-label={tc.contactsHeading} className="card p-4 md:p-5">
+            <div className="flex items-center justify-between gap-3 mb-2">
+              <h2 className="heading-label !text-[12px] font-bold">{tc.contactsHeading}</h2>
+              {canManage && <AddContactButton clientId={client.id} t={tc.addContact} />}
             </div>
-          ))}
-          {client.contacts.map((contact) => (
-            <div key={`m-${contact.id}`} className="md:hidden flex items-start justify-between gap-2.5 py-3 px-2.5 border-b border-ink/8 last:border-b-0 text-[13px]">
-              <div className="min-w-0">
-                <div className="font-medium">{contact.name}</div>
-                <div className="placeholder-text text-[11.5px] mt-0.5">
-                  {[contact.role, contact.phone, contact.email].filter(Boolean).join(" · ") || "—"}
-                </div>
-              </div>
-              {canManage && (
-                <form action={deleteClientContactAction} className="shrink-0">
-                  <input type="hidden" name="id" value={contact.id} />
-                  <input type="hidden" name="clientId" value={client.id} />
-                  <button type="submit" className="text-[9px] tracking-[0.1em] uppercase placeholder-text hover:text-warning py-1">
-                    {tc.remove}
-                  </button>
-                </form>
-              )}
-            </div>
-          ))}
-
-          <div className="h-px bg-ink/10 my-5" />
-
-          <div className="heading-label !text-[12px]">{tc.projectsHeading(client.projects.length)}</div>
-          {client.projects.length === 0 && <p className="text-sm placeholder-text mt-2">{tc.noProjectsLinked}</p>}
-          <div className="hidden md:block mt-1.5">
-            {client.projects.length > 0 && (
-              <div className="grid grid-cols-[1.4fr_1fr_.8fr_.8fr] gap-2.5 border-b border-ink/14 pb-1.5 px-2.5 [&_.heading-label]:font-bold [&_.heading-label]:!text-[9px]">
-                <span className="heading-label">{t.projects.colProject}</span>
-                <span className="heading-label">{tc.colDates}</span>
-                <span className="heading-label">{t.projects.colValue}</span>
-                <span className="heading-label">{t.projects.colStatus}</span>
-              </div>
+            {client.contacts.length === 0 ? (
+              <p className="text-[13px] placeholder-text py-2">{tc.noContactsAdded}</p>
+            ) : (
+              <ul className="flex flex-col">
+                {client.contacts.map((contact) => (
+                  <li
+                    key={contact.id}
+                    className="flex items-start md:items-center justify-between gap-3 py-3 border-t border-ink/8 first:border-t-0"
+                  >
+                    <div className="min-w-0 flex-1 md:grid md:grid-cols-[1.1fr_.9fr_.9fr_1.2fr] md:gap-2.5 md:items-center text-[15px]">
+                      <div className="font-medium break-words">{contact.name}</div>
+                      <div className="placeholder-text text-[13px] md:text-[15px]">{contact.role || "—"}</div>
+                      <div className="placeholder-text text-[13px] md:text-[15px]">
+                        {contact.phone ? (
+                          <a href={`tel:${contact.phone.replace(/\s+/g, "")}`} className="hover:text-accent whitespace-nowrap">
+                            {contact.phone}
+                          </a>
+                        ) : (
+                          "—"
+                        )}
+                      </div>
+                      <div className="placeholder-text text-[13px] md:text-[15px] min-w-0 truncate">
+                        {contact.email ? (
+                          <a href={`mailto:${contact.email}`} className="hover:text-accent">
+                            {contact.email}
+                          </a>
+                        ) : (
+                          "—"
+                        )}
+                      </div>
+                    </div>
+                    {canManage && (
+                      <ConfirmDeleteButton
+                        action={deleteClientContactAction}
+                        fields={{ id: contact.id, clientId: client.id }}
+                        confirmMessage={tc.confirmRemoveContact(contact.name)}
+                        label={tc.remove}
+                        className="shrink-0 text-[9px] tracking-[0.1em] uppercase placeholder-text hover:text-warning py-1"
+                      />
+                    )}
+                  </li>
+                ))}
+              </ul>
             )}
-            {client.projects.map((e) => (
-              <Link
-                key={e.id}
-                href={projectHref(e)}
-                className="group grid grid-cols-[1.4fr_1fr_.8fr_.8fr] gap-2.5 items-center py-3.5 px-2.5 rounded-lg border-b border-ink/8 last:border-b-0 text-[15px] hover:bg-ink/5"
-              >
-                <div className="font-semibold group-hover:text-accent">{e.title}</div>
-                <div className="placeholder-text group-hover:!text-accent">{formatDateRange(e.startDate, e.endDate)}</div>
-                <div className="font-semibold tabular-nums group-hover:text-accent">{formatCurrency(e.quotedValue)}</div>
-                <ProjectStatusPill status={e.status} t={t.statusProject} />
-              </Link>
-            ))}
-          </div>
+          </section>
 
-          <div className="md:hidden flex flex-col gap-2 mt-1.5">
-            {client.projects.map((e) => (
-              <MobileListRow
-                key={e.id}
-                href={projectHref(e)}
-                title={e.title}
-                tag={<ProjectStatusPill status={e.status} t={t.statusProject} />}
-                meta={formatDateRange(e.startDate, e.endDate)}
-                trailing={formatCurrency(e.quotedValue)}
-              />
-            ))}
-          </div>
+          <section aria-label={tc.projectsHeading(client.projects.length)} className="card p-4 md:p-5">
+            <h2 className="heading-label !text-[12px] font-bold mb-2">{tc.projectsHeading(client.projects.length)}</h2>
+            {client.projects.length === 0 && <p className="text-[13px] placeholder-text py-2">{tc.noProjectsLinked}</p>}
+            <div className="hidden md:block">
+              {client.projects.length > 0 && (
+                <div className="grid grid-cols-[1.4fr_1fr_.8fr_.8fr] gap-2.5 border-b border-ink/14 pb-1.5 px-2.5 [&_.heading-label]:font-bold [&_.heading-label]:!text-[9px]">
+                  <span className="heading-label">{t.projects.colProject}</span>
+                  <span className="heading-label">{tc.colDates}</span>
+                  <span className="heading-label">{t.projects.colValue}</span>
+                  <span className="heading-label">{t.projects.colStatus}</span>
+                </div>
+              )}
+              {client.projects.map((e) => (
+                <Link
+                  key={e.id}
+                  href={projectHref(e)}
+                  className="group grid grid-cols-[1.4fr_1fr_.8fr_.8fr] gap-2.5 items-center py-3.5 px-2.5 rounded-lg border-b border-ink/8 last:border-b-0 text-[15px] hover:bg-ink/5"
+                >
+                  <div className="font-semibold group-hover:text-accent">{e.title}</div>
+                  <div className="placeholder-text group-hover:!text-accent">{formatDateRange(e.startDate, e.endDate)}</div>
+                  <div className="font-semibold tabular-nums group-hover:text-accent">{formatCurrency(e.quotedValue)}</div>
+                  <ProjectStatusPill status={e.status} t={t.statusProject} />
+                </Link>
+              ))}
+            </div>
+            <div className="md:hidden flex flex-col gap-2">
+              {client.projects.map((e) => (
+                <MobileListRow
+                  key={e.id}
+                  href={projectHref(e)}
+                  title={e.title}
+                  tag={<ProjectStatusPill status={e.status} t={t.statusProject} />}
+                  meta={formatDateRange(e.startDate, e.endDate)}
+                  trailing={formatCurrency(e.quotedValue)}
+                />
+              ))}
+            </div>
+          </section>
         </div>
 
-        <div className="card p-5 self-start">
+        <section aria-label={tc.detailsHeading} className="card p-5 self-start min-w-0">
+          <h2 className="heading-label !text-[12px] font-bold mb-3">{tc.detailsHeading}</h2>
           <div className="heading-label">{tc.addressHeading}</div>
           {client.street || client.city || client.postCode || client.state ? (
             <p className="text-[13px] mt-1.5 leading-relaxed">
@@ -193,7 +207,7 @@ export default async function ClientDetailPage({ params }: { params: Promise<{ s
               />
             </>
           )}
-        </div>
+        </section>
       </div>
     </div>
   );
