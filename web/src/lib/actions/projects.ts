@@ -6,6 +6,7 @@ import { prisma } from "@/lib/prisma";
 import { requireUser, canEditProject, canCreateProject, isAdmin, canManageCompanySettings } from "@/lib/authz";
 import { resolveClientId, syncClientContacts } from "@/lib/actions/clients";
 import { nextProjectNumber } from "@/lib/document-number";
+import { parsePragueDateTime } from "@/lib/prague-date";
 import { addDays } from "@/lib/calendar";
 import { normaliseBudgetInput } from "@/lib/project-budget";
 import { tryCreateNotionProjectPage, tryMarkNotionProjectDeleted } from "@/lib/notion";
@@ -121,10 +122,10 @@ function projectDataFromForm(formData: FormData) {
     companyIco: String(formData.get("companyIco") ?? "").trim(),
     companyDic: String(formData.get("companyDic") ?? "").trim(),
     status: formData.get("status") as ProjectStatus,
-    buildDate: buildDate ? new Date(buildDate) : null,
-    startDate: new Date(formData.get("startDate") as string),
-    endDate: new Date(formData.get("endDate") as string),
-    strikeDate: strikeDate ? new Date(strikeDate) : null,
+    buildDate: buildDate ? parsePragueDateTime(buildDate) : null,
+    startDate: parsePragueDateTime(formData.get("startDate") as string),
+    endDate: parsePragueDateTime(formData.get("endDate") as string),
+    strikeDate: strikeDate ? parsePragueDateTime(strikeDate) : null,
     // quotedValue is deliberately absent here — it's never form-submitted.
     // It's derived (latest quote, else latest invoice, else 0) and kept in
     // sync by syncQuotedValue() at every quote/invoice mutation site in
@@ -152,9 +153,18 @@ export async function createProjectAction(_prev: ProjectFormState, formData: For
   });
   await syncClientContacts(data.clientId, contacts);
 
+  // An own ID must keep the "YY-XXX" shape: project URLs and quote/invoice numbers are built from it.
+  const ownNumber = String(formData.get("number") ?? "").trim();
+  if (ownNumber && !/^\d{2}-\d{3}$/.test(ownNumber)) {
+    return { error: `"${ownNumber}" isn't a valid project ID. Use two digits, a dash and three digits, e.g. 26-014.` };
+  }
+  if (ownNumber && (await prisma.project.findUnique({ where: { number: ownNumber }, select: { id: true } }))) {
+    return { error: `Project ID ${ownNumber} is already taken.` };
+  }
+
   const memberIds = [...new Set([user.id, ...parseMemberIds(formData)])];
 
-  const number = await nextProjectNumber();
+  const number = ownNumber || (await nextProjectNumber());
   const project = await prisma.project.create({
     data: {
       ...data,

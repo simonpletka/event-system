@@ -199,7 +199,7 @@ model User {
 }
 
 model Project {
-  id      String @id @default(cuid())
+  id             String        @id @default(cuid())
   // Short display identifier, "YY-XXX" (e.g. "26-001") — see document-number.ts.
   // Assigned once at creation by finding the lowest unused XXX for the
   // current year, so a permanently-deleted project's number becomes reusable
@@ -252,14 +252,14 @@ model Project {
   venues       Venue[]
   roadmapItems RoadmapItem[]
   members      ProjectMember[]
-  expenses    Expense[]
-  timeEntries TimeEntry[]
-  quotes      Quote[]
-  invoices    Invoice[]
-  contacts    ProjectContact[]
-  meetings    MeetingProject[]
-  trips       Trip[]
-  files       ProjectFile[]
+  expenses     Expense[]
+  timeEntries  TimeEntry[]
+  quotes       Quote[]
+  invoices     Invoice[]
+  contacts     ProjectContact[]
+  meetings     MeetingProject[]
+  trips        Trip[]
+  files        ProjectFile[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -505,25 +505,25 @@ model TimeEntry {
 }
 
 model Quote {
-  id         String      @id @default(cuid())
-  projectId  String
-  project    Project     @relation(fields: [projectId], references: [id], onDelete: Cascade)
-  number     String
-  total      Int
+  id             String      @id @default(cuid())
+  projectId      String
+  project        Project     @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  number         String
+  total          Int
   // Pre-VAT base (sum of quantity*unitPrice across items, no VAT). Czech
   // accounting practice treats VAT as a pass-through liability, not revenue,
   // so every "total"/"value" rollup (Project.quotedValue, Client "total
   // charged", Reports) reads this instead of `total` — the invoice/quote
   // document itself still shows the full VAT-inclusive `total` as before.
-  subtotal   Int         @default(0)
-  currency   Currency    @default(CZK)
-  status     QuoteStatus @default(DRAFT)
-  validUntil DateTime
-  issuedAt   DateTime    @default(now())
+  subtotal       Int         @default(0)
+  currency       Currency    @default(CZK)
+  status         QuoteStatus @default(DRAFT)
+  validUntil     DateTime
+  issuedAt       DateTime    @default(now())
   // When true (the default), the PDF/preview hide each item's individual
   // price and show only each category's subtotal plus the grand total —
   // useful for a client-facing breakdown that doesn't reveal per-item cost.
-  hideItemPrices Boolean @default(true)
+  hideItemPrices Boolean     @default(true)
 
   // Who made this quote — shown on the detail page as "Created by" (name,
   // email, phone) alongside issuedAt as the creation date. No separate
@@ -548,8 +548,8 @@ model QuoteItem {
   // Free text, not a foreign key — matched against Settings' default
   // category list in the UI, but a quote can also introduce a one-off
   // category name that's never saved to that global list. Blank = uncategorized.
-  category  String @default("")
-  sortOrder Int    @default(0)
+  category    String @default("")
+  sortOrder   Int    @default(0)
 }
 
 model Invoice {
@@ -665,8 +665,8 @@ model CompanySettings {
 // Client; the Clients section's project list/total-charged figure is only
 // ever as complete as which projects actually got linked.
 model Client {
-  id     String @id @default(cuid())
-  name   String
+  id             String   @id @default(cuid())
+  name           String
   // Structured rather than one free-text line, so it can round-trip through
   // the Photon worldwide-address autocomplete (src/lib/address-search.ts),
   // which already returns these as separate components. "state" covers
@@ -674,13 +674,13 @@ model Client {
   // question (a US/CA state/province, a Czech kraj, etc.) — not literal
   // country-level data, which Photon returns separately and isn't stored
   // here (matches how Project/CompanySettings addresses work today).
-  street   String @default("")
-  city     String @default("")
-  postCode String @default("")
-  state    String @default("")
-  ico      String @default("")
-  dic      String @default("")
-  note     String @default("")
+  street         String   @default("")
+  city           String   @default("")
+  postCode       String   @default("")
+  state          String   @default("")
+  ico            String   @default("")
+  dic            String   @default("")
+  note           String   @default("")
   // Where invoices should be sent. Editable directly, but also auto-filled
   // (only if still blank) from the first project contact with an email that
   // gets synced onto this client — see syncClientContacts() in actions/clients.ts.
@@ -767,13 +767,17 @@ model Vehicle {
   id                  String   @id @default(cuid())
   ownerId             String
   owner               User     @relation(fields: [ownerId], references: [id], onDelete: Cascade)
-  name                String
+  brand               String   @default("")
+  // The car type, e.g. "Octavia 3". Shown after the brand.
+  model               String
   fuelType            FuelType @default(DIESEL)
   consumptionPer100Km Float
   fuelPricePerLitre   Float
   // Optional non-fuel running cost (wear, servicing), so an own car can be
   // compared fairly against an all-inclusive carsharing price. 0 = fuel only.
   extraCostPerKm      Float    @default(0)
+  // Wear and loss of value per km, added to every own-car trip price.
+  amortizationPerKm   Float    @default(5.9)
   createdAt           DateTime @default(now())
 
   @@index([ownerId])
@@ -785,20 +789,22 @@ model Vehicle {
 // after that local midnight — wall-clock Prague times, so nothing here can
 // shift with the server's timezone.
 model Trip {
-  id              String     @id @default(cuid())
-  projectId       String
-  project         Project    @relation(fields: [projectId], references: [id], onDelete: Cascade)
-  createdById     String
-  createdBy       User       @relation(fields: [createdById], references: [id])
-  title           String
-  date            String
+  id               String     @id @default(cuid())
+  projectId        String
+  project          Project    @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  createdById      String
+  createdBy        User       @relation(fields: [createdById], references: [id])
+  title            String
+  date             String
   // Added to every map-estimated leg for parking and walking. Never added to
   // a leg with a manual estimate — that number is taken as given.
-  bufferMinutes   Int        @default(5)
-  routesUpdatedAt DateTime?
-  stops           TripStop[]
-  createdAt       DateTime   @default(now())
-  updatedAt       DateTime   @updatedAt
+  bufferMinutes    Int        @default(5)
+  // {"<operator>": "<car type>"} picked in the trip's cost comparison.
+  carsharingModels String     @default("{}")
+  routesUpdatedAt  DateTime?
+  stops            TripStop[]
+  createdAt        DateTime   @default(now())
+  updatedAt        DateTime   @updatedAt
 
   @@index([projectId])
 }
@@ -839,20 +845,22 @@ model TripStop {
 // A row with packagePrice 0 is pay-as-you-go. `bandsJson` holds degressive
 // time bands (see src/lib/trip-cost.ts) and replaces minuteRate/kmRate.
 model CarsharingPlan {
-  id             String  @id @default(cuid())
-  provider       String
-  name           String
-  carClass       String  @default("")
-  packagePrice   Float   @default(0)
-  packageMinutes Int?
-  packageKm      Int     @default(0)
-  minuteRate     Float   @default(0)
-  kmRate         Float   @default(0)
-  bandsJson      String?
-  weekendOnly    Boolean @default(false)
-  verified       Boolean @default(false)
-  active         Boolean @default(true)
-  sortOrder      Int     @default(0)
+  id              String  @id @default(cuid())
+  provider        String
+  name            String
+  carClass        String  @default("")
+  packagePrice    Float   @default(0)
+  packageMinutes  Int?
+  packageKm       Int     @default(0)
+  minuteRate      Float   @default(0)
+  // Car4way bills minutes from 20:00 to 6:00 at a higher rate. 0 = one rate all day.
+  nightMinuteRate Float   @default(0)
+  kmRate          Float   @default(0)
+  bandsJson       String?
+  weekendOnly     Boolean @default(false)
+  verified        Boolean @default(false)
+  active          Boolean @default(true)
+  sortOrder       Int     @default(0)
 }
 
 // A document uploaded to a project's Files tab. Stored on disk next to the

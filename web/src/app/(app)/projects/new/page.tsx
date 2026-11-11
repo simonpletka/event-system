@@ -2,6 +2,7 @@ import { requireUser, canCreateProject, isAdmin } from "@/lib/authz";
 import { getClientOptions } from "@/lib/queries/clients";
 import { getOverviewUsers } from "@/lib/queries/timetracker";
 import { ProjectForm } from "@/components/ProjectForm";
+import { nextProjectNumber } from "@/lib/document-number";
 import { formatClientAddress } from "@/lib/format";
 import { getLocale, getDictionary } from "@/lib/i18n";
 
@@ -20,9 +21,9 @@ export default async function NewEventPage({
   startDefault.setHours(startDefault.getHours() + 1);
   const endDefault = new Date(startDefault.getTime() + 2 * 60 * 60 * 1000);
   const allowed = canCreateProject(user);
-  const [clients, teamOptions] = allowed
-    ? await Promise.all([getClientOptions(), getOverviewUsers()])
-    : [[], []];
+  const [clients, teamOptions, suggestedNumber] = allowed
+    ? await Promise.all([getClientOptions(), getOverviewUsers(), nextProjectNumber()])
+    : [[], [], undefined];
   const locale = await getLocale();
   const t = getDictionary(locale);
 
@@ -41,6 +42,7 @@ export default async function NewEventPage({
           locale={locale}
           canEditBudget={isAdmin(user)}
           defaults={{
+            suggestedNumber,
             title: "",
             brief: "",
             clientId: preClient?.id ?? null,

@@ -1,3 +1,5 @@
+import { toPragueInput } from "@/lib/prague-date";
+
 export type CurrencyCode = "CZK" | "EUR" | "USD";
 
 const CURRENCY_LOCALE: Record<CurrencyCode, string> = { CZK: "cs-CZ", EUR: "de-DE", USD: "en-US" };
@@ -65,10 +67,9 @@ export function formatDateTime(date: Date) {
   }).format(date);
 }
 
+/** A "YYYY-MM-DDTHH:mm" field value in Prague time; read back on the server with parsePragueDateTime. */
 export function toDateTimeLocal(date: Date | null | undefined) {
-  if (!date) return "";
-  const pad = (n: number) => String(n).padStart(2, "0");
-  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`;
+  return date ? toPragueInput(date) : "";
 }
 
 /** Single-line rendering of a Client's structured address, for contexts (like Event.companyAddress) that only take one string. */

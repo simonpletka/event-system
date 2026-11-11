@@ -23,6 +23,8 @@ export type EventFormDefaults = {
   id?: string;
   /** Only set in edit mode — the "YY-XXX" code, needed to build the Cancel link's slug URL. */
   number?: string;
+  /** Create mode only: the ID a project gets if the field is left empty, shown as its placeholder. */
+  suggestedNumber?: string;
   title: string;
   brief: string;
   clientId: string | null;
@@ -118,6 +120,20 @@ export function ProjectForm({
       <Field label={tf.titleLabel}>
         <input name="title" defaultValue={defaults.title} required className="input" />
       </Field>
+
+      {!isEdit && (
+        <Field label={tf.projectIdLabel}>
+          <input
+            name="number"
+            placeholder={defaults.suggestedNumber}
+            pattern="\d{2}-\d{3}"
+            title={tf.projectIdHint}
+            autoComplete="off"
+            className="input"
+          />
+          <span className="text-[11px] placeholder-text">{tf.projectIdHint}</span>
+        </Field>
+      )}
 
       <Field label={tf.briefLabel}>
         <textarea name="brief" defaultValue={defaults.brief} rows={3} className="input" />

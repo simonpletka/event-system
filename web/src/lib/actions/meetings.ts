@@ -4,7 +4,8 @@ import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
 import { requireUser, canManageMeetings } from "@/lib/authz";
 import { tryCreateNotionMeetingPage } from "@/lib/notion";
-import { pragueInstant } from "@/lib/routing";
+import { redirect } from "next/navigation";
+import { parsePragueDateTime } from "@/lib/prague-date";
 import type { MeetingType, RecurrenceFreq } from "@/generated/prisma/enums";
 
 export type MeetingFormState = { error?: string; success?: boolean };
@@ -21,16 +22,6 @@ function parseRecurrenceFreq(v: FormDataEntryValue | null): RecurrenceFreq {
   return v === "DAILY" || v === "WEEKLY" || v === "MONTHLY" ? v : "NONE";
 }
 
-/**
- * A timed meeting's form value is Prague wall-clock time. Parsed with plain
- * `new Date()` it would be read in the server's timezone, so on a UTC host a
- * 10:00 meeting would show as 11:00. An all-day value is a plain date.
- */
-function parseMeetingDate(raw: string) {
-  const timed = /^(\d{4}-\d{2}-\d{2})T(\d{2}):(\d{2})/.exec(raw);
-  return timed ? pragueInstant(timed[1], Number(timed[2]) * 60 + Number(timed[3])) : new Date(raw);
-}
-
 function meetingDataFromForm(formData: FormData) {
   const title = String(formData.get("title") ?? "").trim();
   const dateRaw = String(formData.get("date") ?? "");
@@ -40,7 +31,7 @@ function meetingDataFromForm(formData: FormData) {
   const intervalRaw = Number(formData.get("recurrenceInterval") ?? 1);
 
   if (!title || !dateRaw) return null;
-  const date = parseMeetingDate(dateRaw);
+  const date = parsePragueDateTime(dateRaw);
   if (Number.isNaN(date.getTime())) return null;
 
   return {
@@ -92,7 +83,8 @@ export async function createMeetingAction(_prev: MeetingFormState, formData: For
   await syncMeetingToNotion(meeting, projectIds);
 
   revalidateMeetings(projectIds);
-  return { success: true };
+  // Back to the list, so a second click can't create the meeting twice.
+  redirect("/meetings");
 }
 
 export async function updateMeetingAction(_prev: MeetingFormState, formData: FormData): Promise<MeetingFormState> {
@@ -115,7 +107,7 @@ export async function updateMeetingAction(_prev: MeetingFormState, formData: For
 
   const priorProjectIds = existing.projects.map((e) => e.projectId);
   revalidateMeetings([...new Set([...priorProjectIds, ...projectIds])]);
-  return { success: true };
+  redirect("/meetings");
 }
 
 export async function deleteMeetingAction(formData: FormData) {

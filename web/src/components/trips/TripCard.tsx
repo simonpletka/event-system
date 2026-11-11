@@ -2,12 +2,13 @@ import Link from "next/link";
 import { deleteTripAction } from "@/lib/actions/trips";
 import { GOOGLE_MAPS_MAX_STOPS, googleMapsNavigateUrl, googleMapsTripUrl, googleMapsUrl, wazeUrl } from "@/lib/routing";
 import { buildSchedule, driveWithBuffer, formatClock, rentalSegments } from "@/lib/trip-schedule";
-import { compareCarsharing, vehicleCost, type PlanInput, type VehicleInput } from "@/lib/trip-cost";
+import type { PlanInput, VehicleInput } from "@/lib/trip-cost";
 import { parseIsoDate } from "@/lib/calendar";
-import { formatCurrency, formatDate, formatDurationShort } from "@/lib/format";
+import { formatDate, formatDurationShort } from "@/lib/format";
 import { ConfirmDeleteButton } from "@/components/ui/ConfirmDeleteButton";
 import { NavigateIcon } from "@/components/ui/icons";
 import { TripMap } from "@/components/trips/TripMap";
+import { TripCostTable } from "@/components/trips/TripCostTable";
 import { getDictionary, type Locale } from "@/lib/dictionary";
 
 type Stop = {
@@ -40,13 +41,19 @@ export function TripCard({
   editHref,
   locale,
 }: {
-  trip: { id: string; title: string; date: string; bufferMinutes: number; stops: Stop[] };
+  trip: { id: string; title: string; date: string; bufferMinutes: number; carsharingModels: string; stops: Stop[] };
   plans: PlanInput[];
   vehicles: VehicleInput[];
   usingDefaultVehicle: boolean;
   editHref: string | null;
   locale: Locale;
 }) {
+  let chosenModels: Record<string, string> = {};
+  try {
+    chosenModels = JSON.parse(trip.carsharingModels);
+  } catch {
+    // Falls back to each operator's cheapest car.
+  }
   const t = getDictionary(locale).projects.trips;
   const { stops } = trip;
   const drive = stops.map((s, i) => (i === 0 ? null : driveWithBuffer(s, trip.bufferMinutes)));
@@ -63,9 +70,10 @@ export function TripCard({
   const driving = drive.reduce<number>((sum, d) => sum + (d ?? 0), 0);
   const rental = schedule.start != null && schedule.end != null ? schedule.end - schedule.start : driving;
   const day = parseIsoDate(trip.date);
-  const isWeekend = day.getDay() === 0 || day.getDay() === 6;
+  // Car4way's weekend runs Friday 16:00 to Monday 10:00.
+  const isWeekend = day.getDay() === 0 || day.getDay() === 6 || (day.getDay() === 5 && (schedule.start ?? 0) >= 16 * 60);
   const segments = rentalSegments(stops, schedule, drive);
-  const { visible, hidden } = compareCarsharing(plans, segments, { minutes: rental, km }, isWeekend);
+  const wholeTrip = { minutes: rental, km, start: schedule.start != null && schedule.end != null ? schedule.start : null };
   const isSplit = segments.length > 1;
   const parked = Math.max(0, rental - driving);
   const missingLeg = stops.some((s, i) => i > 0 && s.legKm == null);
@@ -217,61 +225,20 @@ export function TripCard({
       </div>
       {missingLeg && <p className="text-[12px] text-warning mt-2">{t.costMissingLeg}</p>}
 
-      <table className="w-full mt-2 text-[13px]">
-        <tbody>
-          {vehicles.map((v) => {
-            const cost = vehicleCost(v, km);
-            return (
-              <tr key={v.id} className="border-b border-ink/13">
-                <td className="py-1.5">
-                  {v.name}
-                  <div className="text-[11px] placeholder-text">{t.ownCarDetail(v.consumptionPer100Km, cost.litres.toFixed(1), v.fuelPricePerLitre)}</div>
-                </td>
-                <td className="py-1.5 text-right font-semibold tabular-nums whitespace-nowrap">{formatCurrency(Math.round(cost.total))}</td>
-              </tr>
-            );
-          })}
-          {visible.map((plan) => (
-            <tr key={plan.key} className="border-b border-ink/13">
-              <td className="py-1.5">
-                {plan.provider} · {[...new Set(plan.planNames)].join(" + ")}
-                <div className="text-[11px] placeholder-text">
-                  {plan.carClass}
-                  {!plan.verified && ` · ${t.unverified}`}
-                  {isSplit && ` · ${t.withoutSplit(formatCurrency(Math.round(plan.unsplitTotal)))}`}
-                </div>
-              </td>
-              <td className="py-1.5 text-right font-semibold tabular-nums whitespace-nowrap">
-                {!plan.verified && `${t.from} `}
-                {formatCurrency(Math.round(plan.total))}
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-
-      {usingDefaultVehicle && <p className="text-[11px] placeholder-text mt-2">{t.defaultVehicleNote}</p>}
-      <p className="text-[11px] placeholder-text mt-2 max-w-prose">{t.costNote}</p>
-
-      {hidden.length > 0 && (
-        <details className="mt-2 text-[12px]">
-          <summary className="placeholder-text">{t.hiddenPlans(hidden.length)}</summary>
-          <ul className="mt-1.5 space-y-1">
-            {hidden.map((plan) => (
-              <li key={plan.id} className="flex justify-between gap-3">
-                <span>
-                  {plan.provider} · {plan.name}
-                  <span className="placeholder-text">
-                    {" — "}
-                    {plan.reason === "weekend" ? t.hiddenWeekend : t.hiddenDearer(plan.cheaperName ?? "")}
-                  </span>
-                </span>
-                {plan.total != null && <span className="tabular-nums whitespace-nowrap">{formatCurrency(Math.round(plan.total))}</span>}
-              </li>
-            ))}
-          </ul>
-        </details>
-      )}
+      <TripCostTable
+        tripId={trip.id}
+        canSave={editHref != null}
+        plans={plans}
+        segments={segments}
+        wholeTrip={wholeTrip}
+        isWeekend={isWeekend}
+        isSplit={isSplit}
+        initialModels={chosenModels}
+        vehicles={vehicles}
+        km={km}
+        usingDefaultVehicle={usingDefaultVehicle}
+        locale={locale}
+      />
     </section>
   );
 }

@@ -12,14 +12,12 @@ import {
   type RoadmapFormState,
 } from "@/lib/actions/roadmap";
 import type { RoadmapItemData, RoadmapDict } from "./RoadmapList";
+import { toPragueInput } from "@/lib/prague-date";
 
 const EMPTY: RoadmapFormState = {};
 
 function toLocalInput(iso: string, allDay: boolean) {
-  const d = new Date(iso);
-  const pad = (n: number) => String(n).padStart(2, "0");
-  const date = `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
-  return allDay ? date : `${date}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+  return toPragueInput(iso, !allDay);
 }
 
 export function RoadmapItemModal({

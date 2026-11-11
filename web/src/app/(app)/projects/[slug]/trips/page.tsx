@@ -79,9 +79,11 @@ export default async function TripsTab({
   return (
     <div>
       <div className="flex items-start justify-between gap-3 mb-4">
-        <p className="text-[12px] placeholder-text max-w-prose">
-          {isGoogleRoutingConfigured() ? t.routingGoogle : t.routingOsm}
-        </p>
+        {isGoogleRoutingConfigured() ? (
+          <p className="text-[12px] font-bold max-w-prose">{t.routingGoogle}</p>
+        ) : (
+          <p className="text-[12px] placeholder-text max-w-prose">{t.routingOsm}</p>
+        )}
         {editable && (
           <Link href={`${base}?new=1`} className="btn shrink-0">
             {t.newTrip}

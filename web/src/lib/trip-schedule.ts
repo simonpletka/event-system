@@ -84,7 +84,8 @@ export function buildSchedule(input: ScheduleInput[]): Schedule {
   return { stops, start: stops[0].depart, end, incomplete };
 }
 
-export type RentalSegment = { minutes: number; km: number };
+/** `start` is minutes after the trip day's midnight, or null without a timetable. */
+export type RentalSegment = { minutes: number; km: number; start: number | null };
 
 /**
  * One carsharing rental per run of legs between split stops. A rental runs
@@ -109,6 +110,7 @@ export function rentalSegments(
     segments.push({
       minutes: from != null && to != null ? to - from : drives.reduce<number>((sum, d) => sum + (d ?? 0), 0),
       km: legs.reduce((sum, s) => sum + (s.legKm ?? 0), 0),
+      start: from != null && to != null ? from : null,
     });
     start = i;
   }
