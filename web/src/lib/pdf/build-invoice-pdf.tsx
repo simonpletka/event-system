@@ -7,6 +7,7 @@ import { buildQrPaymentString } from "@/lib/qr-payment";
 import { readLogoAsDataUrl } from "@/lib/uploads";
 import { InvoicePdf } from "@/lib/pdf/InvoicePdf";
 import type { PdfLang } from "@/lib/pdf/i18n";
+import { DEFAULT_PDF_THEME, type PdfTheme } from "@/lib/pdf/theme";
 import { addressLines, clientAddressLines } from "@/lib/pdf/shared";
 import { buildIsdocXml } from "@/lib/isdoc";
 import { log } from "@/lib/log";
@@ -47,7 +48,13 @@ export async function getInvoiceQrDataUrl(
 }
 
 /** Shared by the /api/invoices/[id]/pdf route and the invoice-emailing actions — same PDF either way. */
-export async function buildInvoicePdfBuffer(invoice: InvoiceDetail, company: Company, lang: PdfLang) {
+export async function buildInvoicePdfBuffer(
+  invoice: InvoiceDetail,
+  company: Company,
+  lang: PdfLang,
+  /** Defaults to light; the email actions and the connector use that default. */
+  theme: PdfTheme = DEFAULT_PDF_THEME
+) {
   const supplier = company ?? FALLBACK_SUPPLIER;
 
   const logoDataUrl = company?.logoPath ? await readLogoAsDataUrl(company.logoPath) : null;
@@ -88,6 +95,7 @@ export async function buildInvoicePdfBuffer(invoice: InvoiceDetail, company: Com
       qrDataUrl={qrDataUrl}
       logoDataUrl={logoDataUrl}
       accentColor={company?.accentColor || "#ec3013"}
+      theme={theme}
     />
   ).then((pdfBytes) => embedIsdoc(pdfBytes, invoice, supplier));
 }

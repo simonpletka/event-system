@@ -19,11 +19,15 @@ import { PageHeader } from "@/components/ui/PageHeader";
 import { DownloadPdfButton } from "@/components/finance/DownloadPdfButton";
 import { SendInvoiceEmailButton } from "@/components/finance/SendInvoiceEmailButton";
 import { DocumentPreviewScaler } from "@/components/finance/DocumentPreviewScaler";
+import { DocumentPreview, PreviewLabel, PreviewLine, PreviewPartyName, PreviewQr, previewQuery } from "@/components/finance/DocumentPreview";
 import { SegmentedTabs } from "@/components/ui/SegmentedTabs";
 import { groupItemsByCategory, categoryTotal } from "@/lib/line-items";
 import { getLocale, getDictionary } from "@/lib/i18n";
 import type { Locale } from "@/lib/dictionary";
-import { addressLines, clientAddressLines, DEFAULT_ACCENT, pdfDate } from "@/lib/pdf/shared";
+import { addressLines, clientAddressLines, DEFAULT_ACCENT, pdfDate, money, documentIds } from "@/lib/pdf/shared";
+import { parsePdfTheme, PDF_METRICS } from "@/lib/pdf/theme";
+import { pdfLabels } from "@/lib/pdf/i18n";
+import { variableSymbolFor } from "@/lib/document-number";
 import { getInvoiceQrDataUrl, FALLBACK_SUPPLIER } from "@/lib/pdf/build-invoice-pdf";
 
 export default async function InvoiceDetailPage({
@@ -31,7 +35,7 @@ export default async function InvoiceDetailPage({
   searchParams,
 }: {
   params: Promise<{ id: string }>;
-  searchParams: Promise<{ previewLang?: string }>;
+  searchParams: Promise<{ previewLang?: string; previewTheme?: string }>;
 }) {
   const user = await requireUser();
   const { id } = await params;
@@ -42,10 +46,12 @@ export default async function InvoiceDetailPage({
   // app is currently set to, same as the PDF's own EN/CZ chooser defaults
   // to English unless picked — here the natural default is "whatever
   // language you're already using the app in", not a fixed language.
-  const { previewLang } = await searchParams;
+  const { previewLang, previewTheme: previewThemeParam } = await searchParams;
   const appLocale = await getLocale();
   const activePreviewLang: Locale = previewLang === "cs" || previewLang === "en" ? previewLang : appLocale;
-  const pt = getDictionary(activePreviewLang).finance.invoices;
+  // Light or dark PDF; the preview, the download menu and the phone link all follow it.
+  const previewTheme = parsePdfTheme(previewThemeParam);
+  const pl = pdfLabels(activePreviewLang);
   const [invoice, company] = await Promise.all([getInvoiceDetail(user, id), getCompanySettings()]);
   if (!invoice) notFound();
 
@@ -54,6 +60,10 @@ export default async function InvoiceDetailPage({
   const client = invoice.project.client;
   const customerAddressLines = client ? clientAddressLines(client) : addressLines(invoice.project.companyAddress);
   const qrDataUrl = await getInvoiceQrDataUrl(invoice, supplier);
+  const supplierIds = documentIds(supplier.ico, supplier.dic);
+  const customerIds = documentIds(invoice.project.companyIco, invoice.project.companyDic);
+  // Same fallback as the PDF builder when an invoice has no stored symbol.
+  const variableSymbol = invoice.variableSymbol || variableSymbolFor(invoice.number);
   const accent = company?.accentColor || DEFAULT_ACCENT;
 
   const canManage = canManageFinance(user);
@@ -112,7 +122,7 @@ export default async function InvoiceDetailPage({
                 <span aria-hidden className="w-px h-5 bg-ink/15 mx-1.5" />
               </>
             )}
-            <DownloadPdfButton pdfUrl={`/api/invoices/${invoice.id}/pdf`} label={t.finance.downloadPdf.downloadPdf} />
+            <DownloadPdfButton pdfUrl={`/api/invoices/${invoice.id}/pdf`} label={t.finance.downloadPdf.downloadPdf} theme={previewTheme} />
             {canManage && (
               <SendInvoiceEmailButton
                 invoiceId={invoice.id}
@@ -193,177 +203,114 @@ export default async function InvoiceDetailPage({
                 <span className="tabular-nums" style={{ color: accent }}>{formatCurrencyWithCzk(invoice.total, invoice.currency, totalCzk)}</span>
               </div>
             </div>
-            <a href={`/api/invoices/${invoice.id}/pdf`} target="_blank" rel="noreferrer" className="btno w-full text-center block mt-3">
+            <a href={`/api/invoices/${invoice.id}/pdf?theme=${previewTheme}`} target="_blank" rel="noreferrer" className="btno w-full text-center block mt-3">
               {t.finance.downloadPdf.downloadPdf}
             </a>
           </div>
 
           <div className="hidden md:block">
-          <div className="flex justify-end mb-2">
+          <div className="flex justify-end gap-2 mb-2">
             <SegmentedTabs
               options={[
-                { value: "cs", label: "CZ", href: "?previewLang=cs" },
-                { value: "en", label: "EN", href: "?previewLang=en" },
+                { value: "light", label: t.finance.previewTheme.light, href: previewQuery(activePreviewLang, "light") },
+                { value: "dark", label: t.finance.previewTheme.dark, href: previewQuery(activePreviewLang, "dark") },
+              ]}
+              active={previewTheme}
+            />
+            <SegmentedTabs
+              options={[
+                { value: "cs", label: "CZ", href: previewQuery("cs", previewTheme) },
+                { value: "en", label: "EN", href: previewQuery("en", previewTheme) },
               ]}
               active={activePreviewLang}
             />
           </div>
-          {/* Built at the mockup's literal 794px page width for exact fidelity, then scaled to fit the card via DocumentPreviewScaler — so it's a 1:1 reproduction the user sees whole, not a strip they scroll sideways through. */}
+          {/* The PDF page at 96 dpi (794px wide), scaled to fit the card by DocumentPreviewScaler. */}
           <div className="card p-8 min-w-0">
           <DocumentPreviewScaler width={794}>
-          <div className="w-[794px] h-[1123px] pt-[16px] flex flex-col gap-2.5">
-            <div className="flex justify-between items-start">
-              <div className="text-[154px] leading-[0.8] font-bold tracking-[-4px] lowercase pb-[14px]">{pt.invoiceLabel}</div>
-              <div className="flex flex-col items-end gap-[6px] pt-[8px]">
-                {company?.logoPath ? (
-                  // eslint-disable-next-line @next/next/no-img-element -- authenticated route, not a static asset next/image can optimize
-                  <img src={`/api/uploads/logo/${company.logoPath}`} alt="" className="w-[34px] h-[34px] object-contain" />
-                ) : (
-                  <div
-                    className="w-[34px] h-[34px] rounded-[8px] flex items-center justify-center text-[14px] font-bold text-white"
-                    style={{ backgroundColor: accent }}
-                  >
-                    {(company?.name ?? pt.companyFallback).charAt(0).toUpperCase()}
-                  </div>
-                )}
-                <div className="text-[12px] font-bold">{company?.name ?? pt.companyFallback}</div>
-              </div>
-            </div>
-
-            <div className="flex justify-between items-start mt-[38px] text-[19px] leading-[1.35]">
-              <div>
-                <div>
-                  {pt.issued} {pdfDate(invoice.issuedAt, activePreviewLang)}
-                </div>
-                <div>
-                  {pt.dueLabel} {pdfDate(invoice.dueDate, activePreviewLang)}
-                </div>
-              </div>
-              <div className="text-[19px] font-bold">{invoice.number}</div>
-            </div>
-
-            <div className="grid grid-cols-[24%_24%_32%_14%] gap-[24px] mt-[40px] mb-[28px]">
-              <div>
-                <div className="label mb-[5px] !text-[8px] !tracking-[1px]">{pt.supplier}</div>
-                <div className="font-bold text-[11px] mb-[3px]">{company?.name}</div>
-                {supplierAddressLines.map((line) => (
-                  <div key={line} className="placeholder-text text-[9.5px] leading-[1.5]">
-                    {line}
-                  </div>
-                ))}
-                <div className="placeholder-text text-[9.5px] leading-[1.5] mt-[3px]">{`IČO ${company?.ico} · DIČ ${company?.dic}`}</div>
-              </div>
-              <div>
-                <div className="label mb-[5px] !text-[8px] !tracking-[1px]">{pt.customer}</div>
-                <div className="font-bold text-[11px] mb-[3px]">{invoice.project.companyName}</div>
-                {customerAddressLines.map((line) => (
-                  <div key={line} className="placeholder-text text-[9.5px] leading-[1.5]">
-                    {line}
-                  </div>
-                ))}
-                <div className="placeholder-text text-[9.5px] leading-[1.5] mt-[3px]">{`IČO ${invoice.project.companyIco || "—"} · DIČ ${invoice.project.companyDic || "—"}`}</div>
-              </div>
-              <div className="break-words">
-                <div className="label mb-[5px] !text-[8px] !tracking-[1px]">{pt.paymentDetails}</div>
-                {supplier.accountNumber && (
-                  <div className="placeholder-text text-[9.5px] leading-[1.5]">
-                    {pt.accountNumber} {supplier.accountNumber}
-                  </div>
-                )}
-                {supplier.bankAccount && (
-                  <div className="placeholder-text text-[9.5px] leading-[1.5] break-all">{supplier.bankAccount}</div>
-                )}
-                {supplier.swiftBic && (
-                  <div className="placeholder-text text-[9.5px] leading-[1.5]">
-                    {pt.swift} {supplier.swiftBic}
-                  </div>
-                )}
-                <div className="placeholder-text text-[9.5px] leading-[1.5]">
-                  {pt.variableSymbolLabel} {invoice.variableSymbol}
-                </div>
-              </div>
-              <div>
-                <div className="label mb-[5px] !text-[8px] !tracking-[1px]">{pt.qrPlatba}</div>
-                {qrDataUrl ? (
-                  <>
-                    {/* eslint-disable-next-line @next/next/no-img-element -- a data: URL, not a static asset */}
-                    <img src={qrDataUrl} alt="" className="w-[64px] h-[64px] rounded-[8px] bg-[#f3f2f2] p-[6px]" />
-                    <div className="placeholder-text text-[8px] leading-[1.4] mt-[5px]">{pt.scanToPay}</div>
-                  </>
-                ) : (
-                  <div className="placeholder-text text-[8px] leading-[1.4]">
-                    {invoice.currency !== "CZK" ? "—" : pt.scanToPay}
-                  </div>
-                )}
-              </div>
-            </div>
-
-            <div>
-              {!invoice.hideItemPrices && (
-                <div className="grid grid-cols-[2fr_.5fr_.7fr_.5fr_.9fr] gap-2 border-b-2 border-ink pb-[6px] text-[8px] tracking-[0.6px]">
-                  <span className="heading-label !text-[8px]">{pt.colItem}</span>
-                  <span className="heading-label !text-[8px]">{pt.colQty}</span>
-                  <span className="heading-label !text-[8px]">{pt.colUnit}</span>
-                  <span className="heading-label !text-[8px]">{pt.colVat}</span>
-                  <span className="heading-label !text-[8px] text-right">{pt.total}</span>
-                </div>
-              )}
-              {groups.map((g) => (
-                <div key={g.category || "—"}>
-                  {g.category && <div className="label !text-[8px] !tracking-[1px] mt-[28px] mb-[4px]">{g.category}</div>}
-                  {g.items.map((item) =>
-                    invoice.hideItemPrices ? (
-                      <div key={item.id} className="py-[5px] text-[10.5px] border-b border-ink/8">
-                        {item.description}
-                      </div>
-                    ) : (
-                      <div
-                        key={item.id}
-                        className="grid grid-cols-[2fr_.5fr_.7fr_.5fr_.9fr] gap-2 py-[7px] text-[10.5px] border-b border-ink/8 items-center"
-                      >
-                        <span>{item.description}</span>
-                        <span className="placeholder-text text-right">{item.quantity}</span>
-                        <span className="placeholder-text text-right">{formatCurrency(item.unitPrice, invoice.currency)}</span>
-                        <span className="placeholder-text text-right">{item.vatRate}%</span>
-                        <span className="text-right">{formatCurrency(item.quantity * item.unitPrice, invoice.currency)}</span>
-                      </div>
-                    )
+            <DocumentPreview
+              theme={previewTheme}
+              kind="invoice"
+              wordmark={pl.invoice}
+              accent={accent}
+              logoUrl={company?.logoPath ? `/api/uploads/logo/${company.logoPath}` : null}
+              companyName={supplier.name}
+              dateLines={[`${pl.issued} ${pdfDate(invoice.issuedAt, activePreviewLang)}`, `${pl.due} ${pdfDate(invoice.dueDate, activePreviewLang)}`]}
+              number={invoice.number}
+              parties={[
+                <>
+                  <PreviewLabel theme={previewTheme}>{pl.supplier}</PreviewLabel>
+                  <PreviewPartyName>{supplier.name}</PreviewPartyName>
+                  {supplierAddressLines.map((line) => (
+                    <PreviewLine key={line} theme={previewTheme}>
+                      {line}
+                    </PreviewLine>
+                  ))}
+                  {supplierIds && (
+                    <PreviewLine theme={previewTheme} marginTop={PDF_METRICS.idsMarginTop}>
+                      {supplierIds}
+                    </PreviewLine>
                   )}
-                  {invoice.hideItemPrices && g.category && (
-                    <div className="flex justify-end text-[10px] font-bold mt-[3px] mb-[10px]">
-                      {formatCurrency(categoryTotal(g.items), invoice.currency)}
-                    </div>
+                  {!supplier.isVatPayer && <PreviewLine theme={previewTheme}>{pl.notVatPayer}</PreviewLine>}
+                </>,
+                <>
+                  <PreviewLabel theme={previewTheme}>{pl.customer}</PreviewLabel>
+                  <PreviewPartyName>{invoice.project.companyName}</PreviewPartyName>
+                  {customerAddressLines.map((line) => (
+                    <PreviewLine key={line} theme={previewTheme}>
+                      {line}
+                    </PreviewLine>
+                  ))}
+                  {customerIds && (
+                    <PreviewLine theme={previewTheme} marginTop={PDF_METRICS.idsMarginTop}>
+                      {customerIds}
+                    </PreviewLine>
                   )}
-                </div>
-              ))}
-            </div>
-            <div className="flex justify-end items-center gap-[36px] mt-[24px] text-[11px]">
-              <div className="text-right">
-                <span className="label !text-[8px] !tracking-[1px] block">{pt.base}</span>
-                <span className="mt-[3px] block">{formatCurrency(base, invoice.currency)}</span>
-              </div>
-              <div className="text-right">
-                <span className="label !text-[8px] !tracking-[1px] block">{pt.vat}</span>
-                <span className="mt-[3px] block">{formatCurrency(vat, invoice.currency)}</span>
-              </div>
-              {discountAmount > 0 && (
-                <div className="text-right">
-                  <span className="label !text-[8px] !tracking-[1px] block">{pt.discount}</span>
-                  <span className="mt-[3px] block">-{formatCurrency(discountAmount, invoice.currency)}</span>
-                </div>
-              )}
-              <div className="text-right">
-                <span className="label !text-[8px] !tracking-[1px] block">{pt.toPay}</span>
-                <span className="font-bold text-[22px] mt-[3px] block" style={{ color: accent }}>
-                  {formatCurrency(invoice.total, invoice.currency)}
-                </span>
-              </div>
-            </div>
-            <div className="flex-1" />
-            <div className="placeholder-text text-[9.5px] leading-[1.5] pt-[16px] border-t border-ink/10">
-              {pt.invoiceThanks}
-            </div>
-          </div>
+                </>,
+                <>
+                  <PreviewLabel theme={previewTheme}>{pl.paymentDetails}</PreviewLabel>
+                  {supplier.accountNumber && (
+                    <PreviewLine theme={previewTheme}>
+                      {pl.accountNumber} {supplier.accountNumber}
+                    </PreviewLine>
+                  )}
+                  {supplier.bankAccount && (
+                    <PreviewLine theme={previewTheme} breakAll>
+                      {supplier.bankAccount}
+                    </PreviewLine>
+                  )}
+                  {supplier.swiftBic && (
+                    <PreviewLine theme={previewTheme}>
+                      {pl.swift} {supplier.swiftBic}
+                    </PreviewLine>
+                  )}
+                  <PreviewLine theme={previewTheme}>
+                    {pl.variableSymbol} {variableSymbol}
+                  </PreviewLine>
+                </>,
+                <>
+                  <PreviewLabel theme={previewTheme}>{pl.qrPlatba}</PreviewLabel>
+                  <PreviewQr
+                    theme={previewTheme}
+                    qrDataUrl={qrDataUrl}
+                    caption={qrDataUrl ? pl.scanToPay : invoice.currency !== "CZK" ? pl.qrCzkOnly : pl.noBankAccount}
+                  />
+                </>,
+              ]}
+              hideItemPrices={invoice.hideItemPrices}
+              items={invoice.items}
+              currency={invoice.currency}
+              columns={{ item: pl.item, qty: pl.qty, unit: pl.unit, vat: pl.vat, total: pl.total }}
+              summary={[
+                { label: pl.base, value: money(base, invoice.currency) },
+                { label: pl.vat, value: money(vat, invoice.currency) },
+                ...(invoice.discountType !== "NONE" && discountAmount > 0
+                  ? [{ label: pl.discount, value: `-${money(discountAmount, invoice.currency)}` }]
+                  : []),
+                { label: pl.toPay, value: money(invoice.total, invoice.currency), accent: true },
+              ]}
+              footer={pl.invoiceThanks}
+            />
           </DocumentPreviewScaler>
           </div>
           </div>

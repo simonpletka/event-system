@@ -1283,6 +1283,8 @@ const en = {
     },
 
     downloadPdf: { downloadPdf: "Download PDF" },
+    /** Light/dark switch above the quote and invoice preview; the download follows it. */
+    previewTheme: { light: "Light", dark: "Dark" },
     print: { print: "Print" },
   },
 
@@ -3035,6 +3037,7 @@ const cs: Dictionary = {
     },
 
     downloadPdf: { downloadPdf: "Stáhnout PDF" },
+    previewTheme: { light: "Světlá", dark: "Tmavá" },
     print: { print: "Tisk" },
   },
 

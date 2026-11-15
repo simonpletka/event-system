@@ -2,19 +2,9 @@ import path from "path";
 import { StyleSheet, Font } from "@react-pdf/renderer";
 import type { CurrencyCode } from "@/lib/format";
 import type { PdfLang } from "./i18n";
+import { PDF_METRICS as M, PDF_PALETTES, PDF_TABLE_COLUMNS, DEFAULT_PDF_THEME, type PdfTheme } from "./theme";
 
 export const DEFAULT_ACCENT = "#ec3013";
-// Matches the app's own dark theme tokens (and the approved "Invoice Quote
-// Mockup" design canvas) — the generated PDF is dark-background/light-text,
-// not a light printable page. BG/INK/MUTED/LINE/RULE/ROW_BORDER are the
-// exact hex values the mockup used (background #131211, text #f3f2f2,
-// muted uppercase labels #918e87, secondary body text #c7c5c0).
-export const BG = "#131211";
-export const INK = "#f3f2f2";
-const MUTED = "#918e87";
-const LINE = "#c7c5c0";
-const RULE = "#f3f2f2";
-const ROW_BORDER = "#322e2b";
 
 // The built-in "Helvetica" standard font only covers WinAnsi (cp1252), which
 // is missing ě/ř/ů/ď/ť/ň — real Czech diacritics were silently dropping from
@@ -81,6 +71,11 @@ export function pdfDate(d: Date, lang: PdfLang = "en") {
   }).format(d);
 }
 
+/** "IČO … · DIČ …" for a party, skipping an empty one instead of printing a bare label. */
+export function documentIds(ico: string, dic: string) {
+  return [ico && `IČO ${ico}`, dic && `DIČ ${dic}`].filter(Boolean).join(" · ");
+}
+
 /**
  * Best-effort visual split of a free-text address into up to 3 display
  * lines. The app doesn't store a structured address for a Company or an
@@ -106,82 +101,116 @@ export function clientAddressLines(client: { street: string; city: string; postC
   return [client.street, cityLine, client.state].filter(Boolean);
 }
 
-// The mockup's canvas is a 794×1123 CSS-px artboard — exactly A4 at 96 DPI
-// (794px = 8.27in × 96). The PDF page is A4 in points (595.28pt = 8.27in ×
-// 72). Both represent the identical physical page, so every mockup pixel
-// value converts to points via the exact 96→72 DPI ratio: pt = px × 0.75.
-// Every number below is that literal conversion of a real value read out of
-// the mockup's own .dc.html source — not approximated or eyeballed.
-export const sharedStyles = StyleSheet.create({
-  page: { paddingTop: 42, paddingRight: 42, paddingBottom: 48, paddingLeft: 42, fontSize: 10, color: INK, backgroundColor: BG },
+// Every size below is in points. The original mockup was a 794×1123 CSS-px
+// artboard, exactly A4 at 96 DPI, and the PDF page is A4 in points, so the
+// two convert with pt = px × 0.75 (and the preview back with px = pt / 0.75,
+// toPreviewPx in theme.ts). Sizes and colours come from theme.ts, which the
+// on-page preview reads too.
+function buildStyles(theme: PdfTheme) {
+  const c = PDF_PALETTES[theme];
+  return StyleSheet.create({
+    page: { ...M.page, fontSize: 10, color: c.ink, backgroundColor: c.bg },
 
-  // Big lowercase wordmark header: doc word on the left, logo/initial chip + supplier name top-right.
-  headerRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "flex-start" },
-  wordmark: { fontSize: 115.5, fontWeight: 700, lineHeight: 0.8, letterSpacing: -3, paddingBottom: 10.5 },
-  headerSupplier: { alignItems: "flex-end", gap: 4.5, paddingTop: 6 },
-  initialChip: {
-    width: 25.5,
-    height: 25.5,
-    borderRadius: 6,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  initialChipText: { fontSize: 10.5, fontWeight: 700, color: "#ffffff" },
-  headerSupplierName: { fontSize: 9, fontWeight: 700 },
-  logoImage: { width: 25.5, height: 25.5, objectFit: "contain" },
+    // Big lowercase wordmark: document word on the left, logo/initial chip + supplier name top-right.
+    headerRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "flex-start" },
+    wordmark: { fontSize: M.wordmark.fontSize, fontWeight: 700, lineHeight: 0.8, letterSpacing: M.wordmark.letterSpacing, paddingBottom: M.wordmark.paddingBottom },
+    headerSupplier: { alignItems: "flex-end", gap: M.headerSupplier.gap, paddingTop: M.headerSupplier.paddingTop },
+    initialChip: {
+      width: M.headerSupplier.chip,
+      height: M.headerSupplier.chip,
+      borderRadius: M.headerSupplier.chipRadius,
+      alignItems: "center",
+      justifyContent: "center",
+    },
+    initialChipText: { fontSize: M.headerSupplier.chipText, fontWeight: 700, color: "#ffffff" },
+    headerSupplierName: { fontSize: M.headerSupplier.name, fontWeight: 700 },
+    logoImage: { width: M.headerSupplier.chip, height: M.headerSupplier.chip, objectFit: "contain" },
 
-  // Big date/doc-number row, replacing the old thin rule + small docLabel.
-  bigDateRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "flex-start", marginTop: 28.5 },
-  bigDateStack: { flexDirection: "column" },
-  bigDateLine: { fontSize: 14.25, lineHeight: 1.35 },
-  bigDocNumber: { fontSize: 14.25, fontWeight: 700 },
-  // Quote: the project name under the number (14px in the on-page preview).
-  bigDocProject: { fontSize: 10.5, color: LINE, marginTop: 3, textAlign: "right" },
+    // Dates on the left, document number (and the quote's project) on the right.
+    bigDateRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "flex-start", marginTop: M.dateRow.marginTopInvoice },
+    bigDateStack: { flexDirection: "column" },
+    bigDateLine: { fontSize: M.dateRow.fontSize, lineHeight: M.dateRow.lineHeight },
+    bigDocNumber: { fontSize: M.dateRow.fontSize, fontWeight: 700 },
+    bigDocProject: { fontSize: M.docProject.fontSize, color: c.body, marginTop: M.docProject.marginTop, textAlign: "right" },
 
-  // Shared row shell — each document supplies its own `gap` (invoice 18pt / quote 24pt in the mockup).
-  partiesRow: { flexDirection: "row", marginTop: 30, marginBottom: 21 },
-  partyBlockNarrow: { width: "24%" }, // invoice: supplier/customer
-  partyBlockWide: { width: "29%" }, // quote: supplier/customer
-  createdByBlock: { width: "38%" }, // quote: created-by
-  label: { fontSize: 6, letterSpacing: 0.75, textTransform: "uppercase", color: MUTED, marginBottom: 3.75 },
-  partyName: { fontSize: 8.25, fontWeight: 700, marginBottom: 2.25 },
-  partyLine: { fontSize: 7.125, color: LINE, lineHeight: 1.5 },
+    // Each document supplies its own column widths and gap (PDF_PARTY_COLUMNS).
+    partiesRow: { flexDirection: "row", marginTop: M.parties.marginTop, marginBottom: M.parties.marginBottom },
+    label: {
+      fontSize: M.label.fontSize,
+      fontWeight: 700,
+      letterSpacing: M.label.letterSpacing,
+      textTransform: "uppercase",
+      color: c.muted,
+      marginBottom: M.label.marginBottom,
+    },
+    partyName: { fontSize: M.partyName.fontSize, fontWeight: 700, marginBottom: M.partyName.marginBottom },
+    partyLine: { fontSize: M.partyLine.fontSize, color: c.body, lineHeight: M.partyLine.lineHeight },
 
-  // Invoice-only: payment-details column (text) beside its own QR column.
-  paymentBlock: { width: "32%" },
-  qrBlock: { width: "14%" },
-  qrBox: { backgroundColor: RULE, borderRadius: 6, padding: 4.5, alignSelf: "flex-start" },
-  qrImageSmall: { width: 48, height: 48 },
-  qrCaptionText: { fontSize: 6, color: MUTED, marginTop: 3.75, lineHeight: 1.4 },
+    // Invoice only: the QR code in its own column.
+    qrBox: {
+      backgroundColor: c.qrBox,
+      borderWidth: M.qr.borderWidth,
+      borderColor: c.qrBoxBorder,
+      borderRadius: M.qr.radius,
+      padding: M.qr.padding,
+      alignSelf: "flex-start",
+    },
+    qrImage: { width: M.qr.image, height: M.qr.image },
+    qrCaptionText: { fontSize: M.qr.captionSize, color: c.muted, marginTop: M.qr.captionMarginTop, lineHeight: M.qr.captionLineHeight },
 
-  // No marginTop here — partiesRow's own marginBottom (21pt, above) is the
-  // mockup's only gap between the parties row and the item table.
-  table: {},
-  tableHeaderRow: {
-    flexDirection: "row",
-    borderBottomWidth: 1.5,
-    borderBottomColor: RULE,
-    paddingBottom: 4.5,
-    marginBottom: 4.5,
-  },
-  tableRow: { flexDirection: "row", paddingVertical: 5.25, borderBottomWidth: 0.75, borderBottomColor: ROW_BORDER },
-  tableCell: { fontSize: 7.875 },
-  colDesc: { width: "46%" },
-  colQty: { width: "12%", textAlign: "right" },
-  colUnit: { width: "16%", textAlign: "right" },
-  colVat: { width: "10%", textAlign: "right" },
-  colTotal: { width: "16%", textAlign: "right" },
-  th: { fontSize: 6, letterSpacing: 0.45, textTransform: "uppercase", color: MUTED },
-  categoryLabel: { fontSize: 6, letterSpacing: 0.75, textTransform: "uppercase", color: MUTED, marginTop: 21, marginBottom: 3 },
-  categorySubtotal: { fontSize: 7.5, fontWeight: 700, textAlign: "right", marginTop: 2.25, marginBottom: 7.5 },
-  summaryRow: { flexDirection: "row", justifyContent: "flex-end", marginTop: 18, gap: 27 },
-  summaryBlock: { alignItems: "flex-end" },
-  summaryValue: { fontSize: 8.25, marginTop: 2.25 },
-  toPayValue: { fontSize: 16.5, fontWeight: 700, marginTop: 2.25 },
-  footerRow: {
-    paddingTop: 12,
-    borderTopWidth: 0.75,
-    borderTopColor: ROW_BORDER,
-  },
-  footerText: { fontSize: 7.125, color: LINE, lineHeight: 1.5 },
-});
+    // No marginTop: the parties row's marginBottom is the gap above the table.
+    table: {},
+    tableHeaderRow: {
+      flexDirection: "row",
+      borderBottomWidth: M.tableHeader.borderWidth,
+      borderBottomColor: c.tableHeaderRule,
+      paddingBottom: M.tableHeader.paddingBottom,
+      marginBottom: M.tableHeader.marginBottom,
+    },
+    tableRow: { flexDirection: "row", paddingVertical: M.tableRow.paddingVertical, borderBottomWidth: M.tableRow.borderWidth, borderBottomColor: c.rule },
+    tableRowNoPrices: { paddingVertical: M.tableRow.paddingVerticalNoPrices, borderBottomWidth: M.tableRow.borderWidth, borderBottomColor: c.rule },
+    tableCell: { fontSize: M.tableCell.fontSize },
+    colDesc: { width: PDF_TABLE_COLUMNS.desc },
+    colQty: { width: PDF_TABLE_COLUMNS.qty, textAlign: "right" },
+    colUnit: { width: PDF_TABLE_COLUMNS.unit, textAlign: "right" },
+    colVat: { width: PDF_TABLE_COLUMNS.vat, textAlign: "right" },
+    colTotal: { width: PDF_TABLE_COLUMNS.total, textAlign: "right" },
+    th: { fontSize: M.th.fontSize, fontWeight: 700, letterSpacing: M.th.letterSpacing, textTransform: "uppercase", color: c.muted },
+    categoryLabel: {
+      fontSize: M.categoryLabel.fontSize,
+      fontWeight: 700,
+      letterSpacing: M.categoryLabel.letterSpacing,
+      textTransform: "uppercase",
+      color: c.muted,
+      marginTop: M.categoryLabel.marginTop,
+      marginBottom: M.categoryLabel.marginBottom,
+    },
+    categorySubtotal: {
+      fontSize: M.categorySubtotal.fontSize,
+      fontWeight: 700,
+      textAlign: "right",
+      marginTop: M.categorySubtotal.marginTop,
+      marginBottom: M.categorySubtotal.marginBottom,
+    },
+
+    summaryRow: { flexDirection: "row", justifyContent: "flex-end", marginTop: M.summary.marginTop, gap: M.summary.gap },
+    summaryBlock: { alignItems: "flex-end" },
+    summaryValue: { fontSize: M.summary.valueSize, marginTop: M.summary.valueMarginTop },
+    toPayValue: { fontSize: M.summary.toPaySize, fontWeight: 700, marginTop: M.summary.toPayMarginTop },
+
+    footerRow: { paddingTop: M.footer.paddingTop, borderTopWidth: M.footer.borderWidth, borderTopColor: c.rule },
+    footerText: { fontSize: M.footer.fontSize, color: c.body, lineHeight: M.footer.lineHeight },
+  });
+}
+
+const stylesByTheme = new Map<PdfTheme, ReturnType<typeof buildStyles>>();
+
+/** The quote/invoice PDF styles in the given theme (built once per theme). */
+export function themedStyles(theme: PdfTheme = DEFAULT_PDF_THEME) {
+  let styles = stylesByTheme.get(theme);
+  if (!styles) {
+    styles = buildStyles(theme);
+    stylesByTheme.set(theme, styles);
+  }
+  return styles;
+}
