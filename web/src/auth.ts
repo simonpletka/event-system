@@ -1,7 +1,7 @@
 import NextAuth from "next-auth";
 import Credentials from "next-auth/providers/credentials";
 import bcrypt from "bcryptjs";
-import { prisma } from "@/lib/prisma";
+import { getRealClient, rebuildTestDatabase, type DataMode } from "@/lib/data-mode";
 import type { ProjectsAccess, FinanceAccess, ExpensesAccess, SettingsAccess } from "@/generated/prisma/enums";
 
 type CustomRolePermissions = { projects: ProjectsAccess; finance: FinanceAccess; expenses: ExpensesAccess; settings: SettingsAccess } | null;
@@ -20,12 +20,18 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
       credentials: {
         email: { label: "Email", type: "email" },
         password: { label: "Password", type: "password" },
+        mode: { label: "View", type: "text" },
       },
       authorize: async (credentials) => {
         const email = credentials?.email as string | undefined;
         const password = credentials?.password as string | undefined;
+        const dataMode: DataMode = credentials?.mode === "test" ? "test" : "real";
         if (!email || !password) return null;
 
+        // Credentials are always checked against the real database, in both
+        // views: the testing view holds a copy of every real record, so only
+        // a real account may open it (the demo accounts it adds can't).
+        const prisma = getRealClient();
         const user = await prisma.user.findUnique({ where: { email }, include: { customRole: true } });
         // The Claude connector's service account is token-only (see src/lib/agent/oauth.ts).
         if (!user || !user.active || user.isAgent) return null;
@@ -35,12 +41,16 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
 
         await prisma.user.update({ where: { id: user.id }, data: { lastSeenAt: new Date() } });
 
+        // Each testing sign-in starts from a fresh copy of the real data plus the demo data.
+        if (dataMode === "test") await rebuildTestDatabase();
+
         return {
           id: user.id,
           name: user.name,
           email: user.email,
           role: user.role,
           isCardHolder: user.isCardHolder,
+          dataMode,
           customRole: user.customRole
             ? {
                 projects: user.customRole.projects,
@@ -60,6 +70,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         token.role = user.role as string;
         token.isCardHolder = Boolean((user as { isCardHolder?: boolean }).isCardHolder);
         token.customRole = (user as { customRole?: CustomRolePermissions }).customRole ?? null;
+        token.dataMode = (user as { dataMode?: DataMode }).dataMode === "test" ? "test" : "real";
       }
       return token;
     },
@@ -69,6 +80,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         session.user.role = token.role as "ADMIN" | "ACCOUNTANT" | "PRODUCER" | "MEMBER";
         session.user.isCardHolder = token.isCardHolder as boolean;
         session.user.customRole = (token.customRole as CustomRolePermissions) ?? null;
+        session.user.dataMode = token.dataMode === "test" ? "test" : "real";
       }
       return session;
     },

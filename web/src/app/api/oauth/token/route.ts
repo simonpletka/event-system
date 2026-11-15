@@ -1,4 +1,6 @@
-import { prisma } from "@/lib/prisma";
+import { getRealClient } from "@/lib/data-mode";
+
+const prisma = getRealClient(); // the connector only ever sees real data
 import { sha256, verifyPkce, issueTokens } from "@/lib/agent/oauth";
 
 function oauthError(error: string, description: string, status = 400) {

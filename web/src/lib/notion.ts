@@ -1,11 +1,14 @@
 import { Client } from "@notionhq/client";
+import { isTestMode } from "@/lib/data-mode";
 import { isoDate } from "@/lib/calendar";
 import { projectHref } from "@/lib/slug";
 import type { ProjectStatus, MeetingType } from "@/generated/prisma/enums";
 
+const TEST_MODE_MESSAGE = "Switched off in the testing view, so nothing here reaches the real workspace.";
+
 export class NotionNotConfiguredError extends Error {
-  constructor() {
-    super("Notion sync isn't configured yet — set NOTION_API_KEY and the relevant NOTION_*_DATABASE_ID in the environment.");
+  constructor(message?: string) {
+    super(message ?? "Notion sync isn't configured yet — set NOTION_API_KEY and the relevant NOTION_*_DATABASE_ID in the environment.");
     this.name = "NotionNotConfiguredError";
   }
 }
@@ -65,9 +68,10 @@ type NotionProject = {
  * are unset — callers on the hot path should use tryCreateNotionProjectPage instead.
  */
 export async function createNotionProjectPage(project: NotionProject): Promise<string> {
-  const notion = getNotion();
+  const testMode = await isTestMode();
+  const notion = testMode ? null : getNotion();
   const databaseId = process.env.NOTION_PROJECTS_DATABASE_ID;
-  if (!notion || !databaseId) throw new NotionNotConfiguredError();
+  if (!notion || !databaseId) throw new NotionNotConfiguredError(testMode ? TEST_MODE_MESSAGE : undefined);
 
   const appLink = `${process.env.APP_BASE_URL ?? "http://localhost:3000"}${projectHref(project)}`;
   const page = await notion.pages.create({
@@ -107,8 +111,9 @@ export async function tryCreateNotionProjectPage(project: NotionProject): Promis
  * the hot path should use tryMarkNotionProjectDeleted instead.
  */
 export async function markNotionProjectDeleted(pageId: string): Promise<void> {
-  const notion = getNotion();
-  if (!notion) throw new NotionNotConfiguredError();
+  const testMode = await isTestMode();
+  const notion = testMode ? null : getNotion();
+  if (!notion) throw new NotionNotConfiguredError(testMode ? TEST_MODE_MESSAGE : undefined);
 
   await notion.pages.update({
     page_id: pageId,
@@ -156,9 +161,10 @@ export async function createNotionMeetingPage(
   meeting: NotionMeeting,
   opts: { linkedProjectPageIds: string[]; clientName?: string }
 ): Promise<string> {
-  const notion = getNotion();
+  const testMode = await isTestMode();
+  const notion = testMode ? null : getNotion();
   const databaseId = process.env[MEETING_DATABASE_ENV[meeting.type]];
-  if (!notion || !databaseId) throw new NotionNotConfiguredError();
+  if (!notion || !databaseId) throw new NotionNotConfiguredError(testMode ? TEST_MODE_MESSAGE : undefined);
 
   const dateValue = meeting.allDay ? isoDate(meeting.date) : meeting.date.toISOString();
   const properties: Record<string, unknown> = {

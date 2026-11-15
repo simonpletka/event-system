@@ -1,4 +1,8 @@
-import { prisma } from "@/lib/prisma";
+import { getRealClient } from "@/lib/data-mode";
+
+// The connector always works on the real database, even when the approving
+// admin is signed in to the testing view.
+const prisma = getRealClient();
 
 export type AuthorizeParams = {
   clientId: string;

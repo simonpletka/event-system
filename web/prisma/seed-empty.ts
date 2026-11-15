@@ -24,6 +24,14 @@ const DEFAULT_CATEGORIES = ["Video", "Audio", "Rigging", "People", "Other"];
  * Categories lets them be renamed/added/deleted afterward.
  */
 async function main() {
+  // Newer tables first: they point at users/projects the lines below delete.
+  await prisma.oAuthToken.deleteMany();
+  await prisma.oAuthCode.deleteMany();
+  await prisma.oAuthClient.deleteMany();
+  await prisma.projectFile.deleteMany();
+  await prisma.trip.deleteMany();
+  await prisma.vehicle.deleteMany();
+  await prisma.meeting.deleteMany();
   await prisma.invoiceEvent.deleteMany();
   await prisma.payment.deleteMany();
   await prisma.invoiceItem.deleteMany();

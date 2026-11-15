@@ -1,9 +1,13 @@
 import { google, type drive_v3 } from "googleapis";
+import { isTestMode } from "@/lib/data-mode";
 import { Readable } from "stream";
 
+const TEST_MODE_MESSAGE = "Switched off in the testing view, so nothing here reaches the real workspace.";
+
 export class DriveNotConfiguredError extends Error {
-  constructor() {
+  constructor(message?: string) {
     super(
+      message ??
       "Google Drive export isn't configured yet — set GDRIVE_ROOT_FOLDER_ID and the Drive credentials in the environment (see docs/API_SETUP.md)."
     );
     this.name = "DriveNotConfiguredError";
@@ -113,9 +117,10 @@ export async function uploadFinanceDocument(opts: {
   buffer: Buffer;
   mimeType: string;
 }) {
-  const drive = getDrive();
+  const testMode = await isTestMode();
+  const drive = testMode ? null : getDrive();
   const root = process.env.GDRIVE_ROOT_FOLDER_ID;
-  if (!drive || !root) throw new DriveNotConfiguredError();
+  if (!drive || !root) throw new DriveNotConfiguredError(testMode ? TEST_MODE_MESSAGE : undefined);
 
   const financeFolderId = await findOrCreateFolder(drive, root, FINANCE_FOLDER);
   const categoryFolderId = await findOrCreateFolder(drive, financeFolderId, CATEGORY_FOLDER_NAMES[opts.category]);
@@ -161,9 +166,10 @@ export function projectFolderName(project: { number: string; title: string }) {
 
 /** Creates the fixed part of the tree, so empty finance folders exist before anything lands in them. Safe to run twice. */
 export async function ensureDriveStructure() {
-  const drive = getDrive();
+  const testMode = await isTestMode();
+  const drive = testMode ? null : getDrive();
   const root = process.env.GDRIVE_ROOT_FOLDER_ID;
-  if (!drive || !root) throw new DriveNotConfiguredError();
+  if (!drive || !root) throw new DriveNotConfiguredError(testMode ? TEST_MODE_MESSAGE : undefined);
 
   await findOrCreateFolder(drive, root, EVENTS_FOLDER);
   const financeFolderId = await findOrCreateFolder(drive, root, FINANCE_FOLDER);
@@ -182,9 +188,10 @@ export function driveFolderUrl(folderId: string) {
  * the app links to it by id, so a retitled project keeps its folder.
  */
 export async function ensureProjectFolder(project: { number: string; title: string; startDate: Date }) {
-  const drive = getDrive();
+  const testMode = await isTestMode();
+  const drive = testMode ? null : getDrive();
   const root = process.env.GDRIVE_ROOT_FOLDER_ID;
-  if (!drive || !root) throw new DriveNotConfiguredError();
+  if (!drive || !root) throw new DriveNotConfiguredError(testMode ? TEST_MODE_MESSAGE : undefined);
 
   const eventsFolderId = await findOrCreateFolder(drive, root, EVENTS_FOLDER);
   const yearFolderId = await findOrCreateFolder(drive, eventsFolderId, String(project.startDate.getFullYear()));

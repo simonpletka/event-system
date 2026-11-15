@@ -1,6 +1,7 @@
 import { mkdir, writeFile, readFile, unlink } from "fs/promises";
 import path from "path";
 import { randomUUID } from "crypto";
+import { isTestMode } from "@/lib/data-mode";
 
 // Defaults to `<cwd>/uploads` for local dev; set UPLOAD_DIR to point uploads
 // at a mounted persistent volume in a stateless-filesystem deployment.
@@ -45,6 +46,8 @@ export async function readReceipt(filename: string) {
 
 export async function deleteReceipt(filename: string) {
   const safe = path.basename(filename);
+  // The testing view's records point at real files: never delete them from there.
+  if (await isTestMode()) return;
   await unlink(path.join(UPLOAD_ROOT, safe)).catch(() => {});
 }
 
@@ -71,6 +74,8 @@ export async function saveLogo(file: File): Promise<string | null> {
 
 export async function deleteLogo(filename: string) {
   const safe = path.basename(filename);
+  // The testing view's records point at real files: never delete them from there.
+  if (await isTestMode()) return;
   await unlink(path.join(LOGO_ROOT, safe)).catch(() => {});
 }
 
@@ -122,6 +127,8 @@ export async function saveAvatar(file: File): Promise<string | null> {
 
 export async function deleteAvatar(filename: string) {
   const safe = path.basename(filename);
+  // The testing view's records point at real files: never delete them from there.
+  if (await isTestMode()) return;
   await unlink(path.join(AVATAR_ROOT, safe)).catch(() => {});
 }
 
@@ -153,5 +160,7 @@ export async function readProjectFile(storedName: string) {
 }
 
 export async function deleteProjectFile(storedName: string) {
+  // The testing view's records point at real files: never delete them from there.
+  if (await isTestMode()) return;
   await unlink(path.join(PROJECT_FILE_ROOT, path.basename(storedName))).catch(() => {});
 }
