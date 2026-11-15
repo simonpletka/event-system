@@ -5,7 +5,8 @@ import { DownloadIcon } from "@/components/ui/icons";
 
 /**
  * "PDF" download → a small EN/CZ language menu (the PDF route takes ?lang=).
- * `subtle` gives a borderless trigger for use inside a dense table row.
+ * Default trigger is the `.btno` outline pill, matching the other header
+ * buttons; `subtle` gives a borderless trigger for use inside a dense table row.
  */
 export function DownloadPdfButton({
   pdfUrl,
@@ -25,7 +26,7 @@ export function DownloadPdfButton({
       triggerClassName={
         subtle
           ? "inline-flex items-center gap-1 text-[10px] tracking-[0.1em] uppercase text-ink/45 hover:text-accent transition-colors"
-          : undefined
+          : "btno inline-flex items-center gap-1.5"
       }
     >
       <MenuAnchor href={`${pdfUrl}?lang=cs`}>Čeština</MenuAnchor>

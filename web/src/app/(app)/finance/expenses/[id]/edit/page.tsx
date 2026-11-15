@@ -3,10 +3,18 @@ import { requireUser, projectWhereForUser, canPickOtherPayer, canEditExpense } f
 import { prisma } from "@/lib/prisma";
 import { ExpenseForm } from "@/components/finance/ExpenseForm";
 import { getLocale, getDictionary } from "@/lib/i18n";
+import { safeReturnTo } from "@/lib/return-to";
 
-export default async function EditExpensePage({ params }: { params: Promise<{ id: string }> }) {
+export default async function EditExpensePage({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ id: string }>;
+  searchParams: Promise<{ returnTo?: string }>;
+}) {
   const user = await requireUser();
   const { id } = await params;
+  const returnTo = safeReturnTo((await searchParams).returnTo);
   const locale = await getLocale();
   const t = getDictionary(locale);
 
@@ -59,6 +67,7 @@ export default async function EditExpensePage({ params }: { params: Promise<{ id
           receiptPath: expense.receiptPath,
         }}
         locale={locale}
+        returnTo={returnTo ?? undefined}
       />
     </div>
   );

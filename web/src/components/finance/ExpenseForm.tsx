@@ -40,12 +40,15 @@ export function ExpenseForm({
   currentUserId,
   defaults,
   locale,
+  returnTo,
 }: {
   events: PickableProject[];
   payers: { id: string; name: string }[];
   currentUserId: string;
   defaults?: ExpenseFormDefaults;
   locale: Locale;
+  /** Where Save and Cancel go back to (an already-validated app path); defaults to the expenses list. */
+  returnTo?: string;
 }) {
   const t = getDictionary(locale);
   const isEdit = Boolean(defaults);
@@ -91,6 +94,7 @@ export function ExpenseForm({
   return (
     <form ref={formRef} action={formAction} className="w-full flex flex-col gap-4">
       {isEdit && <input type="hidden" name="id" value={defaults!.id} />}
+      {returnTo && <input type="hidden" name="returnTo" value={returnTo} />}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <ReceiptInput existingReceiptPath={defaults?.receiptPath} t={t.finance.expenses.receipt} />
         <div className="flex flex-col gap-3">
@@ -202,7 +206,7 @@ export function ExpenseForm({
             {tf.saveAndAddAnother}
           </button>
         )}
-        <CancelLink href="/finance/expenses" label={t.common.cancel} />
+        <CancelLink href={returnTo ?? "/finance/expenses"} label={t.common.cancel} />
       </div>
     </form>
   );
