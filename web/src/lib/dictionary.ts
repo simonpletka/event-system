@@ -177,7 +177,7 @@ const en = {
     today: "Today",
   },
   modal: { close: "Close" },
-  addressInput: { searching: "Searching…" },
+  addressInput: { searching: "Searching…", savedVenue: "Used before" },
 
   dashboard: {
     title: "Dashboard",
@@ -1925,7 +1925,7 @@ const cs: Dictionary = {
     today: "Dnes",
   },
   modal: { close: "Zavřít" },
-  addressInput: { searching: "Vyhledávání…" },
+  addressInput: { searching: "Vyhledávání…", savedVenue: "Použito dříve" },
 
   dashboard: {
     title: "Přehled",

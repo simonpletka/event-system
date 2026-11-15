@@ -18,6 +18,7 @@ export function AddressAutocompleteInput({
   searchingLabel = "Searching…",
   kind = "address",
   required,
+  savedLabel = "Used before",
 }: {
   name?: string;
   value: string;
@@ -28,6 +29,8 @@ export function AddressAutocompleteInput({
   searchingLabel?: string;
   kind?: "address" | "place";
   required?: boolean;
+  /** Tag on a venue suggestion that comes from earlier projects, not the map. */
+  savedLabel?: string;
 }) {
   const [suggestions, setSuggestions] = useState<AddressSuggestion[]>([]);
   const [open, setOpen] = useState(false);
@@ -95,7 +98,14 @@ export function AddressAutocompleteInput({
               >
                 {kind === "place" && s.name ? (
                   <>
-                    <span className="block font-semibold text-ink">{s.name}</span>
+                    <span className="flex items-center gap-2 font-semibold text-ink">
+                      {s.name}
+                      {s.saved && (
+                        <span className="shrink-0 rounded-full bg-accent/15 px-1.5 py-px text-[9px] font-semibold uppercase tracking-[0.08em] text-accent">
+                          {savedLabel}
+                        </span>
+                      )}
+                    </span>
                     {s.address && <span className="block text-[11.5px] placeholder-text">{s.address}</span>}
                   </>
                 ) : (

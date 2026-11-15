@@ -23,6 +23,8 @@ export type AddressSuggestion = {
   name?: string;
   /** The address without the name — what a venue's address field gets. Set by searchPlaces(). */
   address?: string;
+  /** A venue already used on a project in this app (not from the map search). */
+  saved?: boolean;
 };
 
 type PhotonFeature = {

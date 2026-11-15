@@ -216,6 +216,7 @@ export function ProjectForm({
                 onChange={(value) => updateVenue(i, { name: value })}
                 onSelect={(place) => updateVenue(i, { name: place.name ?? v.name, address: place.address || v.address })}
                 searchingLabel={t.addressInput.searching}
+                savedLabel={t.addressInput.savedVenue}
               />
               <AddressAutocompleteInput
                 name="venueAddress"
