@@ -1,6 +1,7 @@
 import { PrismaClient } from "../src/generated/prisma/client";
 import { PrismaBetterSqlite3 } from "@prisma/adapter-better-sqlite3";
 import bcrypt from "bcryptjs";
+import { DEFAULT_ITEM_CATEGORIES } from "../src/lib/item-categories";
 
 const adapter = new PrismaBetterSqlite3({
   url: process.env.DATABASE_URL || "file:./dev.db",
@@ -10,7 +11,7 @@ const prisma = new PrismaClient({ adapter });
 const ADMIN_EMAIL = "admin@eventsystem.cz";
 const ADMIN_PASSWORD = "changeme123";
 
-const DEFAULT_CATEGORIES = ["Video", "Audio", "Rigging", "People", "Other"];
+const DEFAULT_CATEGORIES = [...DEFAULT_ITEM_CATEGORIES];
 
 /**
  * Blank-slate seed for testing against real data — wipes every table the
@@ -19,8 +20,8 @@ const DEFAULT_CATEGORIES = ["Video", "Audio", "Rigging", "People", "Other"];
  * quotes, invoices, expenses, time entries or company settings. Everything
  * from here on is entered through the app itself — Settings > Company for
  * the real company profile, Settings > Users for real accounts, etc.
- * Default line-item categories ARE seeded here (Video/Audio/Rigging/People/
- * Other) since those are app configuration, not demo data — Settings >
+ * Default line-item categories ARE seeded here (Video/Audio/Lighting/
+ * Accessories/People/Services) since those are app configuration, not demo data — Settings >
  * Categories lets them be renamed/added/deleted afterward.
  */
 async function main() {

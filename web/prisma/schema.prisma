@@ -704,7 +704,7 @@ model ClientContact {
 }
 
 // Org-wide default categories offered when tagging a quote/invoice line item
-// (seeded: Video, Audio, Rigging, People, Other). Admin/Accountant-editable
+// (seeded: Video, Audio, Lighting, Accessories, People, Services). Admin/Accountant-editable
 // in Settings. A quote can still tag an item with a category name that isn't
 // in this list at all — that one-off name is just stored as free text on the
 // item itself and never written back here (see QuoteItem.category).

@@ -6,7 +6,7 @@ import { createQuoteAction, updateQuoteAction, type FinanceFormState } from "@/l
 import { toDateTimeLocal, formatDate } from "@/lib/format";
 import { type LineItem } from "./LineItemsFields";
 import { QuoteItemGroups } from "./QuoteItemGroups";
-import { groupsFromItems, type GroupItem, type ItemGroup } from "@/lib/quote-groups";
+import { groupsFromItems, newKey, type GroupItem, type ItemGroup } from "@/lib/quote-groups";
 import { ProjectPicker } from "@/components/ProjectPicker";
 import { CancelLink } from "@/components/ui/CancelLink";
 import { DateTimeField } from "@/components/ui/DateTimeField";
@@ -54,8 +54,12 @@ export function QuoteForm({
 
   const [projectId, setEventId] = useState(defaults?.projectId ?? initialEventId ?? "");
   const [currency, setCurrency] = useState<Currency>(defaults?.currency ?? "CZK");
-  // Items are edited inside groups (the quote's category headings); a new quote starts with none.
-  const [itemGroups, setItemGroups] = useState<{ groups: ItemGroup[]; loose: GroupItem[] }>(() => groupsFromItems(defaults?.items ?? []));
+  // Items are edited inside groups (the quote's category headings). A new quote
+  // starts with every saved category as an empty group, in the saved order;
+  // a group left empty never shows on the quote, since it has no items.
+  const [itemGroups, setItemGroups] = useState<{ groups: ItemGroup[]; loose: GroupItem[] }>(() =>
+    defaults ? groupsFromItems(defaults.items) : { groups: categories.map((name) => ({ key: newKey(), name, items: [] })), loose: [] }
+  );
   const [hideItemPrices, setHideItemPrices] = useState(defaults?.hideItemPrices ?? true);
   const [validUntil, setValidUntil] = useState(
     defaults ? toDateTimeLocal(defaults.validUntil).slice(0, 10) : isoDateInput(new Date(new Date().getTime() + TWO_WEEKS_MS))
