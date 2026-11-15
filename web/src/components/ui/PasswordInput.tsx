@@ -9,6 +9,7 @@ export function PasswordInput({
   required,
   holdToShowLabel = "Hold to show password",
   onKeyDown,
+  inputClassName = "bg-transparent border border-ink/35 px-3 py-2 text-sm outline-none focus:border-ink",
 }: {
   id: string;
   name: string;
@@ -16,6 +17,7 @@ export function PasswordInput({
   required?: boolean;
   holdToShowLabel?: string;
   onKeyDown?: React.KeyboardEventHandler<HTMLInputElement>;
+  inputClassName?: string;
 }) {
   const [visible, setVisible] = useState(false);
 
@@ -32,7 +34,7 @@ export function PasswordInput({
         autoComplete={autoComplete}
         onKeyDown={onKeyDown}
         enterKeyHint="go"
-        className="bg-transparent border border-ink/35 px-3 py-2 pr-10 text-sm outline-none focus:border-ink w-full"
+        className={`${inputClassName} pr-10 w-full`}
       />
       <button
         type="button"

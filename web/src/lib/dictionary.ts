@@ -54,6 +54,9 @@ const en = {
   },
   auth: {
     signIn: "Sign in",
+    welcome: "Welcome back",
+    subtitle: "Sign in with the account your administrator gave you.",
+    or: "or",
     email: "Email",
     password: "Password",
     signingIn: "Signing in…",
@@ -1782,6 +1785,9 @@ const cs: Dictionary = {
   },
   auth: {
     signIn: "Přihlásit se",
+    welcome: "Vítejte zpět",
+    subtitle: "Přihlaste se účtem, který vám vytvořil administrátor.",
+    or: "nebo",
     email: "E-mail",
     password: "Heslo",
     signingIn: "Přihlašování…",
