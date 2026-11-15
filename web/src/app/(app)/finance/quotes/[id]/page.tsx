@@ -188,8 +188,9 @@ export default async function QuoteDetailPage({
             />
           </div>
           {/* The PDF page at 96 dpi (794px wide), scaled to fit the card by DocumentPreviewScaler. */}
-          <div className="card p-8 min-w-0">
-          <DocumentPreviewScaler width={794}>
+          {/* The page itself is the card: no frame around it. */}
+          <div className="min-w-0 rounded-[22px] overflow-hidden">
+          <DocumentPreviewScaler width={794} fill>
             <DocumentPreview
               theme={previewTheme}
               kind="quote"
