@@ -33,9 +33,20 @@ export function getAppColors(company: Pick<CompanySettings, "bgColor" | "surface
   };
 }
 
+/**
+ * The dropdown chevron drawn on every `select.input` (globals.css). A
+ * background image can't use currentColor, so it's built from the ink color
+ * and re-issued whenever the theme colors change.
+ */
+export function selectChevron(ink: string): string {
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="10" height="6" viewBox="0 0 10 6"><path d="M1 1l4 4 4-4" fill="none" stroke="${ink}" stroke-opacity="0.7" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
+  return `url("data:image/svg+xml,${encodeURIComponent(svg)}")`;
+}
+
 // CSS custom properties, ready to spread onto an element's inline `style`.
 export function colorsToCssVars(colors: AppColors): Record<string, string> {
   return {
+    "--select-chevron": selectChevron(colors.ink),
     "--color-bg": colors.bg,
     "--color-surface": colors.surface,
     "--color-ink": colors.ink,
