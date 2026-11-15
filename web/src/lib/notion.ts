@@ -3,6 +3,7 @@ import { isTestMode } from "@/lib/data-mode";
 import { isoDate } from "@/lib/calendar";
 import { projectHref } from "@/lib/slug";
 import type { ProjectStatus, MeetingType } from "@/generated/prisma/enums";
+import { log } from "@/lib/log";
 
 const TEST_MODE_MESSAGE = "Switched off in the testing view, so nothing here reaches the real workspace.";
 
@@ -95,7 +96,7 @@ export async function tryCreateNotionProjectPage(project: NotionProject): Promis
     return await createNotionProjectPage(project);
   } catch (e) {
     if (e instanceof NotionNotConfiguredError) return null;
-    console.error("Notion project page creation failed:", e);
+    log.error("notion_project_create_failed", e);
     return null;
   }
 }
@@ -129,7 +130,7 @@ export async function tryMarkNotionProjectDeleted(pageId: string): Promise<void>
     await markNotionProjectDeleted(pageId);
   } catch (e) {
     if (e instanceof NotionNotConfiguredError) return;
-    console.error("Notion project page delete-status update failed:", e);
+    log.error("notion_project_delete_status_failed", e);
   }
 }
 
@@ -196,6 +197,6 @@ export async function tryCreateNotionMeetingPage(
     await createNotionMeetingPage(meeting, opts);
   } catch (e) {
     if (e instanceof NotionNotConfiguredError) return;
-    console.error("Notion meeting page creation failed:", e);
+    log.error("notion_meeting_create_failed", e);
   }
 }

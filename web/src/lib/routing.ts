@@ -1,4 +1,5 @@
 import { pragueInstant } from "@/lib/prague-date";
+import { log } from "@/lib/log";
 
 /**
  * Drive time and distance for a trip leg. Google's Routes API is used when
@@ -44,7 +45,7 @@ async function googleRoute(from: LatLng, to: LatLng, departure: Date | null): Pr
       signal: AbortSignal.timeout(TIMEOUT_MS),
     });
     if (!res.ok) {
-      console.error("Google Routes request failed:", res.status, await res.text());
+      log.error("google_routes_failed", new Error(`HTTP ${res.status}`), { status: res.status, body: (await res.text()).slice(0, 500) });
       return null;
     }
     const route = (await res.json())?.routes?.[0];
@@ -56,7 +57,7 @@ async function googleRoute(from: LatLng, to: LatLng, departure: Date | null): Pr
       polyline: route.polyline?.encodedPolyline ?? null,
     };
   } catch (err) {
-    console.error("Google Routes request failed:", err);
+    log.error("google_routes_failed", err);
     return null;
   }
 }

@@ -1,3 +1,4 @@
+import { log } from "@/lib/log";
 /**
  * Google Calendar / Meet sync for roadmap items — DEFERRED.
  *
@@ -47,7 +48,7 @@ export async function tryCreateCalendarEvent(
     return { ok: true, ...(await createCalendarEvent(input)) };
   } catch (e) {
     if (e instanceof CalendarNotConfiguredError) return { ok: false, error: e.message };
-    console.error("Google Calendar sync failed:", e);
+    log.error("gcal_sync_failed", e);
     return { ok: false, error: e instanceof Error ? e.message : "Unknown Google Calendar error." };
   }
 }

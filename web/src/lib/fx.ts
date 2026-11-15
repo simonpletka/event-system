@@ -1,5 +1,6 @@
 import { cache } from "react";
 import type { CurrencyCode } from "@/lib/format";
+import { log } from "@/lib/log";
 
 type ForeignCurrency = Exclude<CurrencyCode, "CZK">;
 
@@ -41,7 +42,7 @@ const fetchCnbFixing = cache(async function fetchCnbFixing(key: string): Promise
     }
     return rates;
   } catch (e) {
-    console.error("CNB exchange-rate fetch failed:", e);
+    log.warn("cnb_rate_fetch_failed", { message: e instanceof Error ? e.message : String(e) });
     return {};
   }
 });

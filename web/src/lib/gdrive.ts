@@ -1,6 +1,7 @@
 import { google, type drive_v3 } from "googleapis";
 import { isTestMode } from "@/lib/data-mode";
 import { Readable } from "stream";
+import { log } from "@/lib/log";
 
 const TEST_MODE_MESSAGE = "Switched off in the testing view, so nothing here reaches the real workspace.";
 
@@ -150,7 +151,7 @@ export async function tryUploadFinanceDocument(
     return { ok: true };
   } catch (e) {
     if (e instanceof DriveNotConfiguredError) return { ok: false, error: e.message };
-    console.error("Google Drive export failed:", e);
+    log.error("gdrive_export_failed", e);
     return { ok: false, error: e instanceof Error ? e.message : "Unknown Google Drive error." };
   }
 }
@@ -205,7 +206,7 @@ export async function tryEnsureProjectFolder(project: Parameters<typeof ensurePr
   try {
     return await ensureProjectFolder(project);
   } catch (e) {
-    if (!(e instanceof DriveNotConfiguredError)) console.error("Google Drive project folder failed:", e);
+    if (!(e instanceof DriveNotConfiguredError)) log.error("gdrive_project_folder_failed", e);
     return null;
   }
 }
