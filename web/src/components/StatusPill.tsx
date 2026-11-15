@@ -24,7 +24,7 @@ export function ProjectStatusPill({ status, t }: { status: ProjectStatus; t: Dic
   return <span className={`tag tag-${EVENT_STATUS_VARIANT[status]}`}>{t[status]}</span>;
 }
 
-const QUOTE_STATUS_VARIANT: Record<QuoteStatus, TagRole> = {
+export const QUOTE_STATUS_VARIANT: Record<QuoteStatus, TagRole> = {
   DRAFT: "neutral",
   SENT: "attention",
   ACCEPTED: "positive",

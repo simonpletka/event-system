@@ -14,6 +14,7 @@ export function czCount(n: number, one: string, few: string, many: string) {
 
 const en = {
   common: {
+    changeStatus: "Change status",
     save: "Save",
     cancel: "Cancel",
     edit: "Edit",
@@ -1762,6 +1763,7 @@ export type Dictionary = typeof en;
 
 const cs: Dictionary = {
   common: {
+    changeStatus: "Změnit stav",
     save: "Uložit",
     cancel: "Zrušit",
     edit: "Upravit",

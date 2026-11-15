@@ -1,4 +1,4 @@
-import { requireUser } from "@/lib/authz";
+import { requireUser, canEditProject } from "@/lib/authz";
 import { getProjectRows } from "@/lib/queries/projects";
 import { projectHref } from "@/lib/slug";
 import { getWeekCalendarData } from "@/lib/queries/calendar";
@@ -57,6 +57,7 @@ export default async function ProjectsPage({
           status: p.status,
           value: p.quotedValue,
           href: projectHref(p),
+          canEditStatus: canEditProject(user, { ownerId: p.ownerId, memberIds: p.members.map((m) => m.userId) }),
           searchText: p.contacts.map((c) => c.name).join(" "),
         }))}
         initialStatus={parseStatusFilter(params.status)}

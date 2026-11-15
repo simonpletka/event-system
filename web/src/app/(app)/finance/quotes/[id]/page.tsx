@@ -12,6 +12,7 @@ import { QuoteStatusPill } from "@/components/StatusPill";
 import { DownloadPdfButton } from "@/components/finance/DownloadPdfButton";
 import { groupItemsByCategory, categoryTotal } from "@/lib/line-items";
 import { getLocale, getDictionary } from "@/lib/i18n";
+import { QuoteStatusMenu } from "@/components/finance/QuoteStatusMenu";
 import { addressLines, clientAddressLines, DEFAULT_ACCENT } from "@/lib/pdf/shared";
 import { DocumentPreviewScaler } from "@/components/finance/DocumentPreviewScaler";
 import { SegmentedTabs } from "@/components/ui/SegmentedTabs";
@@ -63,7 +64,11 @@ export default async function QuoteDetailPage({
             </div>
           </div>
           <div className="flex gap-1.5 items-center">
-            <QuoteStatusPill status={quote.status} t={t.statusQuote} />
+            {canManage ? (
+              <QuoteStatusMenu quoteId={quote.id} status={quote.status} locale={appLocale} />
+            ) : (
+              <QuoteStatusPill status={quote.status} t={t.statusQuote} />
+            )}
             <DownloadPdfButton pdfUrl={`/api/quotes/${quote.id}/pdf`} label={t.finance.downloadPdf.downloadPdf} />
             {canManage && quote.status === "DRAFT" && (
               <Link href={`/finance/quotes/${quote.id}/edit`} className="btno">

@@ -2,7 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { act, cleanup, fireEvent, render, screen, within } from "@testing-library/react";
 
 let pathname = "/projects/26-001-winter-gala";
-vi.mock("next/navigation", () => ({ usePathname: () => pathname, useRouter: () => ({ push: vi.fn() }) }));
+vi.mock("next/navigation", () => ({ usePathname: () => pathname, useRouter: () => ({ push: vi.fn(), refresh: vi.fn() }) }));
 vi.mock("next/link", () => ({
   // Links don't navigate in these tests; jsdom can't load another document anyway.
   default: ({ href, children, onClick, ...rest }: { href: string; children: React.ReactNode; scroll?: boolean; onClick?: (e: React.MouseEvent) => void }) => (
@@ -11,6 +11,11 @@ vi.mock("next/link", () => ({
     </a>
   ),
 }));
+
+// The row's status menu calls a server action; the real module needs the server (auth, database).
+const setProjectStatusAction = vi.fn(async () => ({ ok: true }));
+vi.mock("@/lib/actions/projects", () => ({ setProjectStatusAction }));
+vi.mock("@/components/ui/ConfirmDialogProvider", () => ({ useConfirmDialog: () => ({ notify: vi.fn(), confirm: vi.fn() }) }));
 
 const { ProjectsList } = await import("../ProjectsList");
 const { ProjectTabs } = await import("../../ProjectTabs");
@@ -27,6 +32,7 @@ const row = (id: string, title: string, status: "IN_PROGRESS" | "CONFIRMED" | "T
   value: 0,
   href: `/projects/${id}`,
   searchText: "",
+  canEditStatus: false,
   ...extra,
 });
 
@@ -83,6 +89,23 @@ describe("projects list", () => {
     expect((screen.getByRole("searchbox") as HTMLInputElement).value).toBe("winter");
     const link = screen.getAllByRole("link").find((a) => a.textContent?.includes("Winter gala"))!;
     expect(within(link).getByText("—")).toBeTruthy();
+  });
+});
+
+describe("project status menu in the list", () => {
+  it("changes the status from the row's chip without opening the project", async () => {
+    setProjectStatusAction.mockClear();
+    render(
+      <ProjectsList projects={[row("9", "Launch party", "INQUIRY", { canEditStatus: true })]} initialStatus="all" initialQuery="" locale="en" />
+    );
+    const item = screen.getByText("Launch party").closest("li")!;
+    fireEvent.click(within(item).getByRole("button", { name: "Change status: Inquiry" }));
+    const option = within(item).getByRole("menuitemradio", { name: "Confirmed" });
+    await act(async () => {
+      fireEvent.click(option);
+    });
+    expect(setProjectStatusAction).toHaveBeenCalledWith("9", "CONFIRMED");
+    expect(within(item).queryByRole("menu")).toBeNull();
   });
 });
 
