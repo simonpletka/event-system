@@ -2,7 +2,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { requireUser, canManageFinance, canViewFinance } from "@/lib/authz";
 import { getQuoteList, type QuoteListFilters } from "@/lib/queries/finance";
-import { formatCurrency, formatCurrencyWithCzk, formatDate } from "@/lib/format";
+import { formatCurrency, formatCurrencyWithCzk, formatDateWithYear } from "@/lib/format";
 import { toCzkBatch } from "@/lib/fx";
 import { projectHref, clientHref } from "@/lib/slug";
 import { QuoteStatusPill } from "@/components/StatusPill";
@@ -98,7 +98,7 @@ export default async function QuotesPage({
       </div>
 
       <div className="hidden md:block card p-3 lg:p-4 mt-4">
-        <div className="grid grid-cols-[minmax(0,.7fr)_minmax(0,1.2fr)_minmax(0,1fr)_minmax(0,.6fr)_minmax(0,.6fr)_minmax(0,.95fr)_minmax(0,.85fr)_minmax(0,1.5fr)] gap-2.5 border-b border-ink/14 pb-1.5 px-3.5 [&_.heading-label]:font-bold [&_.heading-label]:!text-[9px]">
+        <div className="grid grid-cols-[minmax(0,.7fr)_minmax(0,1.1fr)_minmax(0,.9fr)_minmax(0,.85fr)_minmax(0,.85fr)_minmax(0,.95fr)_minmax(0,.85fr)_minmax(0,1.5fr)] gap-2.5 border-b border-ink/14 pb-1.5 px-3.5 [&_.heading-label]:font-bold [&_.heading-label]:!text-[9px]">
           <span className="heading-label">{t.finance.quotes.colNumber}</span>
           <span className="heading-label">{t.finance.quotes.colProject}</span>
           <span className="heading-label">{t.finance.quotes.colClient}</span>
@@ -112,7 +112,7 @@ export default async function QuotesPage({
         {quotesWithCzk.map((q) => (
           <div
             key={q.id}
-            className="group grid grid-cols-[minmax(0,.7fr)_minmax(0,1.2fr)_minmax(0,1fr)_minmax(0,.6fr)_minmax(0,.6fr)_minmax(0,.95fr)_minmax(0,.85fr)_minmax(0,1.5fr)] gap-2.5 items-center py-3.5 px-3.5 rounded-xl border-b border-ink/8 last:border-b-0 text-[15px] hover:bg-ink/5"
+            className="group grid grid-cols-[minmax(0,.7fr)_minmax(0,1.1fr)_minmax(0,.9fr)_minmax(0,.85fr)_minmax(0,.85fr)_minmax(0,.95fr)_minmax(0,.85fr)_minmax(0,1.5fr)] gap-2.5 items-center py-3.5 px-3.5 rounded-xl border-b border-ink/8 last:border-b-0 text-[15px] hover:bg-ink/5"
           >
             <Link href={`/finance/quotes/${q.id}`} className="font-medium group-hover:text-accent">
               {q.number}
@@ -129,8 +129,8 @@ export default async function QuotesPage({
                 q.project.companyName
               )}
             </div>
-            <div className="placeholder-text group-hover:!text-accent">{formatDate(q.issuedAt)}</div>
-            <div className="placeholder-text group-hover:!text-accent">{formatDate(q.validUntil)}</div>
+            <div className="placeholder-text whitespace-nowrap group-hover:!text-accent">{formatDateWithYear(q.issuedAt)}</div>
+            <div className="placeholder-text whitespace-nowrap group-hover:!text-accent">{formatDateWithYear(q.validUntil)}</div>
             <div className="font-semibold tabular-nums group-hover:text-accent">
               {formatCurrencyWithCzk(q.total, q.currency, q.czkAmount)}
             </div>
@@ -209,8 +209,8 @@ export default async function QuotesPage({
                   ) : (
                     q.project.companyName
                   )}{" "}
-                  · {t.finance.quotes.colIssued} {formatDate(q.issuedAt)} · {t.finance.quotes.colValidTo}{" "}
-                  {formatDate(q.validUntil)}
+                  · {t.finance.quotes.colIssued} {formatDateWithYear(q.issuedAt)} · {t.finance.quotes.colValidTo}{" "}
+                  {formatDateWithYear(q.validUntil)}
                 </div>
               </div>
               <div className="text-right shrink-0 text-[13px] font-semibold">
