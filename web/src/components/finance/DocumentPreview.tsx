@@ -133,6 +133,7 @@ export function DocumentPreview({
   columns,
   summary,
   footer,
+  issuedBy,
 }: {
   theme: PdfTheme;
   kind: "quote" | "invoice";
@@ -154,6 +155,8 @@ export function DocumentPreview({
   columns: { item: string; qty: string; unit: string; vat: string; total: string };
   summary: PreviewSummaryCell[];
   footer: string;
+  /** Quote only: who issued it, on the right of the footer ("Issued by Name · email · phone"). */
+  issuedBy?: { label: string; name: string; contact: string };
 }) {
   const c = PDF_PALETTES[theme];
   const partyCols = PDF_PARTY_COLUMNS[kind];
@@ -367,6 +370,10 @@ export function DocumentPreview({
 
       <div
         style={{
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "flex-start",
+          gap: px(M.footer.gap),
           paddingTop: px(M.footer.paddingTop),
           borderTop: `${px(M.footer.borderWidth)}px solid ${c.rule}`,
           fontSize: px(M.footer.fontSize),
@@ -374,7 +381,13 @@ export function DocumentPreview({
           lineHeight: M.footer.lineHeight,
         }}
       >
-        {footer}
+        <div>{footer}</div>
+        {issuedBy && (
+          <div style={{ textAlign: "right", minWidth: 0 }}>
+            {issuedBy.label} <span style={{ fontWeight: 700, color: c.ink }}>{issuedBy.name}</span>
+            {issuedBy.contact}
+          </div>
+        )}
       </div>
     </div>
   );

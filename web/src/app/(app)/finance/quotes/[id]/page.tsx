@@ -13,7 +13,7 @@ import { DownloadPdfButton } from "@/components/finance/DownloadPdfButton";
 import { groupItemsByCategory, categoryTotal } from "@/lib/line-items";
 import { getLocale, getDictionary } from "@/lib/i18n";
 import { QuoteStatusMenu } from "@/components/finance/QuoteStatusMenu";
-import { addressLines, clientAddressLines, DEFAULT_ACCENT, pdfDate, money, documentIds } from "@/lib/pdf/shared";
+import { addressLines, clientAddressLines, DEFAULT_ACCENT, pdfDate, money, documentIds, issuedByContact } from "@/lib/pdf/shared";
 import { parsePdfTheme, PDF_METRICS } from "@/lib/pdf/theme";
 import { pdfLabels } from "@/lib/pdf/i18n";
 import { DocumentPreviewScaler } from "@/components/finance/DocumentPreviewScaler";
@@ -231,20 +231,6 @@ export default async function QuoteDetailPage({
                     </PreviewLine>
                   )}
                 </>,
-                <>
-                  <PreviewLabel theme={previewTheme}>{pl.createdBy}</PreviewLabel>
-                  <PreviewPartyName size={PDF_METRICS.createdBy.nameSize}>{quote.createdBy.name}</PreviewPartyName>
-                  {quote.createdBy.email && (
-                    <PreviewLine theme={previewTheme} size={PDF_METRICS.createdBy.lineSize}>
-                      {quote.createdBy.email}
-                    </PreviewLine>
-                  )}
-                  {quote.createdBy.phone && (
-                    <PreviewLine theme={previewTheme} size={PDF_METRICS.createdBy.lineSize}>
-                      {quote.createdBy.phone}
-                    </PreviewLine>
-                  )}
-                </>,
               ]}
               hideItemPrices={quote.hideItemPrices}
               items={quote.items}
@@ -256,6 +242,7 @@ export default async function QuoteDetailPage({
                 { label: pl.total, value: money(base + vat, quote.currency), accent: true },
               ]}
               footer={pl.quoteValidUntil(pdfDate(quote.validUntil, activePreviewLang))}
+              issuedBy={{ label: pl.issuedBy, name: quote.createdBy.name, contact: issuedByContact(quote.createdBy) }}
             />
           </DocumentPreviewScaler>
           </div>
