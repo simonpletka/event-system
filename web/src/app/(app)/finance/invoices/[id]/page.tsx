@@ -2,7 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { requireUser, canManageFinance, isAdmin } from "@/lib/authz";
 import { getInvoiceDetail, getCompanySettings } from "@/lib/queries/finance";
-import { formatCurrency, formatCurrencyWithCzk, formatDate, formatDateTime } from "@/lib/format";
+import { formatCurrency, formatCurrencyWithCzk, formatDate, formatDateTime, formatDateWithYear } from "@/lib/format";
 import { toCzk } from "@/lib/fx";
 import { projectHref, clientHref } from "@/lib/slug";
 import {
@@ -23,7 +23,7 @@ import { SegmentedTabs } from "@/components/ui/SegmentedTabs";
 import { groupItemsByCategory, categoryTotal } from "@/lib/line-items";
 import { getLocale, getDictionary } from "@/lib/i18n";
 import type { Locale } from "@/lib/dictionary";
-import { addressLines, clientAddressLines, DEFAULT_ACCENT } from "@/lib/pdf/shared";
+import { addressLines, clientAddressLines, DEFAULT_ACCENT, pdfDate } from "@/lib/pdf/shared";
 import { getInvoiceQrDataUrl, FALLBACK_SUPPLIER } from "@/lib/pdf/build-invoice-pdf";
 
 export default async function InvoiceDetailPage({
@@ -90,7 +90,7 @@ export default async function InvoiceDetailPage({
           <div>
             <div className="text-[24px] font-bold tracking-tight">{ti.invoiceN(invoice.number)}</div>
             <div className="placeholder-text text-[12px] mt-1">
-              {ti.metaLine(invoice.project.title, invoice.project.companyName, formatDate(invoice.issuedAt), formatDate(invoice.dueDate))}
+              {ti.metaLine(invoice.project.title, invoice.project.companyName, formatDateWithYear(invoice.issuedAt), formatDateWithYear(invoice.dueDate))}
             </div>
           </div>
           <div className="flex gap-1.5 items-center flex-wrap">
@@ -233,10 +233,10 @@ export default async function InvoiceDetailPage({
             <div className="flex justify-between items-start mt-[38px] text-[19px] leading-[1.35]">
               <div>
                 <div>
-                  {pt.issued} {formatDate(invoice.issuedAt)}
+                  {pt.issued} {pdfDate(invoice.issuedAt, activePreviewLang)}
                 </div>
                 <div>
-                  {pt.dueLabel} {formatDate(invoice.dueDate)}
+                  {pt.dueLabel} {pdfDate(invoice.dueDate, activePreviewLang)}
                 </div>
               </div>
               <div className="text-[19px] font-bold">{invoice.number}</div>
@@ -388,7 +388,7 @@ export default async function InvoiceDetailPage({
             <div className="mt-3">
               <div className="flex justify-between py-1.5 text-[13px] border-b border-ink/8">
                 <div className="text-ink/70">{ti.dueLabel}</div>
-                <div className="placeholder-text">{formatDate(invoice.dueDate)}</div>
+                <div className="placeholder-text">{formatDateWithYear(invoice.dueDate)}</div>
               </div>
               <div className="flex justify-between py-1.5 text-[13px] border-b border-ink/8">
                 <div className="text-ink/70">{ti.sentLabel}</div>

@@ -2,7 +2,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { requireUser, canManageFinance, canViewFinance } from "@/lib/authz";
 import { getInvoiceList, getInvoiceKpis, type InvoiceListFilters } from "@/lib/queries/finance";
-import { formatCurrency, formatCurrencyWithCzk, formatDate } from "@/lib/format";
+import { formatCurrency, formatCurrencyWithCzk, formatDateWithYear } from "@/lib/format";
 import { toCzkBatch } from "@/lib/fx";
 import { projectHref, clientHref } from "@/lib/slug";
 import { InvoiceStatusPill } from "@/components/StatusPill";
@@ -107,7 +107,7 @@ export default async function InvoicesPage({
       </div>
 
       <div className="hidden md:block card p-3 lg:p-4 mt-4">
-        <div className="grid grid-cols-[minmax(0,.8fr)_minmax(0,1.2fr)_minmax(0,.9fr)_minmax(0,.6fr)_minmax(0,.6fr)_minmax(0,.9fr)_minmax(0,1fr)_minmax(0,.7fr)] gap-2.5 border-b border-ink/14 pb-1.5 px-3.5 [&_.heading-label]:font-bold [&_.heading-label]:!text-[9px]">
+        <div className="grid grid-cols-[minmax(0,.8fr)_minmax(0,1.1fr)_minmax(0,.85fr)_minmax(0,.85fr)_minmax(0,.85fr)_minmax(0,.9fr)_minmax(0,1fr)_minmax(0,.7fr)] gap-2.5 border-b border-ink/14 pb-1.5 px-3.5 [&_.heading-label]:font-bold [&_.heading-label]:!text-[9px]">
           <span className="heading-label">{ti.colNumber}</span>
           <span className="heading-label">{ti.colProject}</span>
           <span className="heading-label">{ti.colClient}</span>
@@ -121,7 +121,7 @@ export default async function InvoicesPage({
         {invoicesWithCzk.map((inv) => (
           <div
             key={inv.id}
-            className="group grid grid-cols-[minmax(0,.8fr)_minmax(0,1.2fr)_minmax(0,.9fr)_minmax(0,.6fr)_minmax(0,.6fr)_minmax(0,.9fr)_minmax(0,1fr)_minmax(0,.7fr)] gap-2.5 items-center py-3.5 px-3.5 rounded-xl border-b border-ink/8 last:border-b-0 text-[15px] hover:bg-ink/5"
+            className="group grid grid-cols-[minmax(0,.8fr)_minmax(0,1.1fr)_minmax(0,.85fr)_minmax(0,.85fr)_minmax(0,.85fr)_minmax(0,.9fr)_minmax(0,1fr)_minmax(0,.7fr)] gap-2.5 items-center py-3.5 px-3.5 rounded-xl border-b border-ink/8 last:border-b-0 text-[15px] hover:bg-ink/5"
           >
             <Link href={`/finance/invoices/${inv.id}`} className="font-medium group-hover:text-accent">
               {inv.number}
@@ -138,8 +138,8 @@ export default async function InvoicesPage({
                 inv.project.companyName
               )}
             </div>
-            <div className="placeholder-text group-hover:!text-accent">{formatDate(inv.issuedAt)}</div>
-            <div className="placeholder-text group-hover:!text-accent">{formatDate(inv.dueDate)}</div>
+            <div className="placeholder-text whitespace-nowrap group-hover:!text-accent">{formatDateWithYear(inv.issuedAt)}</div>
+            <div className="placeholder-text whitespace-nowrap group-hover:!text-accent">{formatDateWithYear(inv.dueDate)}</div>
             <div className="font-semibold tabular-nums group-hover:text-accent">
               {formatCurrencyWithCzk(inv.total, inv.currency, inv.czkAmount)}
             </div>
@@ -160,7 +160,7 @@ export default async function InvoicesPage({
             subLeft={inv.number}
             title={inv.project.title}
             tag={<InvoiceStatusPill status={inv.status} dueDate={inv.dueDate} paidAt={inv.paidAt} t={t.invoicePill} />}
-            meta={`${inv.project.companyName} · ${ti.colIssued} ${formatDate(inv.issuedAt)} · ${ti.colDue} ${formatDate(inv.dueDate)}`}
+            meta={`${inv.project.companyName} · ${ti.colIssued} ${formatDateWithYear(inv.issuedAt)} · ${ti.colDue} ${formatDateWithYear(inv.dueDate)}`}
             trailing={
               <>
                 {formatCurrencyWithCzk(inv.total, inv.currency, inv.czkAmount)}

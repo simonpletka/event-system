@@ -48,6 +48,11 @@ export function formatDate(date: Date, opts: Intl.DateTimeFormatOptions = { day:
   return new Intl.DateTimeFormat("en-GB", opts).format(date);
 }
 
+/** "22 Aug 2026": for document dates (issued, valid until, due), which always show the year. */
+export function formatDateWithYear(date: Date) {
+  return formatDate(date, { day: "numeric", month: "short", year: "numeric" });
+}
+
 export function formatDateRange(start: Date, end: Date) {
   const sameDay = start.toDateString() === end.toDateString();
   if (sameDay) return formatDate(start);

@@ -2,7 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { requireUser, canManageFinance, isAdmin } from "@/lib/authz";
 import { getQuoteDetail, getCompanySettings } from "@/lib/queries/finance";
-import { formatCurrency, formatCurrencyWithCzk, formatDate } from "@/lib/format";
+import { formatCurrency, formatCurrencyWithCzk, formatDateWithYear } from "@/lib/format";
 import { toCzk } from "@/lib/fx";
 import { projectHref, clientHref } from "@/lib/slug";
 import { convertQuoteToInvoiceAction, deleteQuoteAction, updateQuoteStatusAction, duplicateQuoteAction } from "@/lib/actions/finance";
@@ -13,7 +13,7 @@ import { DownloadPdfButton } from "@/components/finance/DownloadPdfButton";
 import { groupItemsByCategory, categoryTotal } from "@/lib/line-items";
 import { getLocale, getDictionary } from "@/lib/i18n";
 import { QuoteStatusMenu } from "@/components/finance/QuoteStatusMenu";
-import { addressLines, clientAddressLines, DEFAULT_ACCENT } from "@/lib/pdf/shared";
+import { addressLines, clientAddressLines, DEFAULT_ACCENT, pdfDate } from "@/lib/pdf/shared";
 import { DocumentPreviewScaler } from "@/components/finance/DocumentPreviewScaler";
 import { SegmentedTabs } from "@/components/ui/SegmentedTabs";
 import type { Locale } from "@/lib/dictionary";
@@ -60,7 +60,7 @@ export default async function QuoteDetailPage({
           <div>
             <div className="text-[24px] font-bold tracking-tight">{t.finance.quotes.quoteN(quote.number)}</div>
             <div className="placeholder-text text-[12px] mt-1">
-              {t.finance.quotes.metaLine(quote.project.title, quote.project.companyName, formatDate(quote.issuedAt), formatDate(quote.validUntil))}
+              {t.finance.quotes.metaLine(quote.project.title, quote.project.companyName, formatDateWithYear(quote.issuedAt), formatDateWithYear(quote.validUntil))}
             </div>
           </div>
           <div className="flex gap-1.5 items-center">
@@ -200,10 +200,10 @@ export default async function QuoteDetailPage({
             <div className="flex justify-between items-start mt-[60px] text-[19px] leading-[1.35]">
               <div>
                 <div>
-                  {pq.colIssued} {formatDate(quote.issuedAt)}
+                  {pq.colIssued} {pdfDate(quote.issuedAt, activePreviewLang)}
                 </div>
                 <div>
-                  {pq.colValidTo} {formatDate(quote.validUntil)}
+                  {pq.colValidTo} {pdfDate(quote.validUntil, activePreviewLang)}
                 </div>
               </div>
               <div className="text-right max-w-[347px]">
@@ -302,7 +302,7 @@ export default async function QuoteDetailPage({
             </div>
             <div className="flex-1" />
             <div className="placeholder-text text-[9.5px] leading-[1.5] pt-[16px] border-t border-ink/10">
-              {pq.renderedNote(formatDate(quote.validUntil))}
+              {pq.renderedNote(pdfDate(quote.validUntil, activePreviewLang))}
             </div>
           </div>
           </DocumentPreviewScaler>
@@ -316,7 +316,7 @@ export default async function QuoteDetailPage({
             <div className={`text-lg font-semibold mt-1 ${expired ? "text-warning" : ""}`}>
               {expired ? t.finance.quotes.expired : t.finance.quotes.valid}
             </div>
-            <div className="placeholder-text text-[10px]">{t.finance.quotes.until(formatDate(quote.validUntil))}</div>
+            <div className="placeholder-text text-[10px]">{t.finance.quotes.until(formatDateWithYear(quote.validUntil))}</div>
           </div>
 
           <div className="card px-4 py-4">
@@ -350,7 +350,7 @@ export default async function QuoteDetailPage({
                 {quote.createdBy.email}
                 {quote.createdBy.phone ? ` · ${quote.createdBy.phone}` : ""}
               </div>
-              <div className="placeholder-text text-[11px]">{formatDate(quote.issuedAt)}</div>
+              <div className="placeholder-text text-[11px]">{formatDateWithYear(quote.issuedAt)}</div>
             </div>
           </div>
 

@@ -128,9 +128,15 @@ export function MenuButton({ onClick, active, children }: { onClick?: () => void
   );
 }
 
-export function MenuAnchor({ href, children }: { href: string; children: ReactNode }) {
+export function MenuAnchor({ href, download, children }: { href: string; download?: boolean; children: ReactNode }) {
+  // `download`: save the file instead of opening it in a new tab.
   return (
-    <a href={href} target="_blank" rel="noreferrer" role="menuitem" className={`${ITEM_BASE} ${ITEM_IDLE}`}>
+    <a
+      href={href}
+      {...(download ? { download: "" } : { target: "_blank", rel: "noreferrer" })}
+      role="menuitem"
+      className={`${ITEM_BASE} ${ITEM_IDLE}`}
+    >
       {children}
     </a>
   );
