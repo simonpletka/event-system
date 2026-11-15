@@ -6,13 +6,23 @@ import { useEffect, useRef, useState } from "react";
  * Scales a fixed-width document preview (the invoice/quote PDF preview
  * cards, built at the mockup's literal 794px page width) down to fit
  * whatever width its container actually has, so the user sees the whole
- * page at a glance instead of having to scroll it sideways. Never scales
- * up past 100% — a container wider than 794px just shows it at natural
- * size. transform:scale() doesn't shrink the element's own layout box, so
+ * page at a glance instead of having to scroll it sideways. By default it
+ * never scales up past 100% (a wider container shows it at natural size);
+ * `fill` scales up too, so a page with no frame around it lines up with the
+ * container's edges. transform:scale() doesn't shrink the element's own layout box, so
  * the wrapper's height is set explicitly from the scaled content height
  * (measured via ResizeObserver) to avoid leaving dead space below it.
  */
-export function DocumentPreviewScaler({ width, children }: { width: number; children: React.ReactNode }) {
+export function DocumentPreviewScaler({
+  width,
+  children,
+  fill = false,
+}: {
+  width: number;
+  children: React.ReactNode;
+  /** Also scale up past 100% so the page always spans the container (used when the page itself is the card). */
+  fill?: boolean;
+}) {
   const outerRef = useRef<HTMLDivElement>(null);
   const innerRef = useRef<HTMLDivElement>(null);
   const [scale, setScale] = useState(1);
@@ -24,7 +34,7 @@ export function DocumentPreviewScaler({ width, children }: { width: number; chil
     if (!outer || !inner) return;
 
     const update = () => {
-      const s = Math.min(1, outer.clientWidth / width);
+      const s = fill ? outer.clientWidth / width : Math.min(1, outer.clientWidth / width);
       setScale(s);
       setHeight(inner.scrollHeight * s);
     };
@@ -34,7 +44,7 @@ export function DocumentPreviewScaler({ width, children }: { width: number; chil
     ro.observe(outer);
     ro.observe(inner);
     return () => ro.disconnect();
-  }, [width]);
+  }, [width, fill]);
 
   return (
     <div ref={outerRef} style={{ width: "100%", height, overflow: "hidden" }}>

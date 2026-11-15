@@ -45,12 +45,14 @@ export const PDF_PALETTES: Record<PdfTheme, PdfPalette> = {
     qrBox: "#ffffff",
     qrBoxBorder: "#e4e1dc",
   },
+  // Dark grey, not black: a near-black page reads as a void on screen and
+  // prints as a slab of ink.
   dark: {
-    bg: "#131211",
+    bg: "#2a2826",
     ink: "#f3f2f2",
     body: "#dedcd7",
-    muted: "#aaa69f",
-    rule: "#45403c",
+    muted: "#b0aca5",
+    rule: "#4a4541",
     tableHeaderRule: "#f3f2f2",
     qrBox: "#f3f2f2",
     qrBoxBorder: "#f3f2f2",

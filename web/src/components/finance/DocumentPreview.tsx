@@ -181,7 +181,6 @@ export function DocumentPreview({
         flexDirection: "column",
         fontSize: px(10),
         lineHeight: PDF_LINE_HEIGHT,
-        boxShadow: "0 2px 24px rgba(0,0,0,0.25)",
       }}
     >
       {/* Wordmark + logo/initial and supplier name */}
