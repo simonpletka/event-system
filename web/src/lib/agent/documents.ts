@@ -13,6 +13,7 @@ import { DEFAULT_INVOICE_EMAIL_SUBJECT, DEFAULT_INVOICE_EMAIL_BODY } from "@/lib
 import { formatCurrency, formatDate } from "@/lib/format";
 import type { Currency, DiscountType } from "@/generated/prisma/enums";
 import type { PdfLang } from "@/lib/pdf/i18n";
+import { quotePdfFilename } from "@/lib/pdf/filename";
 
 /**
  * Write paths for the Claude connector. Each mirrors its web-form
@@ -320,7 +321,7 @@ export async function sendQuote(user: SessionUser, input: { quoteId: string; to?
 
   try {
     const pdf = await buildQuotePdfBuffer(quote, company, lang);
-    await sendEmail({ to, subject, text, attachments: [{ filename: `quote-${quote.number}.pdf`, content: pdf, contentType: "application/pdf" }] });
+    await sendEmail({ to, subject, text, attachments: [{ filename: quotePdfFilename(quote.number, quote.project.title, lang), content: pdf, contentType: "application/pdf" }] });
   } catch (err) {
     emailFailure(err);
   }

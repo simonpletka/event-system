@@ -6,6 +6,8 @@ import { groupItemsByCategory, categoryTotal } from "@/lib/line-items";
 
 export type QuotePdfProps = {
   quoteNumber: string;
+  /** Shown under the quote number, top right. */
+  projectTitle: string;
   issuedAt: Date;
   validUntil: Date;
   currency: CurrencyCode;
@@ -21,6 +23,7 @@ export type QuotePdfProps = {
 
 export function QuotePdf({
   quoteNumber,
+  projectTitle,
   issuedAt,
   validUntil,
   currency,
@@ -69,7 +72,10 @@ export function QuotePdf({
               {t.validUntil} {date(validUntil, lang)}
             </Text>
           </View>
-          <Text style={styles.bigDocNumber}>{quoteNumber}</Text>
+          <View style={{ alignItems: "flex-end", maxWidth: 260 }}>
+            <Text style={styles.bigDocNumber}>{quoteNumber}</Text>
+            {projectTitle ? <Text style={styles.bigDocProject}>{projectTitle}</Text> : null}
+          </View>
         </View>
 
         <View style={[styles.partiesRow, { gap: 24 }]}>

@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
 import { safeReturnTo } from "@/lib/return-to";
+import { quotePdfFilename } from "@/lib/pdf/filename";
 import { requireUser, canManageFinance, canAddExpense, canPickOtherPayer, canEditExpense, projectWhereForUser, isAdmin } from "@/lib/authz";
 import { nextQuoteNumber, nextInvoiceNumber, variableSymbolFor } from "@/lib/document-number";
 import { saveReceipt, deleteReceipt } from "@/lib/uploads";
@@ -191,7 +192,7 @@ async function exportQuoteToDrive(user: Awaited<ReturnType<typeof requireUser>>,
   await tryUploadFinanceDocument({
     category: "quotes",
     year: full.project.startDate.getFullYear(),
-    filename: `${full.number}-quote.pdf`,
+    filename: quotePdfFilename(full.number, full.project.title, "en"),
     buffer,
     mimeType: "application/pdf",
   });

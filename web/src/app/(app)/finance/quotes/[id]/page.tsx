@@ -206,7 +206,10 @@ export default async function QuoteDetailPage({
                   {pq.colValidTo} {formatDate(quote.validUntil)}
                 </div>
               </div>
-              <div className="text-[19px] font-bold">{quote.number}</div>
+              <div className="text-right max-w-[347px]">
+                <div className="text-[19px] font-bold">{quote.number}</div>
+                <div className="placeholder-text text-[14px] leading-[1.3] mt-[4px]">{quote.project.title}</div>
+              </div>
             </div>
 
             <div className="grid grid-cols-[29%_29%_38%] gap-[32px] mt-[40px] mb-[28px]">
