@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useState } from "react";
 import { loginAction, type LoginState } from "@/lib/actions/auth";
 import { PasswordInput } from "@/components/ui/PasswordInput";
 import type { Dictionary } from "@/lib/dictionary";
@@ -9,10 +9,13 @@ const initialState: LoginState = {};
 
 export function LoginForm({ t, defaultEmail, next }: { t: Dictionary["auth"]; defaultEmail?: string; next: string }) {
   const [state, formAction, pending] = useActionState(loginAction, initialState);
+  // Which button was pressed, so only that one says "Signing in…".
+  const [mode, setMode] = useState<"real" | "test">("real");
 
   const submitOnEnter: React.KeyboardEventHandler<HTMLInputElement> = (e) => {
     if (e.key === "Enter") {
       e.preventDefault();
+      setMode("real");
       e.currentTarget.form?.requestSubmit();
     }
   };
@@ -57,8 +60,17 @@ export function LoginForm({ t, defaultEmail, next }: { t: Dictionary["auth"]; de
         </p>
       )}
 
-      <button type="submit" disabled={pending} className="btn !py-3 mt-2 w-full">
-        {pending ? t.signingIn : t.signIn}
+      {/* Both buttons submit the same email and password; the pressed one's
+          name/value picks the view (Enter submits with neither, i.e. real). */}
+      <button
+        type="submit"
+        name="mode"
+        value="real"
+        disabled={pending}
+        onClick={() => setMode("real")}
+        className="btn !py-3 mt-2 w-full"
+      >
+        {pending && mode === "real" ? t.signingIn : t.signIn}
       </button>
 
       <div className="flex items-center gap-3 my-1">
@@ -66,9 +78,17 @@ export function LoginForm({ t, defaultEmail, next }: { t: Dictionary["auth"]; de
         <span className="heading-label">{t.or}</span>
         <div className="rule-thin flex-1" />
       </div>
-      <button type="button" disabled className="btno !border-ink/25 !py-3 w-full opacity-50 cursor-not-allowed">
-        {t.continueWithGoogle}
+      <button
+        type="submit"
+        name="mode"
+        value="test"
+        disabled={pending}
+        onClick={() => setMode("test")}
+        className="btno !border-ink/25 !py-3 w-full"
+      >
+        {pending && mode === "test" ? t.preparingTesting : t.testingSignIn}
       </button>
+      <p className="text-xs placeholder-text text-center -mt-1">{t.testingHint}</p>
     </form>
   );
 }

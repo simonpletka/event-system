@@ -1,4 +1,6 @@
-import { prisma } from "@/lib/prisma";
+import { getRealClient } from "@/lib/data-mode";
+
+const prisma = getRealClient(); // the connector only ever sees real data
 
 /**
  * RFC 7591 dynamic client registration — how claude.ai introduces itself.

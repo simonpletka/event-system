@@ -17,12 +17,14 @@ export type LoginState = { error?: string; email?: string };
 export async function loginAction(_prev: LoginState, formData: FormData): Promise<LoginState> {
   const email = String(formData.get("email") ?? "");
   const password = String(formData.get("password") ?? "");
+  // "test" = the testing view (real data copy + demo data), see lib/data-mode.ts.
+  const mode = formData.get("mode") === "test" ? "test" : "real";
 
   try {
     // redirect:false so control returns here on success — needed to set the
     // remembered-email cookie before navigating away (signIn's own
     // redirectTo throws a NEXT_REDIRECT before any code after it can run).
-    await signIn("credentials", { email, password, redirect: false });
+    await signIn("credentials", { email, password, mode, redirect: false });
   } catch (err) {
     if (err instanceof AuthError) {
       const t = getDictionary(await getLocale());

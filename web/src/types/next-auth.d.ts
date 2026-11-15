@@ -11,6 +11,7 @@ declare module "next-auth" {
       role: AppRole;
       isCardHolder: boolean;
       customRole: AppCustomRole;
+      dataMode: "real" | "test";
     } & DefaultSession["user"];
   }
 
@@ -18,6 +19,7 @@ declare module "next-auth" {
     role: AppRole;
     isCardHolder: boolean;
     customRole: AppCustomRole;
+    dataMode?: "real" | "test";
   }
 }
 
@@ -27,5 +29,6 @@ declare module "next-auth/jwt" {
     role: AppRole;
     isCardHolder: boolean;
     customRole: AppCustomRole;
+    dataMode?: "real" | "test";
   }
 }

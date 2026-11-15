@@ -2,6 +2,7 @@ import { requireUser, getFreshUserFields, projectWhereForUser } from "@/lib/auth
 import { getRunningTimer } from "@/lib/queries/timetracker";
 import { getLocale, getDictionary } from "@/lib/i18n";
 import { prisma } from "@/lib/prisma";
+import { isTestMode } from "@/lib/data-mode";
 import { Sidebar } from "@/components/Sidebar";
 import { MobileTopBar } from "@/components/mobile/MobileTopBar";
 import { MobileNav } from "@/components/mobile/MobileNav";
@@ -13,7 +14,12 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   // immediately here instead of waiting for the session token to refresh at
   // next login — cache()-deduped with requireUser()'s own lookup, so this is
   // free within the same request, not a second query.
-  const [running, freshUser, locale] = await Promise.all([getRunningTimer(user.id), getFreshUserFields(user.id), getLocale()]);
+  const [running, freshUser, locale, testMode] = await Promise.all([
+    getRunningTimer(user.id),
+    getFreshUserFields(user.id),
+    getLocale(),
+    isTestMode(),
+  ]);
   const t = getDictionary(locale);
   // Only fetched when actually needed (a running-but-unassigned timer, for the
   // sidebar's inline assign-event select) — avoids the extra query on every
@@ -57,6 +63,16 @@ export default async function AppLayout({ children }: { children: React.ReactNod
         </main>
         <MobileNav tNav={t.nav} />
       </div>
+      {testMode && (
+        // Always visible in the testing view, so it's never mistaken for real data.
+        // Sits above the mobile tab bar; pointer-events-none so it never blocks a click.
+        <div
+          title={t.auth.testingBadgeHint}
+          className="fixed z-50 right-3 bottom-[calc(6.25rem+env(safe-area-inset-bottom))] md:bottom-4 md:right-4 pointer-events-none rounded-full bg-accent px-3.5 py-1.5 text-xs font-semibold text-white shadow-[0_8px_24px_rgba(0,0,0,0.45)]"
+        >
+          {t.auth.testingBadge}
+        </div>
+      )}
     </ConfirmDialogProvider>
   );
 }

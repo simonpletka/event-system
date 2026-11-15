@@ -1,6 +1,10 @@
 import { createHash, randomBytes } from "node:crypto";
 import bcrypt from "bcryptjs";
-import { prisma } from "@/lib/prisma";
+import { getRealClient } from "@/lib/data-mode";
+
+// The connector always works on the real database, even when the approving
+// admin is signed in to the testing view.
+const prisma = getRealClient();
 import type { SessionUser } from "@/lib/authz";
 
 /**

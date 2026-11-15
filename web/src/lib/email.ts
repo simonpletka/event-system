@@ -1,4 +1,5 @@
 import nodemailer from "nodemailer";
+import { isTestMode } from "@/lib/data-mode";
 
 export { EMAIL_TEMPLATE_TOKENS, renderEmailTemplate, type EmailTemplateVars } from "@/lib/email-templates";
 
@@ -18,9 +19,11 @@ function getTransporter() {
   return transporter;
 }
 
+const TEST_MODE_MESSAGE = "Email is switched off in the testing view.";
+
 export class EmailNotConfiguredError extends Error {
-  constructor() {
-    super("Email sending isn't configured yet — set SMTP_HOST, SMTP_USER and SMTP_PASS in the environment.");
+  constructor(message?: string) {
+    super(message ?? "Email sending isn't configured yet — set SMTP_HOST, SMTP_USER and SMTP_PASS in the environment.");
     this.name = "EmailNotConfiguredError";
   }
 }
@@ -31,6 +34,7 @@ export async function sendEmail(opts: {
   text: string;
   attachments?: { filename: string; content: Buffer; contentType?: string }[];
 }) {
+  if (await isTestMode()) throw new EmailNotConfiguredError(TEST_MODE_MESSAGE);
   const transport = getTransporter();
   if (!transport) throw new EmailNotConfiguredError();
 
