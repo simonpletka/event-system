@@ -4,7 +4,9 @@ import { useMemo, useState } from "react";
 import { useActionState } from "react";
 import { createQuoteAction, updateQuoteAction, type FinanceFormState } from "@/lib/actions/finance";
 import { toDateTimeLocal, formatDate } from "@/lib/format";
-import { LineItemsFields, BLANK_ITEM, type LineItem } from "./LineItemsFields";
+import { type LineItem } from "./LineItemsFields";
+import { QuoteItemGroups } from "./QuoteItemGroups";
+import { groupsFromItems, type GroupItem, type ItemGroup } from "@/lib/quote-groups";
 import { ProjectPicker } from "@/components/ProjectPicker";
 import { CancelLink } from "@/components/ui/CancelLink";
 import { DateTimeField } from "@/components/ui/DateTimeField";
@@ -52,7 +54,8 @@ export function QuoteForm({
 
   const [projectId, setEventId] = useState(defaults?.projectId ?? initialEventId ?? "");
   const [currency, setCurrency] = useState<Currency>(defaults?.currency ?? "CZK");
-  const [items, setItems] = useState<LineItem[]>(defaults?.items.length ? defaults.items : [{ ...BLANK_ITEM }]);
+  // Items are edited inside groups (the quote's category headings); a new quote starts with none.
+  const [itemGroups, setItemGroups] = useState<{ groups: ItemGroup[]; loose: GroupItem[] }>(() => groupsFromItems(defaults?.items ?? []));
   const [hideItemPrices, setHideItemPrices] = useState(defaults?.hideItemPrices ?? true);
   const [validUntil, setValidUntil] = useState(
     defaults ? toDateTimeLocal(defaults.validUntil).slice(0, 10) : isoDateInput(new Date(new Date().getTime() + TWO_WEEKS_MS))
@@ -113,7 +116,14 @@ export function QuoteForm({
         </label>
       </div>
 
-      <LineItemsFields items={items} onChange={setItems} currency={currency} categories={categories} t={tl} />
+      <QuoteItemGroups
+        groups={itemGroups.groups}
+        loose={itemGroups.loose}
+        onChange={(groups, loose) => setItemGroups({ groups, loose })}
+        currency={currency}
+        savedCategories={categories}
+        t={tl}
+      />
 
       <label className="flex items-center gap-1.5 text-[11px]">
         <input
