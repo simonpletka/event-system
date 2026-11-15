@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { requireUser, canViewProjectBudget, canManageFinance, isAdmin, isAccountant } from "@/lib/authz";
+import { requireUser, canViewProjectBudget, canManageFinance, canEditExpense, isAdmin, isAccountant } from "@/lib/authz";
 import { getProjectDetail, resolveProjectIdByNumber } from "@/lib/queries/projects";
 import { parseProjectSlug, projectHref } from "@/lib/slug";
 import { resolveProjectBudget } from "@/lib/project-budget";
@@ -157,17 +157,36 @@ export default async function EventFinancePage({ params }: { params: Promise<{ s
               <span className="text-[12px] font-semibold tabular-nums">{tf.expensesTotal(formatCurrency(totalExpenses), project.expenses.length)}</span>
             </div>
             {project.expenses.length === 0 && <p className="text-sm placeholder-text">{tf.noExpenses}</p>}
-            {project.expenses.map((exp) => (
-              <div key={exp.id} className="grid grid-cols-[80px_1fr_auto] md:grid-cols-[80px_1fr_1fr_auto] gap-2.5 items-center py-2.5 border-t border-ink/8 first:border-t-0 text-[13px]">
-                <div className="placeholder-text">{formatDate(exp.date)}</div>
-                <div>{t.expenseCategories[exp.category]}</div>
-                <div className="placeholder-text hidden md:block truncate">
-                  {exp.paidBy.name}
-                  {exp.note ? ` · ${exp.note}` : ""}
+            {project.expenses.map((exp) => {
+              const cells = (
+                <>
+                  <div className="placeholder-text">{formatDate(exp.date)}</div>
+                  <div>{t.expenseCategories[exp.category]}</div>
+                  <div className="placeholder-text hidden md:block truncate">
+                    {exp.paidBy.name}
+                    {exp.note ? ` · ${exp.note}` : ""}
+                  </div>
+                  <div className="font-semibold tabular-nums">{formatCurrency(exp.amount)}</div>
+                </>
+              );
+              const rowClass =
+                "grid grid-cols-[80px_minmax(0,1fr)_auto] md:grid-cols-[80px_minmax(0,1fr)_minmax(0,1fr)_auto] gap-2.5 items-center py-2.5 border-t border-ink/8 first:border-t-0 text-[13px] -mx-2 px-2 rounded-lg";
+              // There's no read-only expense page, so a row opens the edit form,
+              // which sends you back here (returnTo) after saving or cancelling.
+              return canEditExpense(user, exp.paidById) ? (
+                <Link
+                  key={exp.id}
+                  href={`/finance/expenses/${exp.id}/edit?returnTo=${encodeURIComponent(projectHref(project, "/finance"))}`}
+                  className={`${rowClass} hover:bg-ink/5`}
+                >
+                  {cells}
+                </Link>
+              ) : (
+                <div key={exp.id} className={rowClass}>
+                  {cells}
                 </div>
-                <div className="font-semibold tabular-nums">{formatCurrency(exp.amount)}</div>
-              </div>
-            ))}
+              );
+            })}
           </section>
 
           {mixed && <p className="text-[10px] placeholder-text">{tf.mixedCurrencyNote}</p>}

@@ -14,6 +14,7 @@ import {
   sendInvoiceReminderAction,
 } from "@/lib/actions/finance";
 import { ConfirmDeleteButton } from "@/components/ui/ConfirmDeleteButton";
+import { TrashIcon } from "@/components/ui/icons";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { DownloadPdfButton } from "@/components/finance/DownloadPdfButton";
 import { SendInvoiceEmailButton } from "@/components/finance/SendInvoiceEmailButton";
@@ -92,7 +93,26 @@ export default async function InvoiceDetailPage({
               {ti.metaLine(invoice.project.title, invoice.project.companyName, formatDate(invoice.issuedAt), formatDate(invoice.dueDate))}
             </div>
           </div>
-          <div className="flex gap-1.5 items-start">
+          <div className="flex gap-1.5 items-center flex-wrap">
+            {/* Delete is rare and irreversible: an icon at the far end from the
+                primary action, split off by a divider, confirm dialog on click. */}
+            {isAdmin(user) && (
+              <>
+                <ConfirmDeleteButton
+                  action={deleteInvoiceAction}
+                  fields={{ id: invoice.id }}
+                  label={ti.deleteInvoiceBtn}
+                  pendingLabel={t.common.deleting}
+                  confirmMessage={ti.confirmDelete(invoice.number)}
+                  title={ti.deleteInvoiceBtn}
+                  className="grid place-items-center w-[33px] h-[33px] rounded-full border border-ink/20 text-ink/55 hover:text-warning hover:border-warning hover:bg-warning/10 transition-colors disabled:opacity-40"
+                >
+                  <TrashIcon size={14} />
+                </ConfirmDeleteButton>
+                <span aria-hidden className="w-px h-5 bg-ink/15 mx-1.5" />
+              </>
+            )}
+            <DownloadPdfButton pdfUrl={`/api/invoices/${invoice.id}/pdf`} label={t.finance.downloadPdf.downloadPdf} />
             {canManage && (
               <SendInvoiceEmailButton
                 invoiceId={invoice.id}
@@ -102,7 +122,6 @@ export default async function InvoiceDetailPage({
                 className="btno"
               />
             )}
-            <DownloadPdfButton pdfUrl={`/api/invoices/${invoice.id}/pdf`} label={t.finance.downloadPdf.downloadPdf} />
             {canManage && invoice.status !== "PAID" && (
               <form action={markInvoicePaidAction}>
                 <input type="hidden" name="invoiceId" value={invoice.id} />
@@ -445,20 +464,6 @@ export default async function InvoiceDetailPage({
             ))}
           </div>
 
-          {isAdmin(user) && (
-            <div className="card px-4 py-4">
-              <div className="heading-label !text-[12px] mb-1.5">{ti.deleteHeading}</div>
-              <p className="text-[10px] placeholder-text mb-2.5">{ti.removesNote}</p>
-              <ConfirmDeleteButton
-                action={deleteInvoiceAction}
-                fields={{ id: invoice.id }}
-                label={ti.deleteInvoiceBtn}
-                pendingLabel={t.common.deleting}
-                confirmMessage={ti.confirmDelete(invoice.number)}
-                className="btno !border-warning text-warning w-full text-center"
-              />
-            </div>
-          )}
         </div>
       </div>
     </div>

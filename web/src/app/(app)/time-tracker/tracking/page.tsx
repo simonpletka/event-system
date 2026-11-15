@@ -71,9 +71,10 @@ export default async function TrackingPage({
 
   return (
     <div>
-      {view === "calendar" && <RunningTimerBox running={runningNormalized} projects={projects} locale={locale} />}
+      {/* Same full-width timer bar in both views, so it doesn't jump when switching. */}
+      <RunningTimerBox running={runningNormalized} projects={projects} locale={locale} />
 
-      <div className={`flex items-center justify-between gap-2 flex-wrap ${view === "calendar" ? "mt-5" : ""}`}>
+      <div className="flex items-center justify-between gap-2 flex-wrap mt-5">
         <div className="heading-label !text-[12px]">{view === "list" ? t.timeTracker.tracking.myEntries : t.timeTracker.tabReport}</div>
         {viewSwitch}
       </div>
@@ -94,7 +95,7 @@ export default async function TrackingPage({
           </div>
         </>
       ) : (
-        <ListView from={from} toInclusive={toInclusive} listData={listData!} t={t} locale={locale} />
+        <ListView from={from} toInclusive={toInclusive} listData={listData!} t={t} />
       )}
     </div>
   );
@@ -105,21 +106,18 @@ function ListView({
   toInclusive,
   listData,
   t,
-  locale,
 }: {
   from: Date;
   toInclusive: Date;
   listData: NonNullable<Awaited<ReturnType<typeof getMyTimeTrackerData>>>;
   t: Dictionary;
-  locale: Parameters<typeof RunningTimerBox>[0]["locale"];
 }) {
-  const { entries, projects, running } = listData;
-  const runningNormalized = running && running.startedAt ? { ...running, startedAt: running.startedAt } : null;
+  const { entries, projects } = listData;
   const tt = t.timeTracker.tracking;
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-5 gap-5 mt-3">
-      <div className="md:col-span-4">
+    <div className="mt-3">
+      <div>
         <DateNav
           mode="range"
           fromIso={isoDate(from)}
@@ -222,10 +220,6 @@ function ListView({
 
         {entries.length === 0 && <p className="text-sm placeholder-text mt-3">{tt.noEntriesInRange}</p>}
         <div className="label mt-3 px-2.5">{tt.manualTrackedNote}</div>
-      </div>
-
-      <div className="md:col-span-1 flex flex-col gap-3 order-first md:order-none">
-        <RunningTimerBox running={runningNormalized} projects={projects} locale={locale} compact />
       </div>
     </div>
   );

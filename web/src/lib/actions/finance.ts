@@ -3,6 +3,7 @@
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
+import { safeReturnTo } from "@/lib/return-to";
 import { requireUser, canManageFinance, canAddExpense, canPickOtherPayer, canEditExpense, projectWhereForUser, isAdmin } from "@/lib/authz";
 import { nextQuoteNumber, nextInvoiceNumber, variableSymbolFor } from "@/lib/document-number";
 import { saveReceipt, deleteReceipt } from "@/lib/uploads";
@@ -663,7 +664,7 @@ export async function updateExpenseAction(_prev: FinanceFormState, formData: For
   if (projectId) revalidatePath(`/projects/${projectId}`, "layout");
   if (existing.projectId && existing.projectId !== projectId) revalidatePath(`/projects/${existing.projectId}`, "layout");
 
-  redirect("/finance/expenses");
+  redirect(safeReturnTo(formData.get("returnTo")) ?? "/finance/expenses");
 }
 
 /** Admin-only, irreversible. Also removes the receipt file from disk, if any. */
