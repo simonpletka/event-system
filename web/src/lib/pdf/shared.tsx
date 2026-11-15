@@ -76,6 +76,14 @@ export function documentIds(ico: string, dic: string) {
   return [ico && `IČO ${ico}`, dic && `DIČ ${dic}`].filter(Boolean).join(" · ");
 }
 
+/** " · email · phone" after the issuer's name in the footer, skipping what's empty. */
+export function issuedByContact(person: { email: string; phone: string }) {
+  return [person.email, person.phone]
+    .filter(Boolean)
+    .map((part) => ` · ${part}`)
+    .join("");
+}
+
 /**
  * Best-effort visual split of a free-text address into up to 3 display
  * lines. The app doesn't store a structured address for a Company or an
@@ -198,8 +206,18 @@ function buildStyles(theme: PdfTheme) {
     summaryValue: { fontSize: M.summary.valueSize, marginTop: M.summary.valueMarginTop },
     toPayValue: { fontSize: M.summary.toPaySize, fontWeight: 700, marginTop: M.summary.toPayMarginTop },
 
-    footerRow: { paddingTop: M.footer.paddingTop, borderTopWidth: M.footer.borderWidth, borderTopColor: c.rule },
+    footerRow: {
+      flexDirection: "row",
+      justifyContent: "space-between",
+      alignItems: "flex-start",
+      gap: M.footer.gap,
+      paddingTop: M.footer.paddingTop,
+      borderTopWidth: M.footer.borderWidth,
+      borderTopColor: c.rule,
+    },
     footerText: { fontSize: M.footer.fontSize, color: c.body, lineHeight: M.footer.lineHeight },
+    footerIssuedBy: { fontSize: M.footer.fontSize, color: c.body, lineHeight: M.footer.lineHeight, textAlign: "right", flexShrink: 1 },
+    footerIssuedByName: { fontWeight: 700, color: c.ink },
   });
 }
 

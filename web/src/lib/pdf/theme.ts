@@ -76,7 +76,6 @@ export const PDF_METRICS = {
   partyName: { fontSize: 10.5, marginBottom: 3 },
   partyLine: { fontSize: 9, lineHeight: 1.45 },
   idsMarginTop: 3,
-  createdBy: { nameSize: 11.5, lineSize: 9.5 },
   qr: { image: 48, padding: 4.5, radius: 6, borderWidth: 0.75, captionSize: 7.5, captionMarginTop: 4, captionLineHeight: 1.4 },
   tableHeader: { paddingBottom: 6, marginBottom: 2, borderWidth: 1.5 },
   th: { fontSize: 7.5, letterSpacing: 0.5 },
@@ -85,13 +84,14 @@ export const PDF_METRICS = {
   categoryLabel: { fontSize: 8, letterSpacing: 0.6, marginTop: 22, marginBottom: 2 },
   categorySubtotal: { fontSize: 10, marginTop: 5, marginBottom: 6 },
   summary: { marginTop: 22, gap: 32, valueSize: 10.5, valueMarginTop: 3, toPaySize: 20, toPayMarginTop: 2 },
-  footer: { paddingTop: 12, borderWidth: 0.75, fontSize: 8.5, lineHeight: 1.5 },
+  /** The quote's footer has the validity note on the left and who issued it on the right, `gap` apart. */
+  footer: { paddingTop: 12, borderWidth: 0.75, fontSize: 8.5, lineHeight: 1.5, gap: 24 },
 } as const;
 
 /** Column widths of the parties row (% of the content width) and the gap between them, per document. */
 export const PDF_PARTY_COLUMNS = {
-  // supplier · customer · created by
-  quote: { gap: 20, widths: ["32%", "32%", "30%"] },
+  // supplier · customer (who issued the quote is in the footer)
+  quote: { gap: 20, widths: ["32%", "32%"] },
   // supplier · customer · payment details · QR. Payment details must fit a
   // Czech IBAN on one line (about 133pt at 9pt); the QR column only needs its
   // box (48pt image + padding + border ≈ 58.5pt).

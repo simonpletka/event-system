@@ -1,6 +1,6 @@
 import { Document, Page, Text, View, Image } from "@react-pdf/renderer";
 import type { CurrencyCode } from "@/lib/format";
-import { DEFAULT_ACCENT, themedStyles, money, pdfDate as date, registerAppFont, documentIds } from "./shared";
+import { DEFAULT_ACCENT, themedStyles, money, pdfDate as date, registerAppFont, documentIds, issuedByContact } from "./shared";
 import { pdfLabels, type PdfLang } from "./i18n";
 import { DEFAULT_PDF_THEME, PDF_METRICS, PDF_PARTY_COLUMNS, type PdfTheme } from "./theme";
 import { groupItemsByCategory, categoryTotal } from "@/lib/line-items";
@@ -109,12 +109,6 @@ export function QuotePdf({
             ))}
             {customerIds ? <Text style={[s.partyLine, { marginTop: M.idsMarginTop }]}>{customerIds}</Text> : null}
           </View>
-          <View style={{ width: cols.widths[2] }}>
-            <Text style={s.label}>{t.createdBy}</Text>
-            <Text style={[s.partyName, { fontSize: M.createdBy.nameSize }]}>{createdBy.name}</Text>
-            {createdBy.email ? <Text style={[s.partyLine, { fontSize: M.createdBy.lineSize }]}>{createdBy.email}</Text> : null}
-            {createdBy.phone ? <Text style={[s.partyLine, { fontSize: M.createdBy.lineSize }]}>{createdBy.phone}</Text> : null}
-          </View>
         </View>
 
         <View style={s.table}>
@@ -169,6 +163,10 @@ export function QuotePdf({
 
         <View style={s.footerRow}>
           <Text style={s.footerText}>{t.quoteValidUntil(date(validUntil, lang))}</Text>
+          <Text style={s.footerIssuedBy}>
+            {t.issuedBy} <Text style={s.footerIssuedByName}>{createdBy.name}</Text>
+            {issuedByContact(createdBy)}
+          </Text>
         </View>
       </Page>
     </Document>

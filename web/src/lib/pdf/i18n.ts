@@ -27,7 +27,7 @@ export const PDF_LABELS = {
     noBankAccount: "No bank account on file — QR payment unavailable.",
     qrCzkOnly: "QR Platba is a CZK-only payment standard, not available for this invoice's currency.",
     invoiceThanks: "Thank you for your business.",
-    createdBy: "Created by",
+    issuedBy: "Issued by",
     quoteValidUntil: (date: string) => `This quote is valid until ${date}.`,
   },
   cs: {
@@ -56,7 +56,7 @@ export const PDF_LABELS = {
     noBankAccount: "Není uveden bankovní účet — platba QR kódem není k dispozici.",
     qrCzkOnly: "QR Platba funguje pouze v CZK, pro měnu této faktury není k dispozici.",
     invoiceThanks: "Děkujeme za vaši důvěru.",
-    createdBy: "Vystavil",
+    issuedBy: "Vystavil",
     quoteValidUntil: (date: string) => `Tato nabídka je platná do ${date}.`,
   },
 } as const;
