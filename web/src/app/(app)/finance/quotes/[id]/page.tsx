@@ -13,17 +13,21 @@ import { DownloadPdfButton } from "@/components/finance/DownloadPdfButton";
 import { groupItemsByCategory, categoryTotal } from "@/lib/line-items";
 import { getLocale, getDictionary } from "@/lib/i18n";
 import { QuoteStatusMenu } from "@/components/finance/QuoteStatusMenu";
-import { addressLines, clientAddressLines, DEFAULT_ACCENT, pdfDate } from "@/lib/pdf/shared";
+import { addressLines, clientAddressLines, DEFAULT_ACCENT, pdfDate, money, documentIds } from "@/lib/pdf/shared";
+import { parsePdfTheme, PDF_METRICS } from "@/lib/pdf/theme";
+import { pdfLabels } from "@/lib/pdf/i18n";
 import { DocumentPreviewScaler } from "@/components/finance/DocumentPreviewScaler";
+import { DocumentPreview, PreviewLabel, PreviewLine, PreviewPartyName, previewQuery } from "@/components/finance/DocumentPreview";
 import { SegmentedTabs } from "@/components/ui/SegmentedTabs";
 import type { Locale } from "@/lib/dictionary";
+
 
 export default async function QuoteDetailPage({
   params,
   searchParams,
 }: {
   params: Promise<{ id: string }>;
-  searchParams: Promise<{ previewLang?: string }>;
+  searchParams: Promise<{ previewLang?: string; previewTheme?: string }>;
 }) {
   const user = await requireUser();
   const { id } = await params;
@@ -31,10 +35,12 @@ export default async function QuoteDetailPage({
   // The preview card's own language toggle — independent of the app's UI
   // language (t drives the rest of this page). Defaults to whatever the
   // app is currently set to.
-  const { previewLang } = await searchParams;
+  const { previewLang, previewTheme: previewThemeParam } = await searchParams;
   const appLocale = await getLocale();
   const activePreviewLang: Locale = previewLang === "cs" || previewLang === "en" ? previewLang : appLocale;
-  const pq = getDictionary(activePreviewLang).finance.quotes;
+  // Light or dark PDF; the preview, the download menu and the phone link all follow it.
+  const previewTheme = parsePdfTheme(previewThemeParam);
+  const pl = pdfLabels(activePreviewLang);
   const [quote, company] = await Promise.all([getQuoteDetail(user, id), getCompanySettings()]);
   if (!quote) notFound();
 
@@ -52,6 +58,8 @@ export default async function QuoteDetailPage({
   const expired = quote.status !== "ACCEPTED" && quote.status !== "DECLINED" && quote.validUntil < new Date();
   const alreadyInvoiced = quote.invoices.length > 0;
   const groups = groupItemsByCategory(quote.items);
+  const supplierIds = documentIds(company?.ico ?? "", company?.dic ?? "");
+  const customerIds = documentIds(quote.project.companyIco, quote.project.companyDic);
 
   return (
     <div>
@@ -69,7 +77,7 @@ export default async function QuoteDetailPage({
             ) : (
               <QuoteStatusPill status={quote.status} t={t.statusQuote} />
             )}
-            <DownloadPdfButton pdfUrl={`/api/quotes/${quote.id}/pdf`} label={t.finance.downloadPdf.downloadPdf} />
+            <DownloadPdfButton pdfUrl={`/api/quotes/${quote.id}/pdf`} label={t.finance.downloadPdf.downloadPdf} theme={previewTheme} />
             {canManage && quote.status === "DRAFT" && (
               <Link href={`/finance/quotes/${quote.id}/edit`} className="btno">
                 {t.finance.quotes.edit}
@@ -157,154 +165,97 @@ export default async function QuoteDetailPage({
                 <span className="tabular-nums" style={{ color: accent }}>{formatCurrencyWithCzk(base + vat, quote.currency, totalCzk)}</span>
               </div>
             </div>
-            <a href={`/api/quotes/${quote.id}/pdf`} target="_blank" rel="noreferrer" className="btno w-full text-center block mt-3">
+            <a href={`/api/quotes/${quote.id}/pdf?theme=${previewTheme}`} target="_blank" rel="noreferrer" className="btno w-full text-center block mt-3">
               {t.finance.downloadPdf.downloadPdf}
             </a>
           </div>
 
           <div className="hidden md:block">
-          <div className="flex justify-end mb-2">
+          <div className="flex justify-end gap-2 mb-2">
             <SegmentedTabs
               options={[
-                { value: "cs", label: "CZ", href: "?previewLang=cs" },
-                { value: "en", label: "EN", href: "?previewLang=en" },
+                { value: "light", label: t.finance.previewTheme.light, href: previewQuery(activePreviewLang, "light") },
+                { value: "dark", label: t.finance.previewTheme.dark, href: previewQuery(activePreviewLang, "dark") },
+              ]}
+              active={previewTheme}
+            />
+            <SegmentedTabs
+              options={[
+                { value: "cs", label: "CZ", href: previewQuery("cs", previewTheme) },
+                { value: "en", label: "EN", href: previewQuery("en", previewTheme) },
               ]}
               active={activePreviewLang}
             />
           </div>
-          {/* Built at the mockup's literal 794px page width for exact fidelity, then scaled to fit the card via DocumentPreviewScaler — so it's a 1:1 reproduction the user sees whole, not a strip they scroll sideways through. */}
+          {/* The PDF page at 96 dpi (794px wide), scaled to fit the card by DocumentPreviewScaler. */}
           <div className="card p-8 min-w-0">
           <DocumentPreviewScaler width={794}>
-          <div className="w-[794px] h-[1123px] pt-[16px] flex flex-col gap-2.5">
-            <div className="flex justify-between items-start">
-              <div className="text-[154px] leading-[0.8] font-bold tracking-[-4px] lowercase pb-[14px]">
-                {pq.quoteLabel}
-              </div>
-              <div className="flex flex-col items-end gap-[6px] pt-[8px]">
-                {company?.logoPath ? (
-                  // eslint-disable-next-line @next/next/no-img-element -- authenticated route, not a static asset next/image can optimize
-                  <img src={`/api/uploads/logo/${company.logoPath}`} alt="" className="w-[34px] h-[34px] object-contain" />
-                ) : (
-                  <div
-                    className="w-[34px] h-[34px] rounded-[8px] flex items-center justify-center text-[14px] font-bold text-white"
-                    style={{ backgroundColor: accent }}
-                  >
-                    {(company?.name ?? pq.companyFallback).charAt(0).toUpperCase()}
-                  </div>
-                )}
-                <div className="text-[12px] font-bold">{company?.name ?? pq.companyFallback}</div>
-              </div>
-            </div>
-
-            {/* Extra top clearance vs. the invoice's 38px — "quote"/"nabídka" both carry a descender ("q") or a tall diacritic ("í") the tighter invoice wordmark ("invoice") never hits, so the same margin let this row clip into the wordmark. Wordmark itself is untouched; only this row and everything after it moved down. */}
-            <div className="flex justify-between items-start mt-[60px] text-[19px] leading-[1.35]">
-              <div>
-                <div>
-                  {pq.colIssued} {pdfDate(quote.issuedAt, activePreviewLang)}
-                </div>
-                <div>
-                  {pq.colValidTo} {pdfDate(quote.validUntil, activePreviewLang)}
-                </div>
-              </div>
-              <div className="text-right max-w-[347px]">
-                <div className="text-[19px] font-bold">{quote.number}</div>
-                <div className="placeholder-text text-[14px] leading-[1.3] mt-[4px]">{quote.project.title}</div>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-[29%_29%_38%] gap-[32px] mt-[40px] mb-[28px]">
-              <div>
-                <div className="label mb-[5px] !text-[8px] !tracking-[1px]">{pq.supplier}</div>
-                <div className="font-bold text-[11px] mb-[3px]">{company?.name}</div>
-                {supplierAddressLines.map((line) => (
-                  <div key={line} className="placeholder-text text-[9.5px] leading-[1.5]">
-                    {line}
-                  </div>
-                ))}
-                <div className="placeholder-text text-[9.5px] leading-[1.5] mt-[3px]">{`IČO ${company?.ico} · DIČ ${company?.dic}`}</div>
-              </div>
-              <div>
-                <div className="label mb-[5px] !text-[8px] !tracking-[1px]">{pq.customer}</div>
-                <div className="font-bold text-[11px] mb-[3px]">{quote.project.companyName}</div>
-                {customerAddressLines.map((line) => (
-                  <div key={line} className="placeholder-text text-[9.5px] leading-[1.5]">
-                    {line}
-                  </div>
-                ))}
-                <div className="placeholder-text text-[9.5px] leading-[1.5] mt-[3px]">{`IČO ${quote.project.companyIco || "—"} · DIČ ${quote.project.companyDic || "—"}`}</div>
-              </div>
-              <div>
-                <div className="label mb-[5px] !text-[8px] !tracking-[1px]">{pq.createdByHeading}</div>
-                <div className="font-bold text-[13px] mb-[3px]">{quote.createdBy.name}</div>
-                {quote.createdBy.email && (
-                  <div className="placeholder-text text-[10px] leading-[1.6]">{quote.createdBy.email}</div>
-                )}
-                {quote.createdBy.phone && (
-                  <div className="placeholder-text text-[10px] leading-[1.6]">{quote.createdBy.phone}</div>
-                )}
-              </div>
-            </div>
-
-            <div>
-              {!quote.hideItemPrices && (
-                <div className="grid grid-cols-[2fr_.5fr_.7fr_.5fr_.9fr] gap-2 border-b-2 border-ink pb-[6px] text-[8px] tracking-[0.6px]">
-                  <span className="heading-label !text-[8px]">{pq.colItem}</span>
-                  <span className="heading-label !text-[8px]">{pq.colQty}</span>
-                  <span className="heading-label !text-[8px]">{pq.colUnit}</span>
-                  <span className="heading-label !text-[8px]">{pq.colVat}</span>
-                  <span className="heading-label !text-[8px] text-right">{pq.total}</span>
-                </div>
-              )}
-              {groups.map((g) => (
-                <div key={g.category || "—"}>
-                  {g.category && <div className="label !text-[8px] !tracking-[1px] mt-[28px] mb-[4px]">{g.category}</div>}
-                  {g.items.map((item) =>
-                    quote.hideItemPrices ? (
-                      <div key={item.id} className="py-[5px] text-[10.5px] border-b border-ink/8">
-                        {item.description}
-                      </div>
-                    ) : (
-                      <div
-                        key={item.id}
-                        className="grid grid-cols-[2fr_.5fr_.7fr_.5fr_.9fr] gap-2 py-[7px] text-[10.5px] border-b border-ink/8 items-center"
-                      >
-                        <span>{item.description}</span>
-                        <span className="placeholder-text text-right">{item.quantity}</span>
-                        <span className="placeholder-text text-right">{formatCurrency(item.unitPrice, quote.currency)}</span>
-                        <span className="placeholder-text text-right">{item.vatRate}%</span>
-                        <span className="text-right">{formatCurrency(item.quantity * item.unitPrice, quote.currency)}</span>
-                      </div>
-                    )
+            <DocumentPreview
+              theme={previewTheme}
+              kind="quote"
+              wordmark={pl.quote}
+              accent={accent}
+              logoUrl={company?.logoPath ? `/api/uploads/logo/${company.logoPath}` : null}
+              companyName={company?.name ?? "Company"}
+              dateLines={[`${pl.issued} ${pdfDate(quote.issuedAt, activePreviewLang)}`, `${pl.validUntil} ${pdfDate(quote.validUntil, activePreviewLang)}`]}
+              number={quote.number}
+              project={quote.project.title}
+              parties={[
+                <>
+                  <PreviewLabel theme={previewTheme}>{pl.supplier}</PreviewLabel>
+                  <PreviewPartyName>{company?.name}</PreviewPartyName>
+                  {supplierAddressLines.map((line) => (
+                    <PreviewLine key={line} theme={previewTheme}>
+                      {line}
+                    </PreviewLine>
+                  ))}
+                  {supplierIds && (
+                    <PreviewLine theme={previewTheme} marginTop={PDF_METRICS.idsMarginTop}>
+                      {supplierIds}
+                    </PreviewLine>
                   )}
-                  {quote.hideItemPrices && g.category && (
-                    <div className="flex justify-end text-[10px] font-bold mt-[3px] mb-[10px]">
-                      {formatCurrency(categoryTotal(g.items), quote.currency)}
-                    </div>
+                  {company && !company.isVatPayer && <PreviewLine theme={previewTheme}>{pl.notVatPayer}</PreviewLine>}
+                </>,
+                <>
+                  <PreviewLabel theme={previewTheme}>{pl.customer}</PreviewLabel>
+                  <PreviewPartyName>{quote.project.companyName}</PreviewPartyName>
+                  {customerAddressLines.map((line) => (
+                    <PreviewLine key={line} theme={previewTheme}>
+                      {line}
+                    </PreviewLine>
+                  ))}
+                  {customerIds && (
+                    <PreviewLine theme={previewTheme} marginTop={PDF_METRICS.idsMarginTop}>
+                      {customerIds}
+                    </PreviewLine>
                   )}
-                </div>
-              ))}
-            </div>
-            <div className="flex justify-end items-center gap-[36px] mt-[24px] text-[11px]">
-              <div className="text-right">
-                <span className="label !text-[8px] !tracking-[1px] block">{pq.base}</span>
-                <span className="mt-[3px] block">{formatCurrency(base, quote.currency)}</span>
-              </div>
-              <div className="text-right">
-                <span className="label !text-[8px] !tracking-[1px] block">{pq.vat}</span>
-                <span className="mt-[3px] block">{formatCurrency(vat, quote.currency)}</span>
-              </div>
-              <div className="text-right">
-                <span className="label !text-[8px] !tracking-[1px] block">{pq.total}</span>
-                <span className="font-bold text-[22px] mt-[3px] block" style={{ color: accent }}>
-                  {formatCurrency(base + vat, quote.currency)}
-                </span>
-              </div>
-            </div>
-            <div className="flex-1" />
-            <div className="placeholder-text text-[9.5px] leading-[1.5] pt-[16px] border-t border-ink/10">
-              {pq.renderedNote(pdfDate(quote.validUntil, activePreviewLang))}
-            </div>
-          </div>
+                </>,
+                <>
+                  <PreviewLabel theme={previewTheme}>{pl.createdBy}</PreviewLabel>
+                  <PreviewPartyName size={PDF_METRICS.createdBy.nameSize}>{quote.createdBy.name}</PreviewPartyName>
+                  {quote.createdBy.email && (
+                    <PreviewLine theme={previewTheme} size={PDF_METRICS.createdBy.lineSize}>
+                      {quote.createdBy.email}
+                    </PreviewLine>
+                  )}
+                  {quote.createdBy.phone && (
+                    <PreviewLine theme={previewTheme} size={PDF_METRICS.createdBy.lineSize}>
+                      {quote.createdBy.phone}
+                    </PreviewLine>
+                  )}
+                </>,
+              ]}
+              hideItemPrices={quote.hideItemPrices}
+              items={quote.items}
+              currency={quote.currency}
+              columns={{ item: pl.item, qty: pl.qty, unit: pl.unit, vat: pl.vat, total: pl.total }}
+              summary={[
+                { label: pl.base, value: money(base, quote.currency) },
+                { label: pl.vat, value: money(vat, quote.currency) },
+                { label: pl.total, value: money(base + vat, quote.currency), accent: true },
+              ]}
+              footer={pl.quoteValidUntil(pdfDate(quote.validUntil, activePreviewLang))}
+            />
           </DocumentPreviewScaler>
           </div>
           </div>

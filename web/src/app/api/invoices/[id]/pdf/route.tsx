@@ -2,6 +2,7 @@ import { requireUser } from "@/lib/authz";
 import { getInvoiceDetail, getCompanySettings } from "@/lib/queries/finance";
 import { buildInvoicePdfBuffer } from "@/lib/pdf/build-invoice-pdf";
 import type { PdfLang } from "@/lib/pdf/i18n";
+import { parsePdfTheme } from "@/lib/pdf/theme";
 
 export async function GET(req: Request, { params }: { params: Promise<{ id: string }> }) {
   const user = await requireUser();
@@ -11,12 +12,14 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
   // ?download=1 (the Download PDF buttons): save the file straight away;
   // otherwise the browser shows it (the phone "Download PDF" link).
   const disposition = search.get("download") === "1" ? "attachment" : "inline";
+  // ?theme=dark for the dark variant; anything else (or nothing) is light.
+  const theme = parsePdfTheme(search.get("theme"));
 
   const invoice = await getInvoiceDetail(user, id);
   if (!invoice) return new Response("Not found", { status: 404 });
 
   const company = await getCompanySettings();
-  const buffer = await buildInvoicePdfBuffer(invoice, company, lang);
+  const buffer = await buildInvoicePdfBuffer(invoice, company, lang, theme);
 
   return new Response(new Uint8Array(buffer), {
     headers: {

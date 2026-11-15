@@ -3,13 +3,15 @@ import type { getQuoteDetail, getCompanySettings } from "@/lib/queries/finance";
 import { readLogoAsDataUrl } from "@/lib/uploads";
 import { QuotePdf } from "@/lib/pdf/QuotePdf";
 import type { PdfLang } from "@/lib/pdf/i18n";
+import { DEFAULT_PDF_THEME, type PdfTheme } from "@/lib/pdf/theme";
 import { addressLines, clientAddressLines } from "@/lib/pdf/shared";
 
 type QuoteDetail = NonNullable<Awaited<ReturnType<typeof getQuoteDetail>>>;
 type Company = Awaited<ReturnType<typeof getCompanySettings>>;
 
 /** Shared by the /api/quotes/[id]/pdf route and the Google Drive export action — same PDF either way. */
-export async function buildQuotePdfBuffer(quote: QuoteDetail, company: Company, lang: PdfLang) {
+/** `theme` defaults to light; email, Drive export and the connector use that default. */
+export async function buildQuotePdfBuffer(quote: QuoteDetail, company: Company, lang: PdfLang, theme: PdfTheme = DEFAULT_PDF_THEME) {
   const supplier = company ?? { name: "Company", address: "", ico: "", dic: "", isVatPayer: true };
   const logoDataUrl = company?.logoPath ? await readLogoAsDataUrl(company.logoPath) : null;
 
@@ -42,6 +44,7 @@ export async function buildQuotePdfBuffer(quote: QuoteDetail, company: Company, 
       logoDataUrl={logoDataUrl}
       accentColor={company?.accentColor || "#ec3013"}
       createdBy={{ name: quote.createdBy.name, email: quote.createdBy.email, phone: quote.createdBy.phone }}
+      theme={theme}
     />
   );
 }
