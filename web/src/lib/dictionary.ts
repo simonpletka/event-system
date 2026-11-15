@@ -1249,7 +1249,7 @@ const en = {
       // Quote form: items live in named groups (categories on the quote).
       groupsHint: "Items sit in groups, shown as headings on the quote. A new group name is used on this quote only.",
       groupNamePlaceholder: "Group name",
-      newGroupPlaceholder: "New group, e.g. Lighting",
+      newGroupPlaceholder: "New group, e.g. Catering",
       addGroup: "Add group",
       savedCategories: "Saved categories",
       moveGroupUp: "Move group up",
@@ -1260,6 +1260,7 @@ const en = {
       ungrouped: "Items without a group",
       addUngroupedItem: "Add item without a group",
       noGroupsYet: "No groups yet. Add one below, or pick a saved category.",
+      emptyGroup: "No items yet. An empty group doesn't appear on the quote.",
     },
 
     quoteForm: {
@@ -3016,7 +3017,7 @@ const cs: Dictionary = {
       toPay: "K úhradě",
       groupsHint: "Položky jsou ve skupinách, na nabídce jako nadpisy. Nový název skupiny platí jen pro tuto nabídku.",
       groupNamePlaceholder: "Název skupiny",
-      newGroupPlaceholder: "Nová skupina, např. Světla",
+      newGroupPlaceholder: "Nová skupina, např. Catering",
       addGroup: "Přidat skupinu",
       savedCategories: "Uložené kategorie",
       moveGroupUp: "Posunout skupinu nahoru",
@@ -3027,6 +3028,7 @@ const cs: Dictionary = {
       ungrouped: "Položky bez skupiny",
       addUngroupedItem: "Přidat položku bez skupiny",
       noGroupsYet: "Zatím žádné skupiny. Přidejte novou níže, nebo vyberte uloženou kategorii.",
+      emptyGroup: "Zatím bez položek. Prázdná skupina se na nabídce nezobrazí.",
     },
 
     quoteForm: {

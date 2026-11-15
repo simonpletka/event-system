@@ -224,7 +224,7 @@ export function QuoteItemGroups({
               </button>
             </div>
             {duplicate && <p className="text-[11px] text-warning">{t.duplicateGroup}</p>}
-            {group.items.length > 0 && columnHeads()}
+            {group.items.length > 0 ? columnHeads() : <p className="text-[12px] placeholder-text">{t.emptyGroup}</p>}
             {itemRows(group.items, (items) => updateGroup(group.key, { items }))}
             <button
               type="button"

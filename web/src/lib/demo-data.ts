@@ -1,6 +1,7 @@
 import type { Prisma, PrismaClient } from "../generated/prisma/client";
 import bcrypt from "bcryptjs";
 import { mondayOf } from "./calendar";
+import { DEFAULT_ITEM_CATEGORIES } from "./item-categories";
 
 /**
  * The demo dataset (4 users, 15 projects, 6 clients, quotes, invoices,
@@ -83,7 +84,7 @@ export async function addDemoData(prisma: PrismaClient) {
     prisma.user.upsert({ where: { email: data.email }, update: {}, create: data });
 
   if ((await prisma.itemCategory.count()) === 0) await prisma.itemCategory.createMany({
-    data: ["Video", "Audio", "Rigging", "People", "Other"].map((name, sortOrder) => ({ name, sortOrder })),
+    data: DEFAULT_ITEM_CATEGORIES.map((name, sortOrder) => ({ name, sortOrder })),
   });
 
   if (!(await prisma.companySettings.findUnique({ where: { id: "singleton" } }))) await prisma.companySettings.create({
@@ -292,7 +293,7 @@ export async function addDemoData(prisma: PrismaClient) {
             createdById: producer.id,
             ...withTotal([
               { description: "Production management — Autumn Conference", unitPrice: 250000, category: "People" },
-              { description: "Stage & light rental", unitPrice: 60000, category: "Rigging" },
+              { description: "Stage & light rental", unitPrice: 60000, category: "Lighting" },
               { description: "Crew — build day", quantity: 6, unitPrice: 5000, category: "People" },
             ]),
           },
@@ -305,7 +306,7 @@ export async function addDemoData(prisma: PrismaClient) {
   const autumnQuote = await prisma.quote.findFirstOrThrow({ where: { projectId: autumn.id } });
   const autumnInvoiceData = withTotal([
     { description: "Production management — Autumn Conference", unitPrice: 250000, category: "People" },
-    { description: "Stage & light rental", unitPrice: 60000, category: "Rigging" },
+    { description: "Stage & light rental", unitPrice: 60000, category: "Lighting" },
     { description: "Crew — build day", quantity: 6, unitPrice: 5000, category: "People" },
   ]);
   await prisma.invoice.create({
@@ -662,7 +663,7 @@ export async function addDemoData(prisma: PrismaClient) {
             createdById: producer.id,
             ...withTotal([
               { description: "Production management — Winter Product Demo", unitPrice: 96000, category: "People" },
-              { description: "Demo pod build & AV", unitPrice: 60000, category: "Rigging" },
+              { description: "Demo pod build & AV", unitPrice: 60000, category: "Services" },
             ]),
           },
         ],
@@ -747,7 +748,7 @@ export async function addDemoData(prisma: PrismaClient) {
             currency: "EUR",
             // EU B2B customer with a valid VAT ID — reverse charge, 0% Czech VAT.
             ...withTotal([
-              { description: "Stand build — 24m²", unitPrice: 1200, category: "Rigging", vatRate: 0 },
+              { description: "Stand build — 24m²", unitPrice: 1200, category: "Services", vatRate: 0 },
               { description: "On-site crew — 3 days", quantity: 3, unitPrice: 250, category: "People", vatRate: 0 },
             ]),
           },
@@ -759,7 +760,7 @@ export async function addDemoData(prisma: PrismaClient) {
   const munich = await prisma.project.findFirstOrThrow({ where: { title: "Munich Trade Fair", id: { notIn: existingProjectIds } } });
   const munichQuote = await prisma.quote.findFirstOrThrow({ where: { projectId: munich.id } });
   const munichInvoiceData = withTotal([
-    { description: "Stand build — 24m²", unitPrice: 1200, category: "Rigging", vatRate: 0 },
+    { description: "Stand build — 24m²", unitPrice: 1200, category: "Services", vatRate: 0 },
     { description: "On-site crew — 3 days", quantity: 3, unitPrice: 250, category: "People", vatRate: 0 },
   ]);
   await prisma.invoice.create({
@@ -835,8 +836,8 @@ export async function addDemoData(prisma: PrismaClient) {
             createdById: admin.id,
             ...withTotal([
               { description: "Production management — Charity Gala", unitPrice: 95000, category: "People" },
-              { description: "Live band & staging", unitPrice: 62000, category: "Rigging" },
-              { description: "Photography", unitPrice: 12000, category: "Other" },
+              { description: "Live band & staging", unitPrice: 62000, category: "Services" },
+              { description: "Photography", unitPrice: 12000, category: "Services" },
             ]),
           },
         ],
@@ -991,7 +992,7 @@ export async function addDemoData(prisma: PrismaClient) {
             createdById: admin.id,
             ...withTotal([
               { description: "Winter Charity Ball — production management", unitPrice: 140000, category: "People" },
-              { description: "Live band & staging", unitPrice: 70000, category: "Rigging" },
+              { description: "Live band & staging", unitPrice: 70000, category: "Services" },
             ]),
           },
         ],
@@ -1002,7 +1003,7 @@ export async function addDemoData(prisma: PrismaClient) {
   const charityBall = await prisma.project.findFirstOrThrow({ where: { title: "Winter Charity Ball", id: { notIn: existingProjectIds } } });
   const charityBallData = withTotal([
     { description: "Winter Charity Ball — production management", unitPrice: 140000, category: "People" },
-    { description: "Live band & staging", unitPrice: 70000, category: "Rigging" },
+    { description: "Live band & staging", unitPrice: 70000, category: "Services" },
   ]);
   await prisma.invoice.create({
     data: {
