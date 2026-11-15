@@ -11,7 +11,8 @@ export async function signOutAction() {
   await signOut({ redirectTo: "/login" });
 }
 
-export type LoginState = { error?: string };
+// email is echoed back so the field keeps it: React resets the form after an action.
+export type LoginState = { error?: string; email?: string };
 
 export async function loginAction(_prev: LoginState, formData: FormData): Promise<LoginState> {
   const email = String(formData.get("email") ?? "");
@@ -25,7 +26,7 @@ export async function loginAction(_prev: LoginState, formData: FormData): Promis
   } catch (err) {
     if (err instanceof AuthError) {
       const t = getDictionary(await getLocale());
-      return { error: t.auth.invalidCredentials };
+      return { error: t.auth.invalidCredentials, email };
     }
     throw err;
   }

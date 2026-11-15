@@ -21,7 +21,7 @@ export function LoginForm({ t, defaultEmail, next }: { t: Dictionary["auth"]; de
     <form action={formAction} className="flex flex-col gap-4">
       <input type="hidden" name="next" value={next} />
       <div className="flex flex-col gap-1.5">
-        <label htmlFor="email" className="heading-label">
+        <label htmlFor="email" className="field-label">
           {t.email}
         </label>
         <input
@@ -30,14 +30,14 @@ export function LoginForm({ t, defaultEmail, next }: { t: Dictionary["auth"]; de
           type="email"
           required
           autoComplete="username"
-          defaultValue={defaultEmail}
+          defaultValue={state.email ?? defaultEmail}
           onKeyDown={submitOnEnter}
           enterKeyHint="next"
-          className="bg-transparent border border-ink/35 px-3 py-2 text-sm outline-none focus:border-ink"
+          className="input !py-2.5 w-full"
         />
       </div>
       <div className="flex flex-col gap-1.5">
-        <label htmlFor="password" className="heading-label">
+        <label htmlFor="password" className="field-label">
           {t.password}
         </label>
         <PasswordInput
@@ -47,17 +47,26 @@ export function LoginForm({ t, defaultEmail, next }: { t: Dictionary["auth"]; de
           autoComplete="current-password"
           holdToShowLabel={t.holdToShowPassword}
           onKeyDown={submitOnEnter}
+          inputClassName="input !py-2.5"
         />
       </div>
 
-      {state.error && <p className="text-sm text-warning">{state.error}</p>}
+      {state.error && (
+        <p role="alert" className="text-sm text-warning bg-warning/10 rounded-[10px] px-3 py-2">
+          {state.error}
+        </p>
+      )}
 
-      <button type="submit" disabled={pending} className="btn mt-2">
+      <button type="submit" disabled={pending} className="btn !py-3 mt-2 w-full">
         {pending ? t.signingIn : t.signIn}
       </button>
 
-      <div className="rule-thin my-2" />
-      <button type="button" disabled className="btno opacity-40 cursor-not-allowed">
+      <div className="flex items-center gap-3 my-1">
+        <div className="rule-thin flex-1" />
+        <span className="heading-label">{t.or}</span>
+        <div className="rule-thin flex-1" />
+      </div>
+      <button type="button" disabled className="btno !border-ink/25 !py-3 w-full opacity-50 cursor-not-allowed">
         {t.continueWithGoogle}
       </button>
     </form>
