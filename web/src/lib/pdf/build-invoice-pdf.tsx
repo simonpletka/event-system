@@ -9,6 +9,7 @@ import { InvoicePdf } from "@/lib/pdf/InvoicePdf";
 import type { PdfLang } from "@/lib/pdf/i18n";
 import { addressLines, clientAddressLines } from "@/lib/pdf/shared";
 import { buildIsdocXml } from "@/lib/isdoc";
+import { log } from "@/lib/log";
 
 type InvoiceDetail = NonNullable<Awaited<ReturnType<typeof getInvoiceDetail>>>;
 type Company = Awaited<ReturnType<typeof getCompanySettings>>;
@@ -151,7 +152,7 @@ async function embedIsdoc(
     });
     return Buffer.from(await pdfDoc.save());
   } catch (e) {
-    console.error("Failed to embed ISDOC into invoice PDF", e);
+    log.error("isdoc_embed_failed", e);
     return Buffer.from(pdfBytes);
   }
 }

@@ -3,7 +3,11 @@
 import { useEffect, useRef, useState } from "react";
 import type { AddressSuggestion } from "@/lib/address-search";
 
-/** Free-text address field with a worldwide autocomplete dropdown (Photon/OSM — see src/lib/address-search.ts). */
+/**
+ * Free-text field with a worldwide autocomplete dropdown (Photon/OSM — see
+ * src/lib/address-search.ts). `kind="place"` searches named places (venues)
+ * instead of addresses; each suggestion then carries `name` and `address`.
+ */
 export function AddressAutocompleteInput({
   name,
   value,
@@ -12,6 +16,8 @@ export function AddressAutocompleteInput({
   placeholder,
   className = "input",
   searchingLabel = "Searching…",
+  kind = "address",
+  required,
 }: {
   name?: string;
   value: string;
@@ -20,6 +26,8 @@ export function AddressAutocompleteInput({
   placeholder?: string;
   className?: string;
   searchingLabel?: string;
+  kind?: "address" | "place";
+  required?: boolean;
 }) {
   const [suggestions, setSuggestions] = useState<AddressSuggestion[]>([]);
   const [open, setOpen] = useState(false);
@@ -38,7 +46,7 @@ export function AddressAutocompleteInput({
     debounceRef.current = setTimeout(async () => {
       setLoading(true);
       try {
-        const res = await fetch(`/api/address-search?q=${encodeURIComponent(next)}`);
+        const res = await fetch(`/api/address-search?q=${encodeURIComponent(next)}${kind === "place" ? "&kind=place" : ""}`);
         const data = await res.json();
         setSuggestions(data.suggestions ?? []);
       } catch {
@@ -65,11 +73,12 @@ export function AddressAutocompleteInput({
         onChange={(e) => handleInputChange(e.target.value)}
         onFocus={() => value.trim().length >= 3 && setOpen(true)}
         placeholder={placeholder}
+        required={required}
         autoComplete="off"
         className={`${className} w-full`}
       />
       {open && (loading || suggestions.length > 0) && (
-        <div className="absolute z-20 top-full left-0 right-0 mt-1.5 card p-1.5 max-h-52 overflow-y-auto shadow-[0_18px_44px_rgba(0,0,0,0.5)]">
+        <div className={`absolute z-20 top-full left-0 mt-1.5 card p-1.5 max-h-64 overflow-y-auto shadow-[0_18px_44px_rgba(0,0,0,0.5)] ${kind === "place" ? "w-max min-w-full max-w-[min(420px,85vw)]" : "right-0"}`}>
           {loading && <div className="px-2.5 py-1.5 text-[12px] placeholder-text">{searchingLabel}</div>}
           {!loading &&
             suggestions.map((s, i) => (
@@ -77,14 +86,21 @@ export function AddressAutocompleteInput({
                 type="button"
                 key={i}
                 onClick={() => {
-                  onChange(s.label);
+                  onChange(kind === "place" && s.name ? s.name : s.label);
                   onSelect?.(s);
                   setSuggestions([]);
                   setOpen(false);
                 }}
                 className="block w-full text-left px-2.5 py-1.5 rounded-md text-[13px] text-ink/85 hover:bg-ink/8 hover:text-ink transition-colors"
               >
-                {s.label}
+                {kind === "place" && s.name ? (
+                  <>
+                    <span className="block font-semibold text-ink">{s.name}</span>
+                    {s.address && <span className="block text-[11.5px] placeholder-text">{s.address}</span>}
+                  </>
+                ) : (
+                  s.label
+                )}
               </button>
             ))}
         </div>

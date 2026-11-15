@@ -19,6 +19,10 @@ export type AddressSuggestion = {
   city: string;
   postCode: string;
   state: string;
+  /** Place name (venue, building, business) for searchPlaces() results; empty for plain addresses. */
+  name?: string;
+  /** The address without the name — what a venue's address field gets. Set by searchPlaces(). */
+  address?: string;
 };
 
 type PhotonFeature = {
@@ -31,6 +35,7 @@ type PhotonFeature = {
     postcode?: string;
     state?: string;
     country?: string;
+    osm_key?: string;
   };
 };
 
@@ -72,6 +77,63 @@ export async function searchAddresses(
       state: f.properties.state ?? "",
     }))
     .filter((s) => s.label);
+}
+
+/** Most venues are in and around Prague: rank those first, still worldwide. */
+const PRAGUE = { lat: 50.08, lon: 14.43 };
+/** Roads, bus/tram stops, stations and admin boundaries are never a venue. */
+const NOT_A_VENUE = new Set(["highway", "railway", "public_transport", "boundary"]);
+
+function formatAddress(p: PhotonFeature["properties"]): string {
+  const streetPart = [p.street, p.housenumber].filter(Boolean).join(" ");
+  const cityPart = [p.postcode, p.city].filter(Boolean).join(" ");
+  return [streetPart, cityPart, p.country].filter(Boolean).join(", ");
+}
+
+/**
+ * Named places (a venue, hall, hotel…) for the project form's venue name
+ * field, each with its address. Same Photon/OSM source as searchAddresses(),
+ * so no key; coverage is whatever OpenStreetMap has mapped.
+ */
+export async function searchPlaces(query: string): Promise<AddressSuggestion[]> {
+  const q = query.trim();
+  if (q.length < 3) return [];
+
+  const url = `${PHOTON_BASE}?q=${encodeURIComponent(q)}&limit=10&lat=${PRAGUE.lat}&lon=${PRAGUE.lon}`;
+  let res: Response;
+  try {
+    res = await fetch(url, { headers: { Accept: "application/json" } });
+  } catch {
+    return [];
+  }
+  if (!res.ok) return [];
+
+  const data = await res.json();
+  const features: PhotonFeature[] = data?.features ?? [];
+  const seen = new Set<string>();
+  const places: AddressSuggestion[] = [];
+  for (const f of features) {
+    const p = f.properties;
+    if (!p.name || (p.osm_key && NOT_A_VENUE.has(p.osm_key))) continue;
+    const address = formatAddress(p);
+    // OSM often maps one venue twice (building + entrance); show it once.
+    const key = `${p.name}|${p.postcode ?? ""}|${p.city ?? ""}`.toLowerCase();
+    if (seen.has(key)) continue;
+    seen.add(key);
+    places.push({
+      label: address ? `${p.name}, ${address}` : p.name,
+      name: p.name,
+      address,
+      lat: f.geometry.coordinates[1],
+      lon: f.geometry.coordinates[0],
+      street: [p.street, p.housenumber].filter(Boolean).join(" "),
+      city: p.city ?? "",
+      postCode: p.postcode ?? "",
+      state: p.state ?? "",
+    });
+    if (places.length === 5) break;
+  }
+  return places;
 }
 
 const LOOKUP_ATTEMPTS = 3;

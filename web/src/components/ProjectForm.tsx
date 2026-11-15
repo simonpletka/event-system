@@ -69,6 +69,10 @@ export function ProjectForm({
     defaults.contacts.length ? defaults.contacts : [{ name: "", phone: "", email: "" }]
   );
 
+  function updateVenue(index: number, patch: Partial<VenueRow>) {
+    setVenues((vs) => vs.map((v, i) => (i === index ? { ...v, ...patch } : v)));
+  }
+
   const [selectedClientId, setSelectedClientId] = useState(defaults.clientId ?? "");
   const selectedClient = clients.find((c) => c.id === selectedClientId) ?? null;
   // The linked client's saved contacts not already on this project (matched
@@ -203,14 +207,30 @@ export function ProjectForm({
         <div className="flex flex-col gap-2">
           {venues.map((v, i) => (
             <div key={i} className="grid grid-cols-1 md:grid-cols-[1fr_1fr_1fr_auto] gap-2 items-start">
-              <input
+              {/* Typing a venue name suggests matching places; picking one fills the address too. */}
+              <AddressAutocompleteInput
+                kind="place"
                 name="venueName"
                 placeholder={tf.venueName}
-                defaultValue={v.name}
+                value={v.name}
+                onChange={(value) => updateVenue(i, { name: value })}
+                onSelect={(place) => updateVenue(i, { name: place.name ?? v.name, address: place.address || v.address })}
+                searchingLabel={t.addressInput.searching}
+              />
+              <AddressAutocompleteInput
+                name="venueAddress"
+                placeholder={tf.venueAddress}
+                value={v.address}
+                onChange={(value) => updateVenue(i, { address: value })}
+                searchingLabel={t.addressInput.searching}
+              />
+              <input
+                name="venueNote"
+                placeholder={tf.venueNote}
+                value={v.note}
+                onChange={(e) => updateVenue(i, { note: e.target.value })}
                 className="input"
               />
-              <input name="venueAddress" placeholder={tf.venueAddress} defaultValue={v.address} className="input" />
-              <input name="venueNote" placeholder={tf.venueNote} defaultValue={v.note} className="input" />
               {venues.length > 1 && (
                 <button
                   type="button"

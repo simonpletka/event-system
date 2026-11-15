@@ -4,6 +4,7 @@ import { readProjectFile } from "@/lib/uploads";
 import { previewOf } from "@/lib/project-files";
 import { sheetToHtml, wordToHtml } from "@/lib/office-preview";
 import { getDictionary, getLocale } from "@/lib/i18n";
+import { log } from "@/lib/log";
 
 /** Word and Excel as HTML. The CSP disables scripts and every outside request, so a hostile file renders inert. */
 export async function GET(_req: Request, { params }: { params: Promise<{ id: string }> }) {
@@ -25,7 +26,7 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
       },
     });
   } catch (e) {
-    console.error("Document preview failed:", e);
+    log.error("document_preview_failed", e);
     return new Response(t.previewFailed, { status: 422, headers: { "Content-Type": "text/plain; charset=utf-8" } });
   }
 }
