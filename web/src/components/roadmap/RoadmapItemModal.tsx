@@ -13,6 +13,7 @@ import {
 } from "@/lib/actions/roadmap";
 import type { RoadmapItemData, RoadmapDict } from "./RoadmapList";
 import { toPragueInput } from "@/lib/prague-date";
+import { ModalCloseButton } from "@/components/ui/Modal";
 
 const EMPTY: RoadmapFormState = {};
 
@@ -60,18 +61,16 @@ export function RoadmapItemModal({
   const emailListId = "roadmap-client-emails";
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-bg/80 p-4" onClick={onClose} role="presentation">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-bg/70 backdrop-blur-sm p-4" onClick={onClose} role="presentation">
       <div
-        className="glass-panel rounded-2xl w-full max-w-lg max-h-[88vh] overflow-y-auto p-5"
+        className="glass-panel rounded-2xl shadow-[0_24px_64px_rgba(0,0,0,0.55)] w-full max-w-lg max-h-[88vh] overflow-y-auto p-6"
         onClick={(e) => e.stopPropagation()}
         role="dialog"
         aria-modal="true"
       >
-        <div className="flex items-center justify-between mb-4">
-          <div className="text-sm font-semibold">{isEdit ? (editable ? t.editItem : item!.title) : t.newItem}</div>
-          <button type="button" onClick={onClose} className="btno px-2 py-1 text-[10px]" aria-label={cancelLabel}>
-            ✕
-          </button>
+        <div className="flex items-center justify-between gap-3 mb-5">
+          <div className="text-[15px] font-bold">{isEdit ? (editable ? t.editItem : item!.title) : t.newItem}</div>
+          <ModalCloseButton onClick={onClose} label={cancelLabel} />
         </div>
 
         {!editable && isEdit && (
