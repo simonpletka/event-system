@@ -7,7 +7,11 @@ import { quotePdfFilename } from "@/lib/pdf/filename";
 export async function GET(req: Request, { params }: { params: Promise<{ id: string }> }) {
   const user = await requireUser();
   const { id } = await params;
-  const lang: PdfLang = new URL(req.url).searchParams.get("lang") === "cs" ? "cs" : "en";
+  const search = new URL(req.url).searchParams;
+  const lang: PdfLang = search.get("lang") === "cs" ? "cs" : "en";
+  // ?download=1 (the Download PDF buttons): save the file straight away;
+  // otherwise the browser shows it (the phone "Download PDF" link).
+  const disposition = search.get("download") === "1" ? "attachment" : "inline";
 
   const quote = await getQuoteDetail(user, id);
   if (!quote) return new Response("Not found", { status: 404 });
@@ -18,7 +22,7 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
   return new Response(new Uint8Array(buffer), {
     headers: {
       "Content-Type": "application/pdf",
-      "Content-Disposition": `inline; filename="${quotePdfFilename(quote.number, quote.project.title, lang)}"`,
+      "Content-Disposition": `${disposition}; filename="${quotePdfFilename(quote.number, quote.project.title, lang)}"`,
     },
   });
 }
