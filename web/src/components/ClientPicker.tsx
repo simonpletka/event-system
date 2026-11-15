@@ -11,6 +11,8 @@ export type PickableClient = {
   state?: string;
   ico?: string;
   dic?: string;
+  /** The client's saved contact people, offered on the project form. */
+  contacts?: { id: string; name: string; role: string; phone: string; email: string }[];
 };
 
 export function ClientPicker({

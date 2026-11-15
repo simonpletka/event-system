@@ -69,6 +69,30 @@ export function ProjectForm({
     defaults.contacts.length ? defaults.contacts : [{ name: "", phone: "", email: "" }]
   );
 
+  const [selectedClientId, setSelectedClientId] = useState(defaults.clientId ?? "");
+  const selectedClient = clients.find((c) => c.id === selectedClientId) ?? null;
+  // The linked client's saved contacts not already on this project (matched
+  // by email, else by name — the same rule the save uses to dedupe them).
+  const sameContact = (a: { name: string; email: string }, b: { name: string; email: string }) =>
+    a.email.trim() && b.email.trim()
+      ? a.email.trim().toLowerCase() === b.email.trim().toLowerCase()
+      : a.name.trim().toLowerCase() === b.name.trim().toLowerCase();
+  const offeredContacts = (selectedClient?.contacts ?? []).filter(
+    (cc) => cc.name.trim() && !contacts.some((row) => row.name.trim() && sameContact(row, cc))
+  );
+
+  function addClientContact(cc: ContactRow) {
+    const row = { name: cc.name, phone: cc.phone, email: cc.email };
+    setContacts((cs) => {
+      const empty = cs.findIndex((r) => !r.name.trim() && !r.phone.trim() && !r.email.trim());
+      return empty === -1 ? [...cs, row] : cs.map((r, i) => (i === empty ? row : r));
+    });
+  }
+
+  function updateContact(index: number, field: keyof ContactRow, value: string) {
+    setContacts((cs) => cs.map((r, i) => (i === index ? { ...r, [field]: value } : r)));
+  }
+
   const [companyIco, setCompanyIco] = useState(defaults.companyIco);
   const [companyName, setCompanyName] = useState(defaults.companyName);
   const [companyAddress, setCompanyAddress] = useState(defaults.companyAddress);
@@ -215,6 +239,7 @@ export function ProjectForm({
           defaultValue={defaults.clientId ?? ""}
           newClientOptionLabel={tf.newClientOption}
           onSelect={(client) => {
+            setSelectedClientId(client?.id ?? "");
             if (!client) return;
             setCompanyName(client.name);
             setCompanyAddress(
@@ -234,12 +259,26 @@ export function ProjectForm({
               <input
                 name="contactName"
                 placeholder={tf.contactName}
-                defaultValue={c.name}
+                value={c.name}
+                onChange={(e) => updateContact(i, "name", e.target.value)}
                 required
                 className="input"
               />
-              <input name="contactPhone" placeholder={tf.contactPhone} defaultValue={c.phone} className="input" />
-              <input name="contactEmail" placeholder={tf.contactEmail} type="email" defaultValue={c.email} className="input" />
+              <input
+                name="contactPhone"
+                placeholder={tf.contactPhone}
+                value={c.phone}
+                onChange={(e) => updateContact(i, "phone", e.target.value)}
+                className="input"
+              />
+              <input
+                name="contactEmail"
+                placeholder={tf.contactEmail}
+                type="email"
+                value={c.email}
+                onChange={(e) => updateContact(i, "email", e.target.value)}
+                className="input"
+              />
               {contacts.length > 1 && (
                 <button
                   type="button"
@@ -252,10 +291,30 @@ export function ProjectForm({
             </div>
           ))}
         </div>
+        {selectedClient && offeredContacts.length > 0 && (
+          <div className="mt-3">
+            <div className="text-[10px] placeholder-text mb-1.5">{tf.clientContactsLabel(selectedClient.name)}</div>
+            <div className="flex flex-wrap gap-1.5">
+              {offeredContacts.map((cc) => (
+                <button
+                  key={cc.id}
+                  type="button"
+                  onClick={() => addClientContact(cc)}
+                  title={[cc.role, cc.email, cc.phone].filter(Boolean).join(" · ") || undefined}
+                  className="inline-flex items-center gap-1.5 rounded-full border border-ink/20 px-3 py-1.5 text-[12px] text-ink/85 hover:border-accent hover:text-ink transition-colors"
+                >
+                  <span className="text-accent font-semibold">+</span>
+                  {cc.name}
+                  {cc.role && <span className="placeholder-text">· {cc.role}</span>}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
         <button
           type="button"
           onClick={() => setContacts((cs) => [...cs, { name: "", phone: "", email: "" }])}
-          className="btno mt-2 text-[9px]"
+          className="btno mt-3 text-[9px]"
         >
           {tf.addContact}
         </button>

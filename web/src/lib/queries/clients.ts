@@ -69,7 +69,18 @@ export const getClientDetail = cache(async function getClientDetail(user: Sessio
  */
 export async function getClientOptions() {
   return prisma.client.findMany({
-    select: { id: true, name: true, street: true, city: true, postCode: true, state: true, ico: true, dic: true },
+    select: {
+      id: true,
+      name: true,
+      street: true,
+      city: true,
+      postCode: true,
+      state: true,
+      ico: true,
+      dic: true,
+      // Offered as one-click contact people on the project form.
+      contacts: { select: { id: true, name: true, role: true, phone: true, email: true }, orderBy: { name: "asc" } },
+    },
     orderBy: { name: "asc" },
   });
 }

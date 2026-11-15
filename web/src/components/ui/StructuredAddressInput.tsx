@@ -79,8 +79,8 @@ export function StructuredAddressInput({
           className="input w-full"
         />
         {open && (loading || suggestions.length > 0) && (
-          <div className="absolute z-20 top-full left-0 right-0 mt-1 bg-surface border border-ink/30 max-h-52 overflow-y-auto">
-            {loading && <div className="px-2.5 py-1.5 text-[11px] placeholder-text">{t.searching}</div>}
+          <div className="absolute z-20 top-full left-0 right-0 mt-1.5 card p-1.5 max-h-52 overflow-y-auto shadow-[0_18px_44px_rgba(0,0,0,0.5)]">
+            {loading && <div className="px-2.5 py-1.5 text-[12px] placeholder-text">{t.searching}</div>}
             {!loading &&
               suggestions.map((s, i) => (
                 <button
@@ -91,7 +91,7 @@ export function StructuredAddressInput({
                     setSuggestions([]);
                     setOpen(false);
                   }}
-                  className="block w-full text-left px-2.5 py-1.5 text-[11px] hover:bg-ink/10"
+                  className="block w-full text-left px-2.5 py-1.5 rounded-md text-[13px] text-ink/85 hover:bg-ink/8 hover:text-ink transition-colors"
                 >
                   {s.label}
                 </button>
