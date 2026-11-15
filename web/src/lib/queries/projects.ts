@@ -177,7 +177,7 @@ export const getProjectRoadmap = cache(async function getProjectRoadmap(user: Se
 export async function getProjectRows(user: SessionUser) {
   return prisma.project.findMany({
     where: projectWhereForUser(user),
-    include: { venues: { take: 1 }, contacts: { select: { name: true } } },
+    include: { venues: { take: 1 }, contacts: { select: { name: true } }, members: { select: { userId: true } } },
     orderBy: { startDate: "desc" },
   });
 }

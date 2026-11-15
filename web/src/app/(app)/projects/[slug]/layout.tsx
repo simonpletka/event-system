@@ -7,6 +7,7 @@ import { notionPageUrl } from "@/lib/notion";
 import { driveFolderUrl } from "@/lib/gdrive";
 import { formatPragueRange } from "@/lib/prague-date";
 import { ProjectStatusChip } from "@/components/projects/ProjectStatusChip";
+import { ProjectStatusMenu } from "@/components/projects/ProjectStatusMenu";
 import { BackToProjects } from "@/components/projects/BackToProjects";
 import { ProjectTabs } from "@/components/ProjectTabs";
 import { DeleteProjectButton } from "@/components/DeleteProjectButton";
@@ -56,7 +57,11 @@ export default async function EventDetailLayout({
                 · {formatPragueRange(project.startDate, project.endDate, locale)}
                 {project.venues[0] ? ` · ${project.venues[0].name}` : ""}
               </span>
-              <ProjectStatusChip status={project.status} t={t.statusProject} />
+              {editable ? (
+                <ProjectStatusMenu projectId={project.id} status={project.status} locale={locale} />
+              ) : (
+                <ProjectStatusChip status={project.status} t={t.statusProject} />
+              )}
             </div>
           </div>
           <div className="flex gap-1.5 items-center flex-wrap">

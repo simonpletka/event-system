@@ -247,6 +247,28 @@ export async function updateProjectAction(_prev: ProjectFormState, formData: For
   redirect(projectHref({ number: existing.number, title: data.title }));
 }
 
+const PROJECT_STATUSES: ProjectStatus[] = ["INQUIRY", "QUOTE_SENT", "CONFIRMED", "IN_PROGRESS", "TO_INVOICE", "CLOSED", "CANCELLED"];
+
+/** Quick status change from the status chip (project list and detail), without the edit form. */
+export async function setProjectStatusAction(id: string, status: ProjectStatus): Promise<{ ok: boolean; error?: string }> {
+  const user = await requireUser();
+  if (!PROJECT_STATUSES.includes(status)) return { ok: false, error: "Unknown status." };
+
+  const existing = await prisma.project.findUnique({ where: { id }, include: { members: { select: { userId: true } } } });
+  if (!existing) return { ok: false, error: "Project not found." };
+  if (!canEditProject(user, { ownerId: existing.ownerId, memberIds: existing.members.map((m) => m.userId) })) {
+    return { ok: false, error: "You don't have permission to edit this project." };
+  }
+  if (existing.status === status) return { ok: true };
+
+  await prisma.project.update({ where: { id }, data: { status } });
+  revalidatePath(`/projects/${id}`, "layout");
+  revalidatePath("/projects");
+  revalidatePath("/dashboard");
+  revalidatePath("/clients");
+  return { ok: true };
+}
+
 /**
  * Admin-only, irreversible: cascades through the schema's onDelete: Cascade
  * relations (members, venues, milestones, time entries, quotes+items,

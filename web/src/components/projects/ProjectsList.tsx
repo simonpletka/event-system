@@ -7,6 +7,7 @@ import { formatCurrency } from "@/lib/format";
 import { formatPragueRange } from "@/lib/prague-date";
 import { getDictionary, type Locale } from "@/lib/dictionary";
 import { ProjectStatusChip } from "./ProjectStatusChip";
+import { ProjectStatusMenu } from "./ProjectStatusMenu";
 import { LIST_QUERY_KEY, STATUS_FILTERS, type StatusFilter } from "@/lib/project-list";
 
 export type ProjectRow = {
@@ -20,6 +21,8 @@ export type ProjectRow = {
   status: ProjectStatus;
   value: number;
   href: string;
+  /** The row's status chip opens a menu to change it (canEditProject). */
+  canEditStatus: boolean;
   /** Extra text the search also matches, e.g. contact names. */
   searchText: string;
 };
@@ -139,7 +142,11 @@ export function ProjectsList({
                     <span className="block">{formatPragueRange(p.start, p.end, locale)}</span>
                   </span>
                   <span className="shrink-0 md:w-[120px]">
-                    <ProjectStatusChip status={p.status} t={t.statusProject} />
+                    {p.canEditStatus ? (
+                      <ProjectStatusMenu projectId={p.id} status={p.status} locale={locale} />
+                    ) : (
+                      <ProjectStatusChip status={p.status} t={t.statusProject} />
+                    )}
                   </span>
                   <span className="shrink-0 ml-auto md:ml-0 md:w-[110px] text-right text-[15px] font-semibold tabular-nums whitespace-nowrap group-hover:text-accent">
                     {p.value ? formatCurrency(p.value) : <span className="placeholder-text font-normal">—</span>}

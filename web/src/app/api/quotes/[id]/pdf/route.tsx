@@ -2,6 +2,7 @@ import { requireUser } from "@/lib/authz";
 import { getQuoteDetail, getCompanySettings } from "@/lib/queries/finance";
 import { buildQuotePdfBuffer } from "@/lib/pdf/build-quote-pdf";
 import type { PdfLang } from "@/lib/pdf/i18n";
+import { quotePdfFilename } from "@/lib/pdf/filename";
 
 export async function GET(req: Request, { params }: { params: Promise<{ id: string }> }) {
   const user = await requireUser();
@@ -17,7 +18,7 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
   return new Response(new Uint8Array(buffer), {
     headers: {
       "Content-Type": "application/pdf",
-      "Content-Disposition": `inline; filename="quote-${quote.number}.pdf"`,
+      "Content-Disposition": `inline; filename="${quotePdfFilename(quote.number, quote.project.title, lang)}"`,
     },
   });
 }

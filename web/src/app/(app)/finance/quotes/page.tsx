@@ -14,6 +14,7 @@ import { ChipLinks } from "@/components/ui/ChipLinks";
 import { groupProjectOptions } from "@/lib/project-status";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { getLocale, getDictionary } from "@/lib/i18n";
+import { QuoteStatusMenu } from "@/components/finance/QuoteStatusMenu";
 import type { QuoteStatus } from "@/generated/prisma/enums";
 
 const STATUSES: QuoteStatus[] = ["DRAFT", "SENT", "ACCEPTED", "DECLINED"];
@@ -26,7 +27,8 @@ export default async function QuotesPage({
   const user = await requireUser();
   if (!canViewFinance(user)) redirect("/finance/expenses");
   const params = await searchParams;
-  const t = getDictionary(await getLocale());
+  const locale = await getLocale();
+  const t = getDictionary(locale);
   const filters: QuoteListFilters = {
     q: params.q || undefined,
     status: (params.status as QuoteStatus) || undefined,
@@ -133,7 +135,11 @@ export default async function QuotesPage({
               {formatCurrencyWithCzk(q.total, q.currency, q.czkAmount)}
             </div>
             <div>
-              <QuoteStatusPill status={q.status} t={t.statusQuote} />
+              {canManage ? (
+                <QuoteStatusMenu quoteId={q.id} status={q.status} locale={locale} />
+              ) : (
+                <QuoteStatusPill status={q.status} t={t.statusQuote} />
+              )}
             </div>
             <div className="flex items-center justify-end gap-3 text-[9px] tracking-[0.1em] uppercase whitespace-nowrap">
               {q.status === "ACCEPTED" && q.invoices.length === 0 && canManage ? (
@@ -187,7 +193,13 @@ export default async function QuotesPage({
                   >
                     {q.project.title}
                   </Link>
-                  <QuoteStatusPill status={q.status} t={t.statusQuote} />
+                  {canManage ? (
+                    <span className="relative z-[1]">
+                      <QuoteStatusMenu quoteId={q.id} status={q.status} locale={locale} />
+                    </span>
+                  ) : (
+                    <QuoteStatusPill status={q.status} t={t.statusQuote} />
+                  )}
                 </div>
                 <div className="placeholder-text text-[11.5px] mt-0.5">
                   {q.project.clientId ? (

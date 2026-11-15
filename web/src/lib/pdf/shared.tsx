@@ -135,6 +135,8 @@ export const sharedStyles = StyleSheet.create({
   bigDateStack: { flexDirection: "column" },
   bigDateLine: { fontSize: 14.25, lineHeight: 1.35 },
   bigDocNumber: { fontSize: 14.25, fontWeight: 700 },
+  // Quote: the project name under the number (14px in the on-page preview).
+  bigDocProject: { fontSize: 10.5, color: LINE, marginTop: 3, textAlign: "right" },
 
   // Shared row shell — each document supplies its own `gap` (invoice 18pt / quote 24pt in the mockup).
   partiesRow: { flexDirection: "row", marginTop: 30, marginBottom: 21 },

@@ -6,7 +6,7 @@ import type { Dictionary } from "@/lib/dictionary";
  * shared ProjectStatusPill (still used by the dashboard and Clients), whose
  * mapping differs: here In progress is amber and To invoice is red.
  */
-const TONE: Record<ProjectStatus, "positive" | "attention" | "warning" | "neutral"> = {
+export const PROJECT_STATUS_TONE: Record<ProjectStatus, "positive" | "attention" | "warning" | "neutral"> = {
   IN_PROGRESS: "attention",
   CONFIRMED: "positive",
   TO_INVOICE: "warning",
@@ -17,5 +17,5 @@ const TONE: Record<ProjectStatus, "positive" | "attention" | "warning" | "neutra
 };
 
 export function ProjectStatusChip({ status, t }: { status: ProjectStatus; t: Dictionary["statusProject"] }) {
-  return <span className={`tag tag-${TONE[status]} whitespace-nowrap`}>{t[status]}</span>;
+  return <span className={`tag tag-${PROJECT_STATUS_TONE[status]} whitespace-nowrap`}>{t[status]}</span>;
 }

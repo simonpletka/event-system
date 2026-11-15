@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
 import { safeReturnTo } from "@/lib/return-to";
+import { quotePdfFilename } from "@/lib/pdf/filename";
 import { requireUser, canManageFinance, canAddExpense, canPickOtherPayer, canEditExpense, projectWhereForUser, isAdmin } from "@/lib/authz";
 import { nextQuoteNumber, nextInvoiceNumber, variableSymbolFor } from "@/lib/document-number";
 import { saveReceipt, deleteReceipt } from "@/lib/uploads";
@@ -152,6 +153,36 @@ export async function updateQuoteStatusAction(formData: FormData) {
   revalidatePath("/clients");
 }
 
+const QUOTE_STATUSES: QuoteStatus[] = ["DRAFT", "SENT", "ACCEPTED", "DECLINED"];
+
+/**
+ * Quick status change from the status chip (quote list and detail), any
+ * status to any other, e.g. back to Draft to edit it again. Same side
+ * effects as the Accepted/Declined buttons: quoted value re-synced, and an
+ * accepted quote exported to Drive.
+ */
+export async function setQuoteStatusAction(id: string, status: QuoteStatus): Promise<{ ok: boolean; error?: string }> {
+  const user = await requireUser();
+  if (!canManageFinance(user)) return { ok: false, error: "You don't have permission to change quotes." };
+  if (!QUOTE_STATUSES.includes(status)) return { ok: false, error: "Unknown status." };
+
+  const quote = await prisma.quote.findUnique({ where: { id }, select: { status: true, projectId: true } });
+  if (!quote) return { ok: false, error: "Quote not found." };
+  if (quote.status === status) return { ok: true };
+
+  await prisma.quote.update({ where: { id }, data: { status } });
+  await syncQuotedValue(quote.projectId);
+  if (status === "ACCEPTED") await exportQuoteToDrive(user, id);
+
+  revalidatePath(`/finance/quotes/${id}`);
+  revalidatePath("/finance/quotes");
+  revalidatePath(`/projects/${quote.projectId}`, "layout");
+  revalidatePath("/projects");
+  revalidatePath("/clients");
+  revalidatePath("/dashboard");
+  return { ok: true };
+}
+
 /** Best-effort — a Google Drive hiccup should never block a quote actually being marked accepted. */
 async function exportQuoteToDrive(user: Awaited<ReturnType<typeof requireUser>>, quoteId: string) {
   const full = await getQuoteDetail(user, quoteId);
@@ -161,7 +192,7 @@ async function exportQuoteToDrive(user: Awaited<ReturnType<typeof requireUser>>,
   await tryUploadFinanceDocument({
     category: "quotes",
     year: full.project.startDate.getFullYear(),
-    filename: `${full.number}-quote.pdf`,
+    filename: quotePdfFilename(full.number, full.project.title, "en"),
     buffer,
     mimeType: "application/pdf",
   });

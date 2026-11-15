@@ -19,6 +19,7 @@ export async function buildQuotePdfBuffer(quote: QuoteDetail, company: Company, 
   return renderToBuffer(
     <QuotePdf
       quoteNumber={quote.number}
+      projectTitle={quote.project.title}
       issuedAt={quote.issuedAt}
       validUntil={quote.validUntil}
       currency={quote.currency}
