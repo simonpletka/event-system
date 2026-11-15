@@ -18,6 +18,8 @@ import { InvoiceEmailingForm } from "@/components/settings/InvoiceEmailingForm";
 import { ConnectorTab } from "@/components/settings/ConnectorTab";
 import { TravelTab } from "@/components/settings/TravelTab";
 import { DriveFoldersPanel } from "@/components/settings/DriveFoldersPanel";
+import { ResetDataPanel } from "@/components/settings/ResetDataPanel";
+import { isTestMode } from "@/lib/data-mode";
 import { isDriveConfigured } from "@/lib/gdrive";
 import { getCarsharingPlans, getUserVehicles } from "@/lib/queries/trips";
 import {
@@ -141,6 +143,7 @@ export default async function SettingsPage({
           <>
             <CompanySettingsForm defaults={company} t={t.settings.company} />
             <DriveFoldersPanel configured={isDriveConfigured()} missing={projectsWithoutFolder} locale={locale} />
+            {isAdmin(user) && <ResetDataPanel locale={locale} testMode={await isTestMode()} />}
           </>
         )}
         {tab === "users" && canUsers && (
