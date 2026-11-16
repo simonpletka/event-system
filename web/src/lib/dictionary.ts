@@ -1262,6 +1262,9 @@ const en = {
       addUngroupedItem: "Add item without a group",
       noGroupsYet: "No groups yet. Add one below, or pick a saved category.",
       emptyGroup: "No items yet. An empty group doesn't appear on the quote.",
+      emptyGroupShort: "Empty, won't appear on the quote",
+      quickAddPlaceholder: "Type an item and press Enter",
+      overview: "Overview",
     },
 
     quoteForm: {
@@ -3031,6 +3034,9 @@ const cs: Dictionary = {
       addUngroupedItem: "Přidat položku bez skupiny",
       noGroupsYet: "Zatím žádné skupiny. Přidejte novou níže, nebo vyberte uloženou kategorii.",
       emptyGroup: "Zatím bez položek. Prázdná skupina se na nabídce nezobrazí.",
+      emptyGroupShort: "Prázdná, na nabídce se nezobrazí",
+      quickAddPlaceholder: "Napiš položku a stiskni Enter",
+      overview: "Přehled",
     },
 
     quoteForm: {
