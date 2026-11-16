@@ -80,14 +80,14 @@ export function QuoteForm({
 
       {!isEdit && (
         <label className="flex flex-col gap-1.5">
-          <span className="field-label">{tf.projectLabel}</span>
+          <span className="field-label !text-[13px] !text-ink/80">{tf.projectLabel}</span>
           <ProjectPicker name="projectId" initialEvents={events} defaultValue={initialEventId} required onSelect={setEventId} t={t.projects.picker} />
         </label>
       )}
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
         <label className="flex flex-col gap-1.5">
-          <span className="field-label">{tf.statusLabel}</span>
+          <span className="field-label !text-[13px] !text-ink/80">{tf.statusLabel}</span>
           <select name="status" defaultValue={defaults?.status ?? "DRAFT"} className="input">
             <option value="DRAFT">{tf.statusDraft}</option>
             <option value="SENT">{tf.statusSent}</option>
@@ -96,7 +96,7 @@ export function QuoteForm({
           </select>
         </label>
         <label className="flex flex-col gap-1.5">
-          <span className="field-label">{tf.currencyLabel}</span>
+          <span className="field-label !text-[13px] !text-ink/80">{tf.currencyLabel}</span>
           <select name="currency" value={currency} onChange={(e) => setCurrency(e.target.value as Currency)} className="input">
             <option value="CZK">{tf.czk}</option>
             <option value="EUR">{tf.eur}</option>
@@ -104,7 +104,7 @@ export function QuoteForm({
           </select>
         </label>
         <label className="flex flex-col gap-1.5">
-          <span className="field-label">{tf.validUntilLabel}</span>
+          <span className="field-label !text-[13px] !text-ink/80">{tf.validUntilLabel}</span>
           <DateTimeField
             name="validUntil"
             required
@@ -113,7 +113,7 @@ export function QuoteForm({
             className={conflict ? "!border-warning !text-warning" : ""}
           />
           {conflict && (
-            <span className="text-[9px] text-warning">
+            <span className="text-[12px] text-warning">
               {tf.projectTooCloseWarning(formatDate(conflict, { day: "numeric", month: "short", year: "numeric" }))}
             </span>
           )}
@@ -129,7 +129,7 @@ export function QuoteForm({
         t={tl}
       />
 
-      <label className="flex items-center gap-1.5 text-[11px]">
+      <label className="flex items-center gap-2 text-[13px] text-ink/85">
         <input
           type="checkbox"
           name="hideItemPrices"
