@@ -12,12 +12,20 @@ import {
   type ItemGroup,
 } from "@/lib/quote-groups";
 import { useConfirmDialog } from "@/components/ui/ConfirmDialogProvider";
+import { TrashIcon } from "@/components/ui/icons";
 
 type T = Dictionary["finance"]["lineItems"];
 
-// Phone: description across the row, then qty · unit price · VAT · remove. Wider: one row, with reorder arrows first.
-const ROW_GRID = "grid grid-cols-[repeat(3,minmax(0,1fr))_28px] md:grid-cols-[22px_minmax(0,1fr)_76px_120px_76px_32px] gap-2 items-center";
-const HEAD = "heading-label !text-[9px] !font-bold";
+// One grid for the column heads, every item row and each group's header, so
+// subtotals line up under "Total". Phone: description across the row, then
+// qty · unit price · VAT · remove (no line-total column).
+const ROW_GRID =
+  "grid grid-cols-[repeat(3,minmax(0,1fr))_28px] md:grid-cols-[22px_minmax(0,1fr)_64px_112px_64px_104px_28px] gap-x-2 gap-y-1.5 items-center";
+const HEAD = "text-[10px] font-semibold uppercase tracking-[0.12em] text-ink/50";
+const ICON_BTN =
+  "grid place-items-center w-7 h-7 rounded-full text-[15px] leading-none text-ink/40 hover:text-warning hover:bg-warning/10 transition-colors";
+const LINK_BTN = "text-[12px] font-medium text-ink/55 hover:text-accent transition-colors";
+const NUM_INPUT = "input !py-1.5 text-right tabular-nums";
 
 function moved<X>(list: X[], i: number, dir: -1 | 1): X[] {
   const j = i + dir;
@@ -83,23 +91,32 @@ export function QuoteItemGroups({
     setGroups(groups.filter((g) => g.key !== group.key));
   }
 
+  function arrows(onUp: () => void, onDown: () => void, first: boolean, last: boolean, upTitle: string, downTitle: string) {
+    return (
+      <div className="flex flex-col items-center text-ink/45">
+        <button type="button" onClick={onUp} disabled={first} className="text-[9px] leading-[11px] hover:text-ink disabled:opacity-20" title={upTitle}>
+          ▲
+        </button>
+        <button type="button" onClick={onDown} disabled={last} className="text-[9px] leading-[11px] hover:text-ink disabled:opacity-20" title={downTitle}>
+          ▼
+        </button>
+      </div>
+    );
+  }
+
   function itemRows(items: GroupItem[], setItems: (next: GroupItem[]) => void) {
     const update = (key: string, patch: Partial<GroupItem>) => setItems(items.map((i) => (i.key === key ? { ...i, ...patch } : i)));
     return items.map((item, i) => (
       <div key={item.key} className={ROW_GRID}>
-        <div className="hidden md:flex flex-col">
-          <button type="button" onClick={() => setItems(moved(items, i, -1))} disabled={i === 0} className="text-[9px] leading-none disabled:opacity-20" title={t.moveUp}>
-            ▲
-          </button>
-          <button
-            type="button"
-            onClick={() => setItems(moved(items, i, 1))}
-            disabled={i === items.length - 1}
-            className="text-[9px] leading-none disabled:opacity-20"
-            title={t.moveDown}
-          >
-            ▼
-          </button>
+        <div className="hidden md:flex justify-center">
+          {arrows(
+            () => setItems(moved(items, i, -1)),
+            () => setItems(moved(items, i, 1)),
+            i === 0,
+            i === items.length - 1,
+            t.moveUp,
+            t.moveDown
+          )}
         </div>
         <input
           value={item.description}
@@ -107,9 +124,9 @@ export function QuoteItemGroups({
           placeholder={t.descriptionPlaceholder}
           aria-label={t.colDescription}
           autoFocus={item.key === focusKey}
-          className="input col-span-4 md:col-span-1"
+          className="input !py-1.5 col-span-4 md:col-span-1"
         />
-        {/* Phone: the column headings sit above the description, so each item labels its own numbers. */}
+        {/* Phone: the column headings sit above the numbers, so each item labels its own. */}
         <span className={`${HEAD} md:hidden`}>{t.colQty}</span>
         <span className={`${HEAD} md:hidden`}>{t.colUnitPrice}</span>
         <span className={`${HEAD} md:hidden`}>{t.colVat}</span>
@@ -122,7 +139,7 @@ export function QuoteItemGroups({
           onFocus={(e) => e.target.select()}
           aria-label={t.colQty}
           title={t.colQty}
-          className="input"
+          className={NUM_INPUT}
         />
         <input
           type="number"
@@ -132,7 +149,7 @@ export function QuoteItemGroups({
           onFocus={(e) => e.target.select()}
           aria-label={t.colUnitPrice}
           title={t.colUnitPrice}
-          className="input"
+          className={NUM_INPUT}
         />
         <input
           type="number"
@@ -143,32 +160,28 @@ export function QuoteItemGroups({
           onFocus={(e) => e.target.select()}
           aria-label={t.colVat}
           title={t.colVat}
-          className="input"
+          className={NUM_INPUT}
         />
+        <span className="hidden md:block text-right text-[13px] tabular-nums text-ink/80">
+          {formatCurrency(item.quantity * item.unitPrice, currency)}
+        </span>
         <button
           type="button"
           onClick={() => setItems(items.filter((x) => x.key !== item.key))}
           title={t.removeBtn}
           aria-label={t.removeBtn}
-          className="grid place-items-center w-7 h-7 rounded-full text-ink/45 hover:text-warning hover:bg-warning/10 transition-colors"
+          className={ICON_BTN}
         >
-          ×
+          <TrashIcon size={14} />
         </button>
       </div>
     ));
   }
 
-  function columnHeads() {
-    return (
-      <div className={`${ROW_GRID} !hidden md:!grid`}>
-        <span className="hidden md:block" />
-        <span className={`${HEAD} hidden md:block`}>{t.colDescription}</span>
-        <span className={HEAD}>{t.colQty}</span>
-        <span className={HEAD}>{t.colUnitPrice}</span>
-        <span className={HEAD}>{t.colVat}</span>
-        <span />
-      </div>
-    );
+  function addItemTo(group: ItemGroup) {
+    const item = blankGroupItem();
+    updateGroup(group.key, { items: [...group.items, item] });
+    setFocusKey(item.key);
   }
 
   const subtotal = (items: GroupItem[]) => items.reduce((s, i) => s + i.quantity * i.unitPrice, 0);
@@ -186,137 +199,143 @@ export function QuoteItemGroups({
         </div>
       ))}
 
-      <p className="text-[11px] placeholder-text">{t.groupsHint}</p>
+      <p className="text-[12px] text-ink/55">{t.groupsHint}</p>
 
-      {groups.length === 0 && loose.length === 0 && <p className="text-[13px] placeholder-text">{t.noGroupsYet}</p>}
+      {/* All groups in one table: column heads once, each group a section with its header row and items. */}
+      <div className="card overflow-hidden">
+        <div className={`${ROW_GRID} !hidden md:!grid px-4 pt-3 pb-2 border-b border-ink/10`}>
+          <span />
+          <span className={HEAD}>{t.colDescription}</span>
+          <span className={`${HEAD} text-right`}>{t.colQty}</span>
+          <span className={`${HEAD} text-right`}>{t.colUnitPrice}</span>
+          <span className={`${HEAD} text-right`}>{t.colVat}</span>
+          <span className={`${HEAD} text-right`}>{t.colTotal}</span>
+          <span />
+        </div>
 
-      {groups.map((group, gi) => {
-        const duplicate = duplicates.has(group.name.trim().toLowerCase());
-        return (
-          <section key={group.key} className="card p-4 flex flex-col gap-2.5">
-            <div className="flex items-center gap-2">
-              <div className="flex flex-col">
-                <button type="button" onClick={() => setGroups(moved(groups, gi, -1))} disabled={gi === 0} className="text-[9px] leading-none disabled:opacity-20" title={t.moveGroupUp}>
-                  ▲
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setGroups(moved(groups, gi, 1))}
-                  disabled={gi === groups.length - 1}
-                  className="text-[9px] leading-none disabled:opacity-20"
-                  title={t.moveGroupDown}
-                >
-                  ▼
+        {groups.length === 0 && loose.length === 0 && <p className="px-4 py-4 text-[13px] text-ink/55">{t.noGroupsYet}</p>}
+
+        {groups.map((group, gi) => {
+          const duplicate = duplicates.has(group.name.trim().toLowerCase());
+          const empty = group.items.length === 0;
+          return (
+            <section key={group.key} className="px-4 py-3 flex flex-col gap-1.5 border-b border-ink/10">
+              <div className="flex items-center gap-2 md:grid md:grid-cols-[22px_minmax(0,1fr)_104px_28px] md:gap-x-2">
+                <div className="flex justify-center">
+                  {arrows(
+                    () => setGroups(moved(groups, gi, -1)),
+                    () => setGroups(moved(groups, gi, 1)),
+                    gi === 0,
+                    gi === groups.length - 1,
+                    t.moveGroupUp,
+                    t.moveGroupDown
+                  )}
+                </div>
+                <input
+                  value={group.name}
+                  onChange={(e) => updateGroup(group.key, { name: e.target.value })}
+                  placeholder={t.groupNamePlaceholder}
+                  aria-label={t.groupNamePlaceholder}
+                  required
+                  list="quote-saved-categories"
+                  className={`flex-1 min-w-0 bg-transparent rounded-lg border px-2 py-1 -ml-2 text-[14px] font-semibold text-ink outline-none transition-colors placeholder:text-ink/35 hover:border-ink/20 focus:border-ink ${
+                    duplicate ? "border-warning" : "border-transparent"
+                  }`}
+                />
+                <span className={`shrink-0 text-right text-[13px] font-semibold tabular-nums ${empty ? "text-ink/35" : "text-ink"}`}>
+                  {formatCurrency(subtotal(group.items), currency)}
+                </span>
+                <button type="button" onClick={() => removeGroup(group)} title={t.removeGroup} aria-label={t.removeGroup} className={ICON_BTN}>
+                  <TrashIcon size={14} />
                 </button>
               </div>
-              <input
-                value={group.name}
-                onChange={(e) => updateGroup(group.key, { name: e.target.value })}
-                placeholder={t.groupNamePlaceholder}
-                aria-label={t.groupNamePlaceholder}
-                required
-                list="quote-saved-categories"
-                className={`input flex-1 min-w-0 !text-[15px] font-semibold ${duplicate ? "!border-warning" : ""}`}
-              />
-              <span className="hidden sm:block text-[13px] tabular-nums placeholder-text shrink-0">{formatCurrency(subtotal(group.items), currency)}</span>
-              <button type="button" onClick={() => removeGroup(group)} className="btno !px-3 !py-1.5 text-[9px] shrink-0">
-                {t.removeGroup}
-              </button>
-            </div>
-            {duplicate && <p className="text-[11px] text-warning">{t.duplicateGroup}</p>}
-            {group.items.length > 0 ? columnHeads() : <p className="text-[12px] placeholder-text">{t.emptyGroup}</p>}
-            {itemRows(group.items, (items) => updateGroup(group.key, { items }))}
-            <button
-              type="button"
-              onClick={() => {
-                const item = blankGroupItem();
-                updateGroup(group.key, { items: [...group.items, item] });
-                setFocusKey(item.key);
-              }}
-              className="self-start text-[10px] tracking-[0.1em] uppercase placeholder-text hover:text-accent transition-colors"
-            >
-              + {t.addItem}
-            </button>
+              {duplicate && <p className="text-[12px] text-warning md:pl-[30px]">{t.duplicateGroup}</p>}
+              {itemRows(group.items, (items) => updateGroup(group.key, { items }))}
+              <div className="flex items-baseline gap-3 md:pl-[30px]">
+                <button type="button" onClick={() => addItemTo(group)} className={LINK_BTN}>
+                  + {t.addItem}
+                </button>
+                {empty && <span className="text-[12px] text-ink/40">{t.emptyGroup}</span>}
+              </div>
+            </section>
+          );
+        })}
+
+        {loose.length > 0 && (
+          <section className="px-4 py-3 flex flex-col gap-1.5 border-b border-ink/10">
+            <div className="text-[14px] font-semibold text-ink/60 md:pl-[30px]">{t.ungrouped}</div>
+            {itemRows(loose, setLoose)}
           </section>
-        );
-      })}
+        )}
 
-      {loose.length > 0 && (
-        <section className="rounded-2xl border border-dashed border-ink/20 p-4 flex flex-col gap-2.5">
-          <div className="heading-label !text-[11px]">{t.ungrouped}</div>
-          {columnHeads()}
-          {itemRows(loose, setLoose)}
-        </section>
-      )}
+        <datalist id="quote-saved-categories">
+          {savedCategories.map((c) => (
+            <option key={c} value={c} />
+          ))}
+        </datalist>
 
-      <datalist id="quote-saved-categories">
-        {savedCategories.map((c) => (
-          <option key={c} value={c} />
-        ))}
-      </datalist>
-
-      {/* New group: typed here (this quote only) or one of the saved categories. */}
-      <div className="flex flex-col gap-2">
-        <div className="flex gap-2">
-          <input
-            value={newName}
-            onChange={(e) => setNewName(e.target.value)}
-            onKeyDown={(e) => {
-              // Enter adds the group instead of submitting the whole quote.
-              if (e.key === "Enter") {
-                e.preventDefault();
-                addGroup(newName);
-              }
+        {/* New group: typed here (this quote only) or one of the saved categories. */}
+        <div className="px-4 py-3 flex flex-col gap-2.5 bg-ink/[0.02]">
+          <div className="flex gap-2">
+            <input
+              value={newName}
+              onChange={(e) => setNewName(e.target.value)}
+              onKeyDown={(e) => {
+                // Enter adds the group instead of submitting the whole quote.
+                if (e.key === "Enter") {
+                  e.preventDefault();
+                  addGroup(newName);
+                }
+              }}
+              placeholder={t.newGroupPlaceholder}
+              aria-label={t.newGroupPlaceholder}
+              className="input !py-1.5 flex-1 min-w-0"
+            />
+            <button type="button" onClick={() => addGroup(newName)} disabled={!newName.trim()} className="btno shrink-0 disabled:opacity-40">
+              + {t.addGroup}
+            </button>
+          </div>
+          {unusedSaved.length > 0 && (
+            <div className="flex flex-wrap items-center gap-1.5">
+              <span className="text-[12px] text-ink/50 mr-1">{t.savedCategories}:</span>
+              {unusedSaved.map((c) => (
+                <button
+                  key={c}
+                  type="button"
+                  onClick={() => addGroup(c)}
+                  className="rounded-full border border-ink/20 px-3 py-1 text-[12px] text-ink/85 hover:border-accent hover:text-ink transition-colors"
+                >
+                  + {c}
+                </button>
+              ))}
+            </div>
+          )}
+          <button
+            type="button"
+            onClick={() => {
+              const item = blankGroupItem();
+              setLoose([...loose, item]);
+              setFocusKey(item.key);
             }}
-            placeholder={t.newGroupPlaceholder}
-            aria-label={t.newGroupPlaceholder}
-            className="input flex-1 min-w-0"
-          />
-          <button type="button" onClick={() => addGroup(newName)} disabled={!newName.trim()} className="btn shrink-0 disabled:opacity-40">
-            + {t.addGroup}
+            className={`self-start ${LINK_BTN}`}
+          >
+            + {t.addUngroupedItem}
           </button>
         </div>
-        {unusedSaved.length > 0 && (
-          <div className="flex flex-wrap items-center gap-1.5">
-            <span className="text-[10px] placeholder-text mr-1">{t.savedCategories}:</span>
-            {unusedSaved.map((c) => (
-              <button
-                key={c}
-                type="button"
-                onClick={() => addGroup(c)}
-                className="rounded-full border border-ink/20 px-3 py-1 text-[12px] text-ink/85 hover:border-accent hover:text-ink transition-colors"
-              >
-                + {c}
-              </button>
-            ))}
-          </div>
-        )}
-        <button
-          type="button"
-          onClick={() => {
-            const item = blankGroupItem();
-            setLoose([...loose, item]);
-            setFocusKey(item.key);
-          }}
-          className="self-start text-[10px] tracking-[0.1em] uppercase placeholder-text hover:text-accent transition-colors"
-        >
-          + {t.addUngroupedItem}
-        </button>
       </div>
 
-      <div className="flex flex-wrap justify-end items-center gap-x-6 gap-y-1 text-[13px]">
-        <div>
-          <span className="heading-label mr-2">{t.base}</span>
+      <div className="flex flex-wrap justify-end items-baseline gap-x-8 gap-y-1 pr-1">
+        <div className="flex items-baseline gap-2 text-[13px] tabular-nums">
+          <span className={HEAD}>{t.base}</span>
           {formatCurrency(base, currency)}
         </div>
-        <div>
-          <span className="heading-label mr-2">{t.vat}</span>
+        <div className="flex items-baseline gap-2 text-[13px] tabular-nums">
+          <span className={HEAD}>{t.vat}</span>
           {formatCurrency(vat, currency)}
         </div>
-        <div className="flex items-center gap-1.5">
-          <span className="heading-label mr-1">{t.toPay}</span>
-          <span className="font-semibold text-base">{formatCurrency(base + vat, currency)}</span>
-          <span className="tag tag-neutral">{currency}</span>
+        <div className="flex items-baseline gap-2">
+          <span className={HEAD}>{t.toPay}</span>
+          <span className="text-[20px] font-semibold tabular-nums">{formatCurrency(base + vat, currency)}</span>
         </div>
       </div>
     </div>
