@@ -12,6 +12,7 @@ import {
   type ItemGroup,
 } from "@/lib/quote-groups";
 import { useConfirmDialog } from "@/components/ui/ConfirmDialogProvider";
+import { TrashIcon } from "@/components/ui/icons";
 
 type T = Dictionary["finance"]["lineItems"];
 
@@ -171,7 +172,7 @@ export function QuoteItemGroups({
           aria-label={t.removeBtn}
           className={ICON_BTN}
         >
-          ×
+          <TrashIcon size={14} />
         </button>
       </div>
     ));
@@ -245,7 +246,7 @@ export function QuoteItemGroups({
                   {formatCurrency(subtotal(group.items), currency)}
                 </span>
                 <button type="button" onClick={() => removeGroup(group)} title={t.removeGroup} aria-label={t.removeGroup} className={ICON_BTN}>
-                  ×
+                  <TrashIcon size={14} />
                 </button>
               </div>
               {duplicate && <p className="text-[12px] text-warning md:pl-[30px]">{t.duplicateGroup}</p>}
