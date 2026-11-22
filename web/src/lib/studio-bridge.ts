@@ -45,6 +45,13 @@ export async function loadIntoApp(app: StudioApp, frame: Window, data: string) {
   await open(new FrameFile([data], "studio.vmixph.json", { type: "application/json" }));
 }
 
+/** Presses the app's own export button, so it downloads its project file the way it always does. Returns false if the button isn't there. */
+export function exportFromApp(app: StudioApp, frame: Window) {
+  const button = frame.document.querySelector<HTMLElement>(app.exportButton);
+  button?.click();
+  return Boolean(button);
+}
+
 /** The app's current work as the string to store, plus the title the app itself gives it, if any. */
 export async function readFromApp(app: StudioApp, frame: Window): Promise<{ data: string; title: string | null }> {
   const win = frame as FrameWindow;

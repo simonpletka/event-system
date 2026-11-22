@@ -13,14 +13,16 @@
  *   loads and reads them back to save. `data` is then `{ storage: { key: value } }`.
  */
 export const STUDIO_APPS = [
-  { slug: "vmix-placeholders", kind: "global", storageKeys: [] },
-  { slug: "shortcut-cheatsheet", kind: "storage", storageKeys: ["vmix-cheatsheet-v1"] },
+  { slug: "vmix-placeholders", kind: "global", storageKeys: [], exportButton: "#btnSave" },
+  { slug: "shortcut-cheatsheet", kind: "storage", storageKeys: ["vmix-cheatsheet-v1"], exportButton: "#b-export" },
   {
     slug: "setup-diagram",
     kind: "storage",
     storageKeys: ["av-setup-diagram.autosave.v1", "av-setup-diagram.custom-devices.v1", "av-setup-diagram.model-images.v1"],
+    exportButton: 'button[title^="Save project file"]',
   },
-] as const satisfies readonly { slug: string; kind: "global" | "storage"; storageKeys: readonly string[] }[];
+] as const satisfies readonly { slug: string; kind: "global" | "storage"; storageKeys: readonly string[]; exportButton: string }[];
+// `exportButton` is the app's own "export project file" button, pressed from the Exit dialog.
 
 export type StudioApp = (typeof STUDIO_APPS)[number];
 export type StudioAppSlug = StudioApp["slug"];
