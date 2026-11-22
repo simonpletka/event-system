@@ -5,6 +5,8 @@ import { prisma } from "@/lib/prisma";
 import { parseProjectSlug } from "@/lib/slug";
 import { getLocale } from "@/lib/i18n";
 import { ProjectFiles } from "@/components/projects/ProjectFiles";
+import { ProjectStudioWorks } from "@/components/studio/ProjectStudioWorks";
+import { getStudioWorks } from "@/lib/queries/studio";
 
 export default async function FilesTab({ params }: { params: Promise<{ slug: string }> }) {
   const user = await requireUser();
@@ -22,18 +24,29 @@ export default async function FilesTab({ params }: { params: Promise<{ slug: str
     orderBy: { createdAt: "desc" },
   });
 
+  const [studioWorks, locale] = await Promise.all([getStudioWorks(user, { projectId: id }), getLocale()]);
+  const editable = canEditProject(user, { ownerId: project.ownerId, memberIds: project.members.map((m) => m.userId) });
+
   return (
-    <ProjectFiles
-      projectId={id}
-      files={files.map((f) => ({
-        id: f.id,
-        name: f.name,
-        size: f.size,
-        addedAt: f.createdAt.toISOString(),
-        addedBy: f.uploadedBy.name,
-      }))}
-      editable={canEditProject(user, { ownerId: project.ownerId, memberIds: project.members.map((m) => m.userId) })}
-      locale={await getLocale()}
-    />
+    <div className="space-y-5">
+      <ProjectStudioWorks
+        projectId={id}
+        works={studioWorks}
+        canAdd={editable}
+        locale={locale}
+      />
+      <ProjectFiles
+        projectId={id}
+        files={files.map((f) => ({
+          id: f.id,
+          name: f.name,
+          size: f.size,
+          addedAt: f.createdAt.toISOString(),
+          addedBy: f.uploadedBy.name,
+        }))}
+        editable={editable}
+        locale={locale}
+      />
+    </div>
   );
 }

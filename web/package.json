@@ -13,7 +13,8 @@
     "seed:empty": "tsx prisma/seed-empty.ts",
     "dev:demo": "npm run seed:demo && next dev",
     "dev:empty": "npm run seed:empty && next dev",
-    "drive:auth": "tsx scripts/drive-auth.ts"
+    "drive:auth": "tsx scripts/drive-auth.ts",
+    "studio:sync": "node scripts/sync-studio-apps.mjs"
   },
   "dependencies": {
     "@auth/prisma-adapter": "^2.11.3",

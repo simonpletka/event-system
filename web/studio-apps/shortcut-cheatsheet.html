@@ -1,0 +1,803 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>vMix Shortcut Cheatsheet</title>
+<style>
+/* Colours & font taken from the Production app (PRODUCTION_APP/web/src/app/globals.css) */
+@font-face{font-family:"Neue Regrade";src:url("../PRODUCTION_APP/web/src/fonts/neue-regrade/NeueRegrade-Regular.ttf") format("truetype");font-weight:100 549;font-display:swap}
+@font-face{font-family:"Neue Regrade";src:url("../PRODUCTION_APP/web/src/fonts/neue-regrade/NeueRegrade-Bold.ttf") format("truetype");font-weight:550 900;font-display:swap}
+:root{
+  --bg:#131211;--surface:#1a1918;--ink:#f3f2f2;--accent:#ec3013;--accent-hover:color-mix(in srgb,var(--accent) 85%,black);
+  --warning:#dc2626;--attention:#f5a524;
+  --muted:color-mix(in srgb,var(--ink) 58%,transparent);--line:color-mix(in srgb,var(--ink) 12%,transparent);
+  --field:color-mix(in srgb,var(--ink) 4%,transparent);--field-line:color-mix(in srgb,var(--ink) 16%,transparent);
+  --hover:color-mix(in srgb,var(--ink) 7%,transparent);
+}
+*{box-sizing:border-box;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+html,body{margin:0}
+html{overflow-x:clip}
+body{font:14px/1.45 "Neue Regrade",-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;color:var(--ink);color-scheme:dark;accent-color:var(--accent);min-height:100vh;
+  background:radial-gradient(ellipse 1400px 820px at 16% 6%,color-mix(in srgb,var(--accent) 18%,transparent),transparent 62%),
+    radial-gradient(ellipse 900px 520px at 92% -4%,color-mix(in srgb,var(--ink) 6%,transparent),transparent 55%),var(--bg);background-attachment:fixed}
+button,input,select,textarea{font:inherit;color:inherit}
+
+/* ---------- top bar (glass panel) ---------- */
+.top{position:sticky;top:0;z-index:20;display:flex;align-items:center;gap:14px;padding:10px 20px;flex-wrap:wrap;
+  background:linear-gradient(165deg,color-mix(in srgb,var(--ink) 9%,transparent),color-mix(in srgb,var(--ink) 2%,transparent)),color-mix(in srgb,var(--bg) 72%,transparent);
+  backdrop-filter:blur(28px);-webkit-backdrop-filter:blur(28px);border-bottom:1px solid color-mix(in srgb,var(--ink) 16%,transparent)}
+.brand{font-weight:700;letter-spacing:.01em;white-space:nowrap}
+.brand small{font-weight:400;color:var(--muted);margin-left:6px}
+.steps{display:flex;gap:4px}
+.steps button{background:transparent;color:var(--muted);border:0;padding:7px 14px;border-radius:999px;cursor:pointer;white-space:nowrap}
+.steps button:hover{background:var(--hover);color:var(--ink)}
+.steps button.on{background:var(--accent);color:#fff;font-weight:600}
+.steps .n{display:inline-grid;place-items:center;width:18px;height:18px;border-radius:50%;background:var(--hover);color:inherit;font-size:11px;margin-right:6px}
+.steps button.on .n{background:rgba(0,0,0,.22)}
+.spacer{flex:1}
+.status{font-size:12px;color:var(--muted)}
+
+main{padding:20px;max-width:1560px;margin:0 auto}
+.view{display:none}
+.view.on{display:block}
+.card{background:linear-gradient(160deg,color-mix(in srgb,var(--ink) 5%,transparent),color-mix(in srgb,var(--ink) 1%,transparent)),var(--surface);
+  border:1px solid var(--line);border-radius:16px;padding:20px}
+.card h2{margin:0 0 14px;font-size:15px;font-weight:700}
+.muted{color:var(--muted)}
+.small{font-size:12px}
+
+/* ---------- form controls ---------- */
+.fld{display:flex;flex-direction:column;gap:5px;font-size:12px;font-weight:600;color:color-mix(in srgb,var(--ink) 82%,transparent);margin-bottom:12px}
+.fld .hint{font-weight:400;color:var(--muted)}
+input[type=text],input:not([type]),select,textarea{border:1px solid var(--field-line);border-radius:10px;padding:8px 10px;background:var(--field);font-size:14px;font-weight:400;width:100%}
+select option{background:var(--surface)}
+input::placeholder,textarea::placeholder{color:color-mix(in srgb,var(--ink) 35%,transparent)}
+textarea{resize:vertical;min-height:54px}
+input:focus,select:focus,textarea:focus{outline:2px solid var(--accent);outline-offset:-1px;border-color:transparent}
+input[type=color]{width:34px;height:30px;padding:2px;border:1px solid var(--field-line);border-radius:8px;background:var(--field);cursor:pointer}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.seg{display:flex;flex-wrap:wrap;gap:6px}
+.seg button{border:1px solid var(--field-line);background:var(--field);border-radius:10px;padding:7px 12px;cursor:pointer;text-align:left}
+.seg button:hover{background:var(--hover)}
+.seg button small{display:block;font-size:11px;color:var(--muted);font-weight:400}
+.seg button.on{border-color:var(--accent);background:var(--accent);color:#fff}
+.seg button.on small{color:rgba(255,255,255,.75)}
+.btn{border:1px solid var(--field-line);background:var(--field);border-radius:999px;padding:8px 16px;cursor:pointer;font-weight:600;font-size:13px}
+.btn:hover{background:var(--hover)}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:#fff}
+.btn.primary:hover{background:var(--accent-hover)}
+.btn.danger{color:#f26b5b}
+.btns{display:flex;flex-wrap:wrap;gap:8px}
+.warn{background:color-mix(in srgb,var(--attention) 14%,transparent);color:var(--attention);border-radius:10px;padding:8px 12px;font-size:13px;margin-top:10px}
+
+.setup-grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:20px;align-items:start}
+.preview-title{margin:24px 0 10px;font-size:12px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.1em}
+
+/* ---------- categories manager ---------- */
+.cat-row{display:grid;grid-template-columns:34px 1fr 1.3fr 30px;gap:8px;align-items:center;margin-bottom:8px}
+.cat-row input{padding:6px 8px;font-size:13px}
+.iconbtn{border:0;background:transparent;cursor:pointer;font-size:18px;color:var(--muted);border-radius:8px;height:30px}
+.iconbtn:hover{background:var(--hover);color:#f26b5b}
+
+/* ---------- keyboard (light = printed sheet, .dark = app GUI) ---------- */
+.kb-frame{background:linear-gradient(#e4e4e2,#d6d6d3);border-radius:14px;padding:1.1%;box-shadow:0 1px 0 #fff inset,0 2px 8px rgba(0,0,0,.12)}
+.kb-frame.dark{background:linear-gradient(160deg,color-mix(in srgb,var(--ink) 6%,transparent),color-mix(in srgb,var(--ink) 1%,transparent)),var(--surface);
+  border:1px solid var(--line);border-radius:18px;box-shadow:0 18px 40px rgba(0,0,0,.35)}
+.kb-wrap{container-type:inline-size;width:100%}
+.kb{position:relative;width:100%;--u:calc(100cqw / var(--W));--g:calc(var(--u) * .045);height:calc(var(--u) * var(--H))}
+.key{position:absolute;left:calc(var(--x) * var(--u));top:calc(var(--y) * var(--u));width:calc(var(--w) * var(--u));height:calc(var(--h) * var(--u));padding:var(--g)}
+.interactive .key{cursor:pointer}
+.cap{position:relative;width:100%;height:100%;border-radius:calc(var(--u) * .08);background:linear-gradient(#fafafa,#ededeb);color:#8e8e8e;
+  box-shadow:0 0 0 1px rgba(0,0,0,.13),inset 0 calc(var(--u) * -.05) 0 rgba(0,0,0,.07),0 calc(var(--u) * .03) calc(var(--u) * .04) rgba(0,0,0,.12);overflow:hidden}
+.kb-frame.dark .cap{background:linear-gradient(#2c2a28,#232120);color:color-mix(in srgb,var(--ink) 50%,transparent);
+  box-shadow:0 0 0 1px rgba(0,0,0,.55),inset 0 1px 0 rgba(255,255,255,.06),inset 0 calc(var(--u) * -.05) 0 rgba(0,0,0,.3)}
+.interactive .key:hover .cap{filter:brightness(.95)}
+.kb-frame.dark .key:hover .cap{filter:brightness(1.25)}
+.legend{position:absolute;left:calc(var(--u) * .09);top:calc(var(--u) * .06);font-size:calc(var(--u) * .19);line-height:1.08;white-space:pre}
+.lbl{position:absolute;left:4%;right:4%;bottom:calc(var(--u) * .09);text-align:center;font-weight:650;text-transform:uppercase;font-size:calc(var(--u) * .145);line-height:1.05;overflow-wrap:anywhere;white-space:pre-line}
+.lbl.sm{font-size:calc(var(--u) * .118)}
+.lbl .m{display:block;font-size:.85em;opacity:.85}
+.badge{position:absolute;right:calc(var(--u) * .06);top:calc(var(--u) * .06);font-size:calc(var(--u) * .12);font-weight:700;padding:0 calc(var(--u) * .04);border-radius:calc(var(--u) * .05);background:rgba(0,0,0,.28);color:#fff}
+.key.set .cap{background:linear-gradient(color-mix(in srgb,var(--c) 88%,#fff),var(--c));color:var(--t);
+  box-shadow:0 0 0 1px color-mix(in srgb,var(--c) 70%,#000),inset 0 calc(var(--u) * -.06) 0 rgba(0,0,0,.18),0 calc(var(--u) * .03) calc(var(--u) * .04) rgba(0,0,0,.18)}
+.key.set .legend{opacity:.9}
+.key.combo .cap{box-shadow:inset 0 0 0 calc(var(--u) * .055) var(--c),0 0 0 1px rgba(0,0,0,.13)}
+.key.combo .lbl{color:color-mix(in srgb,var(--c) 75%,#000)}
+.kb-frame.dark .key.combo .lbl{color:color-mix(in srgb,var(--c) 70%,#fff)}
+.key.iso{filter:drop-shadow(0 0 .6px rgba(0,0,0,.55)) drop-shadow(0 calc(var(--u) * .03) calc(var(--u) * .03) rgba(0,0,0,.14))}
+.key.iso .cap{clip-path:polygon(0 0,100% 0,100% 100%,calc(var(--u) * .25) 100%,calc(var(--u) * .25) calc(var(--u) - 2 * var(--g)),0 calc(var(--u) - 2 * var(--g)))}
+.key.sel .cap{outline:calc(var(--u) * .06) solid var(--ink);outline-offset:calc(var(--u) * .015);z-index:2}
+.key.sel{z-index:3}
+.key.iso.sel{filter:drop-shadow(0 0 calc(var(--u) * .04) var(--ink)) drop-shadow(0 0 1px var(--ink))}
+
+/* ---------- key editor ---------- */
+.keys-grid{display:grid;grid-template-columns:minmax(0,1.6fr) minmax(280px,1fr);gap:20px;margin-top:20px;align-items:start}
+.empty{padding:30px;text-align:center;color:var(--muted)}
+.empty b{color:var(--ink)}
+.ed-head{display:flex;align-items:flex-end;gap:14px;flex-wrap:wrap;margin-bottom:14px}
+.ed-cap{width:56px;height:56px;border-radius:10px;background:linear-gradient(#2c2a28,#232120);box-shadow:0 0 0 1px rgba(0,0,0,.55),inset 0 1px 0 rgba(255,255,255,.06),inset 0 -3px 0 rgba(0,0,0,.3);display:flex;align-items:flex-start;padding:5px 7px;font-size:14px;color:var(--muted);white-space:pre;line-height:1.05;flex:none}
+.ed-title .big{font-size:20px;font-weight:700}
+.ed-name{margin:0;flex:1;min-width:180px}
+.bcard{border:1px solid var(--line);border-radius:14px;padding:14px;margin-bottom:12px;background:color-mix(in srgb,var(--ink) 2.5%,transparent)}
+.bc-top{display:flex;align-items:center;gap:10px;margin-bottom:12px;flex-wrap:wrap}
+.combo-prev{font-weight:700;font-size:14px;background:var(--hover);padding:3px 10px;border-radius:999px}
+.mods{display:flex;gap:4px}
+.mod{border:1px solid var(--field-line);background:var(--field);border-radius:999px;padding:3px 10px;font-size:12px;cursor:pointer}
+.mod.on{background:var(--accent);color:#fff;border-color:var(--accent)}
+.linkbtn{border:0;background:none;color:#f26b5b;cursor:pointer;font-size:12px;margin-left:auto}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--field-line);background:var(--field);border-radius:999px;padding:4px 11px 4px 6px;cursor:pointer;font-size:13px;font-weight:500}
+.chip:hover{background:var(--hover)}
+.chip .dot{width:14px;height:14px;border-radius:50%;background:var(--c)}
+.chip.on{background:var(--c);border-color:var(--c);color:var(--t)}
+.chip.on .dot{background:var(--t);opacity:.55}
+
+.side-list .grp{margin-bottom:10px}
+.side-list .gh{display:flex;align-items:center;gap:6px;font-weight:700;font-size:11px;text-transform:uppercase;letter-spacing:.08em;margin-bottom:4px;color:var(--muted)}
+.side-list .gh .dot{width:10px;height:10px;border-radius:3px;background:var(--c)}
+.side-list .it{display:flex;gap:8px;padding:3px 8px;border-radius:8px;cursor:pointer;font-size:13px}
+.side-list .it:hover{background:var(--hover)}
+.side-list .it b{min-width:64px}
+.tip{font-size:12px;color:var(--muted);margin-top:10px}
+details.card summary{cursor:pointer;font-weight:600}
+details.card[open] summary{margin-bottom:12px}
+
+/* ---------- cheatsheet ---------- */
+.sheet-tools{display:flex;flex-wrap:wrap;align-items:center;gap:18px;margin-bottom:16px}
+.sheet-tools label{display:flex;align-items:center;gap:8px;font-size:13px}
+.sheet{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;background:#fff;padding:26px 30px 30px;box-shadow:0 18px 40px rgba(0,0,0,.35);border-radius:6px;color-scheme:light;color:#111;font-size:var(--fs)}
+.sheet-head{display:flex;align-items:center;gap:.8em;flex-wrap:wrap;margin-bottom:1em}
+.sheet-title{background:var(--acc);color:var(--acct);font-weight:800;font-size:2.15em;line-height:1.15;padding:.05em .4em;text-transform:uppercase;letter-spacing:.01em}
+.sheet-sub{font-weight:800;font-size:1.75em}
+.cols{column-count:var(--cols);column-gap:2.5em}
+.cat{break-inside:avoid;margin:0 0 1.2em;padding-left:.1em}
+.cat h3{margin:0 0 .25em;font-size:1.2em;font-weight:800;text-transform:uppercase;display:flex;align-items:center;gap:.45em}
+.cat h3 .sw{width:.75em;height:.75em;border-radius:.15em;background:var(--c);flex:none}
+.cat .cnote{font-weight:700;font-size:.88em;margin:-.1em 0 .3em}
+.cat .g{display:grid;grid-template-columns:minmax(4em,max-content) 1fr;column-gap:1.4em;row-gap:.12em}
+.cat .k{font-weight:800;white-space:nowrap}
+.cat .n{grid-column:2;color:#666;font-size:.86em;font-style:italic;margin-top:-.1em;margin-bottom:.15em;white-space:pre-line}
+.sheet .kb-frame{margin-top:1.2em}
+.sheet-notes{white-space:pre-line;font-weight:600;border-left:.3em solid var(--acc);background:#f6f6f4;padding:.6em .9em;margin-top:.2em;line-height:1.5}
+.sheet-empty{padding:40px;text-align:center;color:#777}
+
+@media (max-width:900px){
+  .setup-grid,.keys-grid,.row2{grid-template-columns:1fr}
+  main{padding:14px}
+}
+@media print{
+  @page{size:landscape;margin:8mm}
+  body{background:#fff}
+  .top,.sheet-tools,.noprint{display:none!important}
+  main{padding:0;max-width:none}
+  .view{display:none!important}
+  #view-sheet{display:block!important}
+  .sheet{box-shadow:none;padding:0;border-radius:0}
+}
+</style>
+</head>
+<body>
+
+<header class="top">
+  <div class="brand">vMix Cheatsheet <small>keyboard shortcut builder</small></div>
+  <nav class="steps">
+    <button data-view="setup"><span class="n">1</span>Setup</button>
+    <button data-view="keys"><span class="n">2</span>Assign keys</button>
+    <button data-view="sheet"><span class="n">3</span>Cheatsheet</button>
+  </nav>
+  <div class="spacer"></div>
+  <span class="status" id="status">Saved in this browser</span>
+</header>
+
+<main>
+  <!-- ============ SETUP ============ -->
+  <section class="view" id="view-setup">
+    <div class="setup-grid">
+      <div class="card">
+        <h2>Cheatsheet</h2>
+        <div class="row2">
+          <label class="fld">Title<input id="s-title"></label>
+          <label class="fld">Subtitle<input id="s-subtitle"></label>
+        </div>
+        <label class="fld" style="flex-direction:row;align-items:center;gap:10px">Title colour <input type="color" id="s-accent"></label>
+        <label class="fld">General notes on the sheet <span class="hint">things that aren't a key – shown in a box under the shortcuts</span><textarea id="s-notes" rows="3" placeholder="e.g. Audio: Master = CZ, Bus B = EN"></textarea></label>
+
+        <h2 style="margin-top:8px">Keyboard</h2>
+        <div class="row2">
+          <label class="fld">Language<select id="s-lang"></select></label>
+          <label class="fld">Physical layout<select id="s-phys">
+            <option value="auto">Auto (from language)</option>
+            <option value="ansi">ANSI – wide Enter, long left Shift</option>
+            <option value="iso">ISO – tall Enter, extra key next to Shift</option>
+          </select></label>
+        </div>
+        <div class="fld">Size
+          <div class="seg" id="s-size"></div>
+        </div>
+        <div id="s-missing"></div>
+
+        <h2 style="margin-top:8px">List</h2>
+        <div class="row2">
+          <div class="fld">Key names in the list
+            <div class="seg" id="s-naming">
+              <button data-v="vmix">vMix names<small>D1, NumPad1, Multiply</small></button>
+              <button data-v="keycap">Keycap names<small>1, Num 1, Num *</small></button>
+            </div>
+          </div>
+          <div class="fld">Order inside a category
+            <div class="seg" id="s-sort">
+              <button data-v="added">Order added</button>
+              <button data-v="keyboard">Keyboard position</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div>
+        <div class="card">
+          <h2>Categories <span class="muted small" style="font-weight:400">– colour of the keys and the groups in the list</span></h2>
+          <div class="cats-mgr" id="cats-setup"></div>
+        </div>
+        <div class="card" style="margin-top:20px">
+          <h2>File</h2>
+          <div class="btns">
+            <button class="btn" id="b-export">Save to file (.json)</button>
+            <button class="btn" id="b-import">Open file…</button>
+            <button class="btn" id="b-example">Load example</button>
+            <button class="btn danger" id="b-reset">Start new</button>
+            <input type="file" id="f-import" accept=".json,application/json" hidden>
+          </div>
+          <p class="tip">Your work is saved automatically in this browser. Use “Save to file” to keep copies of different cheatsheets or share them.</p>
+        </div>
+        <div style="margin-top:20px;text-align:right"><button class="btn primary" data-goto="keys">Next: assign keys →</button></div>
+      </div>
+    </div>
+    <div class="preview-title">Preview</div>
+    <div id="kb-preview"></div>
+  </section>
+
+  <!-- ============ KEYS ============ -->
+  <section class="view" id="view-keys">
+    <div id="kb-edit" class="interactive"></div>
+    <div class="keys-grid">
+      <div class="card" id="editor"></div>
+      <div>
+        <div class="card">
+          <h2>Assigned shortcuts</h2>
+          <div class="side-list" id="side-list"></div>
+          <div style="margin-top:12px;text-align:right"><button class="btn primary" data-goto="sheet">View cheatsheet →</button></div>
+        </div>
+        <details class="card" style="margin-top:20px">
+          <summary>Edit categories</summary>
+          <div class="cats-mgr" id="cats-keys"></div>
+        </details>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ SHEET ============ -->
+  <section class="view" id="view-sheet">
+    <div class="sheet-tools">
+      <label>Columns <span class="seg" id="t-cols"></span></label>
+      <label>Text size <input type="range" id="t-fs" min="9" max="22" step="0.5"></label>
+      <label><input type="checkbox" id="t-notes"> Show notes</label>
+      <label><input type="checkbox" id="t-kb"> Show keyboard</label>
+      <div class="spacer"></div>
+      <button class="btn primary" id="b-pdf">Download PDF</button>
+      <button class="btn" id="b-print">Print…</button>
+    </div>
+    <div class="sheet" id="sheet"></div>
+  </section>
+</main>
+
+<script>
+/* ================= data: layouts ================= */
+const R1=['Backquote','Digit1','Digit2','Digit3','Digit4','Digit5','Digit6','Digit7','Digit8','Digit9','Digit0','Minus','Equal'];
+const R2=['KeyQ','KeyW','KeyE','KeyR','KeyT','KeyY','KeyU','KeyI','KeyO','KeyP','BracketLeft','BracketRight','Backslash'];
+const R3=['KeyA','KeyS','KeyD','KeyF','KeyG','KeyH','KeyJ','KeyK','KeyL','Semicolon','Quote'];
+const R4=['IntlBackslash','KeyZ','KeyX','KeyC','KeyV','KeyB','KeyN','KeyM','Comma','Period','Slash'];
+
+// each language: base & shifted legends per row (space separated), iso flag, decimal key
+const LANGS={
+  us:{name:'English (US)',iso:false,dec:'.',r:[
+    ['` 1 2 3 4 5 6 7 8 9 0 - =','~ ! @ # $ % ^ & * ( ) _ +'],
+    ['q w e r t y u i o p [ ] \\','Q W E R T Y U I O P { } |'],
+    ['a s d f g h j k l ; \'','A S D F G H J K L : "'],
+    ['\\ z x c v b n m , . /','| Z X C V B N M < > ?']]},
+  uk:{name:'English (UK)',iso:true,dec:'.',r:[
+    ['` 1 2 3 4 5 6 7 8 9 0 - =','¬ ! " £ $ % ^ & * ( ) _ +'],
+    ['q w e r t y u i o p [ ] #','Q W E R T Y U I O P { } ~'],
+    ['a s d f g h j k l ; \'','A S D F G H J K L : @'],
+    ['\\ z x c v b n m , . /','| Z X C V B N M < > ?']]},
+  cz:{name:'Czech (QWERTZ)',iso:true,dec:',',altgr:true,r:[
+    ['; + ě š č ř ž ý á í é = ´','° 1 2 3 4 5 6 7 8 9 0 % ˇ'],
+    ['q w e r t z u i o p ú ) ¨','Q W E R T Z U I O P / ( \''],
+    ['a s d f g h j k l ů §','A S D F G H J K L " !'],
+    ['\\ y x c v b n m , . -','| Y X C V B N M ? : _']]},
+  sk:{name:'Slovak (QWERTZ)',iso:true,dec:',',altgr:true,r:[
+    ['; + ľ š č ť ž ý á í é = ´','° 1 2 3 4 5 6 7 8 9 0 % ˇ'],
+    ['q w e r t z u i o p ú ä ň','Q W E R T Z U I O P / ( )'],
+    ['a s d f g h j k l ô §','A S D F G H J K L " !'],
+    ['& y x c v b n m , . -','* Y X C V B N M ? : _']]},
+  de:{name:'German (QWERTZ)',iso:true,dec:',',altgr:true,r:[
+    ['^ 1 2 3 4 5 6 7 8 9 0 ß ´','° ! " § $ % & / ( ) = ? `'],
+    ['q w e r t z u i o p ü + #','Q W E R T Z U I O P Ü * \''],
+    ['a s d f g h j k l ö ä','A S D F G H J K L Ö Ä'],
+    ['< y x c v b n m , . -','> Y X C V B N M ; : _']]},
+  fr:{name:'French (AZERTY)',iso:true,dec:'.',altgr:true,r:[
+    ['² & é " \' ( - è _ ç à ) =','² 1 2 3 4 5 6 7 8 9 0 ° +'],
+    ['a z e r t y u i o p ^ $ *','A Z E R T Y U I O P ¨ £ µ'],
+    ['q s d f g h j k l m ù','Q S D F G H J K L M %'],
+    ['< w x c v b n , ; : !','> W X C V B N ? . / §']]},
+  es:{name:'Spanish',iso:true,dec:'.',altgr:true,r:[
+    ['º 1 2 3 4 5 6 7 8 9 0 \' ¡','ª ! " · $ % & / ( ) = ? ¿'],
+    ['q w e r t y u i o p ` + ç','Q W E R T Y U I O P ^ * Ç'],
+    ['a s d f g h j k l ñ ´','A S D F G H J K L Ñ ¨'],
+    ['< z x c v b n m , . -','> Z X C V B N M ; : _']]},
+  it:{name:'Italian',iso:true,dec:'.',altgr:true,r:[
+    ['\\ 1 2 3 4 5 6 7 8 9 0 \' ì','| ! " £ $ % & / ( ) = ? ^'],
+    ['q w e r t y u i o p è + ù','Q W E R T Y U I O P é * §'],
+    ['a s d f g h j k l ò à','A S D F G H J K L ç °'],
+    ['< z x c v b n m , . -','> Z X C V B N M ; : _']]},
+};
+// build code -> [base, shift] map per language
+for(const L of Object.values(LANGS)){
+  L.map={};
+  [R1,R2,R3,R4].forEach((codes,ri)=>{
+    const b=L.r[ri][0].split(' '), s=L.r[ri][1].split(' ');
+    codes.forEach((c,i)=>{ if(b[i]!==undefined) L.map[c]=[b[i],s[i]??b[i]]; });
+  });
+}
+
+const SIZES=[
+  {v:'full',name:'Full size',sub:'with numpad'},
+  {v:'tkl',name:'Tenkeyless',sub:'no numpad'},
+  {v:'compact',name:'Compact',sub:'no nav keys, no numpad'},
+  {v:'60',name:'60 %',sub:'no F-keys'},
+];
+
+function geometry(size,iso){
+  const K=[];const add=(code,x,y,w=1,h=1,extra)=>K.push({code,x,y,w,h,...extra});
+  const hasF=size!=='60', top=hasF?1.25:0;
+  if(hasF){
+    add('Escape',0,0);
+    for(let i=0;i<4;i++){add('F'+(i+1),2+i,0);add('F'+(i+5),6.5+i,0);add('F'+(i+9),11+i,0);}
+  }
+  const y=[top,top+1,top+2,top+3,top+4];
+  R1.forEach((c,i)=>add(c,i,y[0])); add('Backspace',13,y[0],2);
+  add('Tab',0,y[1],1.5); R2.slice(0,12).forEach((c,i)=>add(c,1.5+i,y[1]));
+  if(iso) add('Enter',13.5,y[1],1.5,2,{iso:true}); else add('Backslash',13.5,y[1],1.5);
+  add('CapsLock',0,y[2],1.75); R3.forEach((c,i)=>add(c,1.75+i,y[2]));
+  if(iso) add('Backslash',12.75,y[2]); else add('Enter',12.75,y[2],2.25);
+  if(iso){add('ShiftLeft',0,y[3],1.25);add('IntlBackslash',1.25,y[3]);} else add('ShiftLeft',0,y[3],2.25);
+  R4.slice(1).forEach((c,i)=>add(c,2.25+i,y[3])); add('ShiftRight',12.25,y[3],2.75);
+  [['ControlLeft',1.25],['MetaLeft',1.25],['AltLeft',1.25],['Space',6.25],['AltRight',1.25],['MetaRight',1.25],['ContextMenu',1.25],['ControlRight',1.25]]
+    .reduce((x,[c,w])=>{add(c,x,y[4],w);return x+w;},0);
+  let W=15;
+  if(size==='full'||size==='tkl'){
+    const n=15.25;
+    ['PrintScreen','ScrollLock','Pause'].forEach((c,i)=>add(c,n+i,0));
+    ['Insert','Home','PageUp'].forEach((c,i)=>add(c,n+i,y[0]));
+    ['Delete','End','PageDown'].forEach((c,i)=>add(c,n+i,y[1]));
+    add('ArrowUp',n+1,y[3]);
+    ['ArrowLeft','ArrowDown','ArrowRight'].forEach((c,i)=>add(c,n+i,y[4]));
+    W=18.25;
+  }
+  if(size==='full'){
+    const p=18.5;
+    ['NumLock','NumpadDivide','NumpadMultiply','NumpadSubtract'].forEach((c,i)=>add(c,p+i,y[0]));
+    ['Numpad7','Numpad8','Numpad9'].forEach((c,i)=>add(c,p+i,y[1])); add('NumpadAdd',p+3,y[1],1,2);
+    ['Numpad4','Numpad5','Numpad6'].forEach((c,i)=>add(c,p+i,y[2]));
+    ['Numpad1','Numpad2','Numpad3'].forEach((c,i)=>add(c,p+i,y[3])); add('NumpadEnter',p+3,y[3],1,2);
+    add('Numpad0',p,y[4],2); add('NumpadDecimal',p+2,y[4]);
+    W=22.5;
+  }
+  return {keys:K,W,H:y[4]+1};
+}
+// stable reading order of every possible key (for "keyboard position" sorting)
+const KEY_ORDER=(()=>{const o={};geometry('full',true).keys.concat(geometry('full',false).keys)
+  .sort((a,b)=>a.y-b.y||a.x-b.x).forEach((k,i)=>{if(!(k.code in o))o[k.code]=i;});return o;})();
+
+const SPECIAL={Escape:'Esc',Backspace:'Backspace',Tab:'Tab',CapsLock:'Caps Lock',Enter:'Enter',ShiftLeft:'Shift',ShiftRight:'Shift',
+  ControlLeft:'Ctrl',ControlRight:'Ctrl',MetaLeft:'Win',MetaRight:'Win',AltLeft:'Alt',ContextMenu:'Menu',Space:'Space',
+  PrintScreen:'Print\nScreen',ScrollLock:'Scroll\nLock',Pause:'Pause\nBreak',Insert:'Insert',Home:'Home',PageUp:'Page\nUp',
+  Delete:'Delete',End:'End',PageDown:'Page\nDown',ArrowUp:'↑',ArrowDown:'↓',ArrowLeft:'←',ArrowRight:'→',
+  NumLock:'Num\nLock',NumpadDivide:'/',NumpadMultiply:'*',NumpadSubtract:'−',NumpadAdd:'+',NumpadEnter:'Enter'};
+const VMIX={Escape:'Escape',Backquote:'Oemtilde',Minus:'OemMinus',Equal:'Oemplus',Backspace:'Back',Tab:'Tab',BracketLeft:'OemOpenBrackets',
+  BracketRight:'Oem6',Backslash:'Oem5',CapsLock:'Capital',Semicolon:'Oem1',Quote:'Oem7',Enter:'Return',ShiftLeft:'ShiftKey',ShiftRight:'ShiftKey',
+  IntlBackslash:'OemBackslash',Comma:'Oemcomma',Period:'OemPeriod',Slash:'OemQuestion',ControlLeft:'ControlKey',ControlRight:'ControlKey',
+  MetaLeft:'LWin',MetaRight:'RWin',AltLeft:'Menu',AltRight:'Menu',Space:'Space',ContextMenu:'Apps',PrintScreen:'PrintScreen',ScrollLock:'Scroll',
+  Pause:'Pause',Insert:'Insert',Home:'Home',PageUp:'PageUp',Delete:'Delete',End:'End',PageDown:'PageDown',ArrowUp:'Up',ArrowDown:'Down',
+  ArrowLeft:'Left',ArrowRight:'Right',NumLock:'NumLock',NumpadDivide:'Divide',NumpadMultiply:'Multiply',NumpadSubtract:'Subtract',
+  NumpadAdd:'Add',NumpadEnter:'Return',NumpadDecimal:'Decimal'};
+const MODS=['Win','Ctrl','Alt','Shift'];
+
+const DEFAULT_CATS=[
+  ['Scenes','#d64541'],['Camera','#b83260'],['Slides','#43a047'],['Pre-recordings','#3f8fe0'],
+  ['Audio','#e8833a'],['Captions','#f1c232'],['Other','#5b4fcf']];
+
+/* ================= state ================= */
+const STORE='vmix-cheatsheet-v1';
+const uid=()=>Math.random().toString(36).slice(2,9);
+let tick=Date.now();
+const now=()=>++tick;
+function defaultState(){return{title:'My vMix production',subtitle:'Keyboard shortcuts',accent:'#ec3013',lang:'us',phys:'auto',size:'full',
+  sheetNotes:'',naming:'vmix',sort:'added',cols:2,fs:15,showNotes:true,showKb:true,view:'setup',
+  categories:DEFAULT_CATS.map(([name,color])=>({id:uid(),name,color,note:''})),keys:{}};}
+function load(){try{const s=JSON.parse(localStorage.getItem(STORE));return s&&s.keys?{...defaultState(),...s}:null;}catch(e){return null;}}
+let state=load()||defaultState();
+const ui={sel:null,lastCat:null};
+let saveTimer;
+function save(){
+  clearTimeout(saveTimer);
+  saveTimer=setTimeout(()=>{try{localStorage.setItem(STORE,JSON.stringify(state));$('#status').textContent='Saved in this browser';}
+    catch(e){$('#status').textContent='Could not save (storage blocked) – use “Save to file”';}},250);
+}
+
+/* ================= helpers ================= */
+const $=s=>document.querySelector(s);
+const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const lang=()=>LANGS[state.lang]||LANGS.us;
+const isISO=()=>state.phys==='auto'?lang().iso:state.phys==='iso';
+const catById=id=>state.categories.find(c=>c.id===id);
+const hasMods=b=>MODS.some(m=>b.mods&&b.mods[m]);
+const isFilled=b=>!!((b.label||'').trim()||(b.desc||'').trim()||(b.notes||'').trim());
+function textOn(hex){
+  const m=/^#?([\da-f]{2})([\da-f]{2})([\da-f]{2})$/i.exec(hex||'');if(!m)return'#fff';
+  const [r,g,b]=m.slice(1).map(h=>{const v=parseInt(h,16)/255;return v<=.03928?v/12.92:Math.pow((v+.055)/1.055,2.4);});
+  return (.2126*r+.7152*g+.0722*b)>.42?'#1d1d1f':'#fff';
+}
+const isLetter=([b,s])=>b!==s&&b.toUpperCase()===s;
+
+function legendFor(code){
+  if(/^F\d+$/.test(code))return code;
+  if(code==='AltRight')return lang().altgr&&isISO()?'Alt Gr':'Alt';
+  if(/^Numpad\d$/.test(code))return code.slice(6);
+  if(code==='NumpadDecimal')return lang().dec;
+  if(SPECIAL[code]!==undefined)return SPECIAL[code];
+  const p=lang().map[code]; if(!p)return '';
+  if(isLetter(p))return p[1];
+  return p[0]===p[1]?p[0]:p[1]+'\n'+p[0];
+}
+function keycapName(code){
+  if(/^Digit\d$/.test(code))return code.slice(5);
+  if(/^Numpad\d$/.test(code))return 'Num '+code.slice(6);
+  if(code.startsWith('Numpad')||code==='NumLock')return 'Num '+(code==='NumLock'?'Lock':legendFor(code));
+  if(code.startsWith('Arrow'))return code.slice(5);
+  const p=lang().map[code];
+  if(p)return isLetter(p)?p[1]:p[0];
+  return legendFor(code).replace('\n',' ');
+}
+function vmixAuto(code){
+  if(/^F\d+$/.test(code))return code;
+  if(/^Digit\d$/.test(code))return 'D'+code.slice(5);
+  if(/^Numpad\d$/.test(code))return 'NumPad'+code.slice(6);
+  const p=lang().map[code];
+  if(p&&/^[a-z]$/.test(p[0]))return p[0].toUpperCase();
+  return VMIX[code]||code.replace(/^Key/,'');
+}
+const autoName=code=>state.naming==='vmix'?vmixAuto(code):keycapName(code);
+const keyName=code=>(state.keys[code]&&state.keys[code].name||'').trim()||autoName(code);
+const modPrefix=b=>MODS.filter(m=>b.mods&&b.mods[m]).map(m=>m+'+').join('');
+const listName=(code,b)=>modPrefix(b)+keyName(code);
+const newBinding=(extra={})=>({id:uid(),t:now(),mods:{},label:'',desc:'',cat:ui.lastCat&&catById(ui.lastCat)?ui.lastCat:null,notes:'',...extra});
+function prune(){
+  for(const [code,d] of Object.entries(state.keys)){
+    if(code===ui.sel)continue;
+    d.bindings=(d.bindings||[]).filter(isFilled);
+    if(!d.bindings.length&&!(d.name||'').trim())delete state.keys[code];
+  }
+}
+
+/* ================= keyboard rendering ================= */
+function keyHTML(k,interactive){
+  const d=state.keys[k.code];const bs=(d&&d.bindings||[]).filter(isFilled);
+  let cls='key'+(k.iso?' iso':''),style=`--x:${k.x};--y:${k.y};--w:${k.w};--h:${k.h}`,lbl='',badge='';
+  if(bs.length){
+    const p=bs.find(b=>!hasMods(b))||bs[0];const cat=catById(p.cat);const c=cat?cat.color:'#8e8e93';
+    cls+=hasMods(p)?' combo':' set';style+=`;--c:${c};--t:${textOn(c)}`;
+    const txt=(p.label||p.desc||'').trim();const longWord=Math.max(0,...txt.split(/\s+/).map(w=>w.length));const short=txt.length>(k.w>1.4?26:14)||longWord>(k.w>1.4?12:7);
+    lbl=`<span class="lbl${short?' sm':''}">${hasMods(p)?`<span class="m">${esc(modPrefix(p).replace(/\+$/,''))}</span>`:''}${esc(txt)}</span>`;
+    if(bs.length>1)badge=`<span class="badge">+${bs.length-1}</span>`;
+  }
+  if(interactive&&ui.sel===k.code)cls+=' sel';
+  // assigned keys get a single-line legend so the label has room
+  const leg=lbl&&lang().map[k.code]?keycapName(k.code):legendFor(k.code);
+  return `<div class="${cls}" data-code="${k.code}" style="${style}" title="${esc(keycapName(k.code))} · vMix: ${esc(vmixAuto(k.code))}"><div class="cap"><span class="legend">${esc(leg)}</span>${lbl}${badge}</div></div>`;
+}
+function renderKeyboard(el,interactive,dark){
+  const g=geometry(state.size,isISO());
+  el.innerHTML=`<div class="kb-frame${dark?' dark':''}"><div class="kb-wrap"><div class="kb" style="--W:${g.W};--H:${g.H}">${g.keys.map(k=>keyHTML(k,interactive)).join('')}</div></div></div>`;
+}
+const currentCodes=()=>new Set(geometry(state.size,isISO()).keys.map(k=>k.code));
+
+/* ================= setup view ================= */
+function segHTML(el,items,val){
+  el.innerHTML=items.map(i=>`<button data-v="${i.v}" class="${i.v===val?'on':''}">${esc(i.name)}${i.sub?`<small>${esc(i.sub)}</small>`:''}</button>`).join('');
+}
+function setSeg(el,val){el.querySelectorAll('button').forEach(b=>b.classList.toggle('on',b.dataset.v===val));}
+function renderSetup(){
+  $('#s-notes').value=state.sheetNotes||'';
+  $('#s-title').value=state.title;$('#s-subtitle').value=state.subtitle;$('#s-accent').value=state.accent;
+  $('#s-lang').innerHTML=Object.entries(LANGS).map(([k,L])=>`<option value="${k}">${L.name}</option>`).join('');
+  $('#s-lang').value=state.lang;$('#s-phys').value=state.phys;
+  segHTML($('#s-size'),SIZES,state.size);
+  setSeg($('#s-naming'),state.naming);setSeg($('#s-sort'),state.sort);
+  renderMissing();
+}
+function renderMissing(){
+  const have=currentCodes();
+  const miss=Object.entries(state.keys).filter(([c,d])=>!have.has(c)&&(d.bindings||[]).some(isFilled)).map(([c])=>keyName(c));
+  $('#s-missing').innerHTML=miss.length?`<div class="warn">${miss.length} assigned key${miss.length>1?'s are':' is'} not on this keyboard size: <b>${esc(miss.join(', '))}</b>. They still appear in the list.</div>`:'';
+}
+function renderCats(){
+  for(const el of document.querySelectorAll('.cats-mgr')){
+    el.innerHTML=state.categories.map(c=>`<div class="cat-row" data-id="${c.id}">
+      <input type="color" data-cf="color" value="${esc(c.color)}">
+      <input data-cf="name" value="${esc(c.name)}" placeholder="Name">
+      <input data-cf="note" value="${esc(c.note||'')}" placeholder="Note under heading (optional)">
+      <button class="iconbtn" data-cdel title="Delete category">×</button></div>`).join('')+
+      `<button class="btn" data-cadd style="margin-top:4px">+ Add category</button>`;
+  }
+}
+document.addEventListener('input',e=>{
+  const row=e.target.closest('.cat-row');if(!row||!e.target.dataset.cf)return;
+  const c=catById(row.dataset.id);if(!c)return;c[e.target.dataset.cf]=e.target.value;
+  // keep the twin manager in sync without stealing focus
+  document.querySelectorAll(`.cat-row[data-id="${c.id}"] [data-cf="${e.target.dataset.cf}"]`).forEach(i=>{if(i!==e.target)i.value=e.target.value;});
+  refresh();if(ui.sel&&$('#view-keys').classList.contains('on'))renderEditor();
+});
+document.addEventListener('click',e=>{
+  if(e.target.closest('[data-cadd]')){
+    const used=state.categories.map(c=>c.color);const pal=['#d64541','#43a047','#3f8fe0','#e8833a','#f1c232','#5b4fcf','#b83260','#16a5a5','#8d6e63','#607d8b'];
+    state.categories.push({id:uid(),name:'New category',color:pal.find(p=>!used.includes(p))||'#607d8b',note:''});
+    renderCats();refresh();renderEditor();
+    const rows=e.target.closest('.cats-mgr').querySelectorAll('[data-cf="name"]');rows[rows.length-1]?.select();
+  }
+  const del=e.target.closest('[data-cdel]');
+  if(del){
+    const id=del.closest('.cat-row').dataset.id;
+    state.categories=state.categories.filter(c=>c.id!==id);
+    Object.values(state.keys).forEach(d=>(d.bindings||[]).forEach(b=>{if(b.cat===id)b.cat=null;}));
+    renderCats();refresh();renderEditor();
+  }
+});
+
+$('#s-title').addEventListener('input',e=>{state.title=e.target.value;refresh();});
+$('#s-notes').addEventListener('input',e=>{state.sheetNotes=e.target.value;refresh();});
+$('#s-subtitle').addEventListener('input',e=>{state.subtitle=e.target.value;refresh();});
+$('#s-accent').addEventListener('input',e=>{state.accent=e.target.value;refresh();});
+$('#s-lang').addEventListener('change',e=>{state.lang=e.target.value;refresh();renderMissing();});
+$('#s-phys').addEventListener('change',e=>{state.phys=e.target.value;refresh();renderMissing();});
+$('#s-size').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;state.size=b.dataset.v;setSeg($('#s-size'),state.size);refresh();renderMissing();});
+$('#s-naming').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;state.naming=b.dataset.v;setSeg($('#s-naming'),state.naming);refresh();});
+$('#s-sort').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;state.sort=b.dataset.v;setSeg($('#s-sort'),state.sort);refresh();});
+
+/* file actions */
+$('#b-export').onclick=()=>{
+  prune();
+  const blob=new Blob([JSON.stringify(state,null,2)],{type:'application/json'});
+  const a=document.createElement('a');a.href=URL.createObjectURL(blob);
+  a.download=fileSlug()+'.json';
+  a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000);
+};
+$('#b-import').onclick=()=>$('#f-import').click();
+$('#f-import').onchange=async e=>{
+  const f=e.target.files[0];if(!f)return;
+  try{const s=JSON.parse(await f.text());if(!s.keys||!s.categories)throw 0;state={...defaultState(),...s,view:'keys'};ui.sel=null;init();}
+  catch(err){alert('This file is not a cheatsheet file.');}
+  e.target.value='';
+};
+$('#b-example').onclick=()=>{if(Object.keys(state.keys).length&&!confirm('Replace the current cheatsheet with the example?'))return;state=exampleState();ui.sel=null;init();};
+$('#b-reset').onclick=()=>{if(!confirm('Start a new empty cheatsheet? (Save to file first if you want to keep this one.)'))return;state=defaultState();ui.sel=null;init();};
+
+/* ================= keys view ================= */
+$('#kb-edit').addEventListener('click',e=>{const k=e.target.closest('.key');if(k)selectKey(k.dataset.code);});
+function selectKey(code){
+  ui.sel=code;prune();
+  const d=state.keys[code]||(state.keys[code]={bindings:[]});
+  if(!d.bindings.length)d.bindings.push(newBinding());
+  renderEditor();refresh();
+  const first=$('#editor [data-f="label"]');if(first&&!first.value)first.focus({preventScroll:true});
+}
+document.addEventListener('keydown',e=>{
+  if(!$('#view-keys').classList.contains('on'))return;
+  if(e.target.closest('input,textarea,select'))return;
+  if(e.metaKey||e.ctrlKey||e.altKey)return;
+  if(!currentCodes().has(e.code))return;
+  e.preventDefault();selectKey(e.code);
+  $('#kb-edit .key.sel')?.scrollIntoView({block:'nearest'});
+});
+
+function bindingHTML(code,b,i,n){
+  const chips=state.categories.map(c=>`<button class="chip ${b.cat===c.id?'on':''}" data-cat="${c.id}" style="--c:${c.color};--t:${textOn(c.color)}"><span class="dot"></span>${esc(c.name)}</button>`).join('')
+    +`<button class="chip ${!catById(b.cat)?'on':''}" data-cat="" style="--c:#8e8e93;--t:#fff"><span class="dot"></span>None</button>`;
+  return `<div class="bcard" data-i="${i}">
+    <div class="bc-top">
+      <span class="combo-prev">${esc(listName(code,b))}</span>
+      <div class="mods" title="Modifier keys for this shortcut">${MODS.map(m=>`<button class="mod ${b.mods&&b.mods[m]?'on':''}" data-mod="${m}">${m}</button>`).join('')}</div>
+      ${n>1?'<button class="linkbtn" data-del>Remove shortcut</button>':''}
+    </div>
+    <div class="row2">
+      <label class="fld">Label on key <span class="hint">vMix input / function name, short</span><input data-f="label" value="${esc(b.label)}" placeholder="e.g. STARTING SOON"></label>
+      <label class="fld">Description <span class="hint">text in the list – uses the label if empty</span><input data-f="desc" value="${esc(b.desc)}" placeholder="e.g. Fade to venue (CAM to stream)"></label>
+    </div>
+    <div class="fld">Category<div class="chips">${chips}</div></div>
+    <label class="fld" style="margin-bottom:0">Notes<textarea data-f="notes" rows="2" placeholder="Anything the operator should know">${esc(b.notes)}</textarea></label>
+  </div>`;
+}
+function renderEditor(){
+  const el=$('#editor');
+  if(!ui.sel){el.innerHTML=`<div class="empty"><b>Click a key</b> on the keyboard above – or simply press it on your keyboard – to assign a vMix shortcut.<br><br>Give it a label, pick a category (sets the colour) and add notes.</div>`;return;}
+  const code=ui.sel,d=state.keys[code]||(state.keys[code]={bindings:[newBinding()]});
+  el.innerHTML=`<div class="ed-head">
+      <div class="ed-cap">${esc(legendFor(code))}</div>
+      <div class="ed-title"><div class="muted small">Selected key</div><div class="big">${esc(keycapName(code))}</div><div class="muted small">vMix name: ${esc(vmixAuto(code))}</div></div>
+      <label class="fld ed-name">Key name in the list <span class="hint">leave empty for automatic</span><input id="kname" value="${esc(d.name||'')}" placeholder="${esc(autoName(code))}"></label>
+      <button class="btn danger" id="b-clear">Clear key</button>
+    </div>
+    <div id="bindings">${d.bindings.map((b,i)=>bindingHTML(code,b,i,d.bindings.length)).join('')}</div>
+    <button class="btn" id="b-add">+ Add another shortcut on this key (e.g. Ctrl / Shift combo)</button>`;
+}
+$('#editor').addEventListener('input',e=>{
+  const d=state.keys[ui.sel];if(!d)return;
+  if(e.target.id==='kname'){d.name=e.target.value;el_updatePreviews();refresh();return;}
+  const card=e.target.closest('.bcard'),f=e.target.dataset.f;if(!card||!f)return;
+  d.bindings[+card.dataset.i][f]=e.target.value;refresh();
+});
+function el_updatePreviews(){
+  const d=state.keys[ui.sel];if(!d)return;
+  document.querySelectorAll('#editor .bcard').forEach(c=>{c.querySelector('.combo-prev').textContent=listName(ui.sel,d.bindings[+c.dataset.i]);});
+}
+$('#editor').addEventListener('click',e=>{
+  const d=state.keys[ui.sel];if(!d)return;
+  const card=e.target.closest('.bcard');const b=card&&d.bindings[+card.dataset.i];
+  const mod=e.target.closest('[data-mod]');
+  if(mod&&b){b.mods={...b.mods,[mod.dataset.mod]:!(b.mods||{})[mod.dataset.mod]};renderEditor();refresh();return;}
+  const cat=e.target.closest('[data-cat]');
+  if(cat&&b){b.cat=cat.dataset.cat||null;ui.lastCat=b.cat;renderEditor();refresh();return;}
+  if(e.target.closest('[data-del]')&&b){d.bindings.splice(+card.dataset.i,1);renderEditor();refresh();return;}
+  if(e.target.id==='b-add'){d.bindings.push(newBinding({mods:{Ctrl:true}}));renderEditor();refresh();
+    const ins=document.querySelectorAll('#editor [data-f="label"]');ins[ins.length-1]?.focus();return;}
+  if(e.target.id==='b-clear'){state.keys[ui.sel]={bindings:[newBinding()]};renderEditor();refresh();}
+});
+
+function renderSide(){
+  const groups=sheetGroups();
+  $('#side-list').innerHTML=groups.length?groups.map(g=>`<div class="grp"><div class="gh" style="--c:${g.cat.color}"><span class="dot"></span>${esc(g.cat.name)}</div>
+    ${g.items.map(x=>`<div class="it" data-code="${x.code}"><b>${esc(listName(x.code,x.b))}</b><span>${esc(x.b.label||x.b.desc)}</span></div>`).join('')}</div>`).join('')
+    :'<div class="muted small">Nothing assigned yet.</div>';
+}
+$('#side-list').addEventListener('click',e=>{const it=e.target.closest('.it');if(it){selectKey(it.dataset.code);$('#kb-edit').scrollIntoView({block:'nearest',behavior:'smooth'});}});
+
+/* ================= cheatsheet ================= */
+function sheetGroups(){
+  const items=[];
+  for(const [code,d] of Object.entries(state.keys))(d.bindings||[]).forEach((b,i)=>{if(isFilled(b))items.push({code,b,i,ord:KEY_ORDER[code]??999});});
+  const sorter=state.sort==='keyboard'?(a,b)=>a.ord-b.ord||hasMods(a.b)-hasMods(b.b)||a.i-b.i:(a,b)=>(a.b.t||0)-(b.b.t||0);
+  const groups=state.categories.map(c=>({cat:c,items:items.filter(x=>x.b.cat===c.id)}));
+  const un=items.filter(x=>!catById(x.b.cat));
+  if(un.length)groups.push({cat:{id:null,name:'Uncategorized',color:'#8e8e93',note:''},items:un});
+  groups.forEach(g=>g.items.sort(sorter));
+  return groups.filter(g=>g.items.length);
+}
+function renderSheet(){
+  const el=$('#sheet');
+  el.style.setProperty('--acc',state.accent);el.style.setProperty('--acct',textOn(state.accent));
+  el.style.setProperty('--cols',state.cols);el.style.setProperty('--fs',state.fs+'px');
+  const groups=sheetGroups();
+  const head=`<div class="sheet-head">${state.title?`<div class="sheet-title">${esc(state.title)}</div>`:''}${state.subtitle?`<div class="sheet-sub">${esc(state.subtitle)}</div>`:''}</div>`;
+  const list=groups.length?`<div class="cols">${groups.map(g=>`<div class="cat" style="--c:${g.cat.color}">
+      <h3><span class="sw"></span>${esc(g.cat.name)}</h3>${g.cat.note?`<div class="cnote">${esc(g.cat.note)}</div>`:''}
+      <div class="g">${g.items.map(x=>`<div class="k">${esc(listName(x.code,x.b))}</div><div>${esc(x.b.desc||x.b.label)}</div>${state.showNotes&&x.b.notes?`<div class="n">${esc(x.b.notes)}</div>`:''}`).join('')}</div>
+    </div>`).join('')}</div>`
+    :`<div class="sheet-empty noprint">No shortcuts yet – go to <b>Assign keys</b> and click a key.</div>`;
+  const notes=(state.sheetNotes||'').trim()?`<div class="sheet-notes">${esc(state.sheetNotes.trim())}</div>`:'';
+  el.innerHTML=head+list+notes+(state.showKb?'<div id="kb-sheet"></div>':'');
+  if(state.showKb)renderKeyboard($('#kb-sheet'),false);
+}
+segHTML($('#t-cols'),[1,2,3,4].map(n=>({v:String(n),name:String(n)})),'');
+$('#t-cols').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;state.cols=+b.dataset.v;setSeg($('#t-cols'),b.dataset.v);refresh();});
+$('#t-fs').addEventListener('input',e=>{state.fs=+e.target.value;refresh();});
+$('#t-notes').addEventListener('change',e=>{state.showNotes=e.target.checked;refresh();});
+$('#t-kb').addEventListener('change',e=>{state.showKb=e.target.checked;refresh();});
+$('#b-print').onclick=()=>window.print();
+
+/* direct PDF download: render the sheet to an image (html-to-image) and wrap it in an A4 landscape PDF (jsPDF) */
+function fileSlug(){
+  return (state.title||'cheatsheet').normalize('NFD').replace(/[̀-ͯ]/g,'')
+    .replace(/[^\w\- ]+/g,' ').trim().replace(/[\s-]+/g,'-').toLowerCase()||'cheatsheet';
+}
+function loadScript(src){
+  return new Promise((res,rej)=>{const s=document.createElement('script');s.src=src;s.onload=res;s.onerror=()=>rej(new Error(src));document.head.appendChild(s);});
+}
+async function sheetToImage(){
+  if(!window.htmlToImage)await loadScript('https://cdn.jsdelivr.net/npm/html-to-image@1.11.11/dist/html-to-image.js');
+  const el=$('#sheet');
+  const opts={pixelRatio:2.5,quality:.92,backgroundColor:'#ffffff',style:{boxShadow:'none',borderRadius:'0'}};
+  return await htmlToImage.toJpeg(el,{...opts,skipFonts:true}); // sheet uses system fonts only
+}
+$('#b-pdf').onclick=async()=>{
+  const btn=$('#b-pdf'),txt=btn.textContent;btn.disabled=true;btn.textContent='Preparing…';
+  try{
+    if(!window.jspdf)await loadScript('https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js');
+    const url=await sheetToImage();
+    const img=new Image();img.src=url;await img.decode();
+    const pdf=new window.jspdf.jsPDF({orientation:'landscape',unit:'mm',format:'a4',compress:true});
+    const pw=297,ph=210,m=8,r=Math.min((pw-2*m)/img.width,(ph-2*m)/img.height),w=img.width*r,h=img.height*r;
+    pdf.addImage(url,'JPEG',(pw-w)/2,m,w,h,undefined,'FAST');
+    pdf.save(fileSlug()+'.pdf');
+  }catch(e){
+    console.error(e);
+    alert('Could not create the PDF (an internet connection is needed the first time). Use “Print…” → Save as PDF instead.');
+  }finally{btn.disabled=false;btn.textContent=txt;}
+};
+
+/* ================= navigation ================= */
+function show(view){
+  state.view=view;
+  document.querySelectorAll('.view').forEach(v=>v.classList.toggle('on',v.id==='view-'+view));
+  document.querySelectorAll('.steps button').forEach(b=>b.classList.toggle('on',b.dataset.view===view));
+  if(view!=='keys'){prune();}
+  if(view==='setup')renderMissing();
+  refresh();window.scrollTo(0,0);
+}
+document.querySelectorAll('[data-view],[data-goto]').forEach(b=>b.addEventListener('click',()=>show(b.dataset.view||b.dataset.goto)));
+
+function refresh(){
+  const v=state.view;
+  if(v==='setup')renderKeyboard($('#kb-preview'),false,true);
+  if(v==='keys'){renderKeyboard($('#kb-edit'),true,true);renderSide();}
+  renderSheet();
+  save();
+}
+function init(){
+  renderSetup();renderCats();renderEditor();
+  setSeg($('#t-cols'),String(state.cols));$('#t-fs').value=state.fs;$('#t-notes').checked=state.showNotes;$('#t-kb').checked=state.showKb;
+  show(state.view||'setup');
+}
+
+/* ================= example ================= */
+function exampleState(){
+  const s=defaultState();
+  Object.assign(s,{title:'vMix – operátor sálu',subtitle:'Klávesové zkratky',lang:'cz',phys:'auto',size:'full',naming:'vmix',sort:'added',cols:2,view:'sheet',
+    sheetNotes:'Musíte si nakrmit vstupy 21–24 správnými soubory pro svoji místnost!!\nZVUKY: Master streamuje CZ zvuk · Bus B streamuje EN zvuk · Bus A jde do pultu ke zvukaři (chce ho zpátky do obou linek, co posílá).'});
+  const C={};
+  s.categories=[
+    ['Plátno','#43a047','S tím se sám přepíná odkuk. Co je na plátně, je v PIP okně.'],
+    ['Stream – preview','#d64541','Streamuje se Mix 4 a Mix 5!! Mix 1 hlavní je bez overlaye.'],
+    ['Overlay','#3f8fe0',''],
+    ['Loop','#5b4fcf','Loop všude + hudba YT friendly, bez licencí.'],
+    ['Odkuk','#e8833a',''],
+    ['Odpočet','#f1c232','']]
+    .map(([name,color,note])=>(C[name]=uid(),{id:C[name],name,color,note}));
+  const add=(code,cat,label,desc,notes='',name)=>{const d=s.keys[code]||(s.keys[code]={bindings:[]});if(name)d.name=name;
+    d.bindings.push({id:uid(),t:now(),mods:{},label,desc,cat:C[cat],notes});};
+  add('KeyX','Plátno','LOGO','Logo na plátno');
+  add('KeyC','Plátno','SLIDY','Slidy na plátno');
+  add('KeyB','Plátno','BACKUP PC','Backup PC slidy na plátno');
+  add('KeyS','Plátno','PULT PC','Speaker pult PC na plátno');
+  add('Tab','Plátno','NA PLÁTNO','Dá na plátno vstup, na který ukazuju');
+  add('Numpad1','Stream – preview','CAM 1','Preview CAM 1','','Num 1');
+  add('Numpad2','Stream – preview','CAM 2','Preview CAM 2','','Num 2');
+  add('Numpad3','Stream – preview','PIP','Preview PIP','','Num 3');
+  add('Numpad4','Stream – preview','PPT MAIN','Preview PPT main','','Num 4');
+  add('Numpad5','Stream – preview','PPT BACKUP','Preview PPT backup','','Num 5');
+  add('Numpad6','Stream – preview','PPT STAGE','Preview PPT stage','','Num 6');
+  add('Numpad0','Stream – preview','DETAIL ↔ WIDE','Výměna detailu a wide v PIP','','Num 0');
+  add('NumpadDecimal','Stream – preview','MRTVOLA','Preview na mrtvolu – hodí se všude, pokud se dá fade do Mixu 1','','Num ,');
+  add('Digit1','Overlay','INTRO SPEAKER','Intro speakera CZ i EN – i na plátno!');
+  add('Digit2','Overlay','JMENOVKA','Jmenovka do streamu CZ i EN');
+  add('KeyL','Loop','LOOP','Loop do pauz (harmonogram + loop)','Na konci zase L → padne to zpátky do mrtvoly. L je jen overlay.');
+  add('KeyQ','Odkuk','Q&A SLIDO','Q&A – hodí Slido do odkuku');
+  for(let i=1;i<=12;i++)add('F'+i,'Odpočet',(i*5)+' MIN','Odpočet '+(i*5)+' min');
+  add('NumpadAdd','Odpočet','+1 MIN','Přidá minutu','','Num +');
+  add('NumpadSubtract','Odpočet','−1 MIN','Ubere minutu','','Num −');
+  return s;
+}
+
+init();
+</script>
+</body>
+</html>

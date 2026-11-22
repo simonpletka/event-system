@@ -4,6 +4,7 @@ import { getLocale, getDictionary } from "@/lib/i18n";
 import { prisma } from "@/lib/prisma";
 import { isTestMode } from "@/lib/data-mode";
 import { Sidebar } from "@/components/Sidebar";
+import { STUDIO_APPS } from "@/lib/studio";
 import { MobileTopBar } from "@/components/mobile/MobileTopBar";
 import { MobileNav } from "@/components/mobile/MobileNav";
 import { ConfirmDialogProvider } from "@/components/ui/ConfirmDialogProvider";
@@ -47,6 +48,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
           tTimeTracker={{ tabTracking: t.timeTracker.tabTracking, tabReport: t.timeTracker.tabReport }}
           tElapsed={t.timeTracker.editableElapsed}
           discardedMessage={t.timeTracker.runningTimer.discardedTooShort}
+          studioNav={STUDIO_APPS.map((app) => ({ href: `/studio/${app.slug}`, label: t.studio.apps[app.slug].name }))}
         />
         <main className="flex-1 min-w-0 px-6 py-5 pb-[calc(6.5rem+env(safe-area-inset-bottom))] md:pb-5">
           <MobileTopBar
