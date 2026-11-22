@@ -94,7 +94,7 @@ input[type=color]{width:34px;height:30px;padding:2px;border:1px solid var(--fiel
   box-shadow:0 0 0 1px rgba(0,0,0,.55),inset 0 1px 0 rgba(255,255,255,.06),inset 0 calc(var(--u) * -.05) 0 rgba(0,0,0,.3)}
 .interactive .key:hover .cap{filter:brightness(.95)}
 .kb-frame.dark .key:hover .cap{filter:brightness(1.25)}
-.legend{position:absolute;left:calc(var(--u) * .09);top:calc(var(--u) * .06);font-size:calc(var(--u) * .19);line-height:1.08;white-space:pre}
+.legend{position:absolute;left:calc(var(--u) * .09);top:calc(var(--u) * .06);font-size:calc(var(--u) * .2185);line-height:1.05;white-space:pre}
 .lbl{position:absolute;left:4%;right:4%;bottom:calc(var(--u) * .09);text-align:center;font-weight:650;text-transform:uppercase;font-size:calc(var(--u) * .145);line-height:1.05;overflow-wrap:anywhere;white-space:pre-line}
 .lbl.sm{font-size:calc(var(--u) * .118)}
 .lbl .m{display:block;font-size:.85em;opacity:.85}
@@ -142,6 +142,19 @@ input[type=color]{width:34px;height:30px;padding:2px;border:1px solid var(--fiel
 .tip{font-size:12px;color:var(--muted);margin-top:10px}
 details.card summary{cursor:pointer;font-weight:600}
 details.card[open] summary{margin-bottom:12px}
+
+/* ---------- vMix import dialog ---------- */
+#vx-dlg{color:var(--ink);width:min(760px,calc(100vw - 32px));max-height:calc(100vh - 48px);overflow:auto;padding:22px;box-shadow:0 30px 80px rgba(0,0,0,.6)}
+#vx-dlg::backdrop{background:rgba(0,0,0,.6);backdrop-filter:blur(4px)}
+#vx-dlg h2{margin:0 0 10px;font-size:18px}
+.vx-sum{margin:0 0 8px;font-size:13px}
+.vx-sum code,#vx-dlg code{background:var(--hover);padding:1px 5px;border-radius:4px}
+.vx-opts{display:flex;flex-wrap:wrap;gap:16px;margin:14px 0;font-size:13px}
+.vx-opts label{display:flex;align-items:center;gap:6px;cursor:pointer}
+.vx-table{display:grid;grid-template-columns:max-content 1fr;gap:8px 16px;max-height:340px;overflow:auto;border:1px solid var(--line);border-radius:12px;padding:12px 14px;font-size:13px;margin-bottom:10px}
+.vx-table .k{font-weight:700}
+.vx-cat{font-size:10px;text-transform:uppercase;letter-spacing:.08em;background:var(--hover);border-radius:999px;padding:2px 7px;margin-right:4px;color:var(--muted)}
+.linkbtn2{border:0;background:none;color:var(--accent);cursor:pointer;padding:0;font-weight:600;text-decoration:underline}
 
 /* ---------- cheatsheet ---------- */
 .sheet-tools{display:flex;flex-wrap:wrap;align-items:center;gap:18px;margin-bottom:16px}
@@ -242,11 +255,13 @@ details.card[open] summary{margin-bottom:12px}
         <div class="card" style="margin-top:20px">
           <h2>File</h2>
           <div class="btns">
+            <button class="btn primary" id="b-vmix">Import from vMix…</button>
             <button class="btn" id="b-export">Save to file (.json)</button>
             <button class="btn" id="b-import">Open file…</button>
             <button class="btn" id="b-example">Load example</button>
             <button class="btn danger" id="b-reset">Start new</button>
             <input type="file" id="f-import" accept=".json,application/json" hidden>
+            <input type="file" id="f-vmix" accept=".config,.xml,.vmix" multiple hidden>
           </div>
           <p class="tip">Your work is saved automatically in this browser. Use “Save to file” to keep copies of different cheatsheets or share them.</p>
         </div>
@@ -290,6 +305,7 @@ details.card[open] summary{margin-bottom:12px}
     <div class="sheet" id="sheet"></div>
   </section>
 </main>
+<dialog id="vx-dlg" class="card"></dialog>
 
 <script>
 /* ================= data: layouts ================= */
@@ -733,6 +749,186 @@ $('#b-pdf').onclick=async()=>{
     alert('Could not create the PDF (an internet connection is needed the first time). Use “Print…” → Save as PDF instead.');
   }finally{btn.disabled=false;btn.textContent=txt;}
 };
+
+/* ================= vMix import (.config / shortcut .xml + optional .vmix preset for input names) ================= */
+const VX={shortcuts:null,src:'',inputs:null,inputsSrc:''};
+const VX_CATS=[['Main output','#d64541'],['Mix 2','#43a047'],['Mix 3','#16a5a5'],['Mix 4','#8d6e63'],['Mix 5','#7cb342'],['Mix 6','#00897b'],
+  ['Preview','#b83260'],['Overlays','#3f8fe0'],['Playlist & items','#5b4fcf'],['Playback','#7e57c2'],['Layers','#607d8b'],
+  ['Audio','#e8833a'],['Countdown','#f1c232'],['Output & recording','#2e7d32'],['Other','#8e8e93']];
+function parseXml(text){
+  const d=new DOMParser().parseFromString(text.replace(/^﻿/,'').replace(/encoding="utf-16"/i,'encoding="utf-8"'),'application/xml');
+  if(d.querySelector('parsererror'))throw new Error('not XML');return d;
+}
+const kid=(el,name)=>[...el.children].find(c=>c.tagName===name);
+const kidText=(el,name)=>(kid(el,name)?.textContent||'').trim();
+function extractShortcuts(doc){
+  let arr=doc.documentElement.tagName==='ArrayOfShortcut'?doc.documentElement:null;
+  if(!arr){
+    const st=[...doc.getElementsByTagName('setting')].find(s=>s.getAttribute('name')==='ShortcutsXML');
+    const v=st&&st.getElementsByTagName('value')[0]?.textContent;
+    if(v&&v.trim())arr=parseXml(v).documentElement;
+  }
+  if(!arr||arr.tagName!=='ArrayOfShortcut')return null;
+  return [...arr.children].filter(e=>e.tagName==='Shortcut').map(s=>{
+    const inp=kid(s,'Input');
+    return {key:kidText(s,'ExpandedKey')||kidText(s,'Key'),fn:kidText(s,'Function'),value:kidText(s,'Value'),mix:+kidText(s,'Mix')||0,
+      input:inp?+kidText(inp,'Number')||0:0,inputKey:inp?kidText(inp,'Key').toLowerCase():'',disabled:kidText(s,'Disabled')==='true'};
+  });
+}
+function extractInputs(doc){
+  const ins=[...doc.documentElement.children].filter(e=>e.tagName==='Input');
+  if(!ins.length)return null;
+  const byNum={},byKey={};
+  ins.forEach((i,ix)=>{
+    const file=(i.textContent||'').trim().split(/[\\/]/).pop();
+    const name=i.getAttribute('Title')||i.getAttribute('OriginalTitle')||file||('Input '+(ix+1));
+    byNum[ix+1]=name;const k=i.getAttribute('Key');if(k)byKey[k.toLowerCase()]=name;
+  });
+  return {byNum,byKey,count:ins.length};
+}
+const VX_KEYS={Space:'Space',Tab:'Tab',Insert:'Insert',Delete:'Delete',Home:'Home',End:'End',PageUp:'PageUp',Prior:'PageUp',PageDown:'PageDown',Next:'PageDown',
+  Up:'ArrowUp',Down:'ArrowDown',Left:'ArrowLeft',Right:'ArrowRight',NumLock:'NumLock',Divide:'NumpadDivide',Multiply:'NumpadMultiply',
+  Subtract:'NumpadSubtract',Add:'NumpadAdd',Decimal:'NumpadDecimal',Separator:'NumpadDecimal',Pause:'Pause',Return:'Enter',Enter:'Enter',
+  Escape:'Escape',Back:'Backspace',Capital:'CapsLock',CapsLock:'CapsLock',Scroll:'ScrollLock',Snapshot:'PrintScreen',PrintScreen:'PrintScreen',
+  Apps:'ContextMenu',LWin:'MetaLeft',RWin:'MetaRight',ShiftKey:'ShiftLeft',LShiftKey:'ShiftLeft',RShiftKey:'ShiftRight',ControlKey:'ControlLeft',
+  LControlKey:'ControlLeft',RControlKey:'ControlRight',Menu:'AltLeft',LMenu:'AltLeft',RMenu:'AltRight',Oem3:'Backquote',Oemtilde:'Backquote',
+  OemMinus:'Minus',Oemplus:'Equal',Oem4:'BracketLeft',OemOpenBrackets:'BracketLeft',Oem6:'BracketRight',OemCloseBrackets:'BracketRight',
+  Oem5:'Backslash',OemPipe:'Backslash',Oem1:'Semicolon',OemSemicolon:'Semicolon',Oem7:'Quote',OemQuotes:'Quote',Oemcomma:'Comma',
+  OemPeriod:'Period',Oem2:'Slash',OemQuestion:'Slash',Oem102:'IntlBackslash',OemBackslash:'IntlBackslash',Clear:'Numpad5'};
+function codeForVmixKey(k){
+  if(/^F([1-9]|1[0-2])$/.test(k))return k;
+  if(/^D\d$/.test(k))return 'Digit'+k[1];
+  if(/^NumPad\d$/i.test(k))return 'Numpad'+k.slice(-1);
+  if(/^[A-Z]$/.test(k)){ // letters follow the chosen language (QWERTZ / AZERTY)
+    for(const [c,p] of Object.entries(lang().map))if(p[0]===k.toLowerCase())return c;
+    return 'Key'+k;
+  }
+  return VX_KEYS[k]||null;
+}
+function parseKeyCombo(s){
+  const mods={};let key='';
+  s.split(/\s*[,+]\s*/).filter(Boolean).forEach(p=>{
+    if(/^shift$/i.test(p))mods.Shift=true;else if(/^(control|ctrl)$/i.test(p))mods.Ctrl=true;else if(/^alt$/i.test(p))mods.Alt=true;else key=p;
+  });
+  return {key,mods};
+}
+const splitCamel=s=>s.replace(/([a-z])([A-Z0-9])/g,'$1 $2').replace(/([A-Z])([A-Z][a-z])/g,'$1 $2');
+function fmtTime(v){
+  const m=/^(\d+):(\d+):(\d+)/.exec(v||'');if(!m)return v;
+  const sec=+m[1]*3600+ +m[2]*60+ +m[3];
+  return sec%60===0?(sec/60)+' min':`${Math.floor(sec/60)}:${String(sec%60).padStart(2,'0')}`;
+}
+function vxInputName(a){
+  if(VX.inputs){const n=(a.inputKey&&!/^0{8}-/.test(a.inputKey)&&VX.inputs.byKey[a.inputKey])||VX.inputs.byNum[a.input];if(n&&a.input>0)return n;}
+  if(a.input>0)return 'Input '+a.input;
+  if(a.input<0)return 'special input ('+a.input+')';
+  return '';
+}
+function vxDescribe(a){
+  const f=a.fn,IN=vxInputName(a),mixTxt=a.mix>0?' → Mix '+(a.mix+1):'',sc=splitCamel(f);
+  const R=(cat,label,text,prio)=>({cat,label,text,prio,fn:f});
+  let m;
+  if(f==='FadeToBlack')return R('Main output','FTB','Fade to black',3);
+  if(/^(Cut|Fade|Merge|Zoom|Wipe|Slide|Fly|CrossZoom|FlyRotate|Cube|CubeZoom|VerticalWipe|VerticalSlide|CutDirect|Stinger\d|Transition\d)$/.test(f))
+    return R(a.mix>0?'Mix '+(a.mix+1):'Main output',IN||sc.toUpperCase(),IN?`${sc} ${IN}${mixTxt}`:`${sc} preview → ${a.mix>0?'Mix '+(a.mix+1):'output'}`,3);
+  if(f==='PreviewInput'||f==='PreviewInputNext'||f==='PreviewInputPrevious')
+    return R('Preview',IN||sc.toUpperCase(),IN?`Preview ${IN}${mixTxt}`:sc+mixTxt,3);
+  if((m=/^OverlayInput(\d)(In|Out|Off|Zoom|Preview|Last)?$/.exec(f)))
+    return R('Overlays',IN||'OVL '+m[1],`Overlay ${m[1]}${m[2]?' '+m[2].toLowerCase():''}${IN?': '+IN:''}`,3);
+  if(/Countdown/.test(f)){
+    if(/^(Change|Set)Countdown$/.test(f))return R('Countdown',fmtTime(a.value).toUpperCase(),'Countdown '+fmtTime(a.value),4);
+    if(f==='AdjustCountdown'){const s=+a.value||0,abs=Math.abs(s),sign=s<0?'−':'+',amt=abs%60===0?abs/60+' min':abs+' s';
+      return R('Countdown',(sign+amt).toUpperCase(),`Countdown ${sign}${amt}`,4);}
+    return R('Countdown',sc.toUpperCase(),sc,1);
+  }
+  if(/^SetVolume(Fade)?$/.test(f)){const [v,ms]=(a.value||'').split(',');
+    return R('Audio',`VOL ${v}%`,`Volume ${IN||'input'} → ${v}%${ms?` (fade ${+ms/1000} s)`:''}`,3);}
+  if(/Volume|Audio|Bus|Solo|Mute|Gain/.test(f))return R('Audio',sc.toUpperCase(),`${sc}${IN?' '+IN:''}${a.value?' ('+a.value+')':''}`,2);
+  if(/^(NextItem|PreviousItem|SelectIndex|NextPicture|PreviousPicture|SelectItem)$/.test(f))
+    return R('Playlist & items',f.startsWith('Next')?'NEXT':f.startsWith('Prev')?'PREV':sc.toUpperCase(),`${sc}${IN?' – '+IN:''}`,2);
+  if(/^(Play|Pause|PlayPause|Restart|Loop\w*|MarkIn|MarkOut|MarkReset|SetPosition|Rewind|Forward)$/.test(f))
+    return R('Playback',sc.toUpperCase(),`${sc}${IN?' '+IN:''}`,2);
+  if(/^(MultiView|Layer)/.test(f))return R('Layers',`LAYER ${a.value}`,`Toggle layer ${a.value}${IN?' of '+IN:''}`,3);
+  if(/Record|Stream|External|MultiCorder|Fullscreen|Replay|Snapshot/.test(f))return R('Output & recording',sc.toUpperCase(),sc,2);
+  return R('Other',sc.toUpperCase(),`${sc}${IN?' '+IN:''}${a.value?' ('+a.value+')':''}`,1);
+}
+const uniq=a=>[...new Set(a.filter(Boolean))];
+function vxBuild(skipDisabled){
+  const groups=new Map(),unknown=[];let skipped=0,noKey=0;
+  for(const s of VX.shortcuts||[]){
+    if(s.disabled&&skipDisabled){skipped++;continue;}
+    if(!s.key||s.key==='None'){noKey++;continue;}
+    const {key,mods}=parseKeyCombo(s.key),code=codeForVmixKey(key);
+    if(!code){unknown.push(s.key);continue;}
+    const gk=code+'|'+MODS.filter(m=>mods[m]).join('+');
+    if(!groups.has(gk))groups.set(gk,{code,mods,actions:[]});
+    groups.get(gk).actions.push(s);
+  }
+  const entries=[...groups.values()].map(g=>{
+    let ds=g.actions.map(vxDescribe),suffix='';
+    if(ds.some(d=>d.prio===4)){ // countdown keys: stop + set + start -> "Countdown 5 min (restarts)"
+      if(ds.some(d=>d.fn==='StartCountdown'))suffix=' (restarts)';
+      ds=ds.filter(d=>d.cat!=='Countdown'||d.prio===4);
+    }
+    const top=Math.max(...ds.map(d=>d.prio)),prim=ds.filter(d=>d.prio===top);
+    return {code:g.code,mods:g.mods,cat:prim[0].cat,label:uniq(prim.map(d=>d.label)).slice(0,2).join(' + '),
+      desc:uniq(ds.map(d=>d.text)).join(' · ')+suffix,count:g.actions.length,ord:KEY_ORDER[g.code]??999};
+  }).sort((a,b)=>a.ord-b.ord);
+  return {entries,skipped,noKey,unknown:uniq(unknown)};
+}
+function vxApply(replace,skipDisabled){
+  const {entries}=vxBuild(skipDisabled);
+  const used=uniq(entries.map(e=>e.cat)).sort((a,b)=>VX_CATS.findIndex(c=>c[0]===a)-VX_CATS.findIndex(c=>c[0]===b));
+  const old=state.categories,find=n=>old.find(c=>c.name.toLowerCase()===n.toLowerCase());
+  if(replace){state.keys={};state.categories=used.map(n=>find(n)||{id:uid(),name:n,color:(VX_CATS.find(c=>c[0]===n)||[0,'#8e8e93'])[1],note:''});}
+  else used.forEach(n=>{if(!find(n))state.categories.push({id:uid(),name:n,color:(VX_CATS.find(c=>c[0]===n)||[0,'#8e8e93'])[1],note:''});});
+  const catId=n=>state.categories.find(c=>c.name.toLowerCase()===n.toLowerCase()).id;
+  for(const e of entries){
+    const d=state.keys[e.code]||(state.keys[e.code]={bindings:[]});
+    d.bindings=d.bindings.filter(isFilled);
+    d.bindings.push({id:uid(),t:now(),mods:{...e.mods},label:e.label,desc:e.desc,cat:catId(e.cat),notes:''});
+  }
+  state.sort='keyboard';ui.sel=null;
+}
+function vxRender(){
+  const dlg=$('#vx-dlg'),skip=$('#vx-skip')?.checked??true,replace=$('#vx-replace')?.checked??true;
+  if(!VX.shortcuts){dlg.innerHTML=`<h2>Import from vMix</h2><p>No shortcuts found in <b>${esc(VX.src||'the file')}</b>. Choose the vMix settings file (<code>.config</code>) or a shortcuts export (<code>.xml</code>).</p>
+    <div class="btns" style="justify-content:flex-end"><button class="btn" data-vx="close">Close</button><button class="btn primary" data-vx="pick">Choose file…</button></div>`;return;}
+  const r=vxBuild(skip);
+  const total=VX.shortcuts.length,dis=VX.shortcuts.filter(s=>s.disabled).length;
+  dlg.innerHTML=`<h2>Import from vMix</h2>
+    <p class="vx-sum"><b>${esc(VX.src)}</b> – ${total} shortcuts${dis?`, ${dis} disabled`:''} → <b>${r.entries.length} keys</b>.</p>
+    <p class="vx-sum">${VX.inputs?`Input names: <b>${VX.inputs.count}</b> inputs from <b>${esc(VX.inputsSrc)}</b>.`:
+      `Input names aren't stored in the config, so keys show “Input 8”. <button class="linkbtn2" data-vx="pick">Add the .vmix preset</button> to use real input names.`}</p>
+    ${r.unknown.length?`<p class="vx-sum warn">Keys not on the keyboard drawing (skipped): ${esc(r.unknown.join(', '))}</p>`:''}
+    ${r.noKey?`<p class="vx-sum muted">${r.noKey} shortcut(s) without a keyboard key (MIDI / controller only) skipped.</p>`:''}
+    <div class="vx-opts">
+      <label><input type="checkbox" id="vx-skip" ${skip?'checked':''}> Skip disabled shortcuts</label>
+      <label><input type="radio" name="vx-mode" id="vx-replace" ${replace?'checked':''}> Replace current keys</label>
+      <label><input type="radio" name="vx-mode" id="vx-merge" ${replace?'':'checked'}> Add to current keys</label>
+    </div>
+    <div class="vx-table">${r.entries.map(e=>`<div class="k">${esc(modPrefix(e)+vmixAuto(e.code))}</div><div><span class="vx-cat">${esc(e.cat)}</span> <b>${esc(e.label)}</b><div class="muted small">${esc(e.desc)}</div></div>`).join('')}</div>
+    <p class="muted small">Labels, descriptions and categories are generated from the vMix functions – you can edit everything after import.</p>
+    <div class="btns" style="justify-content:flex-end"><button class="btn" data-vx="close">Cancel</button><button class="btn primary" data-vx="go">Import ${r.entries.length} keys</button></div>`;
+}
+async function vxFiles(list){
+  for(const f of list){
+    let doc;try{doc=parseXml(await f.text());}catch(e){continue;}
+    const sc=extractShortcuts(doc);if(sc){VX.shortcuts=sc;VX.src=f.name;continue;}
+    const ins=extractInputs(doc);if(ins){VX.inputs=ins;VX.inputsSrc=f.name;}
+    else if(!VX.shortcuts)VX.src=f.name;
+  }
+  vxRender();if(!$('#vx-dlg').open)$('#vx-dlg').showModal();
+}
+$('#b-vmix').onclick=()=>{VX.shortcuts=null;VX.inputs=null;VX.src='';$('#f-vmix').click();};
+$('#f-vmix').onchange=e=>{const fs=[...e.target.files];e.target.value='';if(fs.length)vxFiles(fs);};
+$('#vx-dlg').addEventListener('change',()=>vxRender());
+$('#vx-dlg').addEventListener('click',e=>{
+  const a=e.target.closest('[data-vx]')?.dataset.vx;
+  if(a==='close')$('#vx-dlg').close();
+  if(a==='pick')$('#f-vmix').click();
+  if(a==='go'){vxApply($('#vx-replace').checked,$('#vx-skip').checked);$('#vx-dlg').close();renderSetup();renderCats();renderEditor();show('keys');}
+});
 
 /* ================= navigation ================= */
 function show(view){
