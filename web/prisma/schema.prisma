@@ -193,6 +193,7 @@ model User {
   meetingsCreated     Meeting[]
   vehicles            Vehicle[]
   projectFiles        ProjectFile[]
+  studioWorks         StudioWork[]
   tripsCreated        Trip[]
   agentTokens         OAuthToken[]      @relation("OAuthTokenAgent")
   approvedTokens      OAuthToken[]      @relation("OAuthTokenApprover")
@@ -260,6 +261,7 @@ model Project {
   meetings     MeetingProject[]
   trips        Trip[]
   files        ProjectFile[]
+  studioWorks  StudioWork[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -866,6 +868,26 @@ model CarsharingPlan {
 // A document uploaded to a project's Files tab. Stored on disk next to the
 // receipts (see saveProjectFile), under a random name so nothing about the
 // file a user picked ever reaches a path.
+// A piece of work from one of the Studio apps (vMix placeholders, shortcut
+// cheatsheet, setup diagram), kept so it can be reopened later. `data` is
+// the app's own project JSON, which the app reads back unchanged (see
+// src/lib/studio.ts). Linking a project is optional.
+model StudioWork {
+  id          String   @id @default(cuid())
+  app         String
+  title       String
+  data        String
+  projectId   String?
+  project     Project? @relation(fields: [projectId], references: [id], onDelete: SetNull)
+  createdById String?
+  createdBy   User?    @relation(fields: [createdById], references: [id], onDelete: SetNull)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([app])
+  @@index([projectId])
+}
+
 model ProjectFile {
   id           String   @id @default(cuid())
   projectId    String

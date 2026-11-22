@@ -44,6 +44,7 @@ export async function deleteAllDataAction(_prev: ResetDataState, formData: FormD
   await db.expense.deleteMany();
   await db.projectFile.deleteMany();
   await db.trip.deleteMany();
+  await db.studioWork.deleteMany();
   await db.meeting.deleteMany();
   await db.project.deleteMany();
   await db.client.deleteMany();

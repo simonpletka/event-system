@@ -16,6 +16,7 @@ export function Sidebar({
   tTimeTracker,
   tElapsed,
   discardedMessage,
+  studioNav,
 }: {
   userName: string;
   avatarUrl: string | null;
@@ -26,6 +27,8 @@ export function Sidebar({
   tTimeTracker: Pick<Dictionary["timeTracker"], "tabTracking" | "tabReport">;
   tElapsed: Dictionary["timeTracker"]["editableElapsed"];
   discardedMessage: string;
+  /** The Studio apps, shown under Studio while it's open. */
+  studioNav: { href: string; label: string }[];
 }) {
   const pathname = usePathname();
 
@@ -36,13 +39,16 @@ export function Sidebar({
     { href: "/meetings", label: tNav.meetings },
     { href: "/finance", label: tNav.finance },
     { href: "/time-tracker", label: tNav.timeTracker },
+    { href: "/studio", label: tNav.studio },
   ];
 
-  const inTimeTracker = pathname.startsWith("/time-tracker");
-  const timeTrackerSubNav = [
-    { href: "/time-tracker/tracking", label: tTimeTracker.tabTracking },
-    { href: "/time-tracker/report", label: tTimeTracker.tabReport },
-  ];
+  const subNav: Record<string, { href: string; label: string }[]> = {
+    "/time-tracker": [
+      { href: "/time-tracker/tracking", label: tTimeTracker.tabTracking },
+      { href: "/time-tracker/report", label: tTimeTracker.tabReport },
+    ],
+    "/studio": studioNav,
+  };
 
   return (
     <div className="hidden md:flex sticky top-3 z-30 h-[calc(100vh-24px)] ml-3 shrink-0 glass-panel rounded-2xl shadow-[0_14px_36px_rgba(0,0,0,0.4)] w-[216px] px-4 pt-4 pb-5 flex-col gap-4 print-hide font-medium overflow-y-auto">
@@ -56,9 +62,9 @@ export function Sidebar({
               <Link href={item.href} className={`nav-item ${active ? "active" : ""}`}>
                 {item.label}
               </Link>
-              {item.href === "/time-tracker" && inTimeTracker && (
+              {active && subNav[item.href] && (
                 <div className="flex flex-col ml-2.5 mt-0.5 mb-0.5 gap-0.5 border-l border-ink/10 pl-2.5">
-                  {timeTrackerSubNav.map((sub) => (
+                  {subNav[item.href].map((sub) => (
                     <Link
                       key={sub.href}
                       href={sub.href}
