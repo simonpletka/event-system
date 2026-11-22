@@ -31,6 +31,8 @@ export function Sidebar({
   studioNav: { href: string; label: string }[];
 }) {
   const pathname = usePathname();
+  // A Studio app takes the whole window; its own top bar has the way out.
+  if (/^\/studio\/[^/]+/.test(pathname)) return null;
 
   const NAV = [
     { href: "/dashboard", label: tNav.dashboard },
