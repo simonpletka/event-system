@@ -219,7 +219,7 @@ export async function getGearBatches(where: Prisma.GearReservationWhereInput) {
     include: {
       unit: { select: { number: true, type: { select: { id: true, name: true, ...pricingSelect } } } },
       group: { select: { name: true } },
-      project: { select: { number: true, title: true } },
+      project: { select: { id: true, number: true, title: true, companyName: true } },
       createdBy: { select: { name: true } },
     },
   });
@@ -231,7 +231,7 @@ export async function getGearBatches(where: Prisma.GearReservationWhereInput) {
       startDate: string;
       endDate: string;
       groupName: string | null;
-      project: { number: string; title: string } | null;
+      project: { id: string; number: string; title: string; companyName: string } | null;
       note: string;
       createdBy: string | null;
       lines: Map<string, Line>;

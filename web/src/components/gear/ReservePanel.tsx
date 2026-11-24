@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useEffect, useRef, useState, useTransition } from "react";
 import { formatCurrency } from "@/lib/format";
 import { getDictionary, type Locale } from "@/lib/dictionary";
-import { previewGearReservationAction, reserveGearAction, type PreviewResult } from "@/lib/actions/gear";
+import { previewGearReservationAction, reserveGearAction, updateGearBatchAction, type PreviewResult } from "@/lib/actions/gear";
 import { ProjectPicker, type PickableProject } from "@/components/ProjectPicker";
 import type { GearTypeOption } from "@/lib/queries/gear";
 import { CheckIcon, formatDayRange, WarningIcon } from "./shared";
@@ -29,6 +29,8 @@ export function ReservePanel({
   groupId = null,
   today,
   canReserve,
+  editBatch,
+  onSaved,
 }: {
   title: string;
   locale: Locale;
@@ -42,13 +44,17 @@ export function ReservePanel({
   /** Today's Prague date key, from the server. */
   today: string;
   canReserve: boolean;
+  /** Edit an existing reservation instead of making a new one. */
+  editBatch?: { batchId: string; projectId: string | null; note: string; startDate: string; endDate: string };
+  /** Called after an edit is saved (the popup closes). */
+  onSaved?: () => void;
 }) {
   const dict = getDictionary(locale);
   const t = dict.gear;
-  const [projectId, setProjectId] = useState(initialProjectId ?? "");
-  const [note, setNote] = useState("");
-  const [start, setStart] = useState(today);
-  const [end, setEnd] = useState(today);
+  const [projectId, setProjectId] = useState(editBatch ? (editBatch.projectId ?? "") : (initialProjectId ?? ""));
+  const [note, setNote] = useState(editBatch?.note ?? "");
+  const [start, setStart] = useState(editBatch?.startDate ?? today);
+  const [end, setEnd] = useState(editBatch?.endDate ?? today);
   const [lines, setLines] = useState<Line[]>(initialLines);
   const [preview, setPreview] = useState<PreviewResult | null>(null);
   const [checking, setChecking] = useState(false);
@@ -79,7 +85,7 @@ export function ReservePanel({
       }
       setChecking(true);
       try {
-        const result = await previewGearReservationAction({ lines: activeLines, startDate: start, endDate: end <= start ? start : end });
+        const result = await previewGearReservationAction({ lines: activeLines, startDate: start, endDate: end <= start ? start : end, excludeBatchId: editBatch?.batchId });
         if (id === requestId.current) setPreview(result);
       } finally {
         if (id === requestId.current) setChecking(false);
@@ -120,6 +126,23 @@ export function ReservePanel({
     if (!plan) return;
     setError(null);
     startReserving(async () => {
+      if (editBatch) {
+        const updated = await updateGearBatchAction({
+          batchId: editBatch.batchId,
+          lines: activeLines,
+          startDate: start,
+          endDate: end < start ? start : end,
+          projectId: projectId || null,
+          note,
+          expectedUnits: plan.got,
+        });
+        if (updated.ok) onSaved?.();
+        else {
+          setError(gearError(t, updated.error));
+          setRefreshKey((k) => k + 1);
+        }
+        return;
+      }
       const result = await reserveGearAction({ lines: activeLines, startDate: start, endDate: end < start ? start : end, projectId: projectId || null, note, groupId, expectedUnits: plan.got });
       if (result.ok) {
         setDone(result);
@@ -140,10 +163,16 @@ export function ReservePanel({
   }
 
   const buttonLabel = !plan
-    ? t.reserve
+    ? editBatch
+      ? dict.common.save
+      : t.reserve
     : plan.got === plan.wanted
-      ? t.reserveAll(plan.got)
-      : t.reservePartial(plan.got, plan.wanted);
+      ? editBatch
+        ? t.saveReservation(plan.got)
+        : t.reserveAll(plan.got)
+      : editBatch
+        ? t.saveReservationPartial(plan.got, plan.wanted)
+        : t.reservePartial(plan.got, plan.wanted);
 
   return (
     <div className="flex flex-col gap-4">
@@ -287,7 +316,7 @@ export function ReservePanel({
       )}
 
       <button type="button" onClick={reserve} disabled={!plan || plan.got === 0 || reserving || checking} className="btn font-semibold min-h-[44px]">
-        {reserving ? t.reserving : buttonLabel}
+        {reserving ? (editBatch ? t.savingReservation : t.reserving) : buttonLabel}
       </button>
 
       {error && (

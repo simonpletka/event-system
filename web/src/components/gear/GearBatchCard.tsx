@@ -6,18 +6,24 @@ import { releaseGearBatchAction } from "@/lib/actions/gear";
 import type { GearBatch } from "@/lib/queries/gear";
 import { ConfirmDeleteButton } from "@/components/ui/ConfirmDeleteButton";
 import { formatDayRange } from "./shared";
+import { EditBatchButton } from "./EditBatchButton";
+import type { GearTypeOption } from "@/lib/queries/gear";
+import type { PickableProject } from "@/components/ProjectPicker";
 
 /** One click's worth of reservations: dates, who/what for, units per type, estimate and Release. */
 export function GearBatchCard({
   batch,
   showProject,
   canRelease,
+  edit,
   locale,
 }: {
   batch: GearBatch;
   /** On the Reservations tab: name the project (or the note when there is none). */
   showProject: boolean;
   canRelease: boolean;
+  /** What the Edit popup needs; leave out to hide Edit. */
+  edit?: { types: GearTypeOption[]; projects: PickableProject[]; today: string };
   locale: Locale;
 }) {
   const t = getDictionary(locale).gear;
@@ -44,6 +50,8 @@ export function GearBatchCard({
           </p>
           {batch.note && <p className="text-[13px] mt-1">{batch.note}</p>}
         </div>
+        <div className="flex gap-1.5">
+        {edit && <EditBatchButton batch={batch} types={edit.types} projects={edit.projects} today={edit.today} locale={locale} />}
         {canRelease && (
           <ConfirmDeleteButton
             action={releaseGearBatchAction}
@@ -53,6 +61,7 @@ export function GearBatchCard({
             pendingLabel={t.releasing}
           />
         )}
+        </div>
       </div>
       <ul className="mt-3">
         {batch.lines.map((l) => (

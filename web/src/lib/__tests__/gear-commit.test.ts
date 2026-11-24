@@ -6,7 +6,8 @@ import path from "node:path";
 import Database from "better-sqlite3";
 import { PrismaBetterSqlite3 } from "@prisma/adapter-better-sqlite3";
 import { PrismaClient } from "@/generated/prisma/client";
-import { commitGearReservation } from "../gear-commit";
+import { commitGearReservation, GearPlanRejected, replaceGearBatch } from "../gear-commit";
+import { reservationScopeWhere } from "../gear-scope";
 
 // A real SQLite file built from the migrations, so the transaction runs the
 // way it does in the app.
@@ -80,5 +81,52 @@ describe("commitGearReservation", () => {
       commitGearReservation(tx, { ...base, startDate: "2026-11-28", endDate: "2026-11-28", projectId, lines: [{ typeId, quantity: 1 }] })
     );
     expect(result.ok && result.plan[0].units.map((u) => u.number)).toEqual([1]);
+  });
+});
+
+describe("replaceGearBatch (editing a reservation)", () => {
+  it("moves the dates and keeps the units it held", async () => {
+    const made = await prisma.$transaction((tx) =>
+      commitGearReservation(tx, { ...base, startDate: "2026-12-10", endDate: "2026-12-10", projectId, lines: [{ typeId, quantity: 1 }] })
+    );
+    if (!made.ok) throw new Error("setup");
+    const before = made.plan[0].units[0].number;
+    const edited = await prisma.$transaction((tx) =>
+      replaceGearBatch(tx, made.batchId, { lines: [{ typeId, quantity: 1 }], startDate: "2026-12-11", endDate: "2026-12-12", projectId: null, note: "moved", userId: null })
+    );
+    expect(edited.ok && edited.plan[0].units[0].number).toBe(before);
+    const rows = await prisma.gearReservation.findMany({ where: { batchId: made.batchId } });
+    expect(rows.map((r) => [r.startDate, r.endDate, r.projectId, r.note])).toEqual([["2026-12-11", "2026-12-12", null, "moved"]]);
+  });
+
+  it("rolls everything back when the edit can't be covered", async () => {
+    const made = await prisma.$transaction((tx) =>
+      commitGearReservation(tx, { ...base, startDate: "2026-12-20", endDate: "2026-12-20", projectId, lines: [{ typeId, quantity: 1 }] })
+    );
+    if (!made.ok) throw new Error("setup");
+    // Only two units exist, so asking for three is short.
+    const attempt = prisma.$transaction((tx) =>
+      replaceGearBatch(tx, made.batchId, { lines: [{ typeId, quantity: 3 }], startDate: "2026-12-20", endDate: "2026-12-20", projectId, userId: null })
+    );
+    await expect(attempt).rejects.toBeInstanceOf(GearPlanRejected);
+    expect(await prisma.gearReservation.count({ where: { batchId: made.batchId } })).toBe(1);
+  });
+});
+
+describe("reservationScopeWhere", () => {
+  // An all-projects user (Admin) gets projectWhere = {}. A bare `project: {}`
+  // on the optional relation matched nothing and hid every project booking.
+  it("lists project bookings and project-less ones for an all-projects user", async () => {
+    const total = await prisma.gearReservation.count();
+    const withProject = await prisma.gearReservation.count({ where: { projectId: { not: null } } });
+    expect(withProject).toBeGreaterThan(0);
+    expect(await prisma.gearReservation.count({ where: reservationScopeWhere({}, "all", "2026-01-01") })).toBe(total);
+    expect(await prisma.gearReservation.count({ where: reservationScopeWhere({}, "project", "2026-01-01") })).toBe(withProject);
+    expect(await prisma.gearReservation.count({ where: reservationScopeWhere({}, "none", "2026-01-01") })).toBe(total - withProject);
+  });
+
+  it("hides bookings on projects the user can't see", async () => {
+    const hidden = { id: "no-such-project" };
+    expect(await prisma.gearReservation.count({ where: reservationScopeWhere(hidden, "project", "2026-01-01") })).toBe(0);
   });
 });

@@ -59,7 +59,7 @@ export default async function ProjectGearTab({ params }: { params: Promise<{ slu
       {batches.length === 0 && <EmptyState message={t.projectEmpty} />}
       <div className="space-y-4">
         {batches.map((b) => (
-          <GearBatchCard key={b.batchId} batch={b} showProject={false} canRelease={canManage} locale={locale} />
+          <GearBatchCard key={b.batchId} batch={b} showProject={false} canRelease={canManage} edit={canManage ? { types, projects: pickable, today: gearToday() } : undefined} locale={locale} />
         ))}
       </div>
     </div>

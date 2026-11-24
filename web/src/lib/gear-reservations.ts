@@ -51,13 +51,23 @@ export function freeUnits(typeId: string, units: PlanUnit[], bookings: PlanBooki
 /**
  * Which units each line would take for the range, lowest number first, and
  * how short each line falls. Lines for the same type share its free units, so
- * a type listed twice is never given the same unit twice.
+ * a type listed twice is never given the same unit twice. `prefer` (when
+ * editing a reservation: the units it already holds) goes ahead of the
+ * lowest numbers, so an edit keeps the same units wherever they're still free.
  */
-export function planReservation(lines: PlanLine[], units: PlanUnit[], bookings: PlanBooking[], range: DayRange): LinePlan[] {
+export function planReservation(
+  lines: PlanLine[],
+  units: PlanUnit[],
+  bookings: PlanBooking[],
+  range: DayRange,
+  prefer: ReadonlySet<string> = new Set()
+): LinePlan[] {
   const taken = new Set<string>();
   return lines.map((line) => {
     const quantity = Math.max(0, Math.floor(line.quantity));
-    const free = freeUnits(line.typeId, units, bookings, range).filter((u) => !taken.has(u.id));
+    const free = freeUnits(line.typeId, units, bookings, range)
+      .filter((u) => !taken.has(u.id))
+      .sort((a, b) => Number(prefer.has(b.id)) - Number(prefer.has(a.id)) || a.number - b.number);
     const picked = free.slice(0, quantity);
     for (const u of picked) taken.add(u.id);
     return { ...line, quantity, units: picked.map((u) => ({ id: u.id, number: u.number })), shortBy: quantity - picked.length };

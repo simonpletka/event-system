@@ -6,7 +6,7 @@ import { prisma } from "@/lib/prisma";
 import { requireUser, canManageGear, projectWhereForUser } from "@/lib/authz";
 import { DEFAULT_RATE_PERCENT, effectiveDayRate } from "@/lib/gear-pricing";
 import { dayCount, freeUnits, isDateKey, planReservation, rangesOverlap, type PlanLine } from "@/lib/gear-reservations";
-import { commitGearReservation, GearCollisionError } from "@/lib/gear-commit";
+import { commitGearReservation, GearCollisionError, GearPlanRejected, replaceGearBatch } from "@/lib/gear-commit";
 import { projectHref } from "@/lib/slug";
 import { log } from "@/lib/log";
 
@@ -235,7 +235,13 @@ export async function setGearGroupItemAction(formData: FormData) {
 
 // --- Reserving ---
 
-export type ReserveInput = { lines: PlanLine[]; startDate: string; endDate: string };
+export type ReserveInput = {
+  lines: PlanLine[];
+  startDate: string;
+  endDate: string;
+  /** When editing a reservation: leave its own bookings out and prefer the units it holds. */
+  excludeBatchId?: string;
+};
 
 export type PreviewLine = {
   typeId: string;
@@ -288,13 +294,20 @@ export async function previewGearReservationAction(input: ReserveInput): Promise
     where: { active: true, type: { categoryId: { in: categoryIds } } },
     select: { id: true, typeId: true, number: true, active: true, type: { select: { name: true, categoryId: true } } },
   });
+  const editing = typeof input.excludeBatchId === "string" && input.excludeBatchId ? input.excludeBatchId : null;
   const bookings = await prisma.gearReservation.findMany({
-    where: { unitId: { in: units.map((u) => u.id) }, startDate: { lte: range.endDate }, endDate: { gte: range.startDate } },
+    where: {
+      unitId: { in: units.map((u) => u.id) },
+      startDate: { lte: range.endDate },
+      endDate: { gte: range.startDate },
+      ...(editing ? { batchId: { not: editing } } : {}),
+    },
     orderBy: { startDate: "asc" },
     select: { unitId: true, startDate: true, endDate: true },
   });
+  const held = editing ? (await prisma.gearReservation.findMany({ where: { batchId: editing }, select: { unitId: true } })).map((r) => r.unitId) : [];
 
-  const plan = planReservation(known, units, bookings, range);
+  const plan = planReservation(known, units, bookings, range, new Set(held));
   const requested = new Set(known.map((l) => l.typeId));
   const days = dayCount(range.startDate, range.endDate);
   const rates = new Map(types.map((t) => [t.id, effectiveDayRate(t)]));
@@ -379,6 +392,61 @@ export async function reserveGearAction(
   } catch (e) {
     if (e instanceof GearCollisionError) return { ok: false, error: "errorShort" };
     log.error("gear.reserve_failed", e);
+    return { ok: false, error: "errorGeneric" };
+  }
+}
+
+export type UpdateBatchResult =
+  | { ok: true; count: number }
+  | { ok: false; error: "invalidRange" | "pickGear" | "noPermission" | "errorNoAccess" | "errorShort" | "errorNothingFree" | "errorGeneric" | "errorMissing" };
+
+/**
+ * Edits a reservation (one batch): dates, project or none, note and items.
+ * Re-planned in one transaction with its own old rows set aside, keeping the
+ * units it held where they're still free. A plan short of what the person
+ * agreed to rolls the whole edit back, so nothing is lost or silently cut.
+ */
+export async function updateGearBatchAction(
+  input: ReserveInput & { batchId: string; projectId: string | null; note?: string; expectedUnits: number }
+): Promise<UpdateBatchResult> {
+  const user = await requireUser();
+  if (!canManageGear(user)) return { ok: false, error: "noPermission" };
+  const lines = cleanLines(input.lines);
+  if (!validRange(input.startDate, input.endDate)) return { ok: false, error: "invalidRange" };
+  if (lines.length === 0) return { ok: false, error: "pickGear" };
+
+  const current = await prisma.gearReservation.findFirst({
+    where: { batchId: String(input.batchId ?? "") },
+    select: { projectId: true, project: { select: { number: true, title: true } } },
+  });
+  if (!current) return { ok: false, error: "errorMissing" };
+  const visible = async (id: string) =>
+    prisma.project.findFirst({ where: { AND: [{ id }, projectWhereForUser(user)] }, select: { id: true, number: true, title: true } });
+  if (current.projectId && !(await visible(current.projectId))) return { ok: false, error: "errorNoAccess" };
+  const project = input.projectId ? await visible(input.projectId) : null;
+  if (input.projectId && !project) return { ok: false, error: "errorNoAccess" };
+
+  try {
+    const result = await prisma.$transaction((tx) =>
+      replaceGearBatch(tx, input.batchId, {
+        lines,
+        startDate: input.startDate,
+        endDate: input.endDate,
+        projectId: project?.id ?? null,
+        note: String(input.note ?? "").trim().slice(0, 200),
+        userId: user.id,
+        expectedUnits: Math.max(1, Math.floor(input.expectedUnits) || 0),
+      })
+    );
+    if (!result.ok) return { ok: false, error: "errorMissing" };
+    revalidateGear();
+    if (current.project) revalidatePath(projectHref(current.project, "/gear"));
+    if (project) revalidatePath(projectHref(project, "/gear"));
+    return { ok: true, count: result.plan.reduce((n, l) => n + l.units.length, 0) };
+  } catch (e) {
+    if (e instanceof GearPlanRejected) return { ok: false, error: !e.result.ok && e.result.reason === "empty" ? "errorNothingFree" : "errorShort" };
+    if (e instanceof GearCollisionError) return { ok: false, error: "errorShort" };
+    log.error("gear.update_failed", e);
     return { ok: false, error: "errorGeneric" };
   }
 }
