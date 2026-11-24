@@ -9,7 +9,9 @@
  */
 import { randomUUID } from "node:crypto";
 import type { Prisma } from "@/generated/prisma/client";
-import { planReservation, rangesOverlap, type LinePlan, type PlanLine } from "./gear-reservations";
+import { bookingBlocks, planReservation, type LinePlan, type PlanLine } from "./gear-reservations";
+import { bookingsTouchingWhere } from "./gear-scope";
+import { pragueDateKey } from "./prague-date";
 
 type Tx = Pick<Prisma.TransactionClient, "gearUnit" | "gearReservation">;
 
@@ -51,14 +53,14 @@ export class GearPlanRejected extends Error {
 export async function planFromDb(tx: Tx, lines: PlanLine[], startDate: string, endDate: string, preferUnitIds: string[] = []) {
   const typeIds = [...new Set(lines.map((l) => l.typeId))];
   const units = await tx.gearUnit.findMany({
-    where: { typeId: { in: typeIds }, active: true },
-    select: { id: true, typeId: true, number: true, active: true },
+    where: { typeId: { in: typeIds } },
+    select: { id: true, typeId: true, number: true, condition: true, backAt: true },
   });
   const bookings = await tx.gearReservation.findMany({
-    where: { unitId: { in: units.map((u) => u.id) }, startDate: { lte: endDate }, endDate: { gte: startDate } },
-    select: { unitId: true, startDate: true, endDate: true },
+    where: { unitId: { in: units.map((u) => u.id) }, ...bookingsTouchingWhere(startDate, endDate) },
+    select: { unitId: true, startDate: true, endDate: true, pickedUpAt: true, returnedAt: true },
   });
-  return planReservation(lines, units, bookings, { startDate, endDate }, new Set(preferUnitIds));
+  return planReservation(lines, units, bookings, { startDate, endDate }, { prefer: new Set(preferUnitIds), today: pragueDateKey(new Date()) });
 }
 
 export async function commitGearReservation(tx: Tx, input: CommitInput): Promise<CommitResult> {
@@ -89,10 +91,11 @@ export async function commitGearReservation(tx: Tx, input: CommitInput): Promise
 
   // Each unit must now hold exactly one booking in the range: ours.
   const after = await tx.gearReservation.findMany({
-    where: { unitId: { in: picked.map((u) => u.id) }, startDate: { lte: input.endDate }, endDate: { gte: input.startDate } },
-    select: { unitId: true, startDate: true, endDate: true, batchId: true },
+    where: { unitId: { in: picked.map((u) => u.id) }, ...bookingsTouchingWhere(input.startDate, input.endDate) },
+    select: { unitId: true, startDate: true, endDate: true, batchId: true, pickedUpAt: true, returnedAt: true },
   });
-  const clash = after.some((b) => b.batchId !== batchId && rangesOverlap(b, range));
+  const today = pragueDateKey(new Date());
+  const clash = after.some((b) => b.batchId !== batchId && bookingBlocks(b, range, today));
   if (clash) throw new GearCollisionError("A unit was booked by someone else at the same time.");
 
   return { ok: true, batchId, plan };

@@ -15,3 +15,26 @@ export function reservationScopeWhere(projectWhere: Prisma.ProjectWhereInput, sh
   if (show === "project") return { endDate: { gte: today }, AND: [{ projectId: { not: null } }, visibleProject] };
   return { endDate: { gte: today }, OR: [{ projectId: null }, visibleProject] };
 }
+
+/**
+ * Bookings that may matter for a range: those overlapping it, plus every
+ * unit that's picked up and not back yet (it keeps blocking past its end
+ * date, see blockedRange). The exact test is bookingBlocks() in
+ * gear-reservations.ts; this only has to fetch enough.
+ */
+export function bookingsTouchingWhere(startDate: string, endDate: string): Prisma.GearReservationWhereInput {
+  return {
+    startDate: { lte: endDate },
+    OR: [{ endDate: { gte: startDate } }, { pickedUpAt: { not: null }, returnedAt: null }],
+  };
+}
+
+/** Units that can't be booked on `day`: unusable conditions, or IN_SERVICE until its backAt. */
+export function unusableOnWhere(day: string): Prisma.GearUnitWhereInput {
+  return {
+    OR: [
+      { condition: { in: ["DAMAGED", "RETIRED", "LOST"] } },
+      { condition: "IN_SERVICE", OR: [{ backAt: null }, { backAt: { gte: day } }] },
+    ],
+  };
+}

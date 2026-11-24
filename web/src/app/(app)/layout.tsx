@@ -1,4 +1,5 @@
-import { requireUser, getFreshUserFields, projectWhereForUser } from "@/lib/authz";
+import { requireUser, getFreshUserFields, projectWhereForUser, canManageGear } from "@/lib/authz";
+import { getOpenGearIssueCount } from "@/lib/queries/gear-ops";
 import { getRunningTimer } from "@/lib/queries/timetracker";
 import { getLocale, getDictionary } from "@/lib/i18n";
 import { prisma } from "@/lib/prisma";
@@ -15,11 +16,13 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   // immediately here instead of waiting for the session token to refresh at
   // next login — cache()-deduped with requireUser()'s own lookup, so this is
   // free within the same request, not a second query.
-  const [running, freshUser, locale, testMode] = await Promise.all([
+  const [running, freshUser, locale, testMode, openGearIssues] = await Promise.all([
     getRunningTimer(user.id),
     getFreshUserFields(user.id),
     getLocale(),
     isTestMode(),
+    // Gear managers see the open-issue count on the sidebar's Gear item.
+    canManageGear(user) ? getOpenGearIssueCount() : Promise.resolve(0),
   ]);
   const t = getDictionary(locale);
   // Only fetched when actually needed (a running-but-unassigned timer, for the
@@ -49,6 +52,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
           tElapsed={t.timeTracker.editableElapsed}
           discardedMessage={t.timeTracker.runningTimer.discardedTooShort}
           studioNav={STUDIO_APPS.map((app) => ({ href: `/studio/${app.slug}`, label: t.studio.apps[app.slug].name }))}
+          badges={{ "/gear": openGearIssues }}
         />
         <main className="flex-1 min-w-0 px-6 py-5 pb-[calc(6.5rem+env(safe-area-inset-bottom))] md:pb-5">
           <MobileTopBar

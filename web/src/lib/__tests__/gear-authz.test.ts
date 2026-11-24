@@ -4,7 +4,7 @@ import { describe, expect, it, vi } from "vitest";
 vi.mock("@/auth", () => ({ auth: async () => null }));
 vi.mock("@/lib/prisma", () => ({ prisma: {} }));
 
-const { canManageGear, canViewGear } = await import("../authz");
+const { canManageGear, canViewGear, canReportGearIssue, canHandleGearPickup } = await import("../authz");
 
 const user = (role: "ADMIN" | "ACCOUNTANT" | "PRODUCER" | "MEMBER") => ({ id: "u", role, isCardHolder: false, customRole: null });
 
@@ -22,5 +22,17 @@ describe("gear permissions", () => {
     const custom = (projects: "NONE" | "OWN_EDIT") => ({ ...user("MEMBER"), customRole: { projects, finance: "NONE", expenses: "NONE", settings: "NONE" } as const });
     expect(canManageGear(custom("OWN_EDIT"))).toBe(true);
     expect(canManageGear(custom("NONE"))).toBe(false);
+  });
+  it("lets a Member report an issue but not change condition", () => {
+    expect(canReportGearIssue(user("MEMBER"))).toBe(true);
+    expect(canManageGear(user("MEMBER"))).toBe(false);
+  });
+
+  it("lets non-managers pick up only for projects they can edit", () => {
+    const producer = { ...user("PRODUCER"), id: "p" };
+    expect(canHandleGearPickup(user("MEMBER"), { ownerId: "x", memberIds: ["u"] })).toBe(false);
+    expect(canHandleGearPickup(user("MEMBER"), null)).toBe(false);
+    expect(canHandleGearPickup(user("ACCOUNTANT"), { ownerId: "x", memberIds: [] })).toBe(false);
+    expect(canHandleGearPickup(producer, null)).toBe(true);
   });
 });

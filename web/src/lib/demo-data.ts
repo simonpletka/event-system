@@ -3,6 +3,7 @@ import bcrypt from "bcryptjs";
 import { mondayOf } from "./calendar";
 import { DEFAULT_ITEM_CATEGORIES } from "./item-categories";
 import { pragueDateKey, shiftDateKey } from "./prague-date";
+import { unitRows } from "./gear-units";
 
 /**
  * The demo dataset (4 users, 15 projects, 6 clients, quotes, invoices,
@@ -1226,7 +1227,7 @@ async function addDemoGear(
           purchasePrice: type.price,
           rateMode: type.customRate ? "CUSTOM" : "AUTO",
           customDayRate: type.customRate ?? null,
-          units: { create: Array.from({ length: type.units }, (_, i) => ({ number: i + 1 })) },
+          units: { create: await unitRows(prisma, type.units) },
         },
         include: { units: true },
       });
@@ -1256,13 +1257,16 @@ async function addDemoGear(
     { batch: "ptz", project: projects.munich, by: users.admin, from: 0, to: 2, units: ["Z-CAM P2-R1N PTZ#1", "Z-CAM P2-R1N PTZ#2", "DJI RS 3 Pro#1"] },
     { batch: "interview", project: projects.offsite, by: users.producer, group: "Interview kit", from: 0, to: 3, units: ["Sony FE 24-70 GM II#1", "Rode Wireless GO II#1", "Rode Wireless GO II#2", "Aputure 300d II#1"] },
     { batch: "demo", project: projects.winterDemo, by: users.producer, from: 6, to: 7, units: ["Sony FX30#1", "Aputure 300d II#2", "Sony A7 IV#1"] },
+    { batch: "late", project: projects.offsite, by: users.producer, from: -4, to: -2, units: ["Sennheiser EW-D ME2 set#3", "V-mount battery 150 Wh#5"] },
     { batch: "reel", project: null, note: "Showreel shoot in the studio", by: users.admin, from: 2, to: 3, units: ["Sony A7 IV#2", "Sigma 18-35 f/1.8#2", "Aputure MC RGB#1", "Aputure MC RGB#2"] },
     { batch: "fair", project: projects.munich, by: users.admin, from: 9, to: 9, units: ["Sony FX30#3", "Sony FX3#1", "Sigma 18-35 f/1.8#1"] },
   ];
+  const batchIds = new Map<string, string>();
   for (const b of bookings) {
     const unitIds = b.units.map((key) => newUnits.get(key)).filter((id): id is string => Boolean(id));
     if (unitIds.length === 0) continue;
     const batchId = `demo-${b.batch}-${Math.random().toString(36).slice(2, 10)}`;
+    batchIds.set(b.batch, batchId);
     await prisma.gearReservation.createMany({
       data: unitIds.map((unitId) => ({
         unitId,
@@ -1275,5 +1279,56 @@ async function addDemoGear(
         createdById: b.by,
       })),
     });
+  }
+
+  // --- Condition, issues and pick-up, so the new screens aren't empty. ---
+  const unit = (key: string) => newUnits.get(key) ?? null;
+  const event = (unitId: string, type: "REPORTED" | "CONDITION_CHANGED" | "PICKED_UP", actorId: string, data: Record<string, unknown>, daysAgo = 0) =>
+    prisma.gearUnitEvent.create({ data: { unitId, type, actorId, data: JSON.stringify(data), at: new Date(Date.now() - daysAgo * 86_400_000) } });
+
+  const fan = unit("Aputure 300d II#2");
+  if (fan) {
+    await prisma.gearUnit.update({ where: { id: fan }, data: { condition: "NEEDS_ATTENTION", conditionNote: "Fan is loud at full power; fine below 80 %." } });
+    await event(fan, "CONDITION_CHANGED", users.admin, { from: "OK", to: "NEEDS_ATTENTION" }, 3);
+  }
+  const fx3 = unit("Sony FX3#2");
+  if (fx3) {
+    await prisma.gearUnit.update({ where: { id: fx3 }, data: { condition: "IN_SERVICE", conditionNote: "Sensor cleaning at the Sony service centre.", backAt: day(5) } });
+    await event(fx3, "CONDITION_CHANGED", users.admin, { from: "OK", to: "IN_SERVICE", backAt: day(5) }, 2);
+  }
+  // A damaged PTZ camera that is booked: shows up under "Needs attention" with Reassign.
+  const ptz = unit("Z-CAM P2-R1N PTZ#2");
+  if (ptz) {
+    const issue = await prisma.gearIssue.create({
+      data: {
+        unitId: ptz,
+        reportedById: users.producer,
+        reportedAt: new Date(Date.now() - 86_400_000),
+        severity: "UNUSABLE",
+        description: "Pan motor grinds and stops halfway; the camera drifts back on its own.",
+        projectId: projects.munich,
+      },
+    });
+    await event(ptz, "REPORTED", users.producer, { issueId: issue.id, severity: "UNUSABLE" }, 1);
+    await prisma.gearUnit.update({ where: { id: ptz }, data: { condition: "DAMAGED", conditionNote: "Pan motor faulty." } });
+    await event(ptz, "CONDITION_CHANGED", users.admin, { from: "OK", to: "DAMAGED" }, 1);
+  }
+  const rode = unit("Rode Wireless GO II#3");
+  if (rode) {
+    const issue = await prisma.gearIssue.create({
+      data: { unitId: rode, reportedById: users.producer, severity: "MINOR", description: "Windscreen missing from the case." },
+    });
+    await event(rode, "REPORTED", users.producer, { issueId: issue.id, severity: "MINOR" });
+  }
+
+  // The livestream kit is out (picked up yesterday); the offsite audio is overdue.
+  for (const [batch, daysAgo] of [["live", 1], ["late", 4]] as const) {
+    const batchId = batchIds.get(batch);
+    if (!batchId) continue;
+    const pickedUpAt = new Date(Date.now() - daysAgo * 86_400_000);
+    await prisma.gearReservation.updateMany({ where: { batchId }, data: { pickedUpAt, pickedUpById: users.producer } });
+    for (const r of await prisma.gearReservation.findMany({ where: { batchId }, select: { id: true, unitId: true } })) {
+      await event(r.unitId, "PICKED_UP", users.producer, { reservationId: r.id }, daysAgo);
+    }
   }
 }

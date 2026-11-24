@@ -195,6 +195,11 @@ model User {
   projectFiles        ProjectFile[]
   studioWorks         StudioWork[]
   gearReservations    GearReservation[]
+  gearIssuesReported  GearIssue[]       @relation("GearIssueReporter")
+  gearIssuesResolved  GearIssue[]       @relation("GearIssueResolver")
+  gearPickups         GearReservation[] @relation("GearPickedUpBy")
+  gearReturns         GearReservation[] @relation("GearReturnedBy")
+  gearUnitEvents      GearUnitEvent[]
   tripsCreated        Trip[]
   agentTokens         OAuthToken[]      @relation("OAuthTokenAgent")
   approvedTokens      OAuthToken[]      @relation("OAuthTokenApprover")
@@ -264,6 +269,7 @@ model Project {
   files            ProjectFile[]
   studioWorks      StudioWork[]
   gearReservations GearReservation[]
+  gearIssues       GearIssue[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -910,6 +916,43 @@ model ProjectFile {
 // units are picked when something is reserved (src/lib/gear-reservations.ts).
 // The day rental rate is derived on read (src/lib/gear-pricing.ts), never stored.
 
+// A unit's state. OK and NEEDS_ATTENTION can be booked; the rest can't
+// (IN_SERVICE only until backAt, when set). Changed only by an explicit
+// action of someone who manages gear; reports never change it.
+enum GearCondition {
+  OK
+  NEEDS_ATTENTION
+  DAMAGED
+  IN_SERVICE
+  RETIRED
+  LOST
+}
+
+enum GearIssueSeverity {
+  MINOR
+  MAJOR
+  UNUSABLE
+}
+
+enum GearIssueStatus {
+  OPEN
+  IN_SERVICE
+  RESOLVED
+  WONT_FIX
+}
+
+enum GearUnitEventType {
+  REPORTED
+  CONDITION_CHANGED
+  PICKED_UP
+  RETURNED
+  NOTE
+  RESOLVED
+  REASSIGNED
+  PICKUP_UNDONE
+  RETURN_UNDONE
+}
+
 enum GearRateMode {
   AUTO // ratePercent of the purchase price, rounded to whole CZK
   CUSTOM // customDayRate as typed
@@ -943,18 +986,85 @@ model GearType {
 }
 
 // One physical piece. `number` is the lowest unused integer per type. A unit
-// that was ever reserved can't be deleted (the reservation's Restrict), only
-// retired with active = false, which keeps its history.
+// that was ever reserved or reported can't be deleted, only set RETIRED,
+// which keeps its history. `code` is its permanent public id (8 characters,
+// Crockford base32, src/lib/gear-code.ts): /g/<code> opens it, so a QR label
+// or an NFC tag only has to carry that URL. `tagUid` maps a UHF RFID tag later.
 model GearUnit {
-  id           String            @id @default(cuid())
-  typeId       String
-  type         GearType          @relation(fields: [typeId], references: [id], onDelete: Cascade)
-  number       Int
-  label        String            @default("")
-  active       Boolean           @default(true)
-  reservations GearReservation[]
+  id            String            @id @default(cuid())
+  typeId        String
+  type          GearType          @relation(fields: [typeId], references: [id], onDelete: Cascade)
+  number        Int
+  label         String            @default("")
+  condition     GearCondition     @default(OK)
+  conditionNote String?
+  // Expected back from service, "YYYY-MM-DD"; unavailable until then, inclusive.
+  backAt        String?
+  code          String            @unique
+  tagUid        String?           @unique
+  reservations  GearReservation[]
+  issues        GearIssue[]
+  events        GearUnitEvent[]
 
   @@unique([typeId, number])
+}
+
+// A problem someone found with a unit. Anyone who can see gear may report;
+// only gear managers change the status, resolve, or see the repair cost.
+model GearIssue {
+  id             String            @id @default(cuid())
+  unitId         String
+  unit           GearUnit          @relation(fields: [unitId], references: [id], onDelete: Cascade)
+  reportedById   String?
+  reportedBy     User?             @relation("GearIssueReporter", fields: [reportedById], references: [id], onDelete: SetNull)
+  reportedAt     DateTime          @default(now())
+  severity       GearIssueSeverity
+  description    String
+  projectId      String?
+  project        Project?          @relation(fields: [projectId], references: [id], onDelete: SetNull)
+  reservationId  String?
+  reservation    GearReservation?  @relation(fields: [reservationId], references: [id], onDelete: SetNull)
+  status         GearIssueStatus   @default(OPEN)
+  resolvedAt     DateTime?
+  resolvedById   String?
+  resolvedBy     User?             @relation("GearIssueResolver", fields: [resolvedById], references: [id], onDelete: SetNull)
+  resolutionNote String?
+  // Whole CZK excl. VAT. Shown to gear managers only.
+  repairCost     Int?
+  photos         GearIssuePhoto[]
+
+  @@index([unitId])
+  @@index([status])
+}
+
+// Stored on disk under a random name like project files; images only.
+model GearIssuePhoto {
+  id           String    @id @default(cuid())
+  issueId      String
+  issue        GearIssue @relation(fields: [issueId], references: [id], onDelete: Cascade)
+  storedName   String    @unique
+  originalName String
+  contentType  String
+  size         Int
+  createdAt    DateTime  @default(now())
+
+  @@index([issueId])
+}
+
+// Append-only history of one unit, written in the same transaction as the
+// change it records. `data` is JSON (from/to condition, issueId, reservationId…).
+// Not a general audit log.
+model GearUnitEvent {
+  id      String            @id @default(cuid())
+  unitId  String
+  unit    GearUnit          @relation(fields: [unitId], references: [id], onDelete: Cascade)
+  type    GearUnitEventType
+  actorId String?
+  actor   User?             @relation(fields: [actorId], references: [id], onDelete: SetNull)
+  at      DateTime          @default(now())
+  data    String            @default("{}")
+
+  @@index([unitId, at])
 }
 
 model GearGroup {
@@ -997,6 +1107,17 @@ model GearReservation {
   createdById String?
   createdBy   User?      @relation(fields: [createdById], references: [id], onDelete: SetNull)
   createdAt   DateTime   @default(now())
+
+  // Pick-up and return: real instants. An unreturned pick-up keeps blocking
+  // its unit past endDate until it comes back (see gear-reservations.ts).
+  pickedUpAt      DateTime?
+  pickedUpById    String?
+  pickedUpBy      User?          @relation("GearPickedUpBy", fields: [pickedUpById], references: [id], onDelete: SetNull)
+  returnedAt      DateTime?
+  returnedById    String?
+  returnedBy      User?          @relation("GearReturnedBy", fields: [returnedById], references: [id], onDelete: SetNull)
+  returnCondition GearCondition?
+  issues          GearIssue[]
 
   @@index([unitId, startDate, endDate])
   @@index([projectId])

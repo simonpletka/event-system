@@ -4,14 +4,25 @@ import Link from "next/link";
 import { Fragment, useState } from "react";
 import { getDictionary, type Locale } from "@/lib/dictionary";
 import { formatDay, formatDayRange, freeTone, normalize } from "./shared";
+import { ConditionChip } from "./ConditionChip";
 
 export type AvailabilityRow = {
   id: string;
   name: string;
   categoryId: string;
+  /** Usable units today. */
   total: number;
+  /** Usable units per day: each day's count is out of this. */
+  usable: number[];
   free: number[];
-  units: { id: string; number: number; bars: { from: number; to: number; project: string | null; number: string; note: string }[] }[];
+  units: {
+    id: string;
+    number: number;
+    condition: string;
+    /** Days the unit is out of use (damaged, in service…). */
+    out: boolean[];
+    bars: { from: number; to: number; project: string | null; number: string; note: string; overdue: boolean }[];
+  }[];
 };
 
 const CELL: Record<ReturnType<typeof freeTone>, string> = {
@@ -141,11 +152,11 @@ export function AvailabilityGrid({
                           </button>
                         </div>
                         {r.free.map((n, i) => {
-                          const tone = freeTone(n, r.total);
+                          const tone = freeTone(n, r.usable[i]);
                           return (
                             <div role="cell" key={days[i]} className={`p-1 ${days[i] === today ? "bg-accent/10" : ""}`}>
                               <div
-                                title={t.freeOn(n, r.total, formatDay(days[i], locale, { weekday: "short", day: "numeric", month: "short" }))}
+                                title={t.freeOn(n, r.usable[i], formatDay(days[i], locale, { weekday: "short", day: "numeric", month: "short" }))}
                                 className={`h-full min-h-[36px] grid place-items-center rounded-lg text-[14px] font-bold tabular-nums ${CELL[tone]} ${weekend(days[i]) ? "opacity-60" : ""}`}
                               >
                                 {n}
@@ -157,10 +168,22 @@ export function AvailabilityGrid({
                       {expanded &&
                         r.units.map((u) => (
                           <div role="row" key={u.id} className={`${COLS} min-h-[38px]`}>
-                            <div role="rowheader" className="sticky left-0 z-[1] bg-surface pl-11 pr-2 flex items-center text-[12.5px] placeholder-text">
+                            <div role="rowheader" className="sticky left-0 z-[1] bg-surface pl-11 pr-2 flex items-center gap-2 text-[12.5px] placeholder-text">
                               {t.unitLabel(u.number)}
+                              {u.condition !== "OK" && <ConditionChip condition={u.condition} locale={locale} />}
                             </div>
                             <div className="col-[2/-1] grid grid-cols-[repeat(14,minmax(44px,1fr))] items-center py-1">
+                              {u.out.map((isOut, i) =>
+                                isOut ? (
+                                  <div
+                                    key={`out-${i}`}
+                                    aria-hidden
+                                    title={t.condition[u.condition]}
+                                    style={{ gridColumn: `${i + 1} / ${i + 2}`, gridRow: 1 }}
+                                    className="mx-0.5 h-[28px] rounded-md bg-[repeating-linear-gradient(135deg,color-mix(in_srgb,var(--color-warning)_40%,transparent)_0_5px,transparent_5px_10px)]"
+                                  />
+                                ) : null
+                              )}
                               {u.bars.map((b, i) => (
                                 <div
                                   key={i}
@@ -168,7 +191,7 @@ export function AvailabilityGrid({
                                   style={{ gridColumn: `${b.from + 1} / ${b.to + 2}`, gridRow: 1 }}
                                   title={b.project ? `${b.number} ${b.project}` : b.note || t.noProject}
                                   className={`mx-1 h-[28px] rounded-lg text-[11.5px] font-semibold px-2 flex items-center truncate ${
-                                    b.project ? "bg-accent/55 text-white" : "border border-dashed border-ink/40 bg-ink/10 text-ink/85"
+                                    b.overdue ? "bg-warning/70 text-white" : b.project ? "bg-accent/55 text-white" : "border border-dashed border-ink/40 bg-ink/10 text-ink/85"
                                   }`}
                                 >
                                   <span className="truncate">{b.project ?? (b.note || t.noProject)}</span>

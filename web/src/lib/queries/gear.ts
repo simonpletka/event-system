@@ -1,7 +1,8 @@
 import { prisma } from "@/lib/prisma";
 import { projectWhereForUser, type SessionUser } from "@/lib/authz";
 import { effectiveDayRate } from "@/lib/gear-pricing";
-import { dayCount, freePerDay, freeUnits } from "@/lib/gear-reservations";
+import { blockedRange, bookingBlocks, dayCount, freePerDay, freeUnits, isOverdue, unitUsableOn, usablePerDay } from "@/lib/gear-reservations";
+import { bookingsTouchingWhere } from "@/lib/gear-scope";
 import type { Prisma } from "@/generated/prisma/client";
 import { pragueDateKey, shiftDateKey } from "@/lib/prague-date";
 
@@ -16,6 +17,9 @@ export function windowDays(from: string, length = 14) {
 }
 
 const pricingSelect = { purchasePrice: true, rateMode: true, ratePercent: true, customDayRate: true } as const;
+/** What the availability rules need from a unit and a booking (gear-reservations.ts). */
+const unitPlanSelect = { id: true, typeId: true, number: true, condition: true, backAt: true } as const;
+const bookingPlanSelect = { unitId: true, startDate: true, endDate: true, pickedUpAt: true, returnedAt: true } as const;
 
 export async function getGearCategories() {
   const categories = await prisma.gearCategory.findMany({
@@ -29,27 +33,27 @@ export async function getGearTypeCount() {
   return prisma.gearType.count();
 }
 
-/** Every type with its unit count, free-today count and derived day rate, for the Catalog. */
+/** Every type with its usable units, free-today count, units needing a look, and derived day rate, for the Catalog. */
 export async function getGearCatalog() {
   const today = gearToday();
   const [categories, types, todays] = await Promise.all([
     getGearCategories(),
     prisma.gearType.findMany({
       orderBy: { name: "asc" },
-      include: { units: { where: { active: true }, select: { id: true, typeId: true, number: true, active: true } } },
+      include: { units: { where: { condition: { not: "RETIRED" } }, select: unitPlanSelect } },
     }),
-    prisma.gearReservation.findMany({
-      where: { startDate: { lte: today }, endDate: { gte: today } },
-      select: { unitId: true, startDate: true, endDate: true },
-    }),
+    prisma.gearReservation.findMany({ where: bookingsTouchingWhere(today, today), select: bookingPlanSelect }),
   ]);
   const range = { startDate: today, endDate: today };
   const rows = types.map((t) => ({
     id: t.id,
     name: t.name,
     categoryId: t.categoryId,
-    units: t.units.length,
-    freeToday: freeUnits(t.id, t.units, todays, range).length,
+    /** Usable today: what "Free today" is out of. */
+    units: usablePerDay(t.id, t.units, [today])[0],
+    freeToday: freeUnits(t.id, t.units, todays, range, today).length,
+    /** Units not OK (retired ones aren't listed at all). */
+    notOk: t.units.filter((u) => u.condition !== "OK").length,
     purchasePrice: t.purchasePrice,
     rateMode: t.rateMode,
     ratePercent: t.ratePercent,
@@ -58,24 +62,36 @@ export async function getGearCatalog() {
   return { categories, rows };
 }
 
-/** Lightweight list for pickers (group editor, reserve panel). */
+/** Lightweight list for pickers (group editor, reserve panel). `units` counts the usable ones. */
 export async function getGearTypeOptions() {
   const types = await prisma.gearType.findMany({
     orderBy: [{ category: { sortOrder: "asc" } }, { name: "asc" }],
-    select: { id: true, name: true, category: { select: { name: true } }, ...pricingSelect, _count: { select: { units: { where: { active: true } } } } },
+    select: { id: true, name: true, category: { select: { name: true } }, ...pricingSelect, units: { select: unitPlanSelect } },
   });
-  return types.map((t) => ({ id: t.id, name: t.name, category: t.category.name, dayRate: effectiveDayRate(t), units: t._count.units }));
+  const today = gearToday();
+  return types.map((t) => ({
+    id: t.id,
+    name: t.name,
+    category: t.category.name,
+    dayRate: effectiveDayRate(t),
+    units: usablePerDay(t.id, t.units, [today])[0],
+  }));
 }
 
 export type GearTypeOption = Awaited<ReturnType<typeof getGearTypeOptions>>[number];
 
-/** One type with its units, each unit's next 14 days and its next booking, and the groups it's in. */
+export type UnitDayState = "free" | "booked" | "out";
+
+/** One type with its units (condition, code, open issues), each unit's next 14 days and next booking, and its groups. */
 export async function getGearTypeDetail(id: string) {
   const type = await prisma.gearType.findUnique({
     where: { id },
     include: {
       category: true,
-      units: { orderBy: { number: "asc" }, include: { _count: { select: { reservations: true } } } },
+      units: {
+        orderBy: { number: "asc" },
+        include: { _count: { select: { reservations: true, issues: true } }, issues: { where: { status: { in: ["OPEN", "IN_SERVICE"] } }, select: { id: true } } },
+      },
       groupItems: { include: { group: { select: { id: true, name: true } } }, orderBy: { group: { name: "asc" } } },
     },
   });
@@ -83,11 +99,10 @@ export async function getGearTypeDetail(id: string) {
 
   const today = gearToday();
   const days = windowDays(today);
-  const last = days[days.length - 1];
   const bookings = await prisma.gearReservation.findMany({
-    where: { unitId: { in: type.units.map((u) => u.id) }, endDate: { gte: today } },
+    where: { unitId: { in: type.units.map((u) => u.id) }, ...bookingsTouchingWhere(today, "9999-12-31") },
     orderBy: { startDate: "asc" },
-    select: { unitId: true, startDate: true, endDate: true, note: true, project: { select: { title: true, number: true } } },
+    select: { ...bookingPlanSelect, note: true, project: { select: { title: true, number: true } } },
   });
 
   const units = type.units.map((u) => {
@@ -97,10 +112,17 @@ export async function getGearTypeDetail(id: string) {
       id: u.id,
       number: u.number,
       label: u.label,
-      active: u.active,
-      hasReservations: u._count.reservations > 0,
-      reservedToday: own.some((b) => b.startDate <= today && today <= b.endDate),
-      days: days.map((day) => own.some((b) => b.startDate <= day && day <= b.endDate && b.startDate <= last)),
+      code: u.code,
+      condition: u.condition,
+      conditionNote: u.conditionNote,
+      backAt: u.backAt,
+      openIssues: u.issues.length,
+      hasHistory: u._count.reservations > 0 || u._count.issues > 0,
+      reservedToday: own.some((b) => bookingBlocks(b, { startDate: today, endDate: today }, today)),
+      overdue: own.some((b) => isOverdue(b, today)),
+      days: days.map((day): UnitDayState =>
+        !unitUsableOn(u, day) ? "out" : own.some((b) => bookingBlocks(b, { startDate: day, endDate: day }, today)) ? "booked" : "free"
+      ),
       next: next ? { startDate: next.startDate, endDate: next.endDate, project: next.project?.title ?? null, note: next.note } : null,
     };
   });
@@ -119,7 +141,7 @@ export async function getGearTypeDetail(id: string) {
     today,
     days,
     units,
-    hasReservations: units.some((u) => u.hasReservations),
+    hasHistory: units.some((u) => u.hasHistory),
     groups: type.groupItems.map((gi) => ({ id: gi.group.id, name: gi.group.name, quantity: gi.quantity })),
   };
 }
@@ -158,40 +180,49 @@ export async function getGearGroups() {
 
 export type GearGroupView = Awaited<ReturnType<typeof getGearGroups>>[number];
 
-/** Free units per type per day for a 14-day window, plus each unit's bookings in it. */
+/** Free units per type per day for a 14-day window, out of the usable ones, plus each unit's bookings and out-of-use days. */
 export async function getGearAvailability(from: string) {
   const days = windowDays(from);
   const to = days[days.length - 1];
+  const today = gearToday();
   const [categories, types, bookings] = await Promise.all([
     getGearCategories(),
     prisma.gearType.findMany({
       orderBy: { name: "asc" },
-      include: { units: { where: { active: true }, orderBy: { number: "asc" }, select: { id: true, typeId: true, number: true, active: true } } },
+      include: { units: { where: { condition: { not: "RETIRED" } }, orderBy: { number: "asc" }, select: unitPlanSelect } },
     }),
     prisma.gearReservation.findMany({
-      where: { startDate: { lte: to }, endDate: { gte: from }, unit: { active: true } },
-      select: { unitId: true, startDate: true, endDate: true, batchId: true, note: true, project: { select: { title: true, number: true } } },
+      where: { ...bookingsTouchingWhere(from, to), unit: { condition: { not: "RETIRED" } } },
+      select: { ...bookingPlanSelect, batchId: true, note: true, project: { select: { title: true, number: true } } },
     }),
   ]);
   const rows = types.map((t) => ({
     id: t.id,
     name: t.name,
     categoryId: t.categoryId,
-    total: t.units.length,
-    free: freePerDay(t.id, t.units, bookings, days),
+    total: usablePerDay(t.id, t.units, [today])[0],
+    usable: usablePerDay(t.id, t.units, days),
+    free: freePerDay(t.id, t.units, bookings, days, today),
     units: t.units.map((u) => ({
       id: u.id,
       number: u.number,
+      condition: u.condition,
+      out: days.map((day) => !unitUsableOn(u, day)),
       bars: bookings
         .filter((b) => b.unitId === u.id)
-        .map((b) => ({
-          // Clipped to the window, as indexes into `days`.
-          from: Math.max(0, days.indexOf(b.startDate < from ? from : b.startDate)),
-          to: days.indexOf(b.endDate > to ? to : b.endDate),
-          project: b.project?.title ?? null,
-          number: b.project?.number ?? "",
-          note: b.note,
-        }))
+        .map((b) => {
+          const r = blockedRange(b, today);
+          return {
+            // Clipped to the window, as indexes into `days`.
+            from: Math.max(0, days.indexOf(r.startDate < from ? from : r.startDate)),
+            to: days.indexOf(r.endDate > to ? to : r.endDate),
+            project: b.project?.title ?? null,
+            number: b.project?.number ?? "",
+            note: b.note,
+            overdue: isOverdue(b, today),
+          };
+        })
+        .filter((b) => b.from >= 0 && b.to >= 0)
         .sort((a, b) => a.from - b.from),
     })),
   }));

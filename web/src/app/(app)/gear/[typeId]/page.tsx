@@ -20,7 +20,7 @@ export default async function GearItemPage({ params }: { params: Promise<{ typeI
   const t = dict.gear;
   const canManage = canManageGear(user);
   const [types, projects] = canManage ? await Promise.all([getGearTypeOptions(), getReservableProjects(user)]) : [[], []];
-  const activeUnits = type.units.filter((u) => u.active).length;
+  const activeUnits = type.units.filter((u) => u.condition !== "RETIRED").length;
 
   return (
     <div className="gear-scope">
@@ -58,7 +58,7 @@ export default async function GearItemPage({ params }: { params: Promise<{ typeI
           categories={categories}
           canManage={canManage}
           locale={locale}
-          left={<GearUnitsCard typeId={type.id} units={type.units} days={type.days} today={type.today} canManage={canManage} locale={locale} />}
+          left={<GearUnitsCard typeId={type.id} typeName={type.name} units={type.units} days={type.days} today={type.today} canManage={canManage} locale={locale} />}
           right={
             <>
               <section aria-label={t.usedInGroups} className="card p-5 md:p-6">
@@ -79,7 +79,7 @@ export default async function GearItemPage({ params }: { params: Promise<{ typeI
                 )}
               </section>
               {canManage &&
-                (type.hasReservations ? (
+                (type.hasHistory ? (
                   <p className="text-[12.5px] placeholder-text px-1">{t.typeHasReservations}</p>
                 ) : (
                   <ConfirmDeleteButton

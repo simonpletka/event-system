@@ -16,6 +16,7 @@ export function GearBatchCard({
   showProject,
   canRelease,
   edit,
+  checklist,
   locale,
 }: {
   batch: GearBatch;
@@ -24,6 +25,8 @@ export function GearBatchCard({
   canRelease: boolean;
   /** What the Edit popup needs; leave out to hide Edit. */
   edit?: { types: GearTypeOption[]; projects: PickableProject[]; today: string };
+  /** Pick-up and return rows, shown under the items. */
+  checklist?: React.ReactNode;
   locale: Locale;
 }) {
   const t = getDictionary(locale).gear;
@@ -80,6 +83,17 @@ export function GearBatchCard({
         <span className="placeholder-text">{t.estimate}</span>
         <span className="font-bold tabular-nums">{formatCurrency(batch.cost)}</span>
       </div>
+      {checklist && (
+        <details className="mt-3 group">
+          <summary className="cursor-pointer list-none flex items-center justify-between gap-2 py-2 text-[13px] font-semibold">
+            <span>{t.pickupChecklist}</span>
+            <Link href={`/gear/pickup/${batch.batchId}`} className="text-[12px] font-normal placeholder-text hover:text-accent">
+              {t.openChecklist} →
+            </Link>
+          </summary>
+          {checklist}
+        </details>
+      )}
     </section>
   );
 }

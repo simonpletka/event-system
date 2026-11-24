@@ -1,5 +1,7 @@
 import { notFound } from "next/navigation";
-import { requireUser, canManageGear } from "@/lib/authz";
+import { requireUser, canManageGear, canHandleGearPickup } from "@/lib/authz";
+import { getProjectChecklistRows } from "@/lib/queries/gear-ops";
+import { PickupChecklist } from "@/components/gear/PickupChecklist";
 import { getProjectDetail, resolveProjectIdByNumber } from "@/lib/queries/projects";
 import { gearToday, getGearBatches, getGearTypeOptions, getReservableProjects } from "@/lib/queries/gear";
 import { parseProjectSlug } from "@/lib/slug";
@@ -22,10 +24,12 @@ export default async function ProjectGearTab({ params }: { params: Promise<{ slu
   const locale = await getLocale();
   const t = getDictionary(locale).gear;
   const canManage = canManageGear(user);
-  const [batches, types, projects] = await Promise.all([
+  const canHandle = canHandleGearPickup(user, { ownerId: project.ownerId, memberIds: project.members.map((m) => m.userId) });
+  const [batches, types, projects, checklists] = await Promise.all([
     getGearBatches({ projectId: id }),
     canManage ? getGearTypeOptions() : Promise.resolve([]),
     canManage ? getReservableProjects(user) : Promise.resolve([]),
+    getProjectChecklistRows(id),
   ]);
   const total = batches.reduce((sum, b) => sum + b.cost, 0);
   // The project may be closed and so missing from the picker; keep it selectable here.
@@ -59,7 +63,15 @@ export default async function ProjectGearTab({ params }: { params: Promise<{ slu
       {batches.length === 0 && <EmptyState message={t.projectEmpty} />}
       <div className="space-y-4">
         {batches.map((b) => (
-          <GearBatchCard key={b.batchId} batch={b} showProject={false} canRelease={canManage} edit={canManage ? { types, projects: pickable, today: gearToday() } : undefined} locale={locale} />
+          <GearBatchCard
+            key={b.batchId}
+            batch={b}
+            showProject={false}
+            canRelease={canManage}
+            edit={canManage ? { types, projects: pickable, today: gearToday() } : undefined}
+            checklist={<PickupChecklist rows={checklists.get(b.batchId) ?? []} canHandle={canHandle} canManage={canManage} locale={locale} />}
+            locale={locale}
+          />
         ))}
       </div>
     </div>

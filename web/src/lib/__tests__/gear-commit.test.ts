@@ -8,6 +8,8 @@ import { PrismaBetterSqlite3 } from "@prisma/adapter-better-sqlite3";
 import { PrismaClient } from "@/generated/prisma/client";
 import { commitGearReservation, GearPlanRejected, replaceGearBatch } from "../gear-commit";
 import { reservationScopeWhere } from "../gear-scope";
+import { resolveGearScan } from "../gear-scan";
+import { newGearCodes } from "../gear-units";
 
 // A real SQLite file built from the migrations, so the transaction runs the
 // way it does in the app.
@@ -34,7 +36,7 @@ beforeAll(async () => {
   projectId = project.id;
   const category = await prisma.gearCategory.create({ data: { name: "Cameras" } });
   const type = await prisma.gearType.create({
-    data: { name: "Sony FX30", categoryId: category.id, purchasePrice: 52900, units: { create: [{ number: 1 }, { number: 2 }] } },
+    data: { name: "Sony FX30", categoryId: category.id, purchasePrice: 52900, units: { create: [{ number: 1, code: "AAAA1111", tagUid: "E2:00:01" }, { number: 2, code: "BBBB2222" }] } },
   });
   typeId = type.id;
 });
@@ -128,5 +130,21 @@ describe("reservationScopeWhere", () => {
   it("hides bookings on projects the user can't see", async () => {
     const hidden = { id: "no-such-project" };
     expect(await prisma.gearReservation.count({ where: reservationScopeWhere(hidden, "project", "2026-01-01") })).toBe(0);
+  });
+});
+
+describe("resolveGearScan", () => {
+  it("finds a unit by full URL, bare code (typed loosely) or tag id, and nothing for garbage", async () => {
+    expect((await resolveGearScan(prisma, "https://app.example.com/g/AAAA1111"))?.number).toBe(1);
+    expect((await resolveGearScan(prisma, "bbbb-2222"))?.number).toBe(2);
+    expect((await resolveGearScan(prisma, "E2:00:01"))?.number).toBe(1);
+    expect(await resolveGearScan(prisma, "ZZZZ9999")).toBeNull();
+    expect(await resolveGearScan(prisma, "not a code at all")).toBeNull();
+  });
+
+  it("hands out codes no unit has", async () => {
+    const codes = await newGearCodes(prisma, 50);
+    expect(new Set(codes).size).toBe(50);
+    expect(codes).not.toContain("AAAA1111");
   });
 });

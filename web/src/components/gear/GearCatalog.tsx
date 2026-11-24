@@ -2,6 +2,8 @@
 
 import Link from "next/link";
 import { useState } from "react";
+import { useRouter } from "next/navigation";
+import { resolveGearScanAction } from "@/lib/actions/gear-units";
 import { formatCurrency } from "@/lib/format";
 import { getDictionary, type Locale } from "@/lib/dictionary";
 import { MobileListRow } from "@/components/ui/MobileListRow";
@@ -15,6 +17,8 @@ export type CatalogRow = {
   categoryId: string;
   units: number;
   freeToday: number;
+  /** Units not OK (needs attention, damaged, in service, lost). */
+  notOk: number;
   purchasePrice: number;
   rateMode: "AUTO" | "CUSTOM";
   ratePercent: number;
@@ -37,7 +41,22 @@ export function GearCatalog({
 }) {
   const t = getDictionary(locale).gear;
   const [query, setQuery] = useState("");
-  const [onlyFree, setOnlyFree] = useState<"all" | "free">("all");
+  const [onlyFree, setOnlyFree] = useState<"all" | "free" | "attention">("all");
+  const [scanMessage, setScanMessage] = useState<string | null>(null);
+  const router = useRouter();
+
+  /** Enter in the search box: a pasted code, /g/ URL or tag id jumps to that unit. */
+  async function tryScan() {
+    const value = query.trim();
+    if (!value) return;
+    const hit = await resolveGearScanAction(value);
+    if (hit) {
+      setScanMessage(t.searchFoundCode);
+      router.push(hit.href);
+    } else if (/\/g\/|^[0-9A-Za-z-]{8,9}$/.test(value)) {
+      setScanMessage(t.searchNoCode);
+    }
+  }
   const [categoryId, setCategoryId] = useState<string | null>(null);
   const [managing, setManaging] = useState(false);
 
@@ -46,7 +65,7 @@ export function GearCatalog({
   const shown = rows.filter(
     (r) =>
       (!categoryId || r.categoryId === categoryId) &&
-      (onlyFree === "all" || r.freeToday > 0) &&
+      (onlyFree === "all" || (onlyFree === "free" ? r.freeToday > 0 : r.notOk > 0)) &&
       (!q || normalize(r.name).includes(q) || normalize(categoryName.get(r.categoryId) ?? "").includes(q))
   );
   const sections = categories
@@ -79,7 +98,16 @@ export function GearCatalog({
         <input
           type="search"
           value={query}
-          onChange={(e) => setQuery(e.target.value)}
+          onChange={(e) => {
+            setQuery(e.target.value);
+            setScanMessage(null);
+          }}
+          onKeyDown={(e) => {
+            if (e.key === "Enter") {
+              e.preventDefault();
+              void tryScan();
+            }
+          }}
           placeholder={t.searchPlaceholder}
           aria-label={t.searchShort}
           className="input flex-1 min-w-[220px] max-w-[460px]"
@@ -91,8 +119,14 @@ export function GearCatalog({
           options={[
             { value: "all", label: t.filterAll },
             { value: "free", label: t.filterFreeToday },
+            { value: "attention", label: t.filterNeedsAttention },
           ]}
         />
+        {scanMessage && (
+          <span role="status" className="text-[12.5px] placeholder-text">
+            {scanMessage}
+          </span>
+        )}
       </div>
 
       <div className="flex flex-col md:flex-row gap-4 md:gap-6 items-start">
@@ -150,7 +184,10 @@ export function GearCatalog({
                     {sectionRows.map((r) => (
                       <li key={r.id} className="border-t border-ink/8">
                         <Link href={`/gear/${r.id}`} className={`${GRID} hidden md:grid py-3 px-1 rounded-xl hover:bg-ink/5 group text-[14px]`}>
-                          <span className="font-semibold truncate group-hover:text-accent">{r.name}</span>
+                          <span className="flex items-center gap-2 min-w-0">
+                            <span className="font-semibold truncate group-hover:text-accent">{r.name}</span>
+                            {r.notOk > 0 && <span className="tag tag-attention shrink-0">{t.notOkCount(r.notOk)}</span>}
+                          </span>
                           <span className="tabular-nums">{r.units}</span>
                           {freeCell(r)}
                           <span className="text-right tabular-nums placeholder-text">{formatCurrency(r.purchasePrice)}</span>
@@ -160,6 +197,7 @@ export function GearCatalog({
                           <MobileListRow
                             href={`/gear/${r.id}`}
                             title={r.name}
+                            tag={r.notOk > 0 ? <span className="tag tag-attention">{t.notOkCount(r.notOk)}</span> : undefined}
                             meta={
                               <span className="inline-flex items-center gap-2">
                                 {freeCell(r)}

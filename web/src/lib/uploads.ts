@@ -164,3 +164,35 @@ export async function deleteProjectFile(storedName: string) {
   if (await isTestMode()) return;
   await unlink(path.join(PROJECT_FILE_ROOT, path.basename(storedName))).catch(() => {});
 }
+
+// --- Gear issue photos: images only, random names, served through an
+// authenticated route (api/uploads/gear-issue-photos/[id]). ---
+const GEAR_PHOTO_ROOT = path.join(DATA_ROOT, "uploads", "gear-issue-photos");
+export const GEAR_PHOTO_TYPES: Record<string, string> = {
+  "image/jpeg": "jpg",
+  "image/png": "png",
+  "image/webp": "webp",
+  "image/heic": "heic",
+  "image/heif": "heif",
+};
+export const MAX_GEAR_PHOTO_MB = 10;
+
+export async function saveGearIssuePhoto(file: File): Promise<string> {
+  const ext = GEAR_PHOTO_TYPES[file.type];
+  if (!ext) throw new Error("Only images can be attached.");
+  if (file.size > MAX_GEAR_PHOTO_MB * 1024 * 1024) throw new Error("Photo is too large.");
+  await mkdir(GEAR_PHOTO_ROOT, { recursive: true });
+  const storedName = `${randomUUID()}.${ext}`;
+  await writeFile(path.join(GEAR_PHOTO_ROOT, storedName), Buffer.from(await file.arrayBuffer()));
+  return storedName;
+}
+
+export async function readGearIssuePhoto(storedName: string) {
+  return readFile(path.join(GEAR_PHOTO_ROOT, path.basename(storedName)));
+}
+
+export async function deleteGearIssuePhoto(storedName: string) {
+  // The testing view's records point at real files: never delete them from there.
+  if (await isTestMode()) return;
+  await unlink(path.join(GEAR_PHOTO_ROOT, path.basename(storedName))).catch(() => {});
+}

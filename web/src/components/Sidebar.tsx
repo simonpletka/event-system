@@ -17,6 +17,7 @@ export function Sidebar({
   tElapsed,
   discardedMessage,
   studioNav,
+  badges = {},
 }: {
   userName: string;
   avatarUrl: string | null;
@@ -29,6 +30,8 @@ export function Sidebar({
   discardedMessage: string;
   /** The Studio apps, shown under Studio while it's open. */
   studioNav: { href: string; label: string }[];
+  /** Counts shown next to a nav item (e.g. open gear issues for gear managers). */
+  badges?: Record<string, number>;
 }) {
   const pathname = usePathname();
   // A Studio app takes the whole window; its own top bar has the way out.
@@ -64,6 +67,11 @@ export function Sidebar({
             <div key={item.href}>
               <Link href={item.href} className={`nav-item ${active ? "active" : ""}`}>
                 {item.label}
+                {(badges[item.href] ?? 0) > 0 && (
+                  <span className="ml-1.5 align-middle inline-grid place-items-center min-w-[17px] h-[17px] px-1 rounded-full bg-warning text-white text-[9px] font-bold tracking-normal">
+                    {badges[item.href]}
+                  </span>
+                )}
               </Link>
               {active && subNav[item.href] && (
                 <div className="flex flex-col ml-2.5 mt-0.5 mb-0.5 gap-0.5 border-l border-ink/10 pl-2.5">

@@ -312,3 +312,18 @@ export function canViewGear(user: SessionUser) {
 export function canManageGear(user: SessionUser) {
   return canCreateProject(user);
 }
+
+/** Reporting a problem with gear is open to everyone who can see gear: the crew finds the damage. */
+export function canReportGearIssue(user: SessionUser) {
+  return canViewGear(user);
+}
+
+/**
+ * Picking up or returning a reserved unit: gear managers for anything; anyone
+ * else only for a project's units, and only where they could edit that
+ * project (the existing canEditProject rule, nothing new).
+ */
+export function canHandleGearPickup(user: SessionUser, project: { ownerId: string; memberIds: string[] } | null) {
+  if (canManageGear(user)) return true;
+  return project ? canEditProject(user, project) : false;
+}

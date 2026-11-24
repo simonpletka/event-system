@@ -5,7 +5,12 @@ import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { requireUser, canManageGear, projectWhereForUser } from "@/lib/authz";
 import { DEFAULT_RATE_PERCENT, effectiveDayRate } from "@/lib/gear-pricing";
-import { dayCount, freeUnits, isDateKey, planReservation, rangesOverlap, type PlanLine } from "@/lib/gear-reservations";
+import { blockedRange, bookingBlocks, dayCount, freeUnits, isDateKey, planReservation, unitUsableFor, type PlanLine } from "@/lib/gear-reservations";
+import { bookingsTouchingWhere } from "@/lib/gear-scope";
+import { newGearCodes, unitRows } from "@/lib/gear-units";
+import { pragueDateKey } from "@/lib/prague-date";
+
+const gearTodayKey = () => pragueDateKey(new Date());
 import { commitGearReservation, GearCollisionError, GearPlanRejected, replaceGearBatch } from "@/lib/gear-commit";
 import { projectHref } from "@/lib/slug";
 import { log } from "@/lib/log";
@@ -125,7 +130,7 @@ export async function createGearTypeAction(_prev: GearFormState, formData: FormD
   if (!(await prisma.gearCategory.findUnique({ where: { id: data.categoryId } }))) return fail("categoryRequired");
 
   const type = await prisma.gearType.create({
-    data: { ...data, units: { create: Array.from({ length: units }, (_, i) => ({ number: i + 1 })) } },
+    data: { ...data, units: { create: await unitRows(prisma, units) } },
   });
   revalidateGear();
   redirect(`/gear/${type.id}`);
@@ -143,12 +148,13 @@ export async function updateGearTypeAction(_prev: GearFormState, formData: FormD
   return { ok: true };
 }
 
-/** Blocked while any of its units has a reservation; retiring the units is the way out. */
+/** Blocked while any of its units has a reservation or a report; retiring the units is the way out. */
 export async function deleteGearTypeAction(formData: FormData) {
   const user = await requireUser();
   if (!canManageGear(user)) return;
   const id = String(formData.get("id") ?? "");
   if ((await prisma.gearReservation.count({ where: { unit: { typeId: id } } })) > 0) return;
+  if ((await prisma.gearIssue.count({ where: { unit: { typeId: id } } })) > 0) return;
   await prisma.gearType.delete({ where: { id } });
   revalidateGear();
   redirect("/gear");
@@ -161,24 +167,18 @@ export async function addGearUnitAction(formData: FormData) {
   if (!canManageGear(user)) return;
   const typeId = String(formData.get("typeId") ?? "");
   if (!(await prisma.gearType.findUnique({ where: { id: typeId } }))) return;
-  await prisma.gearUnit.create({ data: { typeId, number: await nextUnitNumber(typeId) } });
+  const [code] = await newGearCodes(prisma, 1);
+  await prisma.gearUnit.create({ data: { typeId, number: await nextUnitNumber(typeId), code } });
   revalidateGear();
 }
 
-export async function setGearUnitActiveAction(formData: FormData) {
-  const user = await requireUser();
-  if (!canManageGear(user)) return;
-  const id = String(formData.get("id") ?? "");
-  await prisma.gearUnit.update({ where: { id }, data: { active: formData.get("active") === "true" } });
-  revalidateGear();
-}
-
-/** Only a unit that was never reserved; one with history is retired instead. */
+/** Only a unit that was never reserved or reported; one with history is retired instead. */
 export async function deleteGearUnitAction(formData: FormData) {
   const user = await requireUser();
   if (!canManageGear(user)) return;
   const id = String(formData.get("id") ?? "");
   if ((await prisma.gearReservation.count({ where: { unitId: id } })) > 0) return;
+  if ((await prisma.gearIssue.count({ where: { unitId: id } })) > 0) return;
   await prisma.gearUnit.delete({ where: { id } });
   revalidateGear();
 }
@@ -253,6 +253,10 @@ export type PreviewLine = {
   busy: { number: number; startDate: string; endDate: string }[];
   /** Other types in the same category with free units, offered when the line is short. */
   alternatives: { typeId: string; name: string; free: number }[];
+  /** Picked units that need attention: still bookable, shown with a warning. */
+  attention: number[];
+  /** Units of this type out of use for the range (damaged, in service…). */
+  unavailable: { number: number; condition: string; backAt: string | null }[];
 };
 
 export type PreviewResult =
@@ -291,23 +295,23 @@ export async function previewGearReservationAction(input: ReserveInput): Promise
   // Units of the requested types and of their categories (for alternatives).
   const categoryIds = [...new Set(types.map((t) => t.categoryId))];
   const units = await prisma.gearUnit.findMany({
-    where: { active: true, type: { categoryId: { in: categoryIds } } },
-    select: { id: true, typeId: true, number: true, active: true, type: { select: { name: true, categoryId: true } } },
+    where: { type: { categoryId: { in: categoryIds } }, condition: { notIn: ["RETIRED", "LOST"] } },
+    select: { id: true, typeId: true, number: true, condition: true, backAt: true, type: { select: { name: true, categoryId: true } } },
   });
+  const today = gearTodayKey();
   const editing = typeof input.excludeBatchId === "string" && input.excludeBatchId ? input.excludeBatchId : null;
   const bookings = await prisma.gearReservation.findMany({
     where: {
       unitId: { in: units.map((u) => u.id) },
-      startDate: { lte: range.endDate },
-      endDate: { gte: range.startDate },
+      ...bookingsTouchingWhere(range.startDate, range.endDate),
       ...(editing ? { batchId: { not: editing } } : {}),
     },
     orderBy: { startDate: "asc" },
-    select: { unitId: true, startDate: true, endDate: true },
+    select: { unitId: true, startDate: true, endDate: true, pickedUpAt: true, returnedAt: true },
   });
   const held = editing ? (await prisma.gearReservation.findMany({ where: { batchId: editing }, select: { unitId: true } })).map((r) => r.unitId) : [];
 
-  const plan = planReservation(known, units, bookings, range, new Set(held));
+  const plan = planReservation(known, units, bookings, range, { prefer: new Set(held), today });
   const requested = new Set(known.map((l) => l.typeId));
   const days = dayCount(range.startDate, range.endDate);
   const rates = new Map(types.map((t) => [t.id, effectiveDayRate(t)]));
@@ -317,8 +321,9 @@ export async function previewGearReservationAction(input: ReserveInput): Promise
     const busy = units
       .filter((u) => u.typeId === line.typeId)
       .flatMap((u) => {
-        const b = bookings.find((x) => x.unitId === u.id && rangesOverlap(x, range));
-        return b ? [{ number: u.number, startDate: b.startDate, endDate: b.endDate }] : [];
+        const b = bookings.find((x) => x.unitId === u.id && bookingBlocks(x, range, today));
+        if (b) return [{ number: u.number, ...blockedRange(b, today) }];
+        return [];
       })
       .sort((a, b) => a.number - b.number);
     const alternatives =
@@ -327,13 +332,28 @@ export async function previewGearReservationAction(input: ReserveInput): Promise
             .map((typeId) => ({
               typeId,
               name: units.find((u) => u.typeId === typeId)!.type.name,
-              free: freeUnits(typeId, units, bookings, range).length,
+              free: freeUnits(typeId, units, bookings, range, today).length,
             }))
             .filter((a) => a.free > 0)
             .sort((a, b) => b.free - a.free)
             .slice(0, 2)
         : [];
-    return { typeId: line.typeId, name: type.name, quantity: line.quantity, units: line.units.map((u) => u.number), shortBy: line.shortBy, busy, alternatives };
+    const attention = line.units.filter((pu) => units.find((u) => u.id === pu.id)?.condition === "NEEDS_ATTENTION").map((u) => u.number);
+    const unavailable = units
+      .filter((u) => u.typeId === line.typeId && !unitUsableFor(u, range))
+      .map((u) => ({ number: u.number, condition: u.condition, backAt: u.backAt }))
+      .sort((a, b) => a.number - b.number);
+    return {
+      typeId: line.typeId,
+      name: type.name,
+      quantity: line.quantity,
+      units: line.units.map((u) => u.number),
+      shortBy: line.shortBy,
+      busy,
+      alternatives,
+      attention,
+      unavailable,
+    };
   });
 
   const wanted = plan.reduce((n, l) => n + l.quantity, 0);
