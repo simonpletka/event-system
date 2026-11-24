@@ -194,6 +194,7 @@ model User {
   vehicles            Vehicle[]
   projectFiles        ProjectFile[]
   studioWorks         StudioWork[]
+  gearReservations    GearReservation[]
   tripsCreated        Trip[]
   agentTokens         OAuthToken[]      @relation("OAuthTokenAgent")
   approvedTokens      OAuthToken[]      @relation("OAuthTokenApprover")
@@ -250,18 +251,19 @@ model Project {
   ownerId String
   owner   User   @relation("ProjectOwner", fields: [ownerId], references: [id])
 
-  venues       Venue[]
-  roadmapItems RoadmapItem[]
-  members      ProjectMember[]
-  expenses     Expense[]
-  timeEntries  TimeEntry[]
-  quotes       Quote[]
-  invoices     Invoice[]
-  contacts     ProjectContact[]
-  meetings     MeetingProject[]
-  trips        Trip[]
-  files        ProjectFile[]
-  studioWorks  StudioWork[]
+  venues           Venue[]
+  roadmapItems     RoadmapItem[]
+  members          ProjectMember[]
+  expenses         Expense[]
+  timeEntries      TimeEntry[]
+  quotes           Quote[]
+  invoices         Invoice[]
+  contacts         ProjectContact[]
+  meetings         MeetingProject[]
+  trips            Trip[]
+  files            ProjectFile[]
+  studioWorks      StudioWork[]
+  gearReservations GearReservation[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -900,4 +902,103 @@ model ProjectFile {
   createdAt    DateTime @default(now())
 
   @@index([projectId])
+}
+
+// --- Gear: equipment inventory, kits and day-based reservations ---
+// A GearType is a model of equipment ("Sony FX30") with N physical GearUnits
+// (#1, #2, …). Groups list types with a quantity, never specific units; the
+// units are picked when something is reserved (src/lib/gear-reservations.ts).
+// The day rental rate is derived on read (src/lib/gear-pricing.ts), never stored.
+
+enum GearRateMode {
+  AUTO // ratePercent of the purchase price, rounded to whole CZK
+  CUSTOM // customDayRate as typed
+}
+
+model GearCategory {
+  id        String     @id @default(cuid())
+  name      String     @unique
+  sortOrder Int        @default(0)
+  types     GearType[]
+}
+
+model GearType {
+  id            String          @id @default(cuid())
+  name          String
+  categoryId    String
+  category      GearCategory    @relation(fields: [categoryId], references: [id])
+  notes         String          @default("")
+  // Whole CZK per unit, excl. VAT.
+  purchasePrice Int             @default(0)
+  rateMode      GearRateMode    @default(AUTO)
+  ratePercent   Float           @default(3)
+  // Whole CZK per day, excl. VAT. Used only when rateMode is CUSTOM.
+  customDayRate Int?
+  units         GearUnit[]
+  groupItems    GearGroupItem[]
+  createdAt     DateTime        @default(now())
+  updatedAt     DateTime        @updatedAt
+
+  @@index([categoryId])
+}
+
+// One physical piece. `number` is the lowest unused integer per type. A unit
+// that was ever reserved can't be deleted (the reservation's Restrict), only
+// retired with active = false, which keeps its history.
+model GearUnit {
+  id           String            @id @default(cuid())
+  typeId       String
+  type         GearType          @relation(fields: [typeId], references: [id], onDelete: Cascade)
+  number       Int
+  label        String            @default("")
+  active       Boolean           @default(true)
+  reservations GearReservation[]
+
+  @@unique([typeId, number])
+}
+
+model GearGroup {
+  id           String            @id @default(cuid())
+  name         String
+  description  String            @default("")
+  items        GearGroupItem[]
+  reservations GearReservation[]
+  createdAt    DateTime          @default(now())
+}
+
+model GearGroupItem {
+  id       String    @id @default(cuid())
+  groupId  String
+  group    GearGroup @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  typeId   String
+  type     GearType  @relation(fields: [typeId], references: [id], onDelete: Cascade)
+  quantity Int       @default(1)
+
+  @@unique([groupId, typeId])
+}
+
+// One unit booked over whole days, usually for a project. startDate/endDate are plain
+// "YYYY-MM-DD" Prague dates, both inclusive. Everything reserved in one click
+// shares a batchId, so a group booking is shown and released together.
+model GearReservation {
+  id          String     @id @default(cuid())
+  unitId      String
+  unit        GearUnit   @relation(fields: [unitId], references: [id], onDelete: Restrict)
+  // Optional: gear can be booked for no project (a test shoot, a loan). Then
+  // `note` says what it's for.
+  projectId   String?
+  project     Project?   @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  note        String     @default("")
+  startDate   String
+  endDate     String
+  batchId     String
+  groupId     String?
+  group       GearGroup? @relation(fields: [groupId], references: [id], onDelete: SetNull)
+  createdById String?
+  createdBy   User?      @relation(fields: [createdById], references: [id], onDelete: SetNull)
+  createdAt   DateTime   @default(now())
+
+  @@index([unitId, startDate, endDate])
+  @@index([projectId])
+  @@index([batchId])
 }

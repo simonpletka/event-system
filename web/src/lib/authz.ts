@@ -299,3 +299,16 @@ export function isAdmin(user: SessionUser) {
 export function isAccountant(user: SessionUser) {
   return user.customRole === null && user.role === "ACCOUNTANT";
 }
+
+// --- Gear (new — reuses the `projects` dimension like Meetings, no fifth
+// CustomRole tier). Everyone signed in can look at the inventory and its
+// availability; whoever can create projects (Admin, Producer) edits gear and
+// reserves it. Reserving also needs the project to be visible to them. ---
+export function canViewGear(user: SessionUser) {
+  void user;
+  return true;
+}
+
+export function canManageGear(user: SessionUser) {
+  return canCreateProject(user);
+}

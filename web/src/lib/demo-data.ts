@@ -2,6 +2,7 @@ import type { Prisma, PrismaClient } from "../generated/prisma/client";
 import bcrypt from "bcryptjs";
 import { mondayOf } from "./calendar";
 import { DEFAULT_ITEM_CATEGORIES } from "./item-categories";
+import { pragueDateKey, shiftDateKey } from "./prague-date";
 
 /**
  * The demo dataset (4 users, 15 projects, 6 clients, quotes, invoices,
@@ -1112,4 +1113,167 @@ export async function addDemoData(prisma: PrismaClient) {
       date: new Date(),
     },
   });
+
+  await addDemoGear(prisma, { admin: admin.id, producer: producer.id }, { autumn: autumn.id, offsite: offsite.id, munich: munich.id, winterDemo: winterDemo.id });
+}
+
+// --- Gear: a believable inventory, three kits and a few bookings around
+// today. Additive like the rest: a category or type that already exists (by
+// name) is reused untouched, a group is only made when its name is free, and
+// bookings only go on units created here, so they can't clash with real ones.
+const DEMO_GEAR: { category: string; types: { name: string; price: number; units: number; customRate?: number; notes?: string }[] }[] = [
+  {
+    category: "Cameras",
+    types: [
+      { name: "Sony FX30", price: 52900, units: 3, notes: "Body only. Lens, cage and batteries are separate gear." },
+      { name: "Sony FX3", price: 98000, units: 2 },
+      { name: "Sony A7 IV", price: 63000, units: 2 },
+      { name: "Z-CAM P2-R1N PTZ", price: 79000, units: 2, customRate: 2000 },
+    ],
+  },
+  {
+    category: "Lenses",
+    types: [
+      { name: "Sony FE 24-70 GM II", price: 55000, units: 2 },
+      { name: "Sigma 18-35 f/1.8", price: 21000, units: 2 },
+      { name: "Sony FE 70-200 G", price: 42000, units: 1 },
+    ],
+  },
+  {
+    category: "Audio",
+    types: [
+      { name: "Rode Wireless GO II", price: 7900, units: 4 },
+      { name: "Sennheiser EW-D ME2 set", price: 14500, units: 3 },
+      { name: "Zoom F6 recorder", price: 18900, units: 1 },
+    ],
+  },
+  {
+    category: "Lighting",
+    types: [
+      { name: "Aputure 300d II", price: 28000, units: 2 },
+      { name: "Aputure MC RGB", price: 2900, units: 4 },
+      { name: "Nanlite PavoTube 15C", price: 4500, units: 4 },
+    ],
+  },
+  {
+    category: "Streaming",
+    types: [
+      { name: "ATEM Mini Extreme ISO", price: 28900, units: 1 },
+      { name: "Blackmagic Web Presenter 4K", price: 14900, units: 1 },
+      { name: "vMix streaming PC", price: 65000, units: 1, customRate: 1500 },
+    ],
+  },
+  {
+    category: "Support",
+    types: [
+      { name: "DJI RS 3 Pro", price: 24000, units: 1 },
+      { name: "Sachtler Ace tripod", price: 12000, units: 3 },
+      { name: "Manfrotto light stand", price: 1900, units: 6 },
+    ],
+  },
+  {
+    category: "Power & cables",
+    types: [
+      { name: "SDI cable 50 m", price: 2400, units: 4 },
+      { name: "V-mount battery 150 Wh", price: 5900, units: 6 },
+    ],
+  },
+];
+
+const DEMO_GROUPS: { name: string; description: string; items: [string, number][] }[] = [
+  {
+    name: "Interview kit",
+    description: "Two-camera interview day",
+    items: [["Sony FX30", 2], ["Sony FE 24-70 GM II", 2], ["Rode Wireless GO II", 2], ["Aputure 300d II", 1], ["Sachtler Ace tripod", 2]],
+  },
+  {
+    name: "Livestream kit",
+    description: "Three cameras, switcher and wireless audio",
+    items: [["Sony FX30", 3], ["ATEM Mini Extreme ISO", 1], ["Blackmagic Web Presenter 4K", 1], ["Sennheiser EW-D ME2 set", 2], ["SDI cable 50 m", 3], ["V-mount battery 150 Wh", 4]],
+  },
+  {
+    name: "Aftermovie shooter",
+    description: "One gimbal operator, run and gun",
+    items: [["Sony FX3", 1], ["Sigma 18-35 f/1.8", 1], ["DJI RS 3 Pro", 1], ["Rode Wireless GO II", 1], ["V-mount battery 150 Wh", 2]],
+  },
+];
+
+async function addDemoGear(
+  prisma: PrismaClient,
+  users: { admin: string; producer: string },
+  projects: { autumn: string; offsite: string; munich: string; winterDemo: string }
+) {
+  const typeIds = new Map<string, string>();
+  /** Units created here, by "<type name>#<number>". */
+  const newUnits = new Map<string, string>();
+  let sortOrder = ((await prisma.gearCategory.aggregate({ _max: { sortOrder: true } }))._max.sortOrder ?? -1) + 1;
+
+  for (const group of DEMO_GEAR) {
+    const category =
+      (await prisma.gearCategory.findUnique({ where: { name: group.category } })) ??
+      (await prisma.gearCategory.create({ data: { name: group.category, sortOrder: sortOrder++ } }));
+    for (const type of group.types) {
+      const existing = await prisma.gearType.findFirst({ where: { name: type.name } });
+      if (existing) {
+        typeIds.set(type.name, existing.id);
+        continue;
+      }
+      const created = await prisma.gearType.create({
+        data: {
+          name: type.name,
+          categoryId: category.id,
+          notes: type.notes ?? "",
+          purchasePrice: type.price,
+          rateMode: type.customRate ? "CUSTOM" : "AUTO",
+          customDayRate: type.customRate ?? null,
+          units: { create: Array.from({ length: type.units }, (_, i) => ({ number: i + 1 })) },
+        },
+        include: { units: true },
+      });
+      typeIds.set(type.name, created.id);
+      for (const u of created.units) newUnits.set(`${type.name}#${u.number}`, u.id);
+    }
+  }
+
+  const groupIds = new Map<string, string>();
+  for (const g of DEMO_GROUPS) {
+    if (await prisma.gearGroup.findFirst({ where: { name: g.name } })) continue;
+    const created = await prisma.gearGroup.create({
+      data: {
+        name: g.name,
+        description: g.description,
+        items: { create: g.items.map(([name, quantity]) => ({ typeId: typeIds.get(name)!, quantity })) },
+      },
+    });
+    groupIds.set(g.name, created.id);
+  }
+
+  // Relative to today in Prague, so the availability grid always has something to show.
+  const today = pragueDateKey(new Date());
+  const day = (offset: number) => shiftDateKey(today, offset);
+  const bookings: { batch: string; project: string | null; note?: string; by: string; group?: string; from: number; to: number; units: string[] }[] = [
+    { batch: "live", project: projects.autumn, by: users.producer, group: "Livestream kit", from: -1, to: 3, units: ["Sony FX30#2", "ATEM Mini Extreme ISO#1", "Sennheiser EW-D ME2 set#1", "Sennheiser EW-D ME2 set#2", "SDI cable 50 m#1", "SDI cable 50 m#2"] },
+    { batch: "ptz", project: projects.munich, by: users.admin, from: 0, to: 2, units: ["Z-CAM P2-R1N PTZ#1", "Z-CAM P2-R1N PTZ#2", "DJI RS 3 Pro#1"] },
+    { batch: "interview", project: projects.offsite, by: users.producer, group: "Interview kit", from: 0, to: 3, units: ["Sony FE 24-70 GM II#1", "Rode Wireless GO II#1", "Rode Wireless GO II#2", "Aputure 300d II#1"] },
+    { batch: "demo", project: projects.winterDemo, by: users.producer, from: 6, to: 7, units: ["Sony FX30#1", "Aputure 300d II#2", "Sony A7 IV#1"] },
+    { batch: "reel", project: null, note: "Showreel shoot in the studio", by: users.admin, from: 2, to: 3, units: ["Sony A7 IV#2", "Sigma 18-35 f/1.8#2", "Aputure MC RGB#1", "Aputure MC RGB#2"] },
+    { batch: "fair", project: projects.munich, by: users.admin, from: 9, to: 9, units: ["Sony FX30#3", "Sony FX3#1", "Sigma 18-35 f/1.8#1"] },
+  ];
+  for (const b of bookings) {
+    const unitIds = b.units.map((key) => newUnits.get(key)).filter((id): id is string => Boolean(id));
+    if (unitIds.length === 0) continue;
+    const batchId = `demo-${b.batch}-${Math.random().toString(36).slice(2, 10)}`;
+    await prisma.gearReservation.createMany({
+      data: unitIds.map((unitId) => ({
+        unitId,
+        projectId: b.project,
+        note: b.note ?? "",
+        startDate: day(b.from),
+        endDate: day(b.to),
+        batchId,
+        groupId: b.group ? (groupIds.get(b.group) ?? null) : null,
+        createdById: b.by,
+      })),
+    });
+  }
 }

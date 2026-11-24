@@ -41,6 +41,7 @@ export function Sidebar({
     { href: "/meetings", label: tNav.meetings },
     { href: "/finance", label: tNav.finance },
     { href: "/time-tracker", label: tNav.timeTracker },
+    { href: "/gear", label: tNav.gear },
     { href: "/studio", label: tNav.studio },
   ];
 

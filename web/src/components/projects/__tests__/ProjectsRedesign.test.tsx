@@ -146,6 +146,6 @@ describe("project tabs", () => {
   it("hides Finance for roles without access", () => {
     render(<ProjectTabs project={{ number: "26-001", title: "Winter gala" }} showFinance={false} locale="en" />);
     expect(screen.queryByRole("tab", { name: "Finance" })).toBeNull();
-    expect(screen.getAllByRole("tab").map((t) => t.textContent)).toEqual(["Overview", "Roadmap", "Trips", "Files"]);
+    expect(screen.getAllByRole("tab").map((t) => t.textContent)).toEqual(["Overview", "Roadmap", "Trips", "Gear", "Files"]);
   });
 });

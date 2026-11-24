@@ -3,6 +3,8 @@
 // in the database layer into the browser bundle. src/lib/i18n.ts re-exports all of this
 // for server-side call sites and additionally provides the DB-backed getLocale().
 
+import { gearEn, gearCs } from "./dictionary-gear";
+
 export type Locale = "en" | "cs";
 export const DEFAULT_LOCALE: Locale = "en";
 
@@ -13,6 +15,7 @@ export function czCount(n: number, one: string, few: string, many: string) {
 }
 
 const en = {
+  gear: gearEn,
   common: {
     changeStatus: "Change status",
     save: "Save",
@@ -50,6 +53,7 @@ const en = {
     meetings: "Meetings",
     finance: "Finance",
     timeTracker: "Time tracker",
+    gear: "Gear",
     studio: "Studio",
     settings: "Settings",
     signOut: "Sign out",
@@ -1831,6 +1835,7 @@ const en = {
 export type Dictionary = typeof en;
 
 const cs: Dictionary = {
+  gear: gearCs,
   common: {
     changeStatus: "Změnit stav",
     save: "Uložit",
@@ -1868,6 +1873,7 @@ const cs: Dictionary = {
     meetings: "Schůzky",
     finance: "Finance",
     timeTracker: "Sledování času",
+    gear: "Technika",
     studio: "Studio",
     settings: "Nastavení",
     signOut: "Odhlásit se",

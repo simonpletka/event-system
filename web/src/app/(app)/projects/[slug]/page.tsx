@@ -10,6 +10,8 @@ import { QuoteStatusPill, InvoiceStatusPill } from "@/components/StatusPill";
 import { ProjectTimerButton } from "@/components/projects/ProjectTimerButton";
 import { getRunningTimer, getOverviewUsers } from "@/lib/queries/timetracker";
 import { getLocale, getDictionary } from "@/lib/i18n";
+import { getProjectGearSummary } from "@/lib/queries/gear";
+import { formatDayRange } from "@/components/gear/shared";
 
 const DATE_TIME: Intl.DateTimeFormatOptions = { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" };
 
@@ -40,6 +42,7 @@ export default async function EventOverviewPage({ params }: { params: Promise<{ 
   const uniquePeople = new Set(project.timeEntries.map((e) => e.userId));
   const runningTimer = await getRunningTimer(user.id);
   const allUserIds = (await getOverviewUsers()).map((u) => u.id).join(",");
+  const gear = await getProjectGearSummary(project.id);
 
   const showFinance = canViewProjectBudget(user);
   const budget = resolveProjectBudget(project);
@@ -219,6 +222,18 @@ export default async function EventOverviewPage({ params }: { params: Promise<{ 
                 discardedMessage={t.timeTracker.runningTimer.discardedTooShort}
               />
             </div>
+          </div>
+
+          <div className="card p-4">
+            <div className="flex items-center justify-between">
+              <span className="heading-label !text-[9px]">{t.gear.overviewTitle}</span>
+              <Link href={projectHref(project, "/gear")} className="text-[8px] tracking-[0.14em] uppercase font-semibold placeholder-text hover:text-accent">
+                {t.gear.overviewLink} →
+              </Link>
+            </div>
+            <p className="text-[12px] mt-1.5">
+              {gear ? t.gear.overviewSummary(gear.count, formatDayRange(gear.startDate, gear.endDate, locale)) : <span className="placeholder-text">{t.gear.overviewNone}</span>}
+            </p>
           </div>
 
           {showFinance && (

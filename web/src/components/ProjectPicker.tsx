@@ -37,13 +37,13 @@ export function ProjectPicker({
   }
 
   return (
-    <div className="flex gap-1.5">
+    <div className="flex flex-wrap gap-1.5">
       <select
         name={name}
         value={selected}
         onChange={(e) => select(e.target.value)}
         required={required}
-        className="input flex-1"
+        className="input flex-1 min-w-[160px]"
       >
         {!extraOption && (
           <option value="" disabled>

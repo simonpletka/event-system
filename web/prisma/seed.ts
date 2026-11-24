@@ -14,6 +14,10 @@ async function main() {
   await prisma.oAuthToken.deleteMany();
   await prisma.oAuthCode.deleteMany();
   await prisma.oAuthClient.deleteMany();
+  await prisma.gearReservation.deleteMany();
+  await prisma.gearGroup.deleteMany();
+  await prisma.gearType.deleteMany();
+  await prisma.gearCategory.deleteMany();
   await prisma.projectFile.deleteMany();
   await prisma.trip.deleteMany();
   await prisma.vehicle.deleteMany();
